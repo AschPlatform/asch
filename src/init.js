@@ -66,7 +66,7 @@ module.exports = function(options, done) {
     },
 
     public: function (cb) {
-      cb(null, path.join(__dirname, 'public'));
+      cb(null, path.join(__dirname, '../public'));
     },
 
     scheme: function (cb) {
@@ -216,8 +216,8 @@ module.exports = function(options, done) {
       scope.network.app.engine('html', require('ejs').renderFile);
       scope.network.app.use(require('express-domain-middleware'));
       scope.network.app.set('view engine', 'ejs');
-      scope.network.app.set('views', path.join(__dirname, 'public'));
-      scope.network.app.use(scope.network.express.static(path.join(__dirname, 'public')));
+      scope.network.app.set('views', scope.public);
+      scope.network.app.use(scope.network.express.static(scope.public));
       scope.network.app.use(bodyParser.raw({limit: "2mb"}));
       scope.network.app.use(bodyParser.urlencoded({extended: true, limit: "2mb", parameterLimit: 5000}));
             scope.network.app.use(bodyParser.json({limit: "2mb"}));
