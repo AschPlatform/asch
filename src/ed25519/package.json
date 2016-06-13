@@ -1,0 +1,62 @@
+{
+  "name": "ed25519",
+  "version": "0.0.4",
+  "description": "An Ed25519 implementation for node.js",
+  "dependencies": {
+    "bindings": "^1.2.1",
+    "nan": "^2.0.9"
+  },
+  "main": "index.js",
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "test": "mocha"
+  },
+  "keywords": [
+    "Ed25519",
+    "elliptic",
+    "curve",
+    "crypto",
+    "Curve25519",
+    "EdDSA"
+  ],
+  "author": {
+    "name": "Dave Akers"
+  },
+  "license": "BSD-2-Clause",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dazoe/ed25519.git"
+  },
+  "gitHead": "df57bc1db3dcb5a9425de3c0e34bb41fa50f8c44",
+  "gypfile": true,
+  "bugs": {
+    "url": "https://github.com/dazoe/ed25519/issues"
+  },
+  "homepage": "https://github.com/dazoe/ed25519#readme",
+  "_id": "ed25519@0.0.4",
+  "_shasum": "e56218ace2fc903d259593aef0b2a9639f475beb",
+  "_from": "ed25519@0.0.4",
+  "_npmVersion": "2.14.3",
+  "_nodeVersion": "0.12.7",
+  "_npmUser": {
+    "name": "dazoe",
+    "email": "dave@dazoe.net"
+  },
+  "dist": {
+    "shasum": "e56218ace2fc903d259593aef0b2a9639f475beb",
+    "tarball": "http://registry.npmjs.org/ed25519/-/ed25519-0.0.4.tgz"
+  },
+  "maintainers": [
+    {
+      "name": "dazoe",
+      "email": "dave@dazoe.net"
+    },
+    {
+      "name": "stellar",
+      "email": "npm@stellar.org"
+    }
+  ],
+  "directories": {},
+  "_resolved": "https://registry.npmjs.org/ed25519/-/ed25519-0.0.4.tgz",
+  "readme": "ERROR: No README data found!"
+}
