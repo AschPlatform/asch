@@ -273,7 +273,7 @@ function Multisignature() {
       if (err) {
         return cb(err);
       } else {
-        library.network.io.sockets.emit('mutlsigiantures/change', {});
+        library.network.io.sockets.emit('multisignatures/change', {});
         return cb();
       }
     });
@@ -576,7 +576,7 @@ Multisignatures.prototype.processSignature = function (tx, cb) {
         return cb("Failed to verify signature");
       }
 
-      library.network.io.sockets.emit('mutlsigiantures/singature/change', {});
+      library.network.io.sockets.emit('multisignatures/singature/change', {});
       return done(cb);
     });
   }
@@ -658,7 +658,7 @@ shared.sign = function (req, cb) {
         return cb("Permission to sign transaction denied");
       }
 
-      library.network.io.sockets.emit('mutlsigiantures/singature/change', {});
+      library.network.io.sockets.emit('multisignatures/singature/change', {});
       done(cb);
     } else {
       modules.accounts.getAccount({
@@ -686,7 +686,7 @@ shared.sign = function (req, cb) {
           return cb("Permission to sign transaction denied");
         }
 
-        library.network.io.sockets.emit('mutlsigiantures/singature/change', {});
+        library.network.io.sockets.emit('multisignatures/singature/change', {});
         done(cb);
       });
     }
@@ -784,7 +784,7 @@ shared.addMultisignature = function (req, cb) {
         return cb(err.toString());
       }
 
-      library.network.io.sockets.emit('mutlsigiantures/change', {});
+      library.network.io.sockets.emit('multisignatures/change', {});
       cb(null, {transactionId: transaction[0].id});
     });
   });
