@@ -30,7 +30,7 @@
     "type": "git",
     "url": "git://github.com/WebReflection/dblite.git"
   },
-  "main": "./build/dblite.js",
+  "main": "./dblite.js",
   "scripts": {
     "test": "node test/.test.js"
   },

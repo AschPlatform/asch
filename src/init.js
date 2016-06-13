@@ -6,7 +6,7 @@ var z_schema = require('z-schema');
 var Logger = require('./logger');
 var Sequence = require('./utils/sequence.js');
 
-var versionBuild = fs.readFileSync(path.join(__dirname, 'build'), 'utf8');
+var versionBuild = fs.readFileSync(path.join(__dirname, 'build-version'), 'utf8');
 
 var moduleNames = [
   'server',

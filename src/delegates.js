@@ -353,8 +353,8 @@ private.attachApi = function () {
         }
         if (account && account.isDelegate) {
           private.keypairs[keypair.publicKey.toString('hex')] = keypair;
-          return res.json({success: true, address: account.address});
           library.logger.info("Forging enabled on account: " + account.address);
+          return res.json({success: true, address: account.address});
         } else {
           return res.json({success: false, error: "Delegate not found"});
         }
@@ -407,8 +407,8 @@ private.attachApi = function () {
         }
         if (account && account.isDelegate) {
           delete private.keypairs[keypair.publicKey.toString('hex')];
-          return res.json({success: true, address: account.address});
           library.logger.info("Forging disabled on account: " + account.address);
+          return res.json({success: true, address: account.address});
         } else {
           return res.json({success: false, error: "Delegate not found"});
         }
