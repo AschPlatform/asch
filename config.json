@@ -6,7 +6,7 @@
     "version": "0.1.4",
     "fileLogLevel": "info",
     "consoleLogLevel": "log",
-    "nethash": "e2f8f69ec6ab4b12550a314bd867c46e64e429961bb427514a3a534c602ff467",
+    "magic": "43194d2b",
     "api": {
         "access": {
             "whiteList": []

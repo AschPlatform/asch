@@ -232,10 +232,10 @@ describe("GET /blocks/getFees", function () {
     });
 });
 
-describe("GET /blocks/getNethash", function () {
+describe("GET /blocks/getMagic", function () {
 
-    it("Get blockchain nethash. Should be ok", function (done) {
-        node.api.get("/blocks/getNethash")
+    it("Get blockchain magic. Should be ok", function (done) {
+        node.api.get("/blocks/getMagic")
             .set("Accept", "application/json")
             .expect("Content-Type", /json/)
             .expect(200)

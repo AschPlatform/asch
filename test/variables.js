@@ -180,7 +180,7 @@ function addPeers(numOfPeers, cb) {
       headers: {
         "version": version,
         "port": port,
-        "nethash": config.nethash,
+        "magic": config.magic,
         "os": os
       }
     }, function (err, resp, body) {

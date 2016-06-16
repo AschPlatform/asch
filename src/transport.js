@@ -59,16 +59,16 @@ private.attachApi = function () {
           type: "string",
           maxLength: 64
         },
-        'nethash': {
+        'magic': {
           type: 'string',
-          maxLength: 64
+          maxLength: 8
         },
         'version': {
           type: 'string',
           maxLength: 11
         }
       },
-      required: ["port", 'nethash', 'version']
+      required: ["port", 'magic', 'version']
     }, function (err, report, headers) {
       if (err) return next(err);
       if (!report.isValid) return res.status(500).send({status: false, error: report.issues});
@@ -85,7 +85,7 @@ private.attachApi = function () {
         peer.dappid = req.body.dappid;
       }
 
-      if (peer.port > 0 && peer.port <= 65535 && peer.version == library.config.version && req.headers['nethash'] == library.config.nethash) {
+      if (peer.port > 0 && peer.port <= 65535 && peer.version == library.config.version && req.headers['magic'] == library.config.magic) {
         modules.peer.update(peer);
       }
 
@@ -142,12 +142,12 @@ private.attachApi = function () {
               minimum: 1,
               maximum: 65535
             },
-            nethash: {
+            magic: {
               type: "string",
-              maxLength: 64
+              maxLength: 8
             }
           },
-          required: ['port', 'nethash']
+          required: ['port', 'magic']
         });
 
         var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -226,8 +226,8 @@ private.attachApi = function () {
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
 
-    if(req.headers['nethash']!==library.config.nethash){
-      return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.nethash, "received":req.headers['nethash']});
+    if(req.headers['magic']!==library.config.magic){
+      return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.magic, "received":req.headers['magic']});
     }
 
     try {
@@ -320,12 +320,12 @@ private.attachApi = function () {
           minimum: 1,
           maximum: 65535
         },
-        nethash: {
+        magic: {
           type: "string",
-          maxLength: 64
+          maxLength: 8
         }
       },
-      required: ['port', 'nethash']
+      required: ['port', 'magic']
     });
 
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -335,8 +335,8 @@ private.attachApi = function () {
       return res.status(200).json({success: false, message: "Peer is not ready to receive transaction"});
     }
 
-    if(req.headers['nethash']!==library.config.nethash){
-      return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.nethash, "received":req.headers['nethash']});
+    if(req.headers['magic']!==library.config.magic){
+      return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.magic, "received":req.headers['magic']});
     }
     try {
       var transaction = library.base.transaction.objectNormalize(req.body.transaction);
@@ -590,16 +590,16 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
           minimum: 1,
           maximum: 65535
         },
-        'nethash': {
+        'magic': {
           type: "string",
-          maxLength: 64
+          maxLength: 8
         },
         version: {
           type: "string",
           maxLength: 11
         }
       },
-      required: ['port', 'nethash', 'version']
+      required: ['port', 'magic', 'version']
     });
 
     if (!report) {
@@ -633,7 +633,7 @@ Transport.prototype.onBind = function (scope) {
     os: modules.system.getOS(),
     version: modules.system.getVersion(),
     port: modules.system.getPort(),
-    nethash: modules.system.getNethash()
+    magic: modules.system.getMagic()
   }
 }
 

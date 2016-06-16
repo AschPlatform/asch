@@ -14,7 +14,7 @@ function System(cb, scope) {
 
   private.version = library.config.version;
   private.port = library.config.port;
-  private.nethash = library.config.nethash;
+  private.magic = library.config.magic;
   private.osName = os.platform() + os.release();
 
   setImmediate(cb, null, self);
@@ -35,8 +35,8 @@ System.prototype.getPort = function () {
   return private.port;
 }
 
-System.prototype.getNethash = function () {
-  return private.nethash;
+System.prototype.getMagic = function () {
+  return private.magic;
 }
 
 System.prototype.sandboxApi = function (call, args, cb) {

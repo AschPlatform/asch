@@ -14,7 +14,7 @@ describe("POST /peer/transactions", function () {
             node.api.post("/accounts/open")
                 .set("Accept", "application/json")
                 .set("version", node.version)
-                .set("nethash", node.config.nethash)
+                .set("magic", node.config.magic)
                 .set("port", node.config.port)
                 .send({
                     secret: account.password
@@ -26,7 +26,7 @@ describe("POST /peer/transactions", function () {
                     node.api.put("/transactions")
                         .set("Accept", "application/json")
                         .set("version", node.version)
-                        .set("nethash", node.config.nethash)
+                        .set("magic", node.config.magic)
                         .set("port", node.config.port)
                         .send({
                             secret: node.Gaccount.password,
@@ -44,7 +44,7 @@ describe("POST /peer/transactions", function () {
                                 node.peer.post("/transactions")
                                     .set("Accept", "application/json")
                                     .set("version",node.version)
-                                    .set("nethash", node.config.nethash)
+                                    .set("magic", node.config.magic)
                                     .set("port", node.config.port)
                                     .send({
                                         transaction: transaction
@@ -68,7 +68,7 @@ describe("POST /peer/transactions", function () {
             node.peer.post("/transactions")
                 .set("Accept", "application/json")
                 .set("version", node.version)
-                .set("nethash", node.config.nethash)
+                .set("magic", node.config.magic)
                 .set("port", node.config.port)
                 .send({
                     transaction: transaction
@@ -89,7 +89,7 @@ describe("POST /peer/transactions", function () {
             node.peer.post("/transactions")
                 .set("Accept", "application/json")
                 .set("version", node.version)
-                .set("nethash", node.config.nethash)
+                .set("magic", node.config.magic)
                 .set("port", node.config.port)
                 .send({
                     transaction: transaction
@@ -109,7 +109,7 @@ describe("POST /peer/transactions", function () {
             node.peer.post("/transactions")
                 .set("Accept", "application/json")
                 .set("version", node.version)
-                .set("nethash", node.config.nethash)
+                .set("magic", node.config.magic)
                 .set("port", node.config.port)
                 .send({
                     transaction: transaction
@@ -130,7 +130,7 @@ describe("POST /peer/transactions", function () {
             node.peer.post("/transactions")
                 .set("Accept", "application/json")
                 .set("version", node.version)
-                .set("nethash", node.config.nethash)
+                .set("magic", node.config.magic)
                 .set("port", node.config.port)
                 .send({
                     transaction: transaction
@@ -148,7 +148,7 @@ describe("POST /peer/transactions", function () {
             node.api.post("/accounts/open")
                 .set("Accept", "application/json")
                 .set("version", node.version)
-                .set("nethash", node.config.nethash)
+                .set("magic", node.config.magic)
                 .set("port", node.config.port)
                 .send({
                     secret: account2.password
@@ -161,7 +161,7 @@ describe("POST /peer/transactions", function () {
                     node.api.put("/transactions")
                         .set("Accept", "application/json")
                         .set("version", node.version)
-                        .set("nethash", node.config.nethash)
+                        .set("magic", node.config.magic)
                         .set("port", node.config.port)
                         .send({
                             secret: node.Gaccount.password,
@@ -181,7 +181,7 @@ describe("POST /peer/transactions", function () {
                                 node.peer.post("/transactions")
                                     .set("Accept", "application/json")
                                     .set("version", node.version)
-                                    .set("nethash", node.config.nethash)
+                                    .set("magic", node.config.magic)
                                     .set("port", node.config.port)
                                     .send({
                                         transaction: transaction
@@ -198,7 +198,7 @@ describe("POST /peer/transactions", function () {
                                         node.peer.post("/transactions")
                                             .set("Accept", "application/json")
                                             .set("version", node.version)
-                                            .set("nethash", node.config.nethash)
+                                            .set("magic", node.config.magic)
                                             .set("port", node.config.port)
                                             .send({
                                                 transaction: transaction2
