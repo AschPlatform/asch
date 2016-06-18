@@ -16,3 +16,4 @@ ssl/
 stacktrace*
 tmp
 build
+third_party
