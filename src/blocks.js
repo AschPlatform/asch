@@ -864,7 +864,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
           }
 
           // Check payload hash, transaction, number of confirmations
-          var totalAmount = 0, totalFee = 0, payloadHash = crypto.createHash('sha256'), appliedTransactions = {}, acceptedRequests = {}, acceptedConfirmations = {};
+          var totalAmount = 0, totalFee = 0, payloadHash = crypto.createHash('sha256'), appliedTransactions = {};
 
           async.eachSeries(block.transactions, function (transaction, cb) {
             try {

@@ -696,32 +696,20 @@ Account.prototype.merge = function (address, diff, cb) {
           if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
             update.$inc = update.$inc || {};
             update.$inc[value] = trueValue;
-            if (value == "balance") {
-              round.push({
-                query: "insert into mem_round (address, amount, delegate, blockId, round) select $address, $amount, dependentId, $blockId, $round from mem_accounts2delegates where accountId = $address",
-                values: {
-                  address: address,
-                  amount: trueValue,
-                  blockId: diff.blockId,
-                  round: diff.round
-                }
-              });
-            }
-          }
-          else if (trueValue < 0) {
+          } else if (trueValue < 0) {
             update.$dec = update.$dec || {};
             update.$dec[value] = Math.abs(trueValue);
-            if (value == "balance") {
-              round.push({
-                query: "insert into mem_round (address, amount, delegate, blockId, round) select $address, $amount, dependentId, $blockId, $round from mem_accounts2delegates where accountId = $address",
-                values: {
-                  address: address,
-                  amount: trueValue,
-                  blockId: diff.blockId,
-                  round: diff.round
-                }
-              });
-            }
+          }
+          if (trueValue !== 0 && value == "balance") {
+            round.push({
+              query: "insert into mem_round (address, amount, delegate, blockId, round) select $address, $amount, dependentId, $blockId, $round from mem_accounts2delegates where accountId = $address",
+              values: {
+                address: address,
+                amount: trueValue,
+                blockId: diff.blockId,
+                round: diff.round
+              }
+            });
           }
           break;
         case Array:
@@ -750,47 +738,29 @@ Account.prototype.merge = function (address, diff, cb) {
                 val = trueValue[i].slice(1);
                 remove[value] = remove[value] || [];
                 remove[value].push(val);
-                if (value == "delegates") {
-                  round.push({
-                    query: "insert into mem_round (address, amount, delegate, blockId, round) select $address, -balance, $delegate, $blockId, $round from mem_accounts where address = $address",
-                    values: {
-                      address: address,
-                      delegate: val,
-                      blockId: diff.blockId,
-                      round: diff.round
-                    }
-                  });
-                }
               } else if (math == "+") {
                 val = trueValue[i].slice(1);
                 insert[value] = insert[value] || [];
                 insert[value].push(val)
-                if (value == "delegates") {
-                  round.push({
-                    query: "insert into mem_round (address, amount, delegate, blockId, round) select $address, balance, $delegate, $blockId, $round from mem_accounts where address = $address",
-                    values: {
-                      address: address,
-                      delegate: val,
-                      blockId: diff.blockId,
-                      round: diff.round
-                    }
-                  });
-                }
               } else {
                 val = trueValue[i];
                 insert[value] = insert[value] || [];
                 insert[value].push(val)
-                if (value == "delegates") {
-                  round.push({
-                    query: "insert into mem_round (address, amount, delegate, blockId, round) select $address, balance, $delegate, $blockId, $round from mem_accounts where address = $address",
-                    values: {
-                      address: address,
-                      delegate: val,
-                      blockId: diff.blockId,
-                      round: diff.round
-                    }
-                  });
+              }
+              if (value == "delegates") {
+                var balanceField = 'balance';
+                if (math == '-') {
+                  balanceField = '-balance';
                 }
+                round.push({
+                  query: "insert into mem_round (address, amount, delegate, blockId, round) select $address, " + balanceField + ", $delegate, $blockId, $round from mem_accounts where address = $address",
+                  values: {
+                    address: address,
+                    delegate: val,
+                    blockId: diff.blockId,
+                    round: diff.round
+                  }
+                });
               }
             }
           }
