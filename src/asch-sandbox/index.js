@@ -1,15 +1,14 @@
-var EventEmitter = require('events').EventEmitter,
-    util = require('util'),
-    spawn = require('child_process').spawn,
-    path = require('path'),
-    querystring = require('querystring'),
-    async = require('async');
+var EventEmitter = require('events').EventEmitter;
+var util = require('util');
+var fs = require('fs');
+var path = require('path');
+var querystring = require('querystring');
+var Sandbox = require('./sandbox');
+var async = require('async');
 
 var callbacks = {};
-var magic = "=%5a$ng*a8=";
-var magicData = "";
 
-function Sandbox(file, id, params, apiHandler, debug) {
+function SandboxWrapper(file, id, params, apiHandler, debug) {
 	EventEmitter.call(this);
 
 	if (typeof file !== "string" || file === undefined || file === null) {
@@ -29,13 +28,17 @@ function Sandbox(file, id, params, apiHandler, debug) {
 	this.id = id;
 	this.apiHandler = apiHandler;
 	this.child = null;
-	this.queue = null;
 	this.debug = debug || false;
+	this.callbackCounter = 1;
 }
 
-util.inherits(Sandbox, EventEmitter);
+util.inherits(SandboxWrapper, EventEmitter);
 
-Sandbox.prototype._parse = function (data) {
+SandboxWrapper.prototype._getCallbackCounter = function() {
+	return this.callbackCounter++;
+}
+
+SandboxWrapper.prototype._parse = function (data) {
 	try {
 		var json = JSON.parse(data);
 	} catch (e) {
@@ -66,6 +69,7 @@ Sandbox.prototype._parse = function (data) {
 		var error = json.error;
 		var response = json.response;
 
+		delete callbacks[callback_id];
 		setImmediate(callback, error, response);
 	} else if (json.type == "dapp_call") {
 		var message = json.message;
@@ -90,110 +94,74 @@ Sandbox.prototype._parse = function (data) {
 				return this._onError(new Error("Can't make response: " + e.toString()));
 			}
 
-			this.queue.push({message: responseString + magic});
+			this.child.postMessage(responseString);
 		}.bind(this));
 	} else {
 		this._onError(new Error("Incorrect response type from vm"));
 	}
 }
 
-Sandbox.prototype.run = function () {
-	this.child = spawn(path.join(__dirname, "../../third_party/node"), [this.file].concat(this.params), {
-		stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
-	});
-
+SandboxWrapper.prototype.run = function () {
+	this.child = new Sandbox();
 	var self = this;
-
-	this.queue = async.queue(function (task, callback) {
-		try {
-			var size = Buffer.byteLength(task.message, 'utf8');
-			if (size > 16000) {
-				console.log("incoming " + (size) + " bytes");
-			}
-			self.child.stdio[3].write(task.message);
-		} catch (e) {
-			console.log(e.toString())
-		} finally {
-			setTimeout(callback, 10);
+	fs.readFile(this.file, 'utf8', function(err, code) {
+		if (err) {
+			return self._onError('failed to read dapp entry point file: ' + err);
 		}
-	}, 1);
-
-	// Catch errors...
-	this.child.on('error', this._onError.bind(this));
-	this.child.stdio[0].on('error', this._onError.bind(this));
-	this.child.stdio[1].on('error', this._onError.bind(this));
-	this.child.stdio[2].on('error', this._onError.bind(this));
-	this.child.stdio[3].on('error', this._onError.bind(this));
-	this.child.stdio[4].on('error', this._onError.bind(this));
-
-	this.child.stdio[4].on('data', this._listen.bind(this));
-
-	if (this.debug) {
-		this.child.stdio[1].on('data', this._debug.bind(this));
-	}
-
-	this.child.stdio[2].on('data', this._debug.bind(this));
+		self.child.run(code, function(err) {
+			return self._onError('dapp exit with reason: ' + err.result);
+		});
+		
+		self.child.on('error', self._onError.bind(self));
+		if (self.debug) {
+			self.child.on('stdout', self._debug.bind(self));	
+		}
+		self.child.on('stderr', self._debug.bind(self));
+		self.child.on('message', self._parse.bind(self));
+	});
 }
 
-Sandbox.prototype.setApi = function (apiHanlder) {
+SandboxWrapper.prototype.setApi = function (apiHanlder) {
 	if (typeof apiHanlder != "function" || apiHanlder === null || apiHanlder === undefined) {
 		throw new Error("First argument should be a function");
 	}
 	this.apiHandler = apiHanlder;
 }
 
-Sandbox.prototype.sendMessage = function (message, callback) {
-	var callback_id = Object.keys(callbacks).length + 1;
-
+SandboxWrapper.prototype.sendMessage = function (message, callback) {
+	var callback_id = this._getCallbackCounter();
 	var messageObj = {
 		callback_id: callback_id,
 		type: "asch_call",
 		message: message
 	};
-
+	
 	try {
 		var messageString = JSON.stringify(messageObj);
 	} catch (e) {
 		return setImmediate(callback, "Can't stringify message: " + e.toString());
 	}
 
-	this.queue.push({message: messageString + magic});
-
 	callbacks[callback_id] = callback;
+	this.child.postMessage(messageString);
 }
 
-Sandbox.prototype.exit = function () {
+SandboxWrapper.prototype.exit = function () {
 	if (this.child) {
-		this.child.kill();
+		// this.child.kill();
 		this.emit("exit");
 	}
 }
 
-Sandbox.prototype._debug = function (data) {
+SandboxWrapper.prototype._debug = function (data) {
 	console.log("Debug " + this.file + ": \n");
 	console.log(data.toString('utf8'));
 }
 
-Sandbox.prototype._onError = function (err) {
+SandboxWrapper.prototype._onError = function (err) {
 	console.log(err.stack)
 	this.exit();
 	this.emit("error", err);
 }
 
-Sandbox.prototype._listen = function (dataraw) {
-	var data = querystring.unescape(dataraw.toString('utf8'));
-	magicData += data;
-	if (data.substring(data.length - 11) == magic) {
-		var fullMessage = magicData;
-		magicData = "";
-
-		var parts = fullMessage.split(magic);
-		parts.pop();
-		parts.forEach(function (jsonmessage) {
-			this._parse(jsonmessage);
-		}.bind(this));
-
-	}
-}
-
-module.exports = Sandbox;
+module.exports = SandboxWrapper;
