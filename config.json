@@ -145,6 +145,14 @@
   "dapp": {
     "masterrequired": true,
     "masterpassword": "npmWkFJhBnnd",
-    "autoexec": []
+    "autoexec": [
+      {
+        "params": [
+          "shanqing",
+          "modules.full.json"
+        ],
+        "dappid": "9165343538974939181"
+      }
+    ]
   }
 }

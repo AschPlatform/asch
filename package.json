@@ -19,6 +19,7 @@
     "commander": "~2.6.0",
     "compression": "^1.6.1",
     "decompress-zip": "https://github.com/sqfasd/decompress-zip/tarball/master",
+    "ed25519": "0.0.4",
     "ejs": "^2.4.2",
     "esprima": "~1.2.3",
     "express": "4.x",
