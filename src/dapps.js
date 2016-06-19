@@ -1827,7 +1827,7 @@ private.launch = function (body, cb) {
       if (err) {
         private.launched[body.id] = false;
         library.logger.error(err);
-        return cb("Failed to find dapp");
+        return cb("Failed to find dapp: " + body.id);
       } else {
         private.getInstalledIds(function (err, files) {
           if (err) {
