@@ -21,7 +21,7 @@ function Sandbox(options) {
   self._message_queue = [];
 
   self.options = {
-    timeout: 50000,
+    timeout: 0,
     node:    'node',
     shovel:  path.join(__dirname, 'shovel.js')
   };
@@ -82,7 +82,9 @@ Sandbox.prototype.run = function(code, hollaback) {
   });
 
   self.child.on('exit', function(code) {
-    clearTimeout(timer);
+    if (self.options.timeout > 0 && timer) {
+      clearTimeout(timer);
+    }
     setImmediate(function(){
       if (!stdout) {
         hollaback({ result: '', console: [] });
@@ -102,12 +104,14 @@ Sandbox.prototype.run = function(code, hollaback) {
   self.child.stdin.write(code);
   self.child.stdin.end();
 
-  self.child.timer = setTimeout(function() {
-    this.parent.stdout.removeListener('output', output);
-    stdout = JSON.stringify({ result: 'TimeoutError', console: [] });
-    this.parent.kill('SIGKILL');
-  }, self.options.timeout);
-  self.child.timer.parent = self.child;
+  if (self.options.timeout > 0) {
+    self.child.timer = setTimeout(function () {
+      this.parent.stdout.removeListener('output', output);
+      stdout = JSON.stringify({ result: 'TimeoutError', console: [] });
+      this.parent.kill('SIGKILL');
+    }, self.options.timeout);
+    self.child.timer.parent = self.child; 
+  }
 
 };
 
