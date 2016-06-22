@@ -1627,7 +1627,9 @@ private.downloadLink = function (dapp, dappPath, cb) {
       });
 
       download.on("error", function (err) {
-        fs.unlink(tmpPath);
+        fs.exists(tmpPath, function (exists) {
+          fs.unlink(tmpPath);
+        });
         return serialCb(err.message);
       });
 
@@ -1641,14 +1643,18 @@ private.downloadLink = function (dapp, dappPath, cb) {
       var unzipper = new DecompressZip(tmpPath)
 
       unzipper.on("error", function (err) {
-        fs.unlink(tmpPath);
+        fs.exists(tmpPath, function (exists) {
+          fs.unlink(tmpPath);
+        });
         rmdir(dappPath);
         serialCb("Failed to decompress zip file: " + err);
       });
 
       unzipper.on("extract", function (log) {
         library.logger.info(dapp.transactionId + " Finished extracting");
-        fs.unlink(tmpPath);
+        fs.exists(tmpPath, function (exists) {
+          fs.unlink(tmpPath);
+        });
         serialCb(null);
       });
 
