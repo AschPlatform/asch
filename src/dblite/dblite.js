@@ -24,52 +24,52 @@
 var
 	sqlTest = "",
 	isArray = Array.isArray,
-// used to generate unique "end of the query" identifiers
+	// used to generate unique "end of the query" identifiers
 	crypto = require('crypto'),
-// relative, absolute, and db paths are normalized anyway
+	// relative, absolute, and db paths are normalized anyway
 	path = require('path'),
-// each dblite(fileName) instance is an EventEmitter
+	// each dblite(fileName) instance is an EventEmitter
 	EventEmitter = require('events').EventEmitter,
-// used to perform some fallback
+	// used to perform some fallback
 	WIN32 = process.platform === 'win32',
-// what kind of Path Separator we have here ?
+	// what kind of Path Separator we have here ?
 	PATH_SEP = path.sep || (
-			WIN32 ? '\\' : '/'
+		WIN32 ? '\\' : '/'
 		),
-// each dblite instance spawns a process once
-// and interact with that shell for the whole session
-// one spawn per database and no more (on avg 1 db is it)
+	// each dblite instance spawns a process once
+	// and interact with that shell for the whole session
+	// one spawn per database and no more (on avg 1 db is it)
 	spawn = require('child_process').spawn,
-// use to re-generate Date objects
+	// use to re-generate Date objects
 	DECIMAL = /^[1-9][0-9]*$/,
-// verify if it's a select or not
+	// verify if it's a select or not
 	SELECT = /^(?:select|SELECT|pragma|PRAGMA) /,
-// for simple query replacements: WHERE field = ?
+	// for simple query replacements: WHERE field = ?
 	REPLACE_QUESTIONMARKS = /\?/g,
-// for named replacements: WHERE field = :data
+	// for named replacements: WHERE field = :data
 	REPLACE_PARAMS = /(?:\:|\@|\$)([a-zA-Z_0-9$]+)/g,
-// the way CSV threats double quotes
+	// the way CSV threats double quotes
 	DOUBLE_DOUBLE_QUOTES = /""/g,
-// to escape strings
+	// to escape strings
 	SINGLE_QUOTES = /'/g,
-// to use same escaping logic for double quotes
-// except it makes escaping easier for JSON data
-// which usually is full of "
+	// to use same escaping logic for double quotes
+	// except it makes escaping easier for JSON data
+	// which usually is full of "
 	SINGLE_QUOTES_DOUBLED = "''",
-// to verify there are named fields/parametes
+	// to verify there are named fields/parametes
 	HAS_PARAMS = /(?:\?|(?:(?:\:|\@|\$)[a-zA-Z_0-9$]+))/,
-// shortcut used as deafault notifier
+	// shortcut used as deafault notifier
 	log = console.log.bind(console),
-// the default binary as array of paths
+	// the default binary as array of paths
 	bin = ['sqlite3'],
-// private shared variables
-// avoid creation of N functions
-// keeps memory low and improves performance
+	// private shared variables
+	// avoid creation of N functions
+	// keeps memory low and improves performance
 	paramsIndex,  // which index is the current
 	paramsArray,  // which value when Array
 	paramsObject, // which value when Object (named parameters)
 	IS_NODE_06 = false, // dirty things to do there ...
-// defned later on
+	// defned later on
 	EOL, EOL_LENGTH,
 	SANITIZER, SANITIZER_REPLACER,
 	defineCSVEOL = function () {
@@ -82,7 +82,7 @@ var
 		sqliteVersion = String(dblite.sqliteVersion || '')
 			.replace(/[^.\d]/g, '')
 			.split('.')
-		;
+			;
 
 		// what kind of End Of Line we have here ?
 		// EOL not worked on Windows 7 with sqlite3 (3.8.8.1), because it's return \n, not Windows EOF \r\n
@@ -111,8 +111,8 @@ var
 
 		// makes EOL safe for strings passed to the shell
 		SANITIZER = new RegExp("[;" + EOL.split('').map(function (c) {
-				return '\\x' + ('0' + c.charCodeAt(0).toString(16)).slice(-2);
-			}).join('') + "]+$");
+			return '\\x' + ('0' + c.charCodeAt(0).toString(16)).slice(-2);
+		}).join('') + "]+$");
 
 		// used to mark the end of each line passed to the shell
 		SANITIZER_REPLACER = ';' + EOL;
@@ -153,22 +153,22 @@ var
 function dblite() {
 	defineCSVEOL();
 	var
-	// this is the delimiter of each sqlite3 shell command
+		// this is the delimiter of each sqlite3 shell command
 		SUPER_SECRET = '---' +
 			crypto.randomBytes(64).toString('base64') +
 			'---',
-	// ... I wish .print was introduced before SQLite 3.7.10 ...
-	// this is a weird way to get rid of the header, if enabled
+		// ... I wish .print was introduced before SQLite 3.7.10 ...
+		// this is a weird way to get rid of the header, if enabled
 		SUPER_SECRET_SELECT = '"' + SUPER_SECRET + '" AS "' + SUPER_SECRET + '";' + EOL,
-	// used to check the end of a buffer
+		// used to check the end of a buffer
 		SUPER_SECRET_LENGTH = -(SUPER_SECRET.length + EOL_LENGTH),
-	// the incrementally concatenated buffer
-	// cleaned up as soon as the current command has been completed
+		// the incrementally concatenated buffer
+		// cleaned up as soon as the current command has been completed
 		selectResult = '',
-	// the current dblite "instance"
+		// the current dblite "instance"
 		self = new EventEmitter(),
-	// usually the database file or ':memory:' only
-	// the "spawned once" program, will be used for the whole session
+		// usually the database file or ':memory:' only
+		// the "spawned once" program, will be used for the whole session
 		program = spawn(
 			// executable only, folder needs to be specified a part
 			bin.length === 1 ? bin[0] : ('.' + PATH_SEP + bin[bin.length - 1]),
@@ -189,32 +189,32 @@ function dblite() {
 				stdio: ['pipe', 'pipe', 'pipe'] // handled here
 			}
 		),
-	// sqlite3 shell can produce one output per time
-	// evey operation performed through this wrapper
-	// should not bother the program until next
-	// available slot. This queue helps keeping
-	// requests ordered without stressing the system
-	// once things will be ready, callbacks will be notified
-	// accordingly. As simple as that ^_^
+		// sqlite3 shell can produce one output per time
+		// evey operation performed through this wrapper
+		// should not bother the program until next
+		// available slot. This queue helps keeping
+		// requests ordered without stressing the system
+		// once things will be ready, callbacks will be notified
+		// accordingly. As simple as that ^_^
 		queue = [],
-	// set as true only once db.close() has been called
+		// set as true only once db.close() has been called
 		notWorking = false,
-	// marks the shell busy or not
+		// marks the shell busy or not
 		busy = false,
-	// tells if current output needs to be processed
+		// tells if current output needs to be processed
 		wasSelect = false,
 		wasNotSelect = false,
 		wasError = false,
 		longRequest = false,
 		memoryCount = 0,
-	// forces the output not to be processed
-	// might be handy in some case where it's passed around
-	// as string instread of needing to serialize/unserialize
-	// the list of already arrays or objects
+		// forces the output not to be processed
+		// might be handy in some case where it's passed around
+		// as string instread of needing to serialize/unserialize
+		// the list of already arrays or objects
 		dontParseCSV = false,
-	// one callback per time will be notified
+		// one callback per time will be notified
 		$callback,
-	// recycled variable for fields operation
+		// recycled variable for fields operation
 		$fields
 		;
 
@@ -362,7 +362,7 @@ function dblite() {
 				next();
 				// if there was actually a callback to call
 				if (callback) {
-					rows = ( !dontParseCSVLocal && fields) ? (
+					rows = (!dontParseCSVLocal && fields) ? (
 						// and if there was a need to parse each row
 						isArray(fields) ?
 							// as object with properties
@@ -373,7 +373,7 @@ function dblite() {
 						// go for it ... otherwise returns the result as it is:
 						// an Array of Arrays
 						result
-					;
+						;
 					// if there was an error signature
 					if (1 < callback.length) {
 						callback.call(self, null, rows);
@@ -500,137 +500,145 @@ function dblite() {
 			dontParseCSV = string.dontParse;
 			string = string.query;
 		}
-		wasSelect = SELECT.test(string);
-		sqlTest = "";
-		if (wasSelect) {
-			sqlTest = string + " " + (Object.prototype.toString.call(params) == "[object Object]" ? JSON.stringify(params): "");
+		try {
+			wasSelect = SELECT.test(string);
+			sqlTest = "";
+			if (wasSelect) {
+				sqlTest = string + " " + (Object.prototype.toString.call(params) == "[object Object]" ? JSON.stringify(params) : "");
 
-			// SELECT and PRAGMA makes `dblite` busy
-			busy = true;
-			switch (arguments.length) {
-				// all arguments passed, nothing to do
-				case 4:
-					$callback = callback;
-					$fields = fields;
-					string = replaceString(string, params);
-					break;
-				// 3 arguments passed ...
-				case 3:
-					// is the last one the callback ?
-					if (typeof fields == 'function') {
-						// assign it
-						$callback = fields;
-						fields = null;
-						// has string parameters to repalce
-						// such ? or :id and others ?
-						if (HAS_PARAMS.test(string)) {
-							// no objectification and/or validation needed
-							$fields = null;
-							// string replaced wit parameters
-							string = replaceString(string, params);
+				// SELECT and PRAGMA makes `dblite` busy
+				busy = true;
+				switch (arguments.length) {
+					// all arguments passed, nothing to do
+					case 4:
+						$callback = callback;
+						$fields = fields;
+						string = replaceString(string, params);
+						break;
+					// 3 arguments passed ...
+					case 3:
+						// is the last one the callback ?
+						if (typeof fields == 'function') {
+							// assign it
+							$callback = fields;
+							fields = null;
+							// has string parameters to repalce
+							// such ? or :id and others ?
+							if (HAS_PARAMS.test(string)) {
+								// no objectification and/or validation needed
+								$fields = null;
+								// string replaced wit parameters
+								string = replaceString(string, params);
+							} else {
+								// no replacement in the SQL needed
+								// objectification with validation
+								// if specified, will manage the result
+								$fields = params;
+							}
 						} else {
-							// no replacement in the SQL needed
-							// objectification with validation
-							// if specified, will manage the result
-							$fields = params;
+							// no callback specified at all, probably in "dev mode"
+							$callback = log;  // just log the result
+							$fields = fields; // use objectification
+							string = replaceString(string, params); // replace parameters
 						}
-					} else {
-						// no callback specified at all, probably in "dev mode"
-						$callback = log;  // just log the result
-						$fields = fields; // use objectification
-						string = replaceString(string, params); // replace parameters
-					}
-					break;
-				// in this case ...
-				case 2:
-					// simple query with a callback
-					if (typeof params == 'function') {
-						// no objectification
-						$fields = null;
-						// callback is params argument
-						$callback = params;
-					} else {
-						// "dev mode", just log
-						$callback = log;
-						// if there's something to replace
-						if (HAS_PARAMS.test(string)) {
+						break;
+					// in this case ...
+					case 2:
+						// simple query with a callback
+						if (typeof params == 'function') {
 							// no objectification
 							$fields = null;
-							string = replaceString(string, params);
+							// callback is params argument
+							$callback = params;
 						} else {
-							// nothing to replace
-							// objectification with eventual validation
-							$fields = params;
+							// "dev mode", just log
+							$callback = log;
+							// if there's something to replace
+							if (HAS_PARAMS.test(string)) {
+								// no objectification
+								$fields = null;
+								string = replaceString(string, params);
+							} else {
+								// nothing to replace
+								// objectification with eventual validation
+								$fields = params;
+							}
 						}
-					}
-					break;
-				default:
-					// 1 argument, the SQL string and nothing else
-					// "dev mode" log will do
-					$callback = log;
-					$fields = null;
-					break;
-			}
-			// ask the sqlite3 shell ...
-			program.stdin.write(
-				// trick to always know when the console is not busy anymore
-				// specially for those cases where no result is shown
-				sanitize(string) + 'SELECT ' + SUPER_SECRET_SELECT
-			);
-		} else {
-			// if db.plain() was used but this is not a SELECT or PRAGMA
-			// something is wrong with the logic since no result
-			// was expected anyhow
-			if (dontParseCSV) {
-				dontParseCSV = false;
-				throw new Error('not a select');
-			} else if (string[0] === '.') {
-				// .commands are special queries .. so
-				// .commands make `dblite` busy
-				busy = true;
-				// same trick with the secret to emit('info', resultAsString)
-				// once everything is done
-				program.stdin.write(string + EOL + 'SELECT ' + SUPER_SECRET_SELECT);
+						break;
+					default:
+						// 1 argument, the SQL string and nothing else
+						// "dev mode" log will do
+						$callback = log;
+						$fields = null;
+						break;
+				}
+				// ask the sqlite3 shell ...
+				program.stdin.write(
+					// trick to always know when the console is not busy anymore
+					// specially for those cases where no result is shown
+					sanitize(string) + 'SELECT ' + SUPER_SECRET_SELECT
+				);
 			} else {
-				switch (arguments.length) {
-					case 1:
-					/* falls through */
-					case 2:
-						if (typeof params !== 'function') {
-							// no need to make the shell busy
-							// since no output is shown at all (errors ... eventually)
-							// sqlite3 shell will take care of the order
-							// same as writing in a linux shell while something else is going on
-							// who cares, will show when possible, after current job ^_^
-							program.stdin.write(sanitize(HAS_PARAMS.test(string) ?
+				// if db.plain() was used but this is not a SELECT or PRAGMA
+				// something is wrong with the logic since no result
+				// was expected anyhow
+				if (dontParseCSV) {
+					dontParseCSV = false;
+					throw new Error('not a select');
+				} else if (string[0] === '.') {
+					// .commands are special queries .. so
+					// .commands make `dblite` busy
+					busy = true;
+					// same trick with the secret to emit('info', resultAsString)
+					// once everything is done
+					program.stdin.write(string + EOL + 'SELECT ' + SUPER_SECRET_SELECT);
+				} else {
+					switch (arguments.length) {
+						case 1:
+						/* falls through */
+						case 2:
+							if (typeof params !== 'function') {
+								// no need to make the shell busy
+								// since no output is shown at all (errors ... eventually)
+								// sqlite3 shell will take care of the order
+								// same as writing in a linux shell while something else is going on
+								// who cares, will show when possible, after current job ^_^
+								program.stdin.write(sanitize(HAS_PARAMS.test(string) ?
 									replaceString(string, params) :
 									string
-							));
-							// keep checking for possible following operations
-							setImmediate(next);
-							break;
-						}
-						fields = params;
-						// not necessary but guards possible wrong replaceString
-						params = null;
-					/* falls through */
-					case 3:
-						// execute a non SELECT/PRAGMA statement
-						// and be notified once it's done.
-						// set state as busy
-						busy = wasNotSelect = true;
-						$callback = fields;
-						program.stdin.write(
-							(sanitize(
-								HAS_PARAMS.test(string) ?
-									replaceString(string, params) :
-									string
-							)) +
-							EOL + 'SELECT ' + SUPER_SECRET_SELECT
-						);
+								));
+								// keep checking for possible following operations
+								setImmediate(next);
+								break;
+							}
+							fields = params;
+							// not necessary but guards possible wrong replaceString
+							params = null;
+						/* falls through */
+						case 3:
+							// execute a non SELECT/PRAGMA statement
+							// and be notified once it's done.
+							// set state as busy
+							busy = wasNotSelect = true;
+							$callback = fields;
+							program.stdin.write(
+								(sanitize(
+									HAS_PARAMS.test(string) ?
+										replaceString(string, params) :
+										string
+								)) +
+								EOL + 'SELECT ' + SUPER_SECRET_SELECT
+							);
+					}
 				}
 			}
+		} catch (e) {
+			busy = false;
+			if ($callback) {
+				$callback(new Error('got exception: ' + e.toString()));
+			}
 		}
+		
 		// chainability just useful here for multiple queries at once
 		return self;
 	};
@@ -696,7 +704,7 @@ function parseCSV(output) {
 			 endLine,
 			 iNext,
 			 str;
-		 i < length; i++
+		i < length; i++
 	) {
 		switch (output[i]) {
 			case '"':
@@ -725,10 +733,10 @@ function parseCSV(output) {
 		}
 		fields[index++] = str;
 		if (output[i = iNext] === EOL[0] && (
-				EOL_LENGTH === 1 || (
-					output[i + 1] === EOL[1] && ++i
-				)
+			EOL_LENGTH === 1 || (
+				output[i + 1] === EOL[1] && ++i
 			)
+		)
 		) {
 			rows[rindex++] = fields;
 			fields = [];
@@ -754,14 +762,14 @@ function parseFields($fields) {
 		current = $fields[fields[i]];
 		parsers[i] = current === Boolean ?
 			$Boolean : (
-			current === Date ?
-				$Date :
-			current || String
-		)
-		;
+				current === Date ?
+					$Date :
+					current || String
+			)
+			;
 	}
 
-	return {f: fields, p: parsers};
+	return { f: fields, p: parsers };
 }
 
 // transform SQL strings using parameters
@@ -845,8 +853,8 @@ function escape(what) {
 	switch (typeof what) {
 		case 'string':
 			return "'" + what.replace(
-					SINGLE_QUOTES, SINGLE_QUOTES_DOUBLED
-				) + "'";
+				SINGLE_QUOTES, SINGLE_QUOTES_DOUBLED
+			) + "'";
 		case 'object':
 			if (what == null) {
 				return 'null';

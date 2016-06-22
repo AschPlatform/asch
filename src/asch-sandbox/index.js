@@ -39,6 +39,7 @@ SandboxWrapper.prototype._getCallbackCounter = function() {
 }
 
 SandboxWrapper.prototype._parse = function (data) {
+	//console.log('receive dapp msg', data);
 	try {
 		var json = JSON.parse(data);
 	} catch (e) {
