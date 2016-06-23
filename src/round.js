@@ -184,6 +184,23 @@ Round.prototype.backwardTick = function (block, previousBlock, cb) {
             rewards: -changeRewards
           }, next);
         }, cb);
+      },
+      function (cb) {
+        self.getVotes(round, function (err, votes) {
+          if (err) {
+            return cb(err);
+          }
+          async.eachSeries(votes, function (vote, cb) {
+            library.dbLite.query('update mem_accounts set vote = vote + $amount where address = $address', {
+              address: modules.accounts.generateAddressByPublicKey(vote.delegate),
+              amount: vote.amount
+            }, cb);
+          }, function (err) {
+            self.flush(round, function (err2) {
+              cb(err || err2);
+            });
+          })
+        });
       }
     ], function (err) {
       delete private.unFeesByRound[round];
@@ -301,8 +318,22 @@ Round.prototype.tick = function (block, cb) {
         }, cb);
       },
       function (cb) {
-        library.bus.message('finishRound', round);
-        cb();
+        self.getVotes(round, function (err, votes) {
+          if (err) {
+            return cb(err);
+          }
+          async.eachSeries(votes, function (vote, cb) {
+            library.dbLite.query('update mem_accounts set vote = vote + $amount where address = $address', {
+              address: modules.accounts.generateAddressByPublicKey(vote.delegate),
+              amount: vote.amount
+            }, cb);
+          }, function (err) {
+            library.bus.message('finishRound', round);
+            self.flush(round, function (err2) {
+              cb(err || err2);
+            });
+          })
+        });
       }
     ], function (err) {
       delete private.feesByRound[round];
