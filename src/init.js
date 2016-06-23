@@ -12,7 +12,6 @@ var moduleNames = [
   'server',
   'accounts',
   'transactions',
-  'blocks',
   'signatures',
   'transport',
   'loader',
@@ -23,6 +22,7 @@ var moduleNames = [
   'multisignatures',
   'dapps',
   'sql',
+  'blocks',
 ];
 
 module.exports = function(options, done) {
@@ -382,7 +382,7 @@ module.exports = function(options, done) {
           });
         }
       });
-      async.parallel(tasks, function (err, results) {
+      async.series(tasks, function (err, results) {
         cb(err, results);
       });
     }]
