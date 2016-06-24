@@ -82,27 +82,6 @@ describe("POST /peer/transactions", function () {
                 });
         });
 
-        it("When account has funds. Username is uppercase. Should fail", function (done) {
-            account.username = node.randomDelegateName().toUpperCase();
-            var transaction = node.asch.delegate.createDelegate(account.password, account.username);
-
-            node.peer.post("/transactions")
-                .set("Accept", "application/json")
-                .set("version", node.version)
-                .set("magic", node.config.magic)
-                .set("port", node.config.port)
-                .send({
-                    transaction: transaction
-                })
-                .expect("Content-Type", /json/)
-                .expect(200)
-                .end(function (err, res) {
-                    console.log(JSON.stringify(res.body));
-                    node.expect(res.body).to.have.property("success").to.be.false;
-                    done();
-                });
-        });
-
         it("When account has funds. Username is uppercase, Lowercase username already registered. Should fail", function (done) {
             var transaction = node.asch.delegate.createDelegate(account2.password, account.username.toUpperCase());
 
