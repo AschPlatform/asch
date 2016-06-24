@@ -7,13 +7,13 @@ var genesisblock = require("../../genesisBlock.json");
 
 describe("POST /peer/transactions", function () {
 
-    it("Using valid transaction with wrong nethash in headers. Should fail", function (done) {
+    it("Using valid transaction with wrong magic in headers. Should fail", function (done) {
         var transaction = node.asch.transaction.createTransaction("1L", 1, node.Gaccount.password);
 
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", "wrongnethash")
+            .set("magic", "wrongmagic")
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -23,18 +23,18 @@ describe("POST /peer/transactions", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
-                node.expect(res.body.expected).to.equal(node.config.nethash);
+                node.expect(res.body.expected).to.equal(node.config.magic);
                 done();
             });
     });
 
-    it("Using same valid transaction with correct nethash in headers. Should be ok", function (done) {
+    it("Using same valid transaction with correct magic in headers. Should be ok", function (done) {
         var transaction = node.asch.transaction.createTransaction("1L", 1, node.Gaccount.password);
 
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", node.config.nethash)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -53,7 +53,7 @@ describe("POST /peer/transactions", function () {
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", node.config.nethash)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -73,7 +73,7 @@ describe("POST /peer/transactions", function () {
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", node.config.nethash)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -95,7 +95,7 @@ describe("POST /peer/transactions", function () {
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", node.config.nethash)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -115,7 +115,7 @@ describe("POST /peer/transactions", function () {
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", node.config.nethash)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -137,7 +137,7 @@ describe("POST /peer/transactions", function () {
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", node.config.nethash)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -159,7 +159,7 @@ describe("POST /peer/transactions", function () {
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", node.config.nethash)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -180,7 +180,7 @@ describe("POST /peer/transactions", function () {
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", node.config.nethash)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -199,7 +199,7 @@ describe("POST /peer/transactions", function () {
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", node.config.nethash)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -219,7 +219,7 @@ describe("POST /peer/transactions", function () {
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("nethash", node.config.nethash)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .send({
                 transaction: transaction

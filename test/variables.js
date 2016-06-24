@@ -36,8 +36,8 @@ var Fees = {
 };
 
 var guestbookDapp = {
-  icon: "https://raw.githubusercontent.com/MaxKK/guestbookDapp/master/icon.png",
-  link: "https://github.com/MaxKK/guestbookDapp/archive/master.zip"
+  icon: "https://ico.asch.so/favicon.ico",
+  link: "https://github.com/sqfasd/hello-dapp/archive/master.zip"
 };
 
 // Account info for delegate to register manually

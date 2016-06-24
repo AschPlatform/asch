@@ -242,11 +242,11 @@ describe("GET /blocks/getMagic", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.true;
-                if (res.body.success == true && res.body.nethash != null) {
-                    node.expect(res.body).to.have.property("nethash");
-                    node.expect(res.body.nethash).to.equal(node.config.nethash);
+                if (res.body.success == true && res.body.magic != null) {
+                    node.expect(res.body).to.have.property("magic");
+                    node.expect(res.body.magic).to.equal(node.config.magic);
                 } else {
-                    console.log("Request failed or nethash is null");
+                    console.log("Request failed or magic is null");
                 }
                 done();
             });

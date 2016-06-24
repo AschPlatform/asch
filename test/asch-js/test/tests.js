@@ -330,8 +330,8 @@ describe("Asch JS", function () {
 				description: "The official Asch guestbook",
 				tags: "guestbook message sidechain",
 				type: 0,
-				link: "https://github.com/MaxKK/guestbookDapp/archive/master.zip",
-				icon: "https://raw.githubusercontent.com/MaxKK/guestbookDapp/master/icon.png"
+				link: "https://github.com/sqfasd/hello-dapp/archive/master.zip",
+				icon: "https://ico.asch.so/favicon.ico"
 			};
 
 			it("should be a function", function () {
