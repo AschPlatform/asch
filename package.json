@@ -56,6 +56,7 @@
     "grunt-exec": "^0.4.6",
     "grunt-jsdox": "^0.1.7",
     "grunt-obfuscator": "^0.1.0",
+    "js-nacl": "=0.6.0",
     "jsdox": "~0.4.9",
     "lodash": "^3.9.3",
     "mocha": "^2.2.5",
