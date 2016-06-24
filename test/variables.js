@@ -23,7 +23,7 @@ var peer = supertest(baseUrl + "/peer");
 var normalizer = 100000000; // Use this to convert XAS amount to normal value
 var blockTime = 10000; // Block time in miliseconds
 var blockTimePlus = 12000; // Block time + 2 seconds in miliseconds
-var version = "0.2.1" // Node version
+var version = "0.9.0" // Node version
 
 // Holds Fee amounts for different transaction types
 var Fees = {
@@ -36,7 +36,7 @@ var Fees = {
 };
 
 var guestbookDapp = {
-  icon: "https://ico.asch.so/favicon.ico",
+  icon: "http://o7dyh3w0x.bkt.clouddn.com/logo.png",
   link: "https://github.com/sqfasd/hello-dapp/archive/master.zip"
 };
 

@@ -331,7 +331,7 @@ describe("Asch JS", function () {
 				tags: "guestbook message sidechain",
 				type: 0,
 				link: "https://github.com/sqfasd/hello-dapp/archive/master.zip",
-				icon: "https://ico.asch.so/favicon.ico"
+				icon: "http://o7dyh3w0x.bkt.clouddn.com/logo.png"
 			};
 
 			it("should be a function", function () {
