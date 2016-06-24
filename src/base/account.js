@@ -842,73 +842,49 @@ Account.prototype.merge = function (address, diff, cb) {
     sqles.push(sql);
   }
 
-  function done(err) {
-    if (cb.length != 2) {
-      return cb(err);
-    } else {
-      if (err) {
-        return cb(err);
-      }
-      self.get({address: address}, cb);
-    }
-  }
+  // function done(err) {
+  //   if (cb.length != 2) {
+  //     return cb(err);
+  //   } else {
+  //     if (err) {
+  //       return cb(err);
+  //     }
+  //     self.get({address: address}, cb);
+  //   }
+  // }
 
   async.series([
-    function (cb) {
-      if (sqles.length > 1) {
-        self.scope.dbLite.query('BEGIN TRANSACTION;');
-      }
+    function (next) {
+      self.scope.dbLite.query('SAVEPOINT merge');
 
-      async.eachSeries(sqles, function (sql, cb) {
-        self.scope.dbLite.query(sql.query, sql.values, function (err, data) {
-          cb(err, data);
-        });
-      }, function (err) {
-        if (err) {
-          if (sqles.length > 1) {
-            self.scope.dbLite.query('ROLLBACK;', function (rollbackErr) {
-              cb(rollbackErr || err);
-            });
-          } else {
-            cb(err);
-          }
-          return;
-        }
-        if (sqles.length > 1) {
-          self.scope.dbLite.query('COMMIT;', cb);
+      async.eachSeries(sqles, function (sql, next) {
+        self.scope.dbLite.query(sql.query, sql.values, next);
+      }, next);
+    },
+    function (next) {
+      async.eachSeries(round, function (sql, next) {
+        self.scope.dbLite.query(sql.query, sql.values, next);
+      }, next);
+    }
+  ], function(err) {
+    if (err) {
+      console.log('!!!!!!! merge sql error: ' + err);
+      self.scope.dbLite.query('ROLLBACK TO SAVEPOINT merge', function (rollbackErr) {
+        if (rollbackErr) {
+          cb('rollback savepoint error while merging: ' + rollbackErr);
         } else {
-          cb();
+          cb('merge sql error: ' + err);
         }
       });
-    },
-    function (cb) {
-      if (round.length > 1) {
-        self.scope.dbLite.query('BEGIN TRANSACTION;');
-      }
-
-      async.eachSeries(round, function (sql, cb) {
-        self.scope.dbLite.query(sql.query, sql.values, function (err, data) {
-          cb(err, data);
-        });
-      }, function (err) {
-        if (err) {
-          if (round.length > 1) {
-            self.scope.dbLite.query('ROLLBACK;', function (rollbackErr) {
-              cb(rollbackErr || err);
-            });
-          } else {
-            cb(err);
-          }
-          return;
+    } else {
+      self.scope.dbLite.query('RELEASE SAVEPOINT merge', function(releaseErr) {
+        if (releaseErr) {
+          return cb('release savepoint error while merging: ' + releaseErr);
         }
-        if (round.length > 1) {
-          self.scope.dbLite.query('COMMIT;', cb);
-        } else {
-          cb();
-        }
+        self.get({address: address}, cb);
       });
     }
-  ], done);
+  });
 }
 
 Account.prototype.remove = function (address, cb) {
