@@ -257,11 +257,11 @@ private.getById = function (id, cb) {
 }
 
 private.saveBlock = function (block, cb) {
-  library.dbLite.query('BEGIN TRANSACTION;');
+  library.dbLite.query('SAVEPOINT saveblock');
 
   library.base.block.dbSave(block, function (err) {
     if (err) {
-      library.dbLite.query('ROLLBACK;', function (rollbackErr) {
+      library.dbLite.query('ROLLBACK TO SAVEPOINT saveblock', function (rollbackErr) {
         cb(rollbackErr || err);
       });
       return;
@@ -272,13 +272,13 @@ private.saveBlock = function (block, cb) {
       library.base.transaction.dbSave(transaction, cb);
     }, function (err) {
       if (err) {
-        library.dbLite.query('ROLLBACK;', function (rollbackErr) {
+        library.dbLite.query('ROLLBACK to SAVEPOINT saveblock', function (rollbackErr) {
           cb(rollbackErr || err);
         });
         return;
       }
 
-      library.dbLite.query('COMMIT;', cb);
+      library.dbLite.query('RELEASE SAVEPOINT saveblock', cb);
     });
   });
 }
