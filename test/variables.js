@@ -74,7 +74,7 @@ var XAS = Math.floor(Math.random() * (100000 * 100000000)) + 1; // Remove 1 x 0 
 function randomDelegateName() {
   var size = randomNumber(1,20); // Min. delegate name size is 1, Max. delegate name is 20
   var delegateName = "";
-  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$&_.";
+  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
   for( var i=0; i < size; i++ )
     delegateName += possible.charAt(Math.floor(Math.random() * possible.length));

@@ -409,6 +409,32 @@ function DApp() {
     return 500 * constants.fixedPoint;
   }
 
+  function checkDuplicate (trs, cb) {
+    library.dbLite.query("SELECT name, link FROM dapps WHERE (name = $name or link = $link) and transactionId != $transactionId", {
+      name: trs.asset.dapp.name,
+      link: trs.asset.dapp.link || null,
+      transactionId: trs.id
+    }, ['name', 'link'], function (err, rows) {
+      if (err) {
+        return cb("Database error");
+      }
+
+      if (rows.length > 0) {
+        var dapp = rows[0];
+
+        if (dapp.name == trs.asset.dapp.name) {
+          return cb("Dapp name already exists: " + dapp.name);
+        } else if (dapp.link == trs.asset.dapp.link) {
+          return cb("Dapp link already exists: " + dapp.link);
+        } else {
+          return cb("Unknown error");
+        }
+      } else {
+        return cb();
+      }
+    });
+  }
+  
   this.verify = function (trs, sender, cb) {
     if (trs.recipientId) {
       return setImmediate(cb, "Invalid recipient");
@@ -492,7 +518,7 @@ function DApp() {
       }
     }
 
-    setImmediate(cb);
+    checkDuplicate(trs, cb);
   }
 
   this.process = function (trs, sender, cb) {
@@ -556,29 +582,7 @@ function DApp() {
     private.unconfirmedNames[trs.asset.dapp.name] = true;
     private.unconfirmedLinks[trs.asset.dapp.link] = true;
 
-    library.dbLite.query("SELECT name, link FROM dapps WHERE (name = $name or link = $link) and transactionId != $transactionId", {
-      name: trs.asset.dapp.name,
-      link: trs.asset.dapp.link || null,
-      transactionId: trs.id
-    }, ['name', 'link'], function (err, rows) {
-      if (err) {
-        return setImmediate(cb, "Database error");
-      }
-
-      if (rows.length > 0) {
-        var dapp = rows[0];
-
-        if (dapp.name == trs.asset.dapp.name) {
-          return setImmediate(cb, "Dapp name already exists: " + dapp.name);
-        } else if (dapp.link == trs.asset.dapp.link) {
-          return setImmediate(cb, "Dapp link already exists: " + dapp.link);
-        } else {
-          return setImmediate(cb, "Unknown error");
-        }
-      } else {
-        return setImmediate(cb, null, trs);
-      }
-    });
+    checkDuplicate(trs, cb);
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {
@@ -1114,37 +1118,13 @@ private.attachApi = function () {
               return res.json({success: false, error: err});
             } else {
               if (dapp.type == 0) {
-                private.installDependencies(dapp, function (err) {
-                  if (err) {
-                    library.logger.error(err);
-                    private.removing[body.id] = true;
-                    private.removeDApp(dapp, function (err) {
-                      private.removing[body.id] = false;
-
-                      if (err) {
-                        library.logger.error(err);
-                      }
-
-
-                      private.loading[body.id] = false;
-                      return res.json({
-                        success: false,
-                        error: "Can't install DApp dependencies, check logs"
-                      });
-                    });
-                  } else {
-                    library.network.io.sockets.emit('dapps/change', {});
-
-                    private.loading[body.id] = false;
-                    return res.json({success: true, path: dappPath});
-                  }
-                })
+                // no need to install node dependencies
               } else {
-                library.network.io.sockets.emit('dapps/change', {});
-
-                private.loading[body.id] = false;
-                return res.json({success: true, path: dappPath});
               }
+              
+              library.network.io.sockets.emit('dapps/change', {});
+              private.loading[body.id] = false;
+              return res.json({ success: true, path: dappPath });
             }
           });
         });

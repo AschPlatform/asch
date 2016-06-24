@@ -829,8 +829,6 @@ describe("GET /dapps?id=", function () {
 describe("POST /dapps/install", function () {
 
     it("Using no id. Should fail", function (done) {
-        var dappId = DappToInstall.transactionId;
-
         node.api.post("/dapps/install")
             .set("Accept", "application/json")
             .send({

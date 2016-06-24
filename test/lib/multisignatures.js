@@ -631,7 +631,7 @@ describe("GET /multisignatures/pending", function () {
                             node.expect(res.body.transactions[i].transaction).to.have.property("id").to.equal(MultiSigTX.txId);
                             node.expect(res.body.transactions[i].transaction).to.have.property("senderPublicKey").to.equal(MultisigAccount.publicKey);
                             node.expect(res.body.transactions[i]).to.have.property("lifetime").to.equal(Number(MultiSigTX.lifetime));
-                            node.expect(res.body.transactions[i]).to.have.property("min").to.equal(''+MultiSigTX.min);
+                            node.expect(res.body.transactions[i]).to.have.property("min").to.equal(MultiSigTX.min);
                         }
                     }
                     node.expect(flag).to.equal(1);
