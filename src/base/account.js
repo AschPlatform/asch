@@ -681,7 +681,7 @@ Account.prototype.merge = function (address, diff, cb) {
 
   var self = this;
 
-  if (diff.publicKey !== undefined && !diff.publicKey){
+  if (diff.publicKey !== undefined && !diff.publicKey) {
     console.log("!!!!!!!!!!!!!!!!!!!!!!!", address, diff)
   }
 
@@ -693,6 +693,9 @@ Account.prototype.merge = function (address, diff, cb) {
           update[value] = trueValue;
           break;
         case Number:
+          if (isNaN(trueValue) || trueValue === Infinity) {
+            return cb("Encountered invalid number while merging account: " + trueValue + ", value: " + value + ", value: " + address);
+          }
           if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
             update.$inc = update.$inc || {};
             update.$inc[value] = trueValue;
