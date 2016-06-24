@@ -4,14 +4,61 @@ var node = require("./../variables.js"),
     crypto = require("crypto");
 
 var account = node.randomAccount();
-var delegate1Voted = false;
-var delegate2Voted = false;
+var voterAccount = node.randomAccount();
 
 var delegate1;
 var delegate2;
 node.chai.config.includeStack = true;
 
 describe("POST /peer/transactions", function () {
+    
+    before(function (done) {
+        node.api.post("/accounts/open")
+            .set("Accept", "application/json")
+            .send({
+                secret: voterAccount.password
+            })
+            .expect("Content-Type", /json/)
+            .expect(200)
+            .end(function (err, res) {
+                // console.log(JSON.stringify(res.body));
+                node.expect(res.body).to.have.property("success").to.be.true;
+                if (res.body.success == true && res.body.account != null) {
+                    voterAccount.address = res.body.account.address;
+                    voterAccount.publicKey = res.body.account.publicKey;
+                    voterAccount.balance = res.body.account.balance;
+                } else {
+                    console.log("Unable to open voterAccount, tests will fail");
+                    console.log("Data sent: secret: " + voterAccount.password + " , secondSecret: " + voterAccount.secondPassword);
+                    node.expect("TEST").to.equal("FAILED");
+                }
+                
+                // Send random XAS amount from genesis account to Random account
+                node.api.put("/transactions")
+                    .set("Accept", "application/json")
+                    .send({
+                        secret: node.Gaccount.password,
+                        amount: node.XAS,
+                        recipientId: voterAccount.address
+                    })
+                    .expect("Content-Type", /json/)
+                    .expect(200)
+                    .end(function (err, res) {
+                        console.log(JSON.stringify(res.body));
+                        node.expect(res.body).to.have.property("success").to.be.true;
+                        node.expect(res.body).to.have.property("transactionId");
+                        if (res.body.success == true && res.body.transactionId != null) {
+                            node.expect(res.body.transactionId).to.be.above(1);
+                            voterAccount.amount += node.XAS;
+                        } else {
+                            // console.log("Transaction failed or transactionId is null");
+                            // console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + node.XAS + ", recipientId: " + voterAccount.address);
+                            node.expect("TEST").to.equal("FAILED");
+                        }
+                        node.onNewBlock(done);
+                    });
+            });
+    });
 
     before(function (done) {
         node.api.get("/delegates/")
@@ -19,69 +66,39 @@ describe("POST /peer/transactions", function () {
             .expect(200)
             .end(function (err, res) {
                 node.expect(res.body).to.have.property("success").to.be.true;
-                if (res.body.success == true){
-                    delegate1 = res.body.delegates[1].publicKey;
-                    delegate2 = res.body.delegates[2].publicKey;
-
-                    node.api.get("/accounts/delegates/?address=" + node.Gaccount.address)
+                delegate1 = res.body.delegates[0].publicKey;
+                delegate2 = res.body.delegates[1].publicKey;
+                var votes = [];
+                votes.push("+" + delegate1);
+                votes.push("+" + delegate2);
+                var transaction = node.asch.vote.createVote(voterAccount.password, votes);
+                // console.log('createVote transaction', transaction);
+                if (transaction !== null) {
+                    node.peer.post("/transactions")
+                        .set("Accept", "application/json")
+                        .set("version", node.version)
+                        .set("magic", node.config.magic)
+                        .set("port", node.config.port)
+                        .send({
+                            transaction: transaction
+                        })
                         .expect("Content-Type", /json/)
                         .expect(200)
                         .end(function (err, res) {
-                            var transaction=null;
-                            // console.log(JSON.stringify(res.body));
+                            console.log("Sent vote fix for delegates");
+                            console.log("Sent: " + JSON.stringify(transaction) + " Got reply: " + JSON.stringify(res.body));
                             node.expect(res.body).to.have.property("success").to.be.true;
-                            if (res.body.success == true){
-                                node.expect(res.body).to.have.property("delegates").that.is.an("array");
-                                if (res.body.delagates !== null) {
-                                    for (var i = 0; i < res.body.delegates.length; i++) {
-                                        if (res.body.delegates[i].publicKey == delegate1) {
-                                            delegate1Voted = true;
-                                        } else if (res.body.delegates[i].publicKey == delegate2){
-                                            delegate2Voted = true;
-                                        }
-                                    }
-                                } else {
-                                    console.log("Accounts returned null. Unable to proceed with test");
-                                }
-                            } else {
-                                console.log("Check if already voted request failed or account array null");
-                                done();
-                            }
-                            if (!delegate1Voted && !delegate2Voted) {
-                                transaction = node.asch.vote.createVote(node.Gaccount.password, ["+"+delegate1, "+"+delegate2]);
-                            } else if (delegate1Voted && !delegate2Voted) {
-                                transaction = node.asch.vote.createVote(node.Gaccount.password, ["+"+delegate2]);
-                            } else if (delegate2Voted && !delegate1Voted) {
-                                transaction = node.asch.vote.createVote(node.Gaccount.password, ["+"+delegate1]);
-                            }
-                            if (transaction !== null) {
-                                node.peer.post("/transactions")
-                                    .set("Accept", "application/json")
-                                    .set("version", node.version)
-                                    .set("magic", node.config.magic)
-                                    .set("port", node.config.port)
-                                    .send({
-                                        transaction: transaction
-                                    })
-                                    .expect("Content-Type", /json/)
-                                    .expect(200)
-                                    .end(function (err, res) {
-                                        console.log("Sent vote fix for delegates");
-                                        console.log("Sent: " + JSON.stringify(transaction) + " Got reply: " + JSON.stringify(res.body));
-                                        node.expect(res.body).to.have.property("success").to.be.true;
-                                        done();
-                                    });
-                            } else {
-                                done();
-                            }
+                            done();
                         });
-                    }
-                });
+                } else {
+                    done();
+                }
+            });
     });
 
     it("Voting twice for a delegate. Should fail", function (done) {
         node.onNewBlock(function (err) {
-            var transaction = node.asch.vote.createVote(node.Gaccount.password, ["+"+delegate1]);
+            var transaction = node.asch.vote.createVote(voterAccount.password, ["+"+delegate1]);
             node.peer.post("/transactions")
                 .set("Accept", "application/json")
                 .set("version", node.version)
@@ -101,7 +118,7 @@ describe("POST /peer/transactions", function () {
     });
 
     it("Removing votes from a delegate. Should be ok", function (done) {
-        var transaction = node.asch.vote.createVote(node.Gaccount.password, ["-"+delegate1]);
+        var transaction = node.asch.vote.createVote(voterAccount.password, ["-"+delegate1]);
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
@@ -121,7 +138,7 @@ describe("POST /peer/transactions", function () {
 
     it("Removing votes from a delegate and then voting again. Should fail", function (done) {
         node.onNewBlock(function (err) {
-            var transaction = node.asch.vote.createVote(node.Gaccount.password, ["-"+delegate2]);
+            var transaction = node.asch.vote.createVote(voterAccount.password, ["-"+delegate2]);
             node.peer.post("/transactions")
                 .set("Accept", "application/json")
                 .set("version", node.version)
@@ -135,7 +152,7 @@ describe("POST /peer/transactions", function () {
                 .end(function (err, res) {
                     // console.log("Sent POST /transactions with data:" + JSON.stringify(transaction) + "! Got reply:" + JSON.stringify(res.body));
                     node.expect(res.body).to.have.property("success").to.be.true;
-                    var transaction2 = node.asch.vote.createVote(node.Gaccount.password, ["+"+delegate2]);
+                    var transaction2 = node.asch.vote.createVote(voterAccount.password, ["+"+delegate2]);
                     node.peer.post("/transactions")
                         .set("Accept", "application/json")
                         .set("version", node.version)
