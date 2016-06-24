@@ -283,43 +283,64 @@ private.saveBlock = function (block, cb) {
   });
 }
 
-private.popLastBlock = function (oldLastBlock, cb) {
+private.popLastBlock = function (oldLastBlock, callback) {
   library.balancesSequence.add(function (cb) {
+    function done(err, previousBlock) {
+      if (err) {
+        var finalErr = 'popLastBlock err: ' + err;
+        library.dbLite.query('ROLLBACK TO SAVEPOINT poplastblock', function(rollbackErr) {
+          if (rollbackErr) {
+            finalErr += ', rollback err: ' + rollbackErr;
+          }
+          cb(finalErr);
+        });
+      } else {
+        library.dbLite.query('RELEASE SAVEPOINT poplastblock', function(releaseErr) {
+          if (releaseErr) {
+            cb('popLastBlock release savepoint error: ' + releaseErr);
+          } else {
+            cb(null, previousBlock);
+          }
+        });
+      }
+    }
+  
+    library.dbLite.query('SAVEPOINT poplastblock');
     self.loadBlocksPart({id: oldLastBlock.previousBlock}, function (err, previousBlock) {
       if (err || !previousBlock.length) {
-        return cb(err || 'previousBlock is null');
+        return done(err || 'previousBlock is null');
       }
       previousBlock = previousBlock[0];
 
-      async.eachSeries(oldLastBlock.transactions.reverse(), function (transaction, cb) {
+      async.eachSeries(oldLastBlock.transactions.reverse(), function (transaction, nextTr) {
         async.series([
-          function (cb) {
+          function (next) {
             modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
               if (err) {
-                return cb(err);
+                return next(err);
               }
               modules.transactions.undo(transaction, oldLastBlock, sender, cb);
             });
-          }, function (cb) {
-            modules.transactions.undoUnconfirmed(transaction, cb);
-          }, function (cb) {
+          }, function (next) {
+            modules.transactions.undoUnconfirmed(transaction, next);
+          }, function (next) {
             modules.transactions.pushHiddenTransaction(transaction);
-            setImmediate(cb);
+            setImmediate(next);
           }
-        ], cb);
+        ], nextTr);
       }, function (err) {
         modules.round.backwardTick(oldLastBlock, previousBlock, function () {
           private.deleteBlock(oldLastBlock.id, function (err) {
             if (err) {
-              return cb(err);
+              return done(err);
             }
 
-            cb(null, previousBlock);
+            done(null, previousBlock);
           });
         });
       });
     });
-  }, cb);
+  }, callback);
 }
 
 private.getIdSequence = function (height, cb) {
@@ -775,7 +796,7 @@ Blocks.prototype.getLastBlock = function () {
   return private.lastBlock;
 }
 
-Blocks.prototype.processBlock = function (block, broadcast, cb) {
+Blocks.prototype.processBlock = function (block, broadcast, callback) {
   if (!private.loaded) {
     return setImmediate(cb, "Blockchain is loading");
   }
@@ -789,16 +810,35 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
     }
     block.height = private.lastBlock.height + 1;
 
+    library.dbLite.query('SAVEPOINT processblock');
     modules.transactions.undoUnconfirmedList(function (err, unconfirmedTransactions) {
       if (err) {
         private.isActive = false;
+        library.logger.error("Failed to undoUnconfirmedList when processBlock: " + err);
         return process.exit(0);
       }
 
       function done(err) {
-        modules.transactions.applyUnconfirmedList(unconfirmedTransactions, function () {
-          private.isActive = false;
-          setImmediate(cb, err);
+        modules.transactions.applyUnconfirmedList(unconfirmedTransactions, function (applyErr) {
+          if (applyErr || err) {
+            var finalErr = 'processBlock err: ' + (applyErr || err);
+            library.dbLite.query('ROLLBACK TO SAVEPOINT processblock', function (rollbackErr) {
+              if (finishErr) {
+                finalErr += ', rollback err: ' + rollbackErr;
+              }
+              private.isActive = false;
+              cb(finalErr);
+            });
+          } else {
+            library.dbLite.query('RELEASE SAVEPOINT processblock', function (releaseErr) {
+              private.isActive = false;
+              if (releaseErr) {
+                cb('processBlock release savepoint err: ' + releaseErr);
+              } else {
+                cb();
+              }
+            });
+          }
         });
       }
 
@@ -826,7 +866,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
         try {
           var valid = library.base.block.verifySignature(block);
         } catch (e) {
-          return setImmediate(cb, e.toString());
+          return done(e.toString());
         }
         if (!valid) {
           return done("Can't verify signature: " + block.id);
@@ -866,18 +906,18 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
           // Check payload hash, transaction, number of confirmations
           var totalAmount = 0, totalFee = 0, payloadHash = crypto.createHash('sha256'), appliedTransactions = {};
 
-          async.eachSeries(block.transactions, function (transaction, cb) {
+          async.eachSeries(block.transactions, function (transaction, next) {
             try {
               transaction.id = library.base.transaction.getId(transaction);
             } catch (e) {
-              return setImmediate(cb, e.toString());
+              return setImmediate(next, e.toString());
             }
 
             transaction.blockId = block.id;
 
             library.dbLite.query("SELECT id FROM trs WHERE id=$id", {id: transaction.id}, ['id'], function (err, rows) {
                 if (err) {
-                  return cb(err);
+                  return next(err);
                 }
 
                 var tId = rows.length && rows[0].id;
@@ -885,31 +925,31 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
                 if (tId) {
                   // Fork transactions already exist
                   modules.delegates.fork(block, 2);
-                  setImmediate(cb, "Transaction already exists: " + transaction.id);
+                  setImmediate(next, "Transaction already exists: " + transaction.id);
                 } else {
                   if (appliedTransactions[transaction.id]) {
-                    return setImmediate(cb, "Duplicated transaction in block: " + transaction.id);
+                    return setImmediate(next, "Duplicated transaction in block: " + transaction.id);
                   }
 
                   modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
                     if (err) {
-                      return cb(err);
+                      return next(err);
                     }
 
                     library.base.transaction.verify(transaction, sender, function (err) {
                       if (err) {
-                        return setImmediate(cb, err);
+                        return setImmediate(next, err);
                       }
 
                       modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
                         if (err) {
-                          return setImmediate(cb, "Failed to apply transaction: " + transaction.id);
+                          return setImmediate(next, "Failed to apply transaction: " + transaction.id);
                         }
 
                         try {
                           var bytes = library.base.transaction.getBytes(transaction);
                         } catch (e) {
-                          return setImmediate(cb, e.toString());
+                          return setImmediate(next, e.toString());
                         }
 
                         appliedTransactions[transaction.id] = transaction;
@@ -924,7 +964,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
                         totalAmount += transaction.amount;
                         totalFee += transaction.fee;
 
-                        setImmediate(cb);
+                        setImmediate(next);
                       });
                     });
                   });
@@ -951,11 +991,11 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
             }
 
             if (errors.length > 0) {
-              async.eachSeries(block.transactions, function (transaction, cb) {
+              async.eachSeries(block.transactions, function (transaction, next) {
                 if (appliedTransactions[transaction.id]) {
-                  modules.transactions.undoUnconfirmed(transaction, cb);
+                  modules.transactions.undoUnconfirmed(transaction, next);
                 } else {
-                  setImmediate(cb);
+                  setImmediate(next);
                 }
               }, function () {
                 done(errors[0]);
@@ -967,7 +1007,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
                 return setImmediate(done, e);
               }
 
-              async.eachSeries(block.transactions, function (transaction, cb) {
+              async.eachSeries(block.transactions, function (transaction, next) {
                 modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
                   if (err) {
                     library.logger.error("Failed to apply transactions: " + transaction.id);
@@ -979,7 +1019,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
                       process.exit(0);
                     }
                     modules.transactions.removeUnconfirmedTransaction(transaction.id);
-                    setImmediate(cb);
+                    setImmediate(next);
                   });
                 });
               }, function (err) {
@@ -1002,7 +1042,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
         });
       })
     });
-  }, cb);
+  }, callback);
 }
 
 Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
