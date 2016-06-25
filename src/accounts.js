@@ -183,6 +183,7 @@ private.attachApi = function () {
 
   router.map(shared, {
     "post /open": "open",
+    "post /open2": "open2",
     "get /getBalance": "getBalance",
     "get /getPublicKey": "getPublickey",
     "post /generatePublicKey": "generatePublickey",
@@ -261,6 +262,10 @@ private.openAccount = function (secret, cb) {
   var keypair = ed.MakeKeypair(hash);
 
   self.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}, cb);
+}
+
+private.openAccount2 = function (publicKey, cb) {
+  self.setAccountAndGet({publicKey: publicKey}, cb);
 }
 
 // Public methods
@@ -368,6 +373,43 @@ shared.open = function (req, cb) {
           u_multisignatures: account.u_multisignatures
         };
 
+        return cb(null, {account: accountData});
+      } else {
+        return cb(err);
+      }
+    });
+  });
+}
+
+shared.open2 = function (req, cb) {
+  var body = req.body;
+  library.scheme.validate(body, {
+    type: "object",
+    properties: {
+      publicKey: {
+        type: "string",
+        format: 'publicKey'
+      }
+    },
+    required: ["publicKey"]
+  }, function (err) {
+    if (err) {
+      return cb(err[0].message);
+    }
+    private.openAccount2(body.publicKey, function (err, account) {
+      var accountData = null;
+      if (!err) {
+        accountData = {
+          address: account.address,
+          unconfirmedBalance: account.u_balance,
+          balance: account.balance,
+          publicKey: account.publicKey,
+          unconfirmedSignature: account.u_secondSignature,
+          secondSignature: account.secondSignature,
+          secondPublicKey: account.secondPublicKey,
+          multisignatures: account.multisignatures,
+          u_multisignatures: account.u_multisignatures
+        };
         return cb(null, {account: accountData});
       } else {
         return cb(err);
