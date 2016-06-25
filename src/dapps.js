@@ -1354,11 +1354,14 @@ private.attachApi = function () {
 // Private methods
 private.get = function (id, cb) {
   library.dbLite.query("SELECT name, description, tags, link, type, category, icon, transactionId FROM dapps WHERE transactionId = $id", {id: id}, ['name', 'description', 'tags', 'link', 'type', 'category', 'icon', 'transactionId'], function (err, rows) {
-    if (err || rows.length == 0) {
-      return setImmediate(cb, err ? "Database error" : "DApp not found");
+    if (err) {
+      library.logger.error('Database error while get dapp: ' + err);
+      return setImmediate(cb, "Database error");
+    } else if (rows.length == 0) {
+      return setImmediate(cb, "DApp not found");
+    } else {
+      return setImmediate(cb, null, rows[0]); 
     }
-
-    return setImmediate(cb, null, rows[0]);
   });
 }
 
@@ -1806,60 +1809,38 @@ private.launch = function (body, cb) {
     if (body.params.length > 0) {
       body.params.push("modules.full.json");
     }
-
-    private.launched[body.id] = true;
-
-    private.get(body.id, function (err, dapp) {
-      if (err) {
-        private.launched[body.id] = false;
-        library.logger.error(err);
-        return cb("Failed to find dapp: " + body.id);
-      } else {
-        private.getInstalledIds(function (err, files) {
+    
+    async.auto({
+      dapp: async.apply(private.get, body.id),
+      
+      installedIds: async.apply(private.getInstalledIds),
+      
+      symlink: ['dapp', 'installedIds', function(next, results) {
+        if (results.installedIds.indexOf(body.id) < 0) {
+          return next('Dapp not installed');
+        }
+        private.symlink(results.dapp, next);
+      }],
+      
+      launch: ['symlink', function(next, results) {
+        private.launchApp(results.dapp, body.params || ['', 'modules.full.json'], next);
+      }],
+      
+      route: ['launch', function(next, results) {
+        private.dappRoutes(results.dapp, function(err) {
           if (err) {
-            private.launched[body.id] = false;
-            library.logger.error(err);
-            return cb("Failed to get installed dapps");
-          } else {
-            if (files.indexOf(body.id) >= 0) {
-              private.symlink(dapp, function (err) {
-                if (err) {
-                  private.launched[body.id] = false;
-                  library.logger.error(err);
-                  return cb("Failed to create public link for: " + body.id);
-                } else {
-                  private.launchApp(dapp, body.params || ['', "modules.full.json"], function (err) {
-                    if (err) {
-                      private.launched[body.id] = false;
-                      library.logger.error(err);
-                      return cb("Failed to launch dapp, check logs: " + body.id);
-                    } else {
-                      private.dappRoutes(dapp, function (err) {
-                        if (err) {
-                          private.launched[body.id] = false;
-                          library.logger.error(err);
-                          private.stop(dapp, function (err) {
-                            if (err) {
-                              library.logger.error(err);
-                              return cb("Failed to stop dapp, check logs: " + body.id)
-                            }
-
-                            return cb("Failed to launch dapp");
-                          });
-                        } else {
-                          return cb(null);
-                        }
-                      });
-                    }
-                  });
-                }
-              });
-            } else {
-              private.launched[body.id] = false;
-              return cb("Dapp not installed");
-            }
+            return private.stop(results.dapp, next);
           }
+          next();
         });
+      }]
+    }, function(err, results) {
+      if (err) {
+        library.logger.error('Failed to launch dapp ' + body.id + ': ' + err);
+        cb('Failed to launch dapp');
+      } else {
+        private.launched[body.id] = true;
+        cb();
       }
     });
   });
