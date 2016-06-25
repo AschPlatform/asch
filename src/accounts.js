@@ -403,7 +403,7 @@ shared.open2 = function (req, cb) {
           address: account.address,
           unconfirmedBalance: account.u_balance,
           balance: account.balance,
-          publicKey: account.publicKey,
+          // publicKey: account.publicKey,
           unconfirmedSignature: account.u_secondSignature,
           secondSignature: account.secondSignature,
           secondPublicKey: account.secondPublicKey,
