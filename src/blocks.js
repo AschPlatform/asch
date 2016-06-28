@@ -590,6 +590,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
   var newLimit = limit + (offset || 0);
   var params = {limit: newLimit, offset: offset || 0};
 
+  library.logger.debug("loadBlockOffset limit: " + limit + ", offset: " + offset + ", verify: " + verify);
   library.dbSequence.add(function (cb) {
     library.dbLite.query("SELECT " +
       "b.id, b.version, b.timestamp, b.height, b.previousBlock, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength, lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), " +
@@ -700,8 +701,10 @@ Blocks.prototype.verifyBlock = function (block, cb) {
   } catch (e) {
     return cb("Failed to get block id: " + e.toString());
   }
-  
+
   block.height = private.lastBlock.height + 1;
+  
+  library.logger.debug("verifyBlock, id: " + block.id + ", h: " + block.height);
   
   if (!block.previousBlock && block.height != 1) {
     return cb("Previous block should not be null");
