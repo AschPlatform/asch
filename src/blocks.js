@@ -617,125 +617,23 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
       // Notes:
       // If while loading we encounter an error, for example, an invalid signature on a block & transaction, then we need to stop loading and remove all blocks after the last good block. We also need to process all transactions within the block.
       if (err) {
-        return cb(err);
+        return cb("loadBlockOffset db error: " + err);
       }
 
       var blocks = private.readDbRows(rows);
 
-      async.eachSeries(blocks, function (block, cb) {
-        async.series([
-          function (cb) {
-            if (block.id != genesisblock.block.id) {
-              if (verify) {
-                if (block.previousBlock != private.lastBlock.id) {
-                  return cb({
-                    message: "Can't verify previous block",
-                    block: block
-                  });
-                }
-
-                try {
-                  var valid = library.base.block.verifySignature(block);
-                } catch (e) {
-                  return setImmediate(cb, {
-                    message: e.toString(),
-                    block: block
-                  });
-                }
-                if (!valid) {
-                  // Need to break cycle and delete this block and blocks after this block
-                  return cb({
-                    message: "Can't verify signature",
-                    block: block
-                  });
-                }
-
-                modules.delegates.validateBlockSlot(block, function (err) {
-                  if (err) {
-                    return cb({
-                      message: "Can't verify slot",
-                      block: block
-                    });
-                  }
-                  cb();
-                });
-              } else {
-                setImmediate(cb);
-              }
-            } else {
-              setImmediate(cb);
+      async.eachSeries(blocks, function (block, next) {
+        library.logger.debug("loadBlocksOffset processing:", block.id);
+        if (verify && block.id != genesisblock.block.id) {
+          self.verifyBlock(block, function(err) {
+            if (err) {
+              return next("Failed to verify block " + block.id);
             }
-          }, function (cb) {
-            block.transactions = block.transactions.sort(function (a, b) {
-              if (block.id == genesisblock.block.id) {
-                if (a.type == TransactionTypes.VOTE)
-                  return 1;
-              }
-
-              if (a.type == TransactionTypes.SIGNATURE) {
-                return 1;
-              }
-
-              return 0;
-            });
-
-            async.eachSeries(block.transactions, function (transaction, cb) {
-              if (verify) {
-                modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
-                  if (err) {
-                    return cb({
-                      message: 'failed to setAccountAndGet: ' + err,
-                      transaction: transaction,
-                      block: block
-                    });
-                  }
-                  if (verify && block.id != genesisblock.block.id) {
-                    library.base.transaction.verify(transaction, sender, function (err) {
-                      if (err) {
-                        return setImmediate(cb, {
-                          message: 'failed to verify transaction: ' + err,
-                          transaction: transaction,
-                          block: block
-                        });
-                      }
-                      private.applyTransaction(block, transaction, sender, cb);
-                    });
-                  } else {
-                    private.applyTransaction(block, transaction, sender, cb);
-                  }
-                });
-              } else {
-                setImmediate(cb);
-              }
-            }, function (err) {
-              if (err) {
-                library.logger.error(err);
-                var lastValidTransaction = block.transactions.findIndex(function (trs) {
-                  return trs.id == err.transaction.id;
-                });
-                var transactions = block.transactions.slice(0, lastValidTransaction + 1);
-                async.eachSeries(transactions.reverse(), function (transaction, cb) {
-                  async.series([
-                    function (cb) {
-                      modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
-                        if (err) {
-                          return cb(err);
-                        }
-                        modules.transactions.undo(transaction, block, sender, cb);
-                      });
-                    }, function (cb) {
-                      modules.transactions.undoUnconfirmed(transaction, cb);
-                    }
-                  ], cb);
-                }, cb);
-              } else {
-                private.lastBlock = block;
-
-                modules.round.tick(private.lastBlock, cb);
-              }
-            });
-          }
-        ], cb)
+            self.applyBlock(block, false, next, false);
+          });
+        } else {
+          self.applyBlock(block, false, next, false);
+        }
       }, function (err) {
         cb(err, private.lastBlock);
       });
@@ -796,29 +694,109 @@ Blocks.prototype.getLastBlock = function () {
   return private.lastBlock;
 }
 
-Blocks.prototype.processBlock = function (block, broadcast, callback) {
-  if (!private.loaded) {
-    return setImmediate(cb, "Blockchain is loading");
+Blocks.prototype.verifyBlock = function (block, cb) {
+  try {
+    block.id = library.base.block.getId(block);
+  } catch (e) {
+    return cb("Failed to get block id: " + e.toString());
   }
-  private.isActive = true;
-  library.balancesSequence.add(function (cb) {
-    try {
-      block.id = library.base.block.getId(block);
-    } catch (e) {
-      private.isActive = false;
-      return setImmediate(cb, e.toString());
+  
+  block.height = private.lastBlock.height + 1;
+  
+  if (!block.previousBlock && block.height != 1) {
+    return cb("Previous block should not be null");
+  }
+  
+  var expectedReward = private.blockStatus.calcReward(block.height);
+
+	if (block.height != 1 && expectedReward !== block.reward) {
+		return cb("Invalid block reward");
+	}
+  
+  try {
+    if (!library.base.block.verifySignature(block)) {
+      return cb("Failed to verify block signature");
     }
-    block.height = private.lastBlock.height + 1;
+  } catch (e) {
+    return cb("Got exception while verify block signature: " + e.toString());
+  }
+  
+  if (block.previousBlock != private.lastBlock.id) {
+    modules.delegates.fork(block, 1);
+    return cb('Incorrect previous block hash');
+  }
+  
+  if (block.version > 0) {
+		return cb("Invalid block version: " + block.version + ", id: " + block.id);
+	}
+  
+  var blockSlotNumber = slots.getSlotNumber(block.timestamp);
+	var lastBlockSlotNumber = slots.getSlotNumber(private.lastBlock.timestamp);
 
+	if (blockSlotNumber > slots.getSlotNumber() || blockSlotNumber <= lastBlockSlotNumber) {
+		return cb("Can't verify block timestamp: " + block.id);
+	}
+
+	if (block.payloadLength > constants.maxPayloadLength) {
+		return cb("Can't verify payload length of block: " + block.id);
+	}
+
+	if (block.transactions.length != block.numberOfTransactions || block.transactions.length > constants.maxTxsPerBlock) {
+		return cb("Invalid amount of block assets: " + block.id);
+	}
+
+	var totalAmount = 0,
+	    totalFee = 0,
+	    payloadHash = crypto.createHash('sha256'),
+	    appliedTransactions = {};
+
+	for (var i in block.transactions) {
+		var transaction = block.transactions[i];
+
+		try {
+			var bytes = library.base.transaction.getBytes(transaction);
+		} catch (e) {
+			return cb("Failed to get transaction bytes: " + e.toString());
+		}
+
+		if (appliedTransactions[transaction.id]) {
+			return cb("Duplicate transaction id in block " + block.id);
+		}
+
+		appliedTransactions[transaction.id] = transaction;
+		payloadHash.update(bytes);
+		totalAmount += transaction.amount;
+		totalFee += transaction.fee;
+	}
+
+	if (payloadHash.digest().toString('hex') !== block.payloadHash) {
+		return cb("Invalid payload hash: " + block.id);
+	}
+
+	if (totalAmount != block.totalAmount) {
+		return cb("Invalid total amount: " + block.id);
+	}
+
+	if (totalFee != block.totalFee) {
+		return cb("Invalid total fee: " + block.id);
+	}
+  
+  return cb();
+}
+
+Blocks.prototype.applyBlock = function(block, broadcast, cb, saveBlock) {
+	private.isActive = true;
+
+	library.balancesSequence.add(function (cb) {
     library.dbLite.query('SAVEPOINT processblock');
-    modules.transactions.undoUnconfirmedList(function (err, unconfirmedTransactions) {
-      if (err) {
-        private.isActive = false;
-        library.logger.error("Failed to undoUnconfirmedList when processBlock: " + err);
-        return process.exit(0);
-      }
+    
+		modules.transactions.undoUnconfirmedList(function (err, unconfirmedTransactions) {
+			if (err) {
+				private.isActive = false;
+				return process.exit(0);
+			}
 
-      function done(err) {
+			function done(err) {
         modules.transactions.applyUnconfirmedList(unconfirmedTransactions, function (applyErr) {
           if (applyErr || err) {
             var finalErr = 'processBlock err: ' + (applyErr || err);
@@ -842,207 +820,143 @@ Blocks.prototype.processBlock = function (block, broadcast, callback) {
         });
       }
 
-      if (!block.previousBlock && block.height != 1) {
-        return setImmediate(done, "Invalid previous block");
+			var appliedTransactions = {};
+
+			async.eachSeries(block.transactions, function (transaction, cb) {
+				modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
+					modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
+						if (err) {
+							return setImmediate(cb, "Failed to apply transaction: " + transaction.id);
+						}
+						appliedTransactions[transaction.id] = transaction;
+
+						var index = unconfirmedTransactions.indexOf(transaction.id);
+						if (index >= 0) {
+							unconfirmedTransactions.splice(index, 1);
+						}
+
+						setImmediate(cb);
+					});
+				});
+			}, function (err) {
+				if (err) {
+
+					async.eachSeries(block.transactions, function (transaction, cb) {
+						modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (sender,cb) {
+							if (appliedTransactions[transaction.id]) {
+								library.base.transactions.undoUnconfirmed(transaction, sender, cb);
+							} else {
+								setImmediate(cb);
+							}
+						});
+					}, function () {
+						done(err);
+					});
+				} else {
+					async.eachSeries(block.transactions, function (transaction, cb) {
+						modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
+							if (err) {
+								library.logger.error("Failed to apply transactions: " + transaction.id);
+								process.exit(0);
+							}
+							// DATABASE: write
+							modules.transactions.apply(transaction, block, sender, function (err) {
+								if (err) {
+									library.logger.error("Failed to apply transactions: " + transaction.id);
+									process.exit(0);
+								}
+								modules.transactions.removeUnconfirmedTransaction(transaction.id);
+								setImmediate(cb);
+							});
+						});
+					}, function (err) {
+						if (saveBlock) {
+							private.saveBlock(block, function (err) {
+							 if (err) {
+								 library.logger.error("Failed to save block...");
+								 process.exit(0);
+							 }
+
+							 library.logger.debug("Block applied corrrectly with " + block.transactions.length + " transactions");
+							 library.bus.message('newBlock', block, broadcast);
+							 private.lastBlock = block;
+
+							 modules.round.tick(block, done);
+						 });
+						} else {
+							library.bus.message('newBlock', block, broadcast);
+							private.lastBlock = block;
+							modules.round.tick(block, done);
+						}
+					});
+				}
+			});
+		});
+	}, cb);
+}
+
+Blocks.prototype.processBlock = function (block, broadcast, cb) {
+  if (!private.loaded) {
+    return setImmediate(cb, "Blockchain is loading");
+  }
+  try {
+		block = library.base.block.objectNormalize(block);
+	} catch (e) {
+		return setImmediate(cb, "Failed to normalize block: " + e.toString());
+	}
+  
+  self.verifyBlock(block, function (err) {
+    if (err) {
+      return setImmediate(cb, "Failed to verify block: " + err);
+    }
+    
+    library.dbLite.query("SELECT id FROM blocks WHERE id=$id", { id: block.id }, ['id'], function (err, rows) {
+      if (err) {
+        return setImmediate(cb, "Failed to query blocks from db: " + err);
       }
-
-      var expectedReward = private.blockStatus.calcReward(block.height);
-
-      if (block.height != 1 && expectedReward !== block.reward) {
-        return setImmediate(done, "Invalid block reward");
+      var bId = rows.length && rows[0].id;
+      if (bId) {
+        return setImmediate(cb, "Block already exists: " + block.id);
       }
-
-      library.dbLite.query("SELECT id FROM blocks WHERE id=$id", {id: block.id}, ['id'], function (err, rows) {
+      modules.delegates.validateBlockSlot(block, function (err) {
         if (err) {
-          return done(err);
+          modules.delegates.fork(block, 3);
+          return setImmediate(cb, "Can't verify slot: " + err);
         }
-
-        var bId = rows.length && rows[0].id;
-
-        if (bId) {
-          return done("Block already exists: " + block.id);
-        }
-
-        try {
-          var valid = library.base.block.verifySignature(block);
-        } catch (e) {
-          return done(e.toString());
-        }
-        if (!valid) {
-          return done("Can't verify signature: " + block.id);
-        }
-
-        if (block.previousBlock != private.lastBlock.id) {
-          // Fork same height and different previous block
-          modules.delegates.fork(block, 1);
-          return done("Can't verify previous block: " + block.id);
-        }
-
-        if (block.version > 0) {
-          return done("Invalid block version: " + block.id)
-        }
-
-        var blockSlotNumber = slots.getSlotNumber(block.timestamp);
-        var lastBlockSlotNumber = slots.getSlotNumber(private.lastBlock.timestamp);
-
-        if (blockSlotNumber > slots.getSlotNumber() || blockSlotNumber <= lastBlockSlotNumber) {
-          return done("Can't verify block timestamp: " + block.id);
-        }
-
-        modules.delegates.validateBlockSlot(block, function (err) {
-          if (err) {
-            // Fork another delegate's slot
-            modules.delegates.fork(block, 3);
-            return done("Can't verify slot: " + block.id);
-          }
-          if (block.payloadLength > constants.maxPayloadLength) {
-            return done("Can't verify payload length of block: " + block.id);
-          }
-
-          if (block.transactions.length != block.numberOfTransactions || block.transactions.length > constants.maxTxsPerBlock) {
-            return done("Invalid amount of block assets: " + block.id);
-          }
-
-          // Check payload hash, transaction, number of confirmations
-          var totalAmount = 0, totalFee = 0, payloadHash = crypto.createHash('sha256'), appliedTransactions = {};
-
-          async.eachSeries(block.transactions, function (transaction, next) {
-            try {
-              transaction.id = library.base.transaction.getId(transaction);
-            } catch (e) {
-              return setImmediate(next, e.toString());
-            }
-
-            transaction.blockId = block.id;
-
-            library.dbLite.query("SELECT id FROM trs WHERE id=$id", {id: transaction.id}, ['id'], function (err, rows) {
-                if (err) {
-                  return next(err);
-                }
-
-                var tId = rows.length && rows[0].id;
-
-                if (tId) {
-                  // Fork transactions already exist
-                  modules.delegates.fork(block, 2);
-                  setImmediate(next, "Transaction already exists: " + transaction.id);
-                } else {
-                  if (appliedTransactions[transaction.id]) {
-                    return setImmediate(next, "Duplicated transaction in block: " + transaction.id);
-                  }
-
-                  modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
-                    if (err) {
-                      return next(err);
-                    }
-
-                    library.base.transaction.verify(transaction, sender, function (err) {
-                      if (err) {
-                        return setImmediate(next, err);
-                      }
-
-                      modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
-                        if (err) {
-                          return setImmediate(next, "Failed to apply transaction: " + transaction.id);
-                        }
-
-                        try {
-                          var bytes = library.base.transaction.getBytes(transaction);
-                        } catch (e) {
-                          return setImmediate(next, e.toString());
-                        }
-
-                        appliedTransactions[transaction.id] = transaction;
-
-                        var index = unconfirmedTransactions.indexOf(transaction.id);
-                        if (index >= 0) {
-                          unconfirmedTransactions.splice(index, 1);
-                        }
-
-                        payloadHash.update(bytes);
-
-                        totalAmount += transaction.amount;
-                        totalFee += transaction.fee;
-
-                        setImmediate(next);
-                      });
-                    });
-                  });
-                }
-              }
-            );
-          }, function (err) {
-            var errors = [];
-
-            if (err) {
-              errors.push(err);
-            }
-
-            if (payloadHash.digest().toString('hex') !== block.payloadHash) {
-              errors.push("Invalid payload hash: " + block.id);
-            }
-
-            if (totalAmount != block.totalAmount) {
-              errors.push("Invalid total amount: " + block.id);
-            }
-
-            if (totalFee != block.totalFee) {
-              errors.push("Invalid total fee: " + block.id);
-            }
-
-            if (errors.length > 0) {
-              async.eachSeries(block.transactions, function (transaction, next) {
-                if (appliedTransactions[transaction.id]) {
-                  modules.transactions.undoUnconfirmed(transaction, next);
-                } else {
-                  setImmediate(next);
-                }
-              }, function () {
-                done(errors[0]);
-              });
-            } else {
+        async.eachSeries(block.transactions, function (transaction, next) {
+          async.waterfall([
+            function (next) {
               try {
-                block = library.base.block.objectNormalize(block);
+                transaction.id = library.base.transaction.getId(transaction);
               } catch (e) {
-                return setImmediate(done, e);
+                return next(e.toString());
               }
+              transaction.blockId = block.id;
 
-              async.eachSeries(block.transactions, function (transaction, next) {
-                modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
-                  if (err) {
-                    library.logger.error("Failed to apply transactions: " + transaction.id);
-                    process.exit(0);
-                  }
-                  modules.transactions.apply(transaction, block, sender, function (err) {
-                    if (err) {
-                      library.logger.error("Failed to apply transactions: " + transaction.id);
-                      process.exit(0);
-                    }
-                    modules.transactions.removeUnconfirmedTransaction(transaction.id);
-                    setImmediate(next);
-                  });
-                });
-              }, function (err) {
-                private.saveBlock(block, function (err) {
-                  if (err) {
-                    library.logger.error("Failed to save block...");
-                    library.logger.error(err);
-                    process.exit(0);
-                  }
-
-                  library.bus.message('newBlock', block, broadcast);
-                  private.lastBlock = block;
-
-                  modules.round.tick(block, done);
-                  // setImmediate(done);
-                });
+              library.dbLite.query("SELECT id FROM trs WHERE id=$id", { id: transaction.id }, ['id'], function (err, rows) {
+                if (err) {
+                  next("Failed to query transaction from db: " + err);
+                } else if (rows.length > 0) {
+                  modules.delegates.fork(block, 2);
+                  next("Transaction already exists: " + transaction.id);
+                } else {
+                  modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, next);
+                }
               });
+            },
+            function (sender, next) {
+              library.base.transaction.verify(transaction, sender, next);
             }
-          });
+          ], next);
+        }, function (err) {
+          if (err) {
+            return setImmediate(cb, "Failed to verify transaction: " + err);
+          }
+          self.applyBlock(block, broadcast, cb, true);
         });
-      })
+      });
     });
-  }, callback);
+  });
 }
 
 Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
