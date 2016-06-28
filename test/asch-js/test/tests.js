@@ -55,7 +55,7 @@ describe("Asch JS", function () {
 				var transaction = {
 					type: 0,
 					amount: 1000,
-					recipientId: "58191285901858109L",
+					recipientId: "58191285901858109",
 					timestamp: 141738,
 					asset: {},
 					senderPublicKey: "5d036a858ce89f844491762eb89e2bfbd50a4a0a0da658e4b2628b25b117ae09",
@@ -73,7 +73,7 @@ describe("Asch JS", function () {
 				var transaction = {
 					type: 0,
 					amount: 1000,
-					recipientId: "58191285901858109L",
+					recipientId: "58191285901858109",
 					timestamp: 141738,
 					asset: {},
 					senderPublicKey: "5d036a858ce89f844491762eb89e2bfbd50a4a0a0da658e4b2628b25b117ae09",
@@ -104,7 +104,7 @@ describe("Asch JS", function () {
 				var transaction = {
 					type: 0,
 					amount: 1000,
-					recipientId: "58191285901858109L",
+					recipientId: "58191285901858109",
 					timestamp: 141738,
 					asset: {},
 					senderPublicKey: "5d036a858ce89f844491762eb89e2bfbd50a4a0a0da658e4b2628b25b117ae09",
@@ -134,7 +134,7 @@ describe("Asch JS", function () {
 				var transaction = {
 					type: 0,
 					amount: 1000,
-					recipientId: "58191285901858109L",
+					recipientId: "58191285901858109",
 					timestamp: 141738,
 					asset: {},
 					senderPublicKey: "5d036a858ce89f844491762eb89e2bfbd50a4a0a0da658e4b2628b25b117ae09",
@@ -280,7 +280,7 @@ describe("Asch JS", function () {
 
 				(address).should.be.ok;
 				(address).should.be.type("string");
-				(address).should.be.equal("18160565574430594874L");
+				(address).should.be.equal("18160565574430594874");
 			});
 		});
 
@@ -877,7 +877,7 @@ describe("Asch JS", function () {
 			});
 
 			it("should create transaction without second signature", function () {
-				trs = createTransaction("58191285901858109L", 1000, "secret");
+				trs = createTransaction("58191285901858109", 1000, "secret");
 				(trs).should.be.ok;
 			});
 
@@ -910,8 +910,8 @@ describe("Asch JS", function () {
 					})
 				});
 
-				it("should have recipientId as string and to be equal 58191285901858109L", function () {
-					(trs.recipientId).should.be.type("string").and.equal("58191285901858109L");
+				it("should have recipientId as string and to be equal 58191285901858109", function () {
+					(trs.recipientId).should.be.type("string").and.equal("58191285901858109");
 				});
 
 				it("should have amount as number and eqaul to 1000", function () {
@@ -962,7 +962,7 @@ describe("Asch JS", function () {
 			});
 
 			it("should create transaction without second signature", function () {
-				trs = createTransaction("58191285901858109L", 1000, "secret", secondSecret);
+				trs = createTransaction("58191285901858109", 1000, "secret", secondSecret);
 				(trs).should.be.ok;
 			});
 
@@ -995,8 +995,8 @@ describe("Asch JS", function () {
 					})
 				});
 
-				it("should have recipientId as string and to be equal 58191285901858109L", function () {
-					(trs.recipientId).should.be.type("string").and.equal("58191285901858109L");
+				it("should have recipientId as string and to be equal 58191285901858109", function () {
+					(trs.recipientId).should.be.type("string").and.equal("58191285901858109");
 				});
 
 				it("should have amount as number and eqaul to 1000", function () {

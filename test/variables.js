@@ -42,7 +42,7 @@ var guestbookDapp = {
 
 // Account info for delegate to register manually
 var Daccount = {
-  "address": "4180149793392527131L",
+  "address": "4180149793392527131",
   "publicKey": "fe16b09612ca50a6cbcc0a95bdf30bfa11e12c1aded819916cadb0c1e769b4bf",
   "password": "demise hidden width hand solid deal doll party danger pencil foil oven",
   "secondPassword": "brother maid replace hard scorpion clinic sentence bridge goose gun mass next",
@@ -52,7 +52,7 @@ var Daccount = {
 
 // Existing delegate account in blockchain
 var Eaccount = {
-  "address": "2581762640681118072L",
+  "address": "2581762640681118072",
   "publicKey": "01389197bbaf1afb0acd47bbfeabb34aca80fb372a8f694a1c0716b3398db746",
   "password": "length reunion two motor spy shine copper elite culture lift pet organ",
   "balance": 0,
@@ -61,7 +61,7 @@ var Eaccount = {
 
 // Account info for genesis account - Needed for voting, registrations and Tx
 var Gaccount = {
-  "address": "16313739661670634666L",
+  "address": "16313739661670634666",
   "publicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
   "password": "wagon stock borrow episode laundry kitten salute link globe zero feed marble",
   "balance": 10000000000000000
