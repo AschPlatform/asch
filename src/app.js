@@ -9,26 +9,24 @@ var appConfig = require('../config.json');
 var init = require('./init');
 
 function verifyGenesisBlock(scope, block) {
-  var payloadHash = crypto.createHash('sha256');
-  var payloadLength = 0;
-  var transactions = block.transactions.sort(function compare(a, b) {
-    if (a.type < b.type) return -1;
-    if (a.type > b.type) return 1;
-    if (a.amount < b.amount) return -1;
-    if (a.amount > b.amount) return 1;
-    return 0;
-  });
-  for (var i = 0; i < transactions.length; ++i) {
-    var trs = transactions[i];
-    var bytes = scope.base.transaction.getBytes(trs);
-    payloadLength += bytes.length;
-    payloadHash.update(bytes);
+  try {
+    var payloadHash = crypto.createHash('sha256');
+    var payloadLength = 0;
+
+    for (var i = 0; i < block.transactions.length; ++i) {
+      var trs = block.transactions[i];
+      var bytes = scope.base.transaction.getBytes(trs);
+      payloadLength += bytes.length;
+      payloadHash.update(bytes);
+    }
+    var id = scope.base.block.getId(block);
+    assert.equal(payloadLength, block.payloadLength, 'Unexpected payloadLength');
+    assert.equal(payloadHash.digest().toString('hex'), block.payloadHash, 'Unexpected payloadHash');
+    assert.equal(id, block.id, 'Unexpected block id');
+    assert.equal(id, '11839820784468442760', 'Block id is incorrect');
+  } catch (e) {
+    assert(false, 'Failed to verify genesis block: ' + e);
   }
-  var id = scope.base.block.getId(block);
-  assert.equal(payloadLength, block.payloadLength);
-  assert.equal(payloadHash.digest().toString('hex'), block.payloadHash);
-  assert.equal(id, block.id);
-  assert.equal(id, '8593810399212843182');
 }
 
 function main() {
@@ -103,7 +101,7 @@ function main() {
         return;
       }
       logger = scope.logger;
-      if (process.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === 'production') {
         verifyGenesisBlock(scope, scope.genesisblock.block);
       }
       scope.bus.message("bind", scope.modules);

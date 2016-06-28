@@ -2,6 +2,7 @@
 
 // Requires and node configuration
 var node = require("./../variables.js");
+var genesisblock = require("../../genesisBlock.json");
 
 var block = {
     blockHeight : 0,
@@ -418,7 +419,7 @@ describe("GET /blocks", function () {
 describe("GET /blocks/get?id=", function () {
 
     it("Using genesisblock id. Should be ok", function (done) {
-        var genesisblockId = "6524861224470851795";
+        var genesisblockId = genesisblock.id;
 
         node.api.get("/blocks/get?id=" + genesisblockId)
             .set("Accept", "application/json")

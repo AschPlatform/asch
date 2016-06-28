@@ -94,7 +94,7 @@ Block.prototype.sign = function (block, keypair) {
 }
 
 Block.prototype.getBytes = function (block) {
-  var size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
+  var size = 4 + 4 + 8 + 4 + 8 + 8 + 8 + 4 + 32 + 32 + 64;
 
   try {
     var bb = new ByteBuffer(size, true);
@@ -140,7 +140,7 @@ Block.prototype.getBytes = function (block) {
     bb.flip();
     var b = bb.toBuffer();
   } catch (e) {
-    throw Error(e.toString());
+    throw Error("Failed to getBytes: " + e.toString());
   }
 
   return b;

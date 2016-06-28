@@ -42,6 +42,7 @@
     "z-schema": "https://github.com/sqfasd/z-schema/tarball/master"
   },
   "devDependencies": {
+    "asch-js": "*",
     "blanket": "~1.1.6",
     "browserify-bignum": "^1.3.0-2",
     "buffer": "^3.0.3",

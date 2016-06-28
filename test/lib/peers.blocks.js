@@ -3,8 +3,6 @@
 var node = require("./../variables.js"),
     crypto = require("crypto");
 
-var genesisblock = require("../../genesisBlock.json");
-
 describe("POST /peer/blocks", function () {
 
     it("Using invalid magic in headers. Should fail", function (done) {

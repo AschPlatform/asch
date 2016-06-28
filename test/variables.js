@@ -52,18 +52,18 @@ var Daccount = {
 
 // Existing delegate account in blockchain
 var Eaccount = {
-  "address": "2581762640681118072",
-  "publicKey": "01389197bbaf1afb0acd47bbfeabb34aca80fb372a8f694a1c0716b3398db746",
-  "password": "length reunion two motor spy shine copper elite culture lift pet organ",
+  "address": "2545742828139131960",
+  "publicKey": "c2af07df216d28602f1be038f1ecea824761f35b30cd563d50c5e6885a687999",
+  "password": "congress heart eye humor silly tribe simple find toe earth lady emerge",
   "balance": 0,
-  "delegateName": "genesis_51"
+  "delegateName": "genesisDelegate1"
 };
 
 // Account info for genesis account - Needed for voting, registrations and Tx
 var Gaccount = {
-  "address": "16313739661670634666",
-  "publicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
-  "password": "wagon stock borrow episode laundry kitten salute link globe zero feed marble",
+  "address": "10174159498857769178",
+  "publicKey": "56c27d81a9956115b4450ad57a444c0f80bcbb4cf01f0b09fed1a33f9e02c860",
+  "password": "narrow large ribbon hurt leader dream marriage evidence census attack fiction cube",
   "balance": 10000000000000000
 };
 
@@ -272,7 +272,7 @@ module.exports = {
   api: api,
   chai: chai,
   peer : peer,
-  asch: require("./asch-js"),
+  asch: require("asch-js"),
   supertest: supertest,
   expect: expect,
   version: version,
