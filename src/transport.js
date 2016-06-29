@@ -246,6 +246,55 @@ private.attachApi = function () {
 
     res.sendStatus(200);
   });
+  
+  router.post("/confirm", function (req, res) {
+    res.set(private.headers);
+    
+    var report = library.scheme.validate(req.headers, {
+      type: "object",
+      properties: {
+        port: {
+          type: "integer",
+          minimum: 1,
+          maximum: 65535
+        }
+      },
+      required: ['port']
+    });
+
+    var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
+
+    if(req.headers['magic']!==library.config.magic){
+      return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.magic, "received":req.headers['magic']});
+    }
+    
+    library.scheme.validate(req.body, {
+      type: "object",
+      properties: {
+        height: {
+          type: "integer",
+          minimum: 1
+        },
+        id: {
+          type: "string",
+          maxLength: 30,
+        },
+        signatures: {
+          type: "array",
+          minLength: 1,
+          maxLength: 101,
+        }
+      },
+      required: ["height", "id", "signatures"]
+    }, function (err) {
+      if (err) {
+        return res.status(200).json({success: false, error: "Schema validation error"});
+      }
+      library.bus.message('receiveConfirm', req.body);
+      res.sendStatus(200);
+    });
+  });
 
   router.post('/signatures', function (req, res) {
     res.set(private.headers);
@@ -659,6 +708,13 @@ Transport.prototype.onNewBlock = function (block, broadcast) {
   if (broadcast) {
     self.broadcast({limit: 100}, {api: '/blocks', data: {block: block}, method: "POST"});
     library.network.io.sockets.emit('blocks/change', {});
+  }
+}
+
+Transport.prototype.onConfirm = function (confirm, broadcast) {
+  if (broadcast) {
+    self.broadcast({limit: 100}, {api: '/confirm', data: confirm, method: "POST"});
+    // library.network.io.sockets.emit('blocks/change', {});
   }
 }
 

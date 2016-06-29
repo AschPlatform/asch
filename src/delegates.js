@@ -513,14 +513,7 @@ private.loop = function (cb) {
 
     library.sequence.add(function (cb) {
       if (slots.getSlotNumber(currentBlockData.time) == slots.getSlotNumber()) {
-        modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err) {
-          library.logger.log('Forged new block id: ' + modules.blocks.getLastBlock().id +
-                     ' height: ' + modules.blocks.getLastBlock().height +
-                     ' round: ' + modules.round.calc(modules.blocks.getLastBlock().height) +
-                     ' slot: ' + slots.getSlotNumber(currentBlockData.time) +
-                     ' reward: ' + modules.blocks.getLastBlock().reward);
-          return cb(err);
-        });
+        modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, cb);
       } else {
         // library.logger.log('Loop', 'exit: ' + _activeDelegates[slots.getSlotNumber() % slots.delegates] + ' delegate slot');
         return setImmediate(cb);
@@ -563,6 +556,21 @@ private.loadMyDelegates = function (cb) {
       cb();
     });
   }, cb);
+}
+
+Delegates.prototype.getActiveDelegateKeypairs = function (height, cb) {
+  Delegates.prototype.generateDelegateList(height, function (err, delegates) {
+    if (err) {
+      return cb(err);
+    }
+    var results = [];
+    for (var key in private.keypairs) {
+      if (delegates.indexOf(key) !== -1) {
+        results.push(private.keypairs[key]);
+      }
+    }
+    cb(null, results);
+  });
 }
 
 // Public methods

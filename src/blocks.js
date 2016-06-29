@@ -8,6 +8,7 @@ var blockStatus = require("./utils/blockStatus.js");
 var constants = require('./utils/constants.js');
 var Router = require('./utils/router.js');
 var slots = require('./utils/slots.js');
+var bignum = require('./utils/bignum.js');
 var TransactionTypes = require('./utils/transaction-types.js');
 var sandboxHelper = require('./utils/sandbox.js');
 
@@ -16,6 +17,9 @@ require('array.prototype.findindex'); // Old node fix
 var genesisblock = null;
 // Private fields
 var modules, library, self, private = {}, shared = {};
+
+var pendingBlocks = {};
+var confirmStats = {};
 
 private.lastBlock = {};
 private.blockStatus = new blockStatus();
@@ -1063,19 +1067,19 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
   var transactions = modules.transactions.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
   var ready = [];
 
-  async.eachSeries(transactions, function (transaction, cb) {
+  async.eachSeries(transactions, function (transaction, next) {
     modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
       if (err || !sender) {
-        return cb("Invalid sender");
+        return next("Invalid sender");
       }
 
       if (library.base.transaction.ready(transaction, sender)) {
         library.base.transaction.verify(transaction, sender, function (err) {
           ready.push(transaction);
-          cb();
+          next();
         });
       } else {
-        setImmediate(cb);
+        setImmediate(next);
       }
     });
   }, function () {
@@ -1090,12 +1094,112 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
       return setImmediate(cb, e);
     }
 
-    self.processBlock(block, true, cb);
+    // self.processBlock(block, true, cb);
+    self.verifyBlock(block, function (err) {
+      if (err) {
+        library.logger.error("generateBlock can't verify block id: " + block.id + " height: " + block.height);
+        return;
+      }
+      self.addPendingBlock(block);
+      library.bus.message('newBlock', block, true);
+      
+      modules.delegates.getActiveDelegateKeypairs(block.height, function (err, keypairs) {
+        if (err) {
+          library.logger.error("getActiveDelegateKeypairs err: " + err);
+          return;
+        }
+        if (keypairs.length == 0) {
+          return;
+        }
+        library.logger.debug("getActiveDelegateKeypairs length: " + keypairs.length);
+        var confirm = {height: block.height, id: block.id, signatures: []};
+        var hash = self.getConfirmHash(block.height, block.id);
+        keypairs.forEach(function (el) {
+          confirm.signatures.push({
+            key: el.publicKey.toString('hex'),
+            sig: ed.Sign(hash, el).toString('hex')
+          });
+        });
+        self.onReceiveConfirm(confirm);
+      });
+    });
+    
+    cb();
   });
 }
 
 Blocks.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
+}
+
+Blocks.prototype.addPendingBlock = function (block) {
+  var blocksOfHeight = pendingBlocks[block.height];
+  if (!blocksOfHeight) {
+    blocksOfHeight = pendingBlocks[block.height] = {};
+  }
+  if (!blocksOfHeight[block.id]) {
+    blocksOfHeight[block.id] = block;
+  }
+}
+
+Blocks.prototype.getPendingBlock = function (height, id) {
+  return pendingBlocks[height] && pendingBlocks[height][id];
+}
+
+Blocks.prototype.addBlockConfirm = function (height, id, key) {
+  var statsOfHeight = confirmStats[height];
+  if (!statsOfHeight) {
+    statsOfHeight = confirmStats[height] = {};
+  }
+  var statsOfId = statsOfHeight[id];
+  if (!statsOfId) {
+    statsOfId = statsOfHeight[id] = { votes: 0 };
+  }
+  if (!statsOfId[key]) {
+    statsOfId[key] = true;
+    statsOfId.votes++;
+  }
+  return statsOfId;
+}
+
+Blocks.prototype.getBlockConfirm = function (height, id) {
+  return confirmStats[height] && confirmStats[height][id];
+}
+
+Blocks.prototype.checkBlockConfirms = function (block) {
+  var height = block.height;
+  var id = block.id;
+  var confirmDetail = self.getBlockConfirm(height, id);
+  if (!confirmDetail) {
+    return;
+  }
+  if (confirmDetail.votes > slots.delegates * 2 / 3 + 1) {
+    delete pendingBlocks[height];
+    delete confirmStats[height];
+    self.processBlock(block, false, function (err) {
+      if (err) {
+        library.logger.error("checkBlockConfirms failed to process confirmed block height: " + height + " id: " + id);
+        return;
+      }
+      library.logger.log('Forged new block id: ' + id +
+        ' height: ' + height +
+        ' round: ' + modules.round.calc(height) +
+        ' slot: ' + slots.getSlotNumber(block.timestamp) +
+        ' reward: ' + block.reward);
+      library.bus.message('confirmBlock', block, true);
+    });
+  }
+}
+
+Blocks.prototype.getConfirmHash = function (height, id) {
+  var bytes = new ByteBuffer();
+  bytes.writeLong(height);
+  var idBytes = bignum(id).toBuffer({ size: 8 });
+  for (var j = 0; j < 8; j++) {
+    bytes.writeByte(idBytes[j]);
+  }
+  bytes.flip();
+  return crypto.createHash('sha256').update(bytes.toBuffer()).digest();
 }
 
 // Events
@@ -1105,9 +1209,17 @@ Blocks.prototype.onReceiveBlock = function (block) {
   }
 
   library.sequence.add(function (cb) {
-    if (block.previousBlock == private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
+    if (block.previousBlock == private.lastBlock.id && private.lastBlock.height + 1 == block.height && !self.getPendingBlock(block.height, block.id)) {
       library.logger.log('Received new block id: ' + block.id + ' height: ' + block.height + ' slot: ' + slots.getSlotNumber(block.timestamp) + ' reward: ' + modules.blocks.getLastBlock().reward)
-      self.processBlock(block, true, cb);
+      self.verifyBlock(block, function (err) {
+        if (err) {
+          library.logger.error("onReceiveBlock can't verify block id: " + block.id + " height: " + block.height);
+          return;
+        }
+        self.addPendingBlock(block);
+        library.bus.message('newBlock', block, true);
+        self.checkBlockConfirms(block);
+      });
     } else if (block.previousBlock != private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
       // Fork right height and different previous block
       modules.delegates.fork(block, 1);
@@ -1118,6 +1230,59 @@ Blocks.prototype.onReceiveBlock = function (block) {
       cb("Fork");
     } else {
       cb();
+    }
+  });
+}
+
+Blocks.prototype.onReceiveConfirm = function (confirm) {
+  var height = confirm.height;
+  var id = confirm.id;
+  
+  library.logger.debug("onReceiveConfirm height: " + height + ", id: " + id);
+  
+  var block = self.getPendingBlock(height, id);
+  if (!block) {
+    return;
+  }
+  if (!confirm.signatures || confirm.signatures.length <= 0) {
+    return;
+  }
+  var currentBlockConfirm = self.getBlockConfirm(height, id);
+  if (currentBlockConfirm && currentBlockConfirm[confirm.signatures[0].key]) {
+    return;
+  }
+  
+  library.bus.message('confirm', confirm, true);
+  
+  modules.delegates.generateDelegateList(height, function (err, delegatesList) {
+    if (err) {
+      library.logger.error("Failed to get delegate list while verifying confirms");
+      process.exit(-1);
+      return;
+    }
+    var publicKeySet = {};
+    delegatesList.forEach(function (item) {
+      publicKeySet[item] = true;
+    });
+    for (var i = 0; i < confirm.signatures.length; ++i) {
+      var item = confirm.signatures[i];
+      if (!publicKeySet[item.key]) {
+        library.logger.debug("generator publickey is not in the top list: " + item.key);
+        continue;
+      }
+      try {
+        var signature = new Buffer(item.sig, "hex");
+        var publicKey = new Buffer(item.key, "hex");
+        var hash = self.getConfirmHash(height, id);
+        if (ed.Verify(hash, signature, publicKey)) {
+          self.addBlockConfirm(height, id, item.key);
+          self.checkBlockConfirms(block);
+        } else {
+          library.logger.error("Failed to verify confirm signature");
+        }
+      } catch (e) {
+        library.logger.error("Verify confirm signature exception: " + e);
+      }
     }
   });
 }
