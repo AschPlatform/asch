@@ -900,7 +900,7 @@ shared.getVoters = function (req, cb) {
       modules.accounts.getAccounts({
         address: {$in: addresses},
         sort: 'balance'
-      }, ['address', 'balance', 'username', 'publicKey'], function (err, rows) {
+      }, ['address', 'balance', 'publicKey'], function (err, rows) {
         if (err) {
           library.logger.error(err);
           return cb("Database error");
