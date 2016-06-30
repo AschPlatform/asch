@@ -247,10 +247,14 @@ private.list = function (filter, cb) {
   });
 }
 
-private.getById = function (id, cb) {
+private.getByField = function (field, cb) {
+  var condition = "b." + field.key + " = $" + field.key;
+  var values = {};
+  values[field.key] = field.value;
+  console.log(field, values);
   library.dbLite.query("select b.id, b.version, b.timestamp, b.height, b.previousBlock, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength,  lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), (select max(height) + 1 from blocks) - b.height " +
     "from blocks b " +
-    "where b.id = $id", {id: id}, ['b_id', 'b_version', 'b_timestamp', 'b_height', 'b_previousBlock', 'b_numberOfTransactions', 'b_totalAmount', 'b_totalFee', 'b_reward', 'b_payloadLength', 'b_payloadHash', 'b_generatorPublicKey', 'b_blockSignature', 'b_confirmations'], function (err, rows) {
+    "where " + condition, values, ['b_id', 'b_version', 'b_timestamp', 'b_height', 'b_previousBlock', 'b_numberOfTransactions', 'b_totalAmount', 'b_totalFee', 'b_reward', 'b_payloadLength', 'b_payloadHash', 'b_generatorPublicKey', 'b_blockSignature', 'b_confirmations'], function (err, rows) {
     if (err || !rows.length) {
       return cb(err || "Block not found");
     }
@@ -1328,16 +1332,35 @@ shared.getBlock = function (req, cb) {
       id: {
         type: 'string',
         minLength: 1
+      },
+      height: {
+        type: 'integer',
+        minimum: 1
+      },
+      hash: {
+        type: 'string',
+        minLength: 1
       }
-    },
-    required: ["id"]
+    }
   }, function (err) {
     if (err) {
       return cb(err[0].message);
     }
 
     library.dbSequence.add(function (cb) {
-      private.getById(query.id, function (err, block) {
+      var field;
+      var keys = ['id', 'height', 'hash'];
+      for (var i in keys) {
+        var key = keys[i];
+        if (query[key]) {
+          field = {key: key, value: query[key]};
+          break;
+        }
+      }
+      if (!field) {
+        return cb("Invalid params");
+      }
+      private.getByField(field, function (err, block) {
         if (!block || err) {
           return cb("Block not found");
         }
