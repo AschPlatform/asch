@@ -1095,6 +1095,8 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
     }
 
     // self.processBlock(block, true, cb);
+    
+    // TODO sequence need?
     self.prepareBlock(block, function (err) {
       if (err) {
         library.logger.error("Failed to generate block: " + err); 
