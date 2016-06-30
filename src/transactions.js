@@ -694,7 +694,7 @@ shared.addTransactions = function (req, cb) {
         }
 
         var recipientId = recipient ? recipient.address : body.recipientId;
-        if (!recipient) {
+        if (!recipientId) {
           return cb("Recipient not found");
         }
 
