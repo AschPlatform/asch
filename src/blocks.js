@@ -1095,41 +1095,50 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
     }
 
     // self.processBlock(block, true, cb);
-    self.verifyBlock(block, function (err) {
+    self.prepareBlock(block, function (err) {
       if (err) {
-        library.logger.error("generateBlock can't verify block id: " + block.id + " height: " + block.height);
-        return;
+        library.logger.error("Failed to generate block: " + err); 
       }
-      self.addPendingBlock(block);
-      library.bus.message('newBlock', block, true);
-      
-      modules.delegates.getActiveDelegateKeypairs(block.height, function (err, keypairs) {
-        if (err) {
-          library.logger.error("getActiveDelegateKeypairs err: " + err);
-          return;
-        }
-        if (keypairs.length == 0) {
-          return;
-        }
-        library.logger.debug("getActiveDelegateKeypairs length: " + keypairs.length);
-        var confirm = {height: block.height, id: block.id, signatures: []};
-        var hash = self.getConfirmHash(block.height, block.id);
-        keypairs.forEach(function (el) {
-          confirm.signatures.push({
-            key: el.publicKey.toString('hex'),
-            sig: ed.Sign(hash, el).toString('hex')
-          });
-        });
-        self.onReceiveConfirm(confirm);
-      });
+      cb(err);
     });
-    
-    cb();
   });
 }
 
 Blocks.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
+}
+
+Blocks.prototype.prepareBlock = function (block, cb) {
+  self.verifyBlock(block, function (err) {
+    if (err) {
+      cb("Can't verify block when prepare block: " + err);
+      return;
+    }
+    self.addPendingBlock(block);
+    library.bus.message('newBlock', block, true);
+
+    modules.delegates.getActiveDelegateKeypairs(block.height, function (err, keypairs) {
+      if (err) {
+        cb("Failed to get active delegate keyparis: " + err);
+        return;
+      }
+      if (keypairs.length == 0) {
+        cb();
+        return;
+      }
+      library.logger.debug("getActiveDelegateKeypairs length: " + keypairs.length);
+      var confirm = { height: block.height, id: block.id, signatures: [] };
+      var hash = self.getConfirmHash(block.height, block.id);
+      keypairs.forEach(function (el) {
+        confirm.signatures.push({
+          key: el.publicKey.toString('hex'),
+          sig: ed.Sign(hash, el).toString('hex')
+        });
+      });
+      self.onReceiveConfirm(confirm);
+      cb();
+    });
+  });
 }
 
 Blocks.prototype.addPendingBlock = function (block) {
@@ -1211,15 +1220,12 @@ Blocks.prototype.onReceiveBlock = function (block) {
   library.sequence.add(function (cb) {
     if (block.previousBlock == private.lastBlock.id && private.lastBlock.height + 1 == block.height && !self.getPendingBlock(block.height, block.id)) {
       library.logger.log('Received new block id: ' + block.id + ' height: ' + block.height + ' slot: ' + slots.getSlotNumber(block.timestamp) + ' reward: ' + modules.blocks.getLastBlock().reward)
-      self.verifyBlock(block, function (err) {
+      self.prepareBlock(block, function (err) {
         if (err) {
-          library.logger.error("onReceiveBlock can't verify block id: " + block.id + " height: " + block.height);
-          return;
+          library.logger.error("Failed to prepare block: " + err);
         }
-        self.addPendingBlock(block);
-        library.bus.message('newBlock', block, true);
-        self.checkBlockConfirms(block);
-      });
+        cb(err);
+      })
     } else if (block.previousBlock != private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
       // Fork right height and different previous block
       modules.delegates.fork(block, 1);
