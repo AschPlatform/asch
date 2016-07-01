@@ -361,6 +361,10 @@ private.attachApi = function () {
   router.post("/transactions", function (req, res) {
     res.set(private.headers);
 
+    if (modules.loader.syncing() || !private.loaded) {
+      return res.status(200).json({ success: false, message: "Peer is not ready to receive transaction" });
+    }
+
     var report = library.scheme.validate(req.headers, {
       type: "object",
       properties: {
@@ -380,11 +384,7 @@ private.attachApi = function () {
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     var peerStr = peerIp ? peerIp + ":" + (isNaN(req.headers['port']) ? 'unknown' : req.headers['port']) : 'unknown';
 
-    if (modules.loader.syncing() || !private.loaded) {
-      return res.status(200).json({success: false, message: "Peer is not ready to receive transaction"});
-    }
-
-    if(req.headers['magic']!==library.config.magic){
+    if(req.headers['magic']!==library.config.magic) {
       return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.magic, "received":req.headers['magic']});
     }
     try {
