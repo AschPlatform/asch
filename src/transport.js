@@ -400,6 +400,9 @@ private.attachApi = function () {
     }
 
     library.balancesSequence.add(function (cb) {
+      if (modules.transactions.hasUnconfirmedTransaction(transaction)) {
+        return cb();
+      }
       library.logger.log('Received transaction ' + transaction.id + ' from peer ' + peerStr);
       modules.transactions.receiveTransactions([transaction], cb);
     }, function (err) {

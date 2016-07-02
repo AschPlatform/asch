@@ -330,6 +330,10 @@ Transactions.prototype.removeUnconfirmedTransaction = function (id) {
   private.unconfirmedTransactions[index] = false;
 }
 
+Transactions.prototype.hasUnconfirmedTransaction = function (transaction) {
+  return private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined || private.doubleSpendingTransactions[transaction.id];
+}
+
 Transactions.prototype.processUnconfirmedTransaction = function (transaction, broadcast, cb) {
   if (!transaction) {
     return cb("No transaction to process!");
