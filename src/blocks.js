@@ -1249,22 +1249,33 @@ Blocks.prototype.onReceiveBlock = function (block) {
   }
 }
 
+Blocks.prototype.isUsefullConfirm = function (confirm) {
+  var height = confirm.height;
+  var id = confirm.id;
+  
+  if (!confirm.signatures || confirm.signatures.length <= 0) {
+    return false;
+  }
+  var currentBlockConfirm = self.getBlockConfirm(height, id);
+  if (currentBlockConfirm && currentBlockConfirm[confirm.signatures[0].key]) {
+    return false;
+  }
+  return true;
+}
+
 Blocks.prototype.onReceiveConfirm = function (confirm) {
   var height = confirm.height;
   var id = confirm.id;
   
+  if (!self.isUsefullConfirm(confirm)) {
+    return;
+  }
+
   library.logger.debug("onReceiveConfirm height: " + height + ", id: " + id);
   
   library.sequence.add(function (cb) {
-    var block = self.getPendingBlock(height, id);
-    if (!block) {
-      return cb();
-    }
-    if (!confirm.signatures || confirm.signatures.length <= 0) {
-      return cb();
-    }
-    var currentBlockConfirm = self.getBlockConfirm(height, id);
-    if (currentBlockConfirm && currentBlockConfirm[confirm.signatures[0].key]) {
+
+    if (!self.isUsefullConfirm(confirm)) {
       return cb();
     }
 
@@ -1299,11 +1310,15 @@ Blocks.prototype.onReceiveConfirm = function (confirm) {
           library.logger.error("Verify confirm signature exception: " + e);
         }
       }
+      var block = self.getPendingBlock(height, id);
+      if (!block) {
+        return cb();
+      }
       self.checkBlockConfirms(block, function (err) {
         if (err) {
           library.logger.error("checkBlockConfirms error: " + err);
         }
-        cb();
+        cb(err);
       });
     });
   });
