@@ -1181,18 +1181,18 @@ Blocks.prototype.getBlockConfirm = function (height, id) {
   return confirmStats[height] && confirmStats[height][id];
 }
 
-Blocks.prototype.checkBlockConfirms = function (block) {
+Blocks.prototype.checkBlockConfirms = function (block, cb) {
   var height = block.height;
   var id = block.id;
   var confirmDetail = self.getBlockConfirm(height, id);
   if (!confirmDetail) {
-    return;
+    return cb();
   }
+  library.logger.debug("votes for block id " + id + " and height " + height + ": " + confirmDetail.votes);
   if (confirmDetail.votes > slots.delegates * 2 / 3 + 1) {
     self.processBlock(block, false, function (err) {
       if (err) {
-        library.logger.error("checkBlockConfirms failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
-        return;
+        return cb("Failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
       }
       delete pendingBlocks[height];
       delete confirmStats[height];
@@ -1202,6 +1202,7 @@ Blocks.prototype.checkBlockConfirms = function (block) {
         ' slot: ' + slots.getSlotNumber(block.timestamp) +
         ' reward: ' + block.reward);
       library.bus.message('confirmBlock', block, true);
+      return cb();
     });
   }
 }
@@ -1222,8 +1223,12 @@ Blocks.prototype.onReceiveBlock = function (block) {
   if (modules.loader.syncing() || !private.loaded) {
     return;
   }
+  
+  if (self.getPendingBlock(block.height, block.id)) {
+    return;
+  }
 
-  if (block.previousBlock == private.lastBlock.id && private.lastBlock.height + 1 == block.height && !self.getPendingBlock(block.height, block.id)) {
+  if (block.previousBlock == private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
     library.logger.log('Received new block id: ' + block.id + ' height: ' + block.height + ' slot: ' + slots.getSlotNumber(block.timestamp) + ' reward: ' + modules.blocks.getLastBlock().reward)
     self.prepareBlock(block, function (err) {
       if (err) {
@@ -1250,50 +1255,57 @@ Blocks.prototype.onReceiveConfirm = function (confirm) {
   
   library.logger.debug("onReceiveConfirm height: " + height + ", id: " + id);
   
-  var block = self.getPendingBlock(height, id);
-  if (!block) {
-    return;
-  }
-  if (!confirm.signatures || confirm.signatures.length <= 0) {
-    return;
-  }
-  var currentBlockConfirm = self.getBlockConfirm(height, id);
-  if (currentBlockConfirm && currentBlockConfirm[confirm.signatures[0].key]) {
-    return;
-  }
-  
-  library.bus.message('confirm', confirm, true);
-  
-  modules.delegates.generateDelegateList(height, function (err, delegatesList) {
-    if (err) {
-      library.logger.error("Failed to get delegate list while verifying confirms");
-      process.exit(-1);
-      return;
+  library.sequence.add(function (cb) {
+    var block = self.getPendingBlock(height, id);
+    if (!block) {
+      return cb();
     }
-    var publicKeySet = {};
-    delegatesList.forEach(function (item) {
-      publicKeySet[item] = true;
-    });
-    for (var i = 0; i < confirm.signatures.length; ++i) {
-      var item = confirm.signatures[i];
-      if (!publicKeySet[item.key]) {
-        library.logger.debug("generator publickey is not in the top list: " + item.key);
-        continue;
+    if (!confirm.signatures || confirm.signatures.length <= 0) {
+      return cb();
+    }
+    var currentBlockConfirm = self.getBlockConfirm(height, id);
+    if (currentBlockConfirm && currentBlockConfirm[confirm.signatures[0].key]) {
+      return cb();
+    }
+
+    library.bus.message('confirm', confirm, true);
+
+    modules.delegates.generateDelegateList(height, function (err, delegatesList) {
+      if (err) {
+        library.logger.error("Failed to get delegate list while verifying confirms");
+        process.exit(-1);
+        return;
       }
-      try {
-        var signature = new Buffer(item.sig, "hex");
-        var publicKey = new Buffer(item.key, "hex");
-        var hash = self.getConfirmHash(height, id);
-        if (ed.Verify(hash, signature, publicKey)) {
-          self.addBlockConfirm(height, id, item.key);
-          self.checkBlockConfirms(block);
-        } else {
-          library.logger.error("Failed to verify confirm signature");
+      var publicKeySet = {};
+      delegatesList.forEach(function (item) {
+        publicKeySet[item] = true;
+      });
+      for (var i = 0; i < confirm.signatures.length; ++i) {
+        var item = confirm.signatures[i];
+        if (!publicKeySet[item.key]) {
+          library.logger.debug("generator publickey is not in the top list: " + item.key);
+          continue;
         }
-      } catch (e) {
-        library.logger.error("Verify confirm signature exception: " + e);
+        try {
+          var signature = new Buffer(item.sig, "hex");
+          var publicKey = new Buffer(item.key, "hex");
+          var hash = self.getConfirmHash(height, id);
+          if (ed.Verify(hash, signature, publicKey)) {
+            self.addBlockConfirm(height, id, item.key);
+          } else {
+            library.logger.error("Failed to verify confirm signature");
+          }
+        } catch (e) {
+          library.logger.error("Verify confirm signature exception: " + e);
+        }
       }
-    }
+      self.checkBlockConfirms(block, function (err) {
+        if (err) {
+          library.logger.error("checkBlockConfirms error: " + err);
+        }
+        cb();
+      });
+    });
   });
 }
 
