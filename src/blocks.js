@@ -20,6 +20,7 @@ var modules, library, self, private = {}, shared = {};
 
 var pendingBlocks = {};
 var confirmStats = {};
+var confirmCache = {};
 
 private.lastBlock = {};
 private.blockStatus = new blockStatus();
@@ -1186,7 +1187,7 @@ Blocks.prototype.checkBlockConfirms = function (block, cb) {
   var id = block.id;
   var confirmDetail = self.getBlockConfirm(height, id);
   if (!confirmDetail) {
-    return cb();
+    return setImmediate(cb);
   }
   library.logger.debug("votes for block id " + id + " and height " + height + ": " + confirmDetail.votes);
   if (confirmDetail.votes > slots.delegates * 2 / 3 + 1) {
@@ -1196,6 +1197,7 @@ Blocks.prototype.checkBlockConfirms = function (block, cb) {
       }
       delete pendingBlocks[height];
       delete confirmStats[height];
+      confirmCache = {};
       library.logger.log('Forged new block id: ' + id +
         ' height: ' + height +
         ' round: ' + modules.round.calc(height) +
@@ -1204,6 +1206,8 @@ Blocks.prototype.checkBlockConfirms = function (block, cb) {
       library.bus.message('confirmBlock', block, true);
       return cb();
     });
+  } else {
+    return setImmediate(cb);
   }
 }
 
@@ -1249,6 +1253,16 @@ Blocks.prototype.onReceiveBlock = function (block) {
   }
 }
 
+Blocks.prototype.hasConfirmCache = function (confirm) {
+  var key = confirm.height + ":" + confirm.id + ":" + confirm.signatures[0].key;
+  return !!confirmCache[key];
+}
+
+Blocks.prototype.setConfirmCache = function (confirm) {
+  var key = confirm.height + ":" + confirm.id + ":" + confirm.signatures[0].key;
+  confirmCache[key] = true;
+}
+
 Blocks.prototype.isUsefullConfirm = function (confirm) {
   var height = confirm.height;
   var id = confirm.id;
@@ -1270,16 +1284,22 @@ Blocks.prototype.onReceiveConfirm = function (confirm) {
   if (!self.isUsefullConfirm(confirm)) {
     return;
   }
+  
+  if (self.hasConfirmCache(confirm)) {
+    return;
+  }
+  
+  self.setConfirmCache(confirm);
 
-  library.logger.debug("onReceiveConfirm height: " + height + ", id: " + id);
+  library.logger.debug("onReceiveConfirm height: " + height + ", id: " + id + ", count: " + confirm.signatures.length);
   library.bus.message('confirm', confirm, true);
   
   library.sequence.add(function (cb) {
-
-    if (!self.isUsefullConfirm(confirm)) {
+    var block = self.getPendingBlock(height, id);
+    if (!block) {
+      library.logger.debug("no pending block before check confirms on id " + id + " height " + height);
       return cb();
     }
-
     modules.delegates.generateDelegateList(height, function (err, delegatesList) {
       if (err) {
         library.logger.error("Failed to get delegate list while verifying confirms");
@@ -1308,10 +1328,6 @@ Blocks.prototype.onReceiveConfirm = function (confirm) {
         } catch (e) {
           library.logger.error("Verify confirm signature exception: " + e);
         }
-      }
-      var block = self.getPendingBlock(height, id);
-      if (!block) {
-        return cb();
       }
       self.checkBlockConfirms(block, function (err) {
         if (err) {
