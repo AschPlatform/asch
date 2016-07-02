@@ -1223,27 +1223,25 @@ Blocks.prototype.onReceiveBlock = function (block) {
     return;
   }
 
-  library.sequence.add(function (cb) {
-    if (block.previousBlock == private.lastBlock.id && private.lastBlock.height + 1 == block.height && !self.getPendingBlock(block.height, block.id)) {
-      library.logger.log('Received new block id: ' + block.id + ' height: ' + block.height + ' slot: ' + slots.getSlotNumber(block.timestamp) + ' reward: ' + modules.blocks.getLastBlock().reward)
-      self.prepareBlock(block, function (err) {
-        if (err) {
-          library.logger.error("Failed to prepare block: " + err);
-        }
-        cb(err);
-      })
-    } else if (block.previousBlock != private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
-      // Fork right height and different previous block
-      modules.delegates.fork(block, 1);
-      cb("Fork");
-    } else if (block.previousBlock == private.lastBlock.previousBlock && block.height == private.lastBlock.height && block.id != private.lastBlock.id) {
-      // Fork same height and same previous block, but different block id
-      modules.delegates.fork(block, 5);
-      cb("Fork");
-    } else {
-      cb();
-    }
-  });
+  if (block.previousBlock == private.lastBlock.id && private.lastBlock.height + 1 == block.height && !self.getPendingBlock(block.height, block.id)) {
+    library.logger.log('Received new block id: ' + block.id + ' height: ' + block.height + ' slot: ' + slots.getSlotNumber(block.timestamp) + ' reward: ' + modules.blocks.getLastBlock().reward)
+    self.prepareBlock(block, function (err) {
+      if (err) {
+        library.logger.error("Failed to prepare block: " + err);
+      }
+      // cb(err);
+    })
+  } else if (block.previousBlock != private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
+    // Fork right height and different previous block
+    modules.delegates.fork(block, 1);
+    // cb("Fork");
+  } else if (block.previousBlock == private.lastBlock.previousBlock && block.height == private.lastBlock.height && block.id != private.lastBlock.id) {
+    // Fork same height and same previous block, but different block id
+    modules.delegates.fork(block, 5);
+    // cb("Fork");
+  } else {
+    // cb();
+  }
 }
 
 Blocks.prototype.onReceiveConfirm = function (confirm) {
