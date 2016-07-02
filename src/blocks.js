@@ -1272,14 +1272,13 @@ Blocks.prototype.onReceiveConfirm = function (confirm) {
   }
 
   library.logger.debug("onReceiveConfirm height: " + height + ", id: " + id);
+  library.bus.message('confirm', confirm, true);
   
   library.sequence.add(function (cb) {
 
     if (!self.isUsefullConfirm(confirm)) {
       return cb();
     }
-
-    library.bus.message('confirm', confirm, true);
 
     modules.delegates.generateDelegateList(height, function (err, delegatesList) {
       if (err) {
