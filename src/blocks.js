@@ -1189,13 +1189,13 @@ Blocks.prototype.checkBlockConfirms = function (block) {
     return;
   }
   if (confirmDetail.votes > slots.delegates * 2 / 3 + 1) {
-    delete pendingBlocks[height];
-    delete confirmStats[height];
     self.processBlock(block, false, function (err) {
       if (err) {
-        library.logger.error("checkBlockConfirms failed to process confirmed block height: " + height + " id: " + id);
+        library.logger.error("checkBlockConfirms failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
         return;
       }
+      delete pendingBlocks[height];
+      delete confirmStats[height];
       library.logger.log('Forged new block id: ' + id +
         ' height: ' + height +
         ' round: ' + modules.round.calc(height) +
