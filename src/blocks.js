@@ -1250,6 +1250,8 @@ Blocks.prototype.onReceiveBlock = function (block) {
     modules.delegates.fork(block, 5);
     // cb("Fork");
   } else {
+    library.logger.info("receive discontinuous block height " + block.height);
+    modules.loader.startSyncBlocks();
     // cb();
   }
 }

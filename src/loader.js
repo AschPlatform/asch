@@ -489,8 +489,7 @@ Loader.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
 }
 
-// Events
-Loader.prototype.onPeerReady = function () {
+Loader.prototype.startSyncBlocks = function () {
   setImmediate(function nextLoadBlock() {
     if (!private.loaded) return;
     private.isActive = true;
@@ -509,6 +508,11 @@ Loader.prototype.onPeerReady = function () {
       setTimeout(nextLoadBlock, 9 * 1000)
     });
   });
+}
+
+// Events
+Loader.prototype.onPeerReady = function () {
+  self.startSyncBlocks();
 
   setImmediate(function nextLoadUnconfirmedTransactions() {
     if (!private.loaded || self.syncing()) return;
