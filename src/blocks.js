@@ -1249,7 +1249,7 @@ Blocks.prototype.onReceiveBlock = function (block) {
     // Fork same height and same previous block, but different block id
     modules.delegates.fork(block, 5);
     // cb("Fork");
-  } else {
+  } else if (block.height > private.lastBlock.height + 1) {
     library.logger.info("receive discontinuous block height " + block.height);
     modules.loader.startSyncBlocks();
     // cb();
