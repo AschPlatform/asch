@@ -491,7 +491,7 @@ Loader.prototype.sandboxApi = function (call, args, cb) {
 
 Loader.prototype.startSyncBlocks = function () {
   setImmediate(function nextLoadBlock() {
-    if (!private.loaded) return;
+    if (private.isActive) return;
     private.isActive = true;
     library.sequence.add(function (cb) {
       private.syncTrigger(true);
@@ -503,7 +503,6 @@ Loader.prototype.startSyncBlocks = function () {
       private.blocksToSync = 0;
 
       private.isActive = false;
-      if (!private.loaded) return;
 
       setTimeout(nextLoadBlock, 9 * 1000)
     });
@@ -512,7 +511,9 @@ Loader.prototype.startSyncBlocks = function () {
 
 // Events
 Loader.prototype.onPeerReady = function () {
-  self.startSyncBlocks();
+  if (private.loaded) {
+    self.startSyncBlocks();
+  }
 
   setImmediate(function nextLoadUnconfirmedTransactions() {
     if (!private.loaded || self.syncing()) return;

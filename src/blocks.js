@@ -1130,11 +1130,11 @@ Blocks.prototype.prepareBlock = function (block, cb) {
         cb("Failed to get active delegate keyparis: " + err);
         return;
       }
+      library.logger.debug("getActiveDelegateKeypairs length: " + keypairs.length);
       if (keypairs.length == 0) {
         cb();
         return;
       }
-      library.logger.debug("getActiveDelegateKeypairs length: " + keypairs.length);
       var confirm = { height: block.height, id: block.id, signatures: [] };
       var hash = self.getConfirmHash(block.height, block.id);
       keypairs.forEach(function (el) {

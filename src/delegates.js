@@ -559,7 +559,7 @@ private.loadMyDelegates = function (cb) {
 }
 
 Delegates.prototype.getActiveDelegateKeypairs = function (height, cb) {
-  Delegates.prototype.generateDelegateList(height, function (err, delegates) {
+  self.generateDelegateList(height, function (err, delegates) {
     if (err) {
       return cb(err);
     }
