@@ -1101,6 +1101,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
     // self.processBlock(block, true, cb);
     
+    library.logger.info("Generate new block at height " + (private.lastBlock.height + 1));
     // TODO sequence need?
     self.prepareBlock(block, function (err) {
       if (err) {
