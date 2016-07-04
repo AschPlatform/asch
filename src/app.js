@@ -128,9 +128,9 @@ function main() {
       process.once('cleanup', function () {
         scope.logger.info("Cleaning up...");
         async.eachSeries(scope.modules, function (module, cb) {
-          if (typeof(module.cleanup) == 'function'){
+          if (typeof (module.cleanup) == 'function') {
             module.cleanup(cb);
-          }else{
+          } else {
             setImmediate(cb);
           }
         }, function (err) {
