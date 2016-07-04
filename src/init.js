@@ -26,9 +26,9 @@ var moduleNames = [
 
 module.exports = function(options, done) {
   var modules = [];
-  var dbFile = options.dbFile || './blockchain.db';
-  var appConfig = options.appConfig || require('../config.json');
-  var genesisblock = options.genesisblock || require('../genesisBlock.json');
+  var dbFile = options.dbFile;
+  var appConfig = options.appConfig;
+  var genesisblock = options.genesisblock;
 
   async.auto({
     config: function (cb) {

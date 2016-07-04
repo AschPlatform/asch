@@ -5,7 +5,6 @@ var path = require('path');
 var fs = require('fs');
 var async = require('async');
 var packageJson = require('../package.json');
-var appConfig = require('../config.json');
 var Logger = require('./logger');
 var init = require('./init');
 
@@ -45,17 +44,24 @@ function main() {
     .option('-d, --daemon', 'Run asch node as daemon')
     .parse(process.argv);
 
+  var pidFile = './asch.pid';
   if (program.daemon) {
+    console.log('asch server started as daemon ...');
     require('daemon')();
-  }
-  if (program.config) {
-    appConfig = require(path.resolve(process.cwd(), program.config));
+    fs.writeFileSync(pidFile, process.pid, 'utf8');
   }
 
-  var genesisblock = require('../genesisBlock.json');
-  if (program.genesisblock) {
-    genesisblock = require(path.resolve(process.cwd(), program.genesisblock));
+  var appConfigFile = path.resolve(__dirname, '../config.json');
+  if (program.config) {
+    appConfigFile = path.resolve(process.cwd(), program.config);
   }
+  var appConfig = JSON.parse(fs.readFileSync(appConfigFile, 'utf8'));
+
+  var genesisblockFile = path.resolve(__dirname, '../genesisBlock.json');
+  if (program.genesisblock) {
+    genesisblockFile = path.resolve(process.cwd(), program.genesisblock);
+  }
+  var genesisblock = JSON.parse(fs.readFileSync(genesisblockFile, 'utf8'));
 
   if (program.port) {
     appConfig.port = program.port;
@@ -80,16 +86,16 @@ function main() {
   }
 
   if (program.log) {
-    appConfig.consoleLogLevel = program.log;
+    appConfig.logLevel = program.log;
   }
 
   var logger = new Logger({
-    echo: program.deamon ? null : appConfig.consoleLogLevel,
-    errorLevel: appConfig.fileLogLevel
+    echo: program.deamon ? null : appConfig.logLevel,
+    errorLevel: appConfig.logLevel
   });
 
   var options = {
-    dbFile: program.blockchain,
+    dbFile: program.blockchain || './blockchain.db',
     appConfig: appConfig,
     genesisblock: genesisblock,
     logger: logger
@@ -132,6 +138,9 @@ function main() {
               scope.logger.error(err);
           } else {
               scope.logger.info("Cleaned up successfully");
+          }
+          if (fs.existsSync(pidFile)) {
+            fs.unlinkSync(pidFile);
           }
           process.exit(1);
         });
