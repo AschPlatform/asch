@@ -3,7 +3,7 @@ var ByteBuffer = require("bytebuffer");
 var fs = require('fs');
 var path = require('path');
 var crypto = require('crypto');
-var npm = require('npm');
+// var npm = require('npm');
 var request = require('request');
 var ed = require('ed25519');
 var Sandbox = require('./asch-sandbox');
@@ -1499,35 +1499,35 @@ private.createBasePathes = function (cb) {
   });
 }
 
-private.installDependencies = function (dApp, cb) {
-  var dappPath = path.join(private.dappsPath, dApp.transactionId);
+// private.installDependencies = function (dApp, cb) {
+//   var dappPath = path.join(private.dappsPath, dApp.transactionId);
 
-  var packageJson = path.join(dappPath, "package.json");
-  var config = null;
+//   var packageJson = path.join(dappPath, "package.json");
+//   var config = null;
 
-  try {
-    config = JSON.parse(fs.readFileSync(packageJson));
-  } catch (e) {
-    return setImmediate(cb, "Failed to open package.json file for: " + dApp.transactionId);
-  }
+//   try {
+//     config = JSON.parse(fs.readFileSync(packageJson));
+//   } catch (e) {
+//     return setImmediate(cb, "Failed to open package.json file for: " + dApp.transactionId);
+//   }
 
-  npm.load(config, function (err) {
-    if (err) {
-      return setImmediate(cb, err);
-    }
+//   npm.load(config, function (err) {
+//     if (err) {
+//       return setImmediate(cb, err);
+//     }
 
-    npm.root = path.join(dappPath, "node_modules");
-    npm.prefix = dappPath;
+//     npm.root = path.join(dappPath, "node_modules");
+//     npm.prefix = dappPath;
 
-    npm.commands.install(function (err, data) {
-      if (err) {
-        setImmediate(cb, err);
-      } else {
-        return setImmediate(cb, null);
-      }
-    });
-  });
-}
+//     npm.commands.install(function (err, data) {
+//       if (err) {
+//         setImmediate(cb, err);
+//       } else {
+//         return setImmediate(cb, null);
+//       }
+//     });
+//   });
+// }
 
 private.getInstalledIds = function (cb) {
   fs.readdir(private.dappsPath, function (err, files) {
