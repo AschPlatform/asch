@@ -4,7 +4,6 @@ var program = require('commander');
 var path = require('path');
 var fs = require('fs');
 var async = require('async');
-var packageJson = require('../package.json');
 var Logger = require('./logger');
 var init = require('./init');
 
@@ -32,6 +31,8 @@ function verifyGenesisBlock(scope, block) {
 function main() {
   process.stdin.resume();
 
+  var packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
+
   program
     .version(packageJson.version)
     .option('-c, --config <path>', 'Config file path')
@@ -56,6 +57,7 @@ function main() {
     appConfigFile = path.resolve(process.cwd(), program.config);
   }
   var appConfig = JSON.parse(fs.readFileSync(appConfigFile, 'utf8'));
+  appConfig.version = packageJson.version;
 
   var genesisblockFile = path.resolve(__dirname, '../genesisBlock.json');
   if (program.genesisblock) {

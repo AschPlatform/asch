@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" == "stop" ]
+then
+  kill $(cat asch.pid)
+else
+  node ./main.js $@
+fi
