@@ -3,12 +3,10 @@ dapps/
 .DS_Store
 .ed25519-node
 .idea/
-logs.log
-logs.old.log
+*.log
 __MACOSX/
 nodejs/
 node_modules
-npm-debug.log
 .project
 release
 sqlite/

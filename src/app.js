@@ -6,6 +6,7 @@ var fs = require('fs');
 var async = require('async');
 var packageJson = require('../package.json');
 var appConfig = require('../config.json');
+var Logger = require('./logger');
 var init = require('./init');
 
 function verifyGenesisBlock(scope, block) {
@@ -41,8 +42,12 @@ function main() {
     .option('-g, --genesisblock <path>', 'Genesisblock path')
     .option('-x, --peers [peers...]', 'Peers list')
     .option('-l, --log <level>', 'Log level')
+    .option('-d, --daemon', 'Run asch node as daemon')
     .parse(process.argv);
 
+  if (program.daemon) {
+    require('daemon')();
+  }
   if (program.config) {
     appConfig = require(path.resolve(process.cwd(), program.config));
   }
@@ -78,12 +83,18 @@ function main() {
     appConfig.consoleLogLevel = program.log;
   }
 
+  var logger = new Logger({
+    echo: program.deamon ? null : appConfig.consoleLogLevel,
+    errorLevel: appConfig.fileLogLevel
+  });
+
   var options = {
     dbFile: program.blockchain,
     appConfig: appConfig,
-    genesisblock: genesisblock
+    genesisblock: genesisblock,
+    logger: logger
   };
-  var logger;
+
   var d = require('domain').create();
   d.on('error', function (err) {
     if (logger) {

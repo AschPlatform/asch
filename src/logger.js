@@ -16,7 +16,7 @@ module.exports = function (config) {
     "fatal": 6
   }
 
-  config.filename = config.filename || './logs.log';
+  config.filename = config.filename || './debug.log';
 
   config.errorLevel = config.errorLevel || "log";
 

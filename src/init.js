@@ -3,7 +3,6 @@ var fs = require('fs');
 var https = require('https');
 var async = require('async');
 var z_schema = require('z-schema');
-var Logger = require('./logger');
 var Sequence = require('./utils/sequence.js');
 
 var versionBuild = fs.readFileSync(path.join(__dirname, 'build-version'), 'utf8');
@@ -30,10 +29,7 @@ module.exports = function(options, done) {
   var dbFile = options.dbFile || './blockchain.db';
   var appConfig = options.appConfig || require('../config.json');
   var genesisblock = options.genesisblock || require('../genesisBlock.json');
-  var logger = new Logger({
-    echo: appConfig.consoleLogLevel,
-    errorLevel: appConfig.fileLogLevel
-  });
+
   async.auto({
     config: function (cb) {
       if (appConfig.dapp.masterrequired && !appConfig.dapp.masterpassword) {
@@ -52,7 +48,7 @@ module.exports = function(options, done) {
     },
 
     logger: function (cb) {
-      cb(null, logger);
+      cb(null, options.logger);
     },
 
     build: function (cb) {
@@ -375,7 +371,7 @@ module.exports = function(options, done) {
           });
 
           d.run(function () {
-            logger.debug('Loading module', name)
+            scope.logger.debug('Loading module', name)
             var Klass = require('./' + name);
             var obj = new Klass(cb, scope)
             modules.push(obj);
