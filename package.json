@@ -45,12 +45,16 @@
     "cli-table": "~0.3.1",
     "crypto-browserify": "^3.9.13",
     "faker": "~2.1.2",
+    "gulp": "^3.9.1",
+    "gulp-shell": "^0.5.2",
     "js-nacl": "=0.6.0",
     "jsdox": "~0.4.9",
     "lodash": "^3.9.3",
     "mocha": "^2.2.5",
     "moment": "^2.9.0",
     "should": "~4.6.0",
-    "supertest": "^1.0.1"
+    "supertest": "^1.0.1",
+    "webpack-node-externals": "^1.2.0",
+    "webpack-stream": "^3.2.0"
   }
 }

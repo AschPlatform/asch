@@ -16,7 +16,7 @@ gulp.task('build-linux', function () {
   return gulp.src('app.js')
     .pipe(webpack({
       output: {
-        filename: 'main.js'
+        filename: 'app.js'
       },
       target: 'node',
       context: __dirname,
@@ -27,11 +27,11 @@ gulp.task('build-linux', function () {
       externals: [nodeExternals()]
     }))
     .pipe(gulp.dest(fullpath))
-    // .pipe(shell([
-    //   format('cp package.json genesisBlock.json config.json aschd %s', fullpath),
-    //   format('echo %s > %s/build-version', buildTime, fullpath),
-    //   format('cd %s && mkdir public dapps', fullpath),
-    //   format('cd %s && npm install --production', fullpath),
-    //   format('cd %s/.. && tar zcvf %s.tar.gz %s', fullpath, dir, dir)
-    // ]));
+    .pipe(shell([
+      format('cp package.json genesisBlock.json config.json aschd %s', fullpath),
+      format('echo %s > %s/build-version', buildTime, fullpath),
+      format('cd %s && mkdir -p public dapps', fullpath),
+      format('cd %s && npm install --production', fullpath),
+      format('cd %s/.. && tar zcvf %s.tar.gz %s', fullpath, dir, dir)
+    ]));
 });
