@@ -12,7 +12,7 @@ var dir = 'asch-linux-' + package.version;
 var fullpath = path.join(__dirname, 'build', dir);
 var buildTime = moment().format('HH:mm:ss DD/MM/YYYY');
 
-gulp.task('build-linux', function () {
+gulp.task('linux-build', function () {
   return gulp.src('app.js')
     .pipe(webpack({
       output: {
@@ -32,6 +32,6 @@ gulp.task('build-linux', function () {
       format('echo %s > %s/build-version', buildTime, fullpath),
       format('cd %s && mkdir -p public dapps', fullpath),
       format('cd %s && npm install --production', fullpath),
-      format('cd %s/.. && tar zcvf %s.tar.gz %s', fullpath, dir, dir)
+      format('cd %s/.. && tar zcf %s.tar.gz %s', fullpath, dir, dir)
     ]));
 });

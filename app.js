@@ -60,7 +60,9 @@ function main() {
     appConfigFile = path.resolve(process.cwd(), program.config);
   }
   var appConfig = JSON.parse(fs.readFileSync(appConfigFile, 'utf8'));
+
   appConfig.version = version;
+  appConfig.baseDir = baseDir;
 
   var genesisblockFile = path.join(baseDir, 'genesisBlock.json');
   if (program.genesisblock) {

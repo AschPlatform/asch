@@ -6,7 +6,7 @@ var crypto = require('crypto');
 // var npm = require('npm');
 var request = require('request');
 var ed = require('ed25519');
-var Sandbox = require('./asch-sandbox');
+var Sandbox = require('asch-sandbox');
 var rmdir = require('rimraf');
 var ip = require('ip');
 var valid_url = require('valid-url');
@@ -25,8 +25,8 @@ private.removing = {};
 private.unconfirmedNames = {};
 private.unconfirmedLinks = {};
 private.unconfirmedAscii = {};
-private.appPath = process.cwd();
-private.dappsPath = path.join(process.cwd(), 'dapps');
+private.appPath = '';
+private.dappsPath = '';
 private.sandboxes = {};
 private.dappready = {};
 private.routes = {};
@@ -703,6 +703,10 @@ function DApps(cb, scope) {
   library = scope;
   self = this;
   self.__private = private;
+  
+  private.appPath = library.config.baseDir;
+  private.dappsPath = path.join(library.config.baseDir, 'dapps');
+  
   library.base.transaction.attachAssetType(TransactionTypes.DAPP, new DApp());
   library.base.transaction.attachAssetType(TransactionTypes.IN_TRANSFER, new InTransfer());
   library.base.transaction.attachAssetType(TransactionTypes.OUT_TRANSFER, new OutTransfer());
@@ -1542,7 +1546,7 @@ private.getInstalledIds = function (cb) {
 private.removeDApp = function (dApp, cb) {
   var dappPath = path.join(private.dappsPath, dApp.transactionId);
 
-  function remove(err) {
+  function done(err) {
     if (err) {
       library.logger.error("Failed to uninstall dapp: " + err);
     }
@@ -1556,23 +1560,18 @@ private.removeDApp = function (dApp, cb) {
     });
   }
 
-  fs.exists(dappPath, function (exists) {
-    if (!exists) {
-      return setImmediate(cb, "Dapp not found");
-    } else {
-      try {
-        var blockchain = require(path.join(dappPath, 'blockchain.json'));
-      } catch (e) {
-        return remove(e.toString());
-      }
-
-      modules.sql.dropTables(dApp.transactionId, blockchain, function (err) {
-        if (err) {
-          library.logger.error("Failed to drop dapp tables: " + err);
-        }
-        remove(err);
+  async.waterfall([
+    function (next) {
+      fs.exists(dappPath, function (exists) {
+        next(exists ? null : "Dapp not found");
       });
+    },
+    async.apply(private.readJson, path.join(dappPath, "blockchain.json")),
+    function (blockchain, next) {
+      modules.sql.dropTables(dApp.transactionId, blockchain, next);
     }
+  ], function (err) {
+    done(err);
   });
 }
 
@@ -1737,40 +1736,40 @@ private.dappRoutes = function (dapp, cb) {
 
   fs.exists(dappRoutesPath, function (exists) {
     if (exists) {
-      try {
-        var routes = require(dappRoutesPath);
-      } catch (e) {
-        return setImmediate(cb, "Failed to open routes.json file for: " + dapp.transactionId);
-      }
-
-      private.routes[dapp.transactionId] = new Router();
-
-      routes.forEach(function (router) {
-        if (router.method == "get" || router.method == "post" || router.method == "put") {
-          private.routes[dapp.transactionId][router.method](router.path, function (req, res) {
-
-            self.request(dapp.transactionId, router.method, router.path, (router.method == "get") ? req.query : req.body, function (err, body) {
-              if (!err && body.error) {
-                err = body.error;
-              }
-              if (err) {
-                body = {error: err.toString()}
-              }
-              body.success = !err
-              res.json(body);
-            });
-          });
+      private.readJson(dappRoutesPath, function (err, routes) {
+        if (err) {
+          return setImmediate(cb, "Failed to read routes.json file for: " + dapp.transactionId);
         }
-      });
 
-      library.network.app.use('/api/dapps/' + dapp.transactionId + '/api/', private.routes[dapp.transactionId]);
-      library.network.app.use(function (err, req, res, next) {
-        if (!err) return next();
-        library.logger.error(req.url, err.toString());
-        res.status(500).send({success: false, error: err.toString()});
-      });
+        private.routes[dapp.transactionId] = new Router();
 
-      return setImmediate(cb);
+        routes.forEach(function (router) {
+          if (router.method == "get" || router.method == "post" || router.method == "put") {
+            private.routes[dapp.transactionId][router.method](router.path, function (req, res) {
+
+              self.request(dapp.transactionId, router.method, router.path, (router.method == "get") ? req.query : req.body, function (err, body) {
+                if (!err && body.error) {
+                  err = body.error;
+                }
+                if (err) {
+                  body = { error: err.toString() }
+                }
+                body.success = !err
+                res.json(body);
+              });
+            });
+          }
+        });
+
+        library.network.app.use('/api/dapps/' + dapp.transactionId + '/api/', private.routes[dapp.transactionId]);
+        library.network.app.use(function (err, req, res, next) {
+          if (!err) return next();
+          library.logger.error(req.url, err.toString());
+          res.status(500).send({ success: false, error: err.toString() });
+        });
+
+        return setImmediate(cb);
+      });
     } else {
       return setImmediate(cb);
     }
@@ -1846,63 +1845,72 @@ private.launch = function (body, cb) {
   });
 }
 
-private.launchApp = function (dApp, params, cb) {
-  var dappPath = path.join(private.dappsPath, dApp.transactionId);
-  var dappPublicPath = path.join(dappPath, "public");
-  var dappPublicLink = path.join(private.appPath, "public", "dapps", dApp.transactionId);
-
-  try {
-    var dappConfig = require(path.join(dappPath, "config.json"));
-  } catch (e) {
-    return setImmediate(cb, "Failed to open config.json file for: " + dapp.transactionId);
-  }
-
-  // dappConfig.db
-  async.eachSeries(dappConfig.peers, function (peer, cb) {
-    modules.peer.addDapp({
-      ip: ip.toLong(peer.ip),
-      port: peer.port,
-      dappid: dApp.transactionId
-    }, cb);
-  }, function (err) {
+private.readJson = function (file, cb) {
+  fs.readFile(file, 'utf8', function (err, data) {
     if (err) {
-      return setImmediate(cb, err);
+      return cb(err);
     }
     try {
-      var blockchain = require(path.join(dappPath, "blockchain.json"));
+      return cb(null, JSON.parse(data));
     } catch (e) {
-      return setImmediate(cb, "Failed to open blockchain.db file for: " + dapp.transactionId);
+      return cb(e.toString());
     }
+  });
+}
 
-    modules.sql.createTables(dApp.transactionId, blockchain, function (err) {
+private.launchApp = function (dApp, params, cb) {
+  var dappPath = path.join(private.dappsPath, dApp.transactionId);
+  
+  private.readJson(path.join(dappPath, "config.json"), function (err, dappConfig) {
+    if (err) {
+      return setImmediate(cb, "Failed to read config.json file for: " + dapp.transactionId);
+    }
+    private.readJson(path.join(dappPath, "blockchain.json"), function (err, blockchain) {
       if (err) {
-        return setImmediate(cb, err);
+        return setImmediate(cb, "Failed to read blockchain.json file for: " + dapp.transactionId);
       }
+      async.eachSeries(dappConfig.peers, function (peer, cb) {
+        modules.peer.addDapp({
+          ip: ip.toLong(peer.ip),
+          port: peer.port,
+          dappid: dApp.transactionId
+        }, cb);
+      }, function (err) {
+        if (err) {
+          return setImmediate(cb, err);
+        }
 
-      var sandbox = new Sandbox(path.join(dappPath, "build", "app.js"), dApp.transactionId, params, private.apiHandler, true);
-      private.sandboxes[dApp.transactionId] = sandbox;
-
-      sandbox.on("exit", function () {
-        library.logger.info("Dapp " + dApp.transactionId + " closed ");
-        private.stop(dApp, function (err) {
+        modules.sql.createTables(dApp.transactionId, blockchain, function (err) {
           if (err) {
-            library.logger.error("Encountered error while stopping dapp: " + err);
+            return setImmediate(cb, err);
           }
+
+          var sandbox = new Sandbox(path.join(dappPath, "build", "app.js"), dApp.transactionId, params, private.apiHandler, true);
+          private.sandboxes[dApp.transactionId] = sandbox;
+
+          sandbox.on("exit", function () {
+            library.logger.info("Dapp " + dApp.transactionId + " closed ");
+            private.stop(dApp, function (err) {
+              if (err) {
+                library.logger.error("Encountered error while stopping dapp: " + err);
+              }
+            });
+          });
+
+          sandbox.on("error", function (err) {
+            library.logger.info("Encountered error in dapp " + dApp.transactionId + " " + err.toString());
+            private.stop(dApp, function (err) {
+              if (err) {
+                library.logger.error("Encountered error while stopping dapp: " + err);
+              }
+            });
+          });
+
+          sandbox.run();
+
+          return setImmediate(cb);
         });
       });
-
-      sandbox.on("error", function (err) {
-        library.logger.info("Encountered error in dapp " + dApp.transactionId + " " + err.toString());
-        private.stop(dApp, function (err) {
-          if (err) {
-            library.logger.error("Encountered error while stopping dapp: " + err);
-          }
-        });
-      });
-
-      sandbox.run();
-
-      return setImmediate(cb);
     });
   });
 }
