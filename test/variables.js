@@ -170,7 +170,7 @@ function addPeers(numOfPeers, cb) {
     return i < numOfPeers
   }, function (next) {
     os = operatingSystems[randomizeSelection(operatingSystems.length)];
-    version = config.version;
+    version = 'development';
     port = ports[randomizeSelection(ports.length)];
 
     request({

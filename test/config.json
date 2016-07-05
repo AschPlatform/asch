@@ -1,12 +1,7 @@
 {
-    "port": 4000,
+    "port": 2048,
     "address": "0.0.0.0",
-    "serveHttpAPI": true,
-    "serveHttpWallet": true,
-    "version": "0.0.0",
-    "fileLogLevel": "info",
-    "logFileName": "logs.log",
-    "consoleLogLevel": "log",
+    "logLevel": "info",
     "api": {
         "access": {
             "whiteList": []
