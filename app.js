@@ -95,6 +95,7 @@ function main() {
   }
 
   var logger = new Logger({
+    filename: path.join(baseDir, 'debug.log'),
     echo: program.deamon ? null : appConfig.logLevel,
     errorLevel: appConfig.logLevel
   });
