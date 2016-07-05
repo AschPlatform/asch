@@ -1,8 +1,10 @@
 #!/bin/bash
 
+readonly PROGDIR=$(readlink -m $(dirname $0))
+
 if [ "$1" == "stop" ]
 then
   kill $(cat asch.pid)
 else
-  node ./main.js $@
+  node $PROGDIR/app.js --base $PROGDIR $@
 fi

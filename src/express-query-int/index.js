@@ -1,4 +1,4 @@
-var parseNums = require('./lib/parse');
+var parseNums = require('./parse');
 
 module.exports = function(options) {
   options = options || {

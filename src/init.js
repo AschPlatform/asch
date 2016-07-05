@@ -5,8 +5,6 @@ var async = require('async');
 var z_schema = require('z-schema');
 var Sequence = require('./utils/sequence.js');
 
-var versionBuild = fs.readFileSync(path.resolve(__dirname, '../build-version'), 'utf8');
-
 var moduleNames = [
   'server',
   'accounts',
@@ -52,7 +50,7 @@ module.exports = function(options, done) {
     },
 
     build: function (cb) {
-      cb(null, versionBuild);
+      cb(null, options.buildVersion);
     },
 
     genesisblock: function (cb) {
