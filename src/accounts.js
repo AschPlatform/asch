@@ -306,7 +306,7 @@ Accounts.prototype.setAccountAndGet = function (data, cb) {
     }
   }
   if (!address) {
-    throw cb("Invalid public key");
+    return cb("Invalid public key");
   }
   library.base.account.set(address, data, function (err) {
     if (err) {
@@ -326,7 +326,7 @@ Accounts.prototype.mergeAccountAndGet = function (data, cb) {
     }
   }
   if (!address) {
-    throw cb("Invalid public key");
+    return cb("Invalid public key");
   }
   library.base.account.merge(address, data, cb);
 }
