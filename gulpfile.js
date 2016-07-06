@@ -30,7 +30,7 @@ gulp.task('linux-build', function () {
     .pipe(shell([
       format('cp package.json genesisBlock.json config.json aschd %s', fullpath),
       format('echo %s > %s/build-version', buildTime, fullpath),
-      format('cd %s && mkdir -p public dapps', fullpath),
+      format('cd %s && mkdir -p public dapps tmp', fullpath),
       format('cd %s && npm install --production', fullpath),
       format('cd %s/.. && tar zcf %s.tar.gz %s', fullpath, dir, dir)
     ]));

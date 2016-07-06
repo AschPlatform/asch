@@ -46,7 +46,7 @@ function main() {
     .parse(process.argv);
 
   var baseDir = program.base || './';
-  var buildVersion = fs.readFileSync(path.join(baseDir, 'build-version'));
+  var buildVersion = fs.readFileSync(path.join(baseDir, 'build-version'), 'utf8');
 
   var pidFile = path.join(baseDir, 'asch.pid');
   if (program.daemon) {
