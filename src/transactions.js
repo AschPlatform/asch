@@ -473,8 +473,9 @@ Transactions.prototype.receiveTransactions = function (transactions, cb) {
     self.processUnconfirmedTransaction(transaction, true, next);
   }, function (err) {
     if (err) {
-      library.logger.error("Failed to process unconfirmed transactions: " + err);
-      process.exit(1);
+      library.dbLite.query("ROLLBACK TO SAVEPOINT unconfirmedtrs", function (rollBackErr) {
+        cb(rollBackErr || err);
+      });
       return;
     }
     library.dbLite.query("RELEASE SAVEPOINT unconfirmedtrs", function (err2) {
