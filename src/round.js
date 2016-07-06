@@ -213,6 +213,11 @@ Round.prototype.backwardTick = function (block, previousBlock, cb) {
 
 Round.prototype.tick = function (block, cb) {
   function done(err) {
+    if (err) {
+      library.logger.error("Round tick failed: " + err);
+    } else {
+      library.logger.debug("Round tick completed");
+    }
     cb && setImmediate(cb, err);
   }
 

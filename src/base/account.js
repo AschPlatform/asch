@@ -855,8 +855,6 @@ Account.prototype.merge = function (address, diff, cb) {
 
   async.series([
     function (next) {
-      self.scope.dbLite.query('SAVEPOINT merge');
-
       async.eachSeries(sqles, function (sql, next) {
         self.scope.dbLite.query(sql.query, sql.values, next);
       }, next);
@@ -869,20 +867,9 @@ Account.prototype.merge = function (address, diff, cb) {
   ], function(err) {
     if (err) {
       console.log('!!!!!!! merge sql error: ' + err);
-      self.scope.dbLite.query('ROLLBACK TO SAVEPOINT merge', function (rollbackErr) {
-        if (rollbackErr) {
-          cb('rollback savepoint error while merging: ' + rollbackErr);
-        } else {
-          cb('merge sql error: ' + err);
-        }
-      });
+      cb('Account merge failed: ' + err);
     } else {
-      self.scope.dbLite.query('RELEASE SAVEPOINT merge', function(releaseErr) {
-        if (releaseErr) {
-          return cb('release savepoint error while merging: ' + releaseErr);
-        }
-        self.get({address: address}, cb);
-      });
+      self.get({address: address}, cb);
     }
   });
 }
