@@ -1,7 +1,7 @@
 {
     "port": 2048,
     "address": "0.0.0.0",
-    "logLevel": "info",
+    "logLevel": "log",
     "api": {
         "access": {
             "whiteList": []
