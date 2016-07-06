@@ -1294,7 +1294,8 @@ Blocks.prototype.onReceiveConfirm = function (confirm) {
   
   self.setConfirmCache(confirm);
 
-  library.logger.debug("onReceiveConfirm height: " + height + ", id: " + id + ", count: " + confirm.signatures.length);
+  var label = confirm.height + ":" + confirm.id + ":" + confirm.signatures[0].key;
+  library.logger.debug("onReceiveConfirm label: " + label + ", count: " + confirm.signatures.length);
   library.bus.message('confirm', confirm, true);
   
   library.sequence.add(function (cb) {
