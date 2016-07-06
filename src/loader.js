@@ -490,22 +490,21 @@ Loader.prototype.sandboxApi = function (call, args, cb) {
 }
 
 Loader.prototype.startSyncBlocks = function () {
-  setImmediate(function nextLoadBlock() {
-    if (private.isActive) return;
-    private.isActive = true;
-    library.sequence.add(function (cb) {
-      private.syncTrigger(true);
-      var lastBlock = modules.blocks.getLastBlock();
-      private.loadBlocks(lastBlock, cb);
-    }, function (err) {
-      err && library.logger.error('loadBlocks timer:', err);
-      private.syncTrigger(false);
-      private.blocksToSync = 0;
+  library.logger.debug('startSyncBlocks enter');
+  if (private.isActive) return;
+  private.isActive = true;
+  library.sequence.add(function (cb) {
+    library.logger.debug('startSyncBlocks enter sequence');
+    private.syncTrigger(true);
+    var lastBlock = modules.blocks.getLastBlock();
+    private.loadBlocks(lastBlock, cb);
+  }, function (err) {
+    err && library.logger.error('loadBlocks timer:', err);
+    private.syncTrigger(false);
+    private.blocksToSync = 0;
 
-      private.isActive = false;
-
-      setTimeout(nextLoadBlock, 9 * 1000)
-    });
+    private.isActive = false;
+    library.logger.debug('startSyncBlocks end');
   });
 }
 
