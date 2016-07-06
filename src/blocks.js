@@ -1299,11 +1299,6 @@ Blocks.prototype.onReceiveConfirm = function (confirm) {
   library.bus.message('confirm', confirm, true);
   
   library.sequence.add(function (cb) {
-    var block = self.getPendingBlock(height, id);
-    if (!block) {
-      library.logger.debug("no pending block before check confirms on id " + id + " height " + height);
-      return cb();
-    }
     modules.delegates.generateDelegateList(height, function (err, delegatesList) {
       if (err) {
         library.logger.error("Failed to get delegate list while verifying confirms");
@@ -1332,6 +1327,11 @@ Blocks.prototype.onReceiveConfirm = function (confirm) {
         } catch (e) {
           library.logger.error("Verify confirm signature exception: " + e);
         }
+      }
+      var block = self.getPendingBlock(height, id);
+      if (!block) {
+        library.logger.debug("no pending block before check confirms on id " + id + " height " + height);
+        return cb();
       }
       self.checkBlockConfirms(block, function (err) {
         if (err) {
