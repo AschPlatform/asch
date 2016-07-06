@@ -142,9 +142,13 @@ module.exports = function(options, done) {
 
     network: ['config', function (cb, scope) {
       var express = require('express');
-      var compression = require("compression");
+      var compression = require('compression');
+      var cors = require('cors');
       var app = express();
+      
       app.use(compression({ level: 6 }));
+      app.use(cors());
+      app.options("*", cors());
 
       var server = require('http').createServer(app);
       var io = require('socket.io')(server);
@@ -238,7 +242,7 @@ module.exports = function(options, done) {
         var parts = req.url.split('/');
         var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
-        logger.log(req.method + " " + req.url + " from " + ip);
+        scope.logger.log(req.method + " " + req.url + " from " + ip);
 
         /* Instruct browser to deny display of <frame>, <iframe> regardless of origin.
          *
