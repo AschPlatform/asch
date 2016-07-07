@@ -252,7 +252,6 @@ private.getByField = function (field, cb) {
   var condition = "b." + field.key + " = $" + field.key;
   var values = {};
   values[field.key] = field.value;
-  console.log(field, values);
   library.dbLite.query("select b.id, b.version, b.timestamp, b.height, b.previousBlock, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength,  lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), (select max(height) + 1 from blocks) - b.height " +
     "from blocks b " +
     "where " + condition, values, ['b_id', 'b_version', 'b_timestamp', 'b_height', 'b_previousBlock', 'b_numberOfTransactions', 'b_totalAmount', 'b_totalFee', 'b_reward', 'b_payloadLength', 'b_payloadHash', 'b_generatorPublicKey', 'b_blockSignature', 'b_confirmations'], function (err, rows) {
@@ -825,6 +824,9 @@ Blocks.prototype.applyBlock = function(block, broadcast, cb, saveBlock) {
               if (releaseErr) {
                 cb('processBlock release savepoint err: ' + releaseErr);
               } else {
+                library.logger.debug("Block applied corrrectly with " + block.transactions.length + " transactions");
+                private.lastBlock = block;
+                // library.bus.message('newBlock', block, broadcast);
                 cb();
               }
             });
@@ -888,16 +890,9 @@ Blocks.prototype.applyBlock = function(block, broadcast, cb, saveBlock) {
 								 library.logger.error("Failed to save block...");
 								 process.exit(0);
 							 }
-
-							 library.logger.debug("Block applied corrrectly with " + block.transactions.length + " transactions");
-							 library.bus.message('newBlock', block, broadcast);
-							 private.lastBlock = block;
-
 							 modules.round.tick(block, done);
 						 });
 						} else {
-							library.bus.message('newBlock', block, broadcast);
-							private.lastBlock = block;
 							modules.round.tick(block, done);
 						}
 					});
