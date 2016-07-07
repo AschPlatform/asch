@@ -468,24 +468,26 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 }
 
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
-  library.dbLite.query("SAVEPOINT unconfirmedtrs");
   async.eachSeries(transactions, function (transaction, next) {
-    self.processUnconfirmedTransaction(transaction, true, next);
-  }, function (err) {
-    if (err) {
-      library.dbLite.query("ROLLBACK TO SAVEPOINT unconfirmedtrs", function (rollBackErr) {
-        cb(rollBackErr || err);
-      });
-      return;
-    }
-    library.dbLite.query("RELEASE SAVEPOINT unconfirmedtrs", function (err2) {
-      if (err2) {
-        library.logger.error("Failed to commit unconfirmed transactions: " + err2);
-        process.exit(1);
+    library.dbLite.query("SAVEPOINT unconfirmedtrs");
+    self.processUnconfirmedTransaction(transaction, true, function (err) {
+      if (err) {
+        library.dbLite.query("ROLLBACK TO SAVEPOINT unconfirmedtrs", function (rollBackErr) {
+          next(rollBackErr || err);
+        });
         return;
       }
-      cb(null, transactions);
+      library.dbLite.query("RELEASE SAVEPOINT unconfirmedtrs", function (err2) {
+        if (err2) {
+          library.logger.error("Failed to commit unconfirmed transactions: " + err2);
+          process.exit(1);
+          return;
+        }
+        next();
+      });
     });
+  }, function (err) {
+    cb(err, transactions);
   });
 }
 
