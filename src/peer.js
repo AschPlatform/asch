@@ -322,6 +322,10 @@ Peer.prototype.update = function (peer, cb) {
   })
 }
 
+Peer.prototype.getVersion = function () {
+  return {version: library.config.version, build: library.build};
+}
+
 Peer.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
 }

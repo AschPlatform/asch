@@ -410,7 +410,16 @@ shared.open2 = function (req, cb) {
           multisignatures: account.multisignatures,
           u_multisignatures: account.u_multisignatures
         };
-        return cb(null, {account: accountData});
+        var latestBlock = modules.blocks.getLastBlock();
+        var ret = {
+          account: accountData,
+          latestBlock: {
+            height: latestBlock.height,
+            timestamp: latestBlock.timestamp
+          },
+          version: modules.peer.getVersion()
+        }
+        return cb(null, ret);
       } else {
         return cb(err);
       }
