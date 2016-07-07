@@ -752,6 +752,7 @@ shared.getAccount = function (req, cb) {
         return cb("Account not found");
       }
 
+      var latestBlock = modules.blocks.getLastBlock();
       cb(null, {
         account: {
           address: account.address,
@@ -763,7 +764,12 @@ shared.getAccount = function (req, cb) {
           secondPublicKey: account.secondPublicKey,
           multisignatures: account.multisignatures,
           u_multisignatures: account.u_multisignatures
-        }
+        },
+        latestBlock: {
+          height: latestBlock.height,
+          timestamp: latestBlock.timestamp
+        },
+        version: modules.peer.getVersion()
       });
     });
   });
