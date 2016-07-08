@@ -934,10 +934,13 @@ shared.getVoters = function (req, cb) {
 
 shared.getDelegates = function (req, cb) {
   var query = req.body;
-
   library.scheme.validate(query, {
     type: 'object',
     properties: {
+      address: {
+        type: "string",
+        minLength: 1
+      },
       limit: {
         type: "integer",
         minimum: 0,
@@ -986,11 +989,23 @@ shared.getDelegates = function (req, cb) {
         result.delegates = result.delegates.sort(compareString);
       }
 
-      library.logger.debug(result.delegates);
-
       var delegates = result.delegates.slice(result.offset, result.limit);
 
-      cb(null, { delegates: delegates, totalCount: result.count });
+      if (!query.address) {
+        return cb(null, { delegates: delegates, totalCount: result.count });
+      }
+      modules.accounts.getAccount({ address: query.address }, function (err, voter) {
+        if (err) {
+          return cb("Failed to get voter account");
+        }
+        if (voter && voter.delegates) {
+          delegates.map(function (item) {
+            item.voted = (voter.delegates.indexOf(item.publicKey) != -1);
+            console.log(item.voted);
+          });
+        }
+        return cb(null, { delegates: delegates, totalCount: result.count });
+      });
     });
   });
 }

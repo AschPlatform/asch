@@ -549,10 +549,9 @@ shared.getDelegates = function (req, cb) {
             return cb(err.toString());
           }
 
-          var limit = query.limit || 101,
-            offset = query.offset || 0,
-            orderField = query.orderBy,
-            active = query.active;
+          var limit = query.limit || 101;
+          var offset = query.offset || 0;
+          var orderField = query.orderBy;
 
           orderField = orderField ? orderField.split(':') : null;
           limit = limit > 101 ? 101 : limit;
