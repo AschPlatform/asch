@@ -125,12 +125,26 @@ private.saveGenesisBlock = function (cb) {
     var blockId = rows.length && rows[0].id;
 
     if (!blockId) {
+      library.dbLite.query("SAVEPOINT savegenesisblock");
       private.saveBlock(genesisblock.block, function (err) {
         if (err) {
-          library.logger.error('saveBlock', err);
+          library.logger.error('saveGenesisBlock error', err);
+          library.dbLite.query("ROLLBACK TO SAVEPOINT savegenesisblock", function (rollbackErr) {
+            if (rollbackErr) {
+              library.logger.error("Failed to rollback savegenesisblock: " + rollBackErr);
+            }
+            process.exit(1);
+          });
+        } else {
+          library.dbLite.query("RELEASE SAVEPOINT savegenesisblock", function (releaseErr) {
+            if (releaseErr) {
+              library.logger.error("Failed to commit genesis block: " + releaseErr);
+              process.exit(1);
+            } else {
+              cb();
+            }
+          });
         }
-
-        cb(err);
       });
     } else {
       cb()
@@ -265,29 +279,15 @@ private.getByField = function (field, cb) {
 }
 
 private.saveBlock = function (block, cb) {
-  library.dbLite.query('SAVEPOINT saveblock');
-
   library.base.block.dbSave(block, function (err) {
     if (err) {
-      library.dbLite.query('ROLLBACK TO SAVEPOINT saveblock', function (rollbackErr) {
-        cb(rollbackErr || err);
-      });
-      return;
+      return cb(err);
     }
 
     async.eachSeries(block.transactions, function (transaction, cb) {
       transaction.blockId = block.id;
       library.base.transaction.dbSave(transaction, cb);
-    }, function (err) {
-      if (err) {
-        library.dbLite.query('ROLLBACK to SAVEPOINT saveblock', function (rollbackErr) {
-          cb(rollbackErr || err);
-        });
-        return;
-      }
-
-      library.dbLite.query('RELEASE SAVEPOINT saveblock', cb);
-    });
+    }, cb);
   });
 }
 
