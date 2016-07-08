@@ -13,7 +13,7 @@ var DappCategory = require("../src/utils/dappCategory.js");
 var TxTypes = require("../src/utils/transaction-types.js");
 
 // Node configuration
-var config = require("./config.json");
+var config = require("../config.json");
 var constants = require("../src/utils/constants.js");
 
 var baseUrl = "http://" + config.address + ":" + config.port;

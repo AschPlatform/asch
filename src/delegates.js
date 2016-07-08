@@ -764,10 +764,9 @@ Delegates.prototype.getDelegates = function (query, cb) {
       return cb(err);
     }
 
-    var limit = query.limit || 101,
-		    offset = query.offset || 0,
-		    orderField = query.orderBy,
-		    active = query.active;
+    var limit = query.limit || 101;
+		var offset = query.offset || 0;
+		var orderField = query.orderBy || 'rate:asc';
 
     orderField = orderField ? orderField.split(':') : null;
     limit = limit > 101 ? 101 : limit;
@@ -779,8 +778,8 @@ Delegates.prototype.getDelegates = function (query, cb) {
     var length = Math.min(limit, count);
     var realLimit = Math.min(offset + limit, count);
 
-    var lastBlock = modules.blocks.getLastBlock(),
-		    totalSupply = private.blockStatus.calcSupply(lastBlock.height);
+    var lastBlock = modules.blocks.getLastBlock();
+		var totalSupply = private.blockStatus.calcSupply(lastBlock.height);
 
     for (var i = 0; i < delegates.length; i++) {
       delegates[i].rate = i + 1;
@@ -961,7 +960,6 @@ shared.getDelegates = function (req, cb) {
       if (err) {
         return cb(err);
       }
-
       function compareNumber(a, b) {
         var sorta = parseFloat(a[result.orderBy]);
         var sortb = parseFloat(b[result.orderBy]);
