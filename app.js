@@ -117,11 +117,7 @@ function main() {
 
   var d = require('domain').create();
   d.on('error', function (err) {
-    if (logger) {
-      logger.fatal('Domain error', err);
-    } else {
-      console.error('Domain error', err);
-    }
+    logger.fatal('Domain error', err);
     process.exit(0);
   });
   d.run(function () {
@@ -131,13 +127,14 @@ function main() {
         process.exit(1);
         return;
       }
-      logger = scope.logger;
-      if (process.env.NODE_ENV === 'production') {
-        verifyGenesisBlock(scope, scope.genesisblock.block);
-      }
+      verifyGenesisBlock(scope, scope.genesisblock.block);
+
       scope.bus.message("bind", scope.modules);
 
       scope.logger.info("Modules ready and launched");
+      if (!scope.config.publicIp) {
+        scope.logger.warn("Failed to get public ip, block forging MAY not work!");
+      }
 
       process.once('cleanup', function () {
         scope.logger.info("Cleaning up...");

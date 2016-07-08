@@ -1,8 +1,10 @@
 var path = require('path');
 var fs = require('fs');
+var fs = require('os');
 var https = require('https');
 var async = require('async');
 var z_schema = require('z-schema');
+var ip = require('ip');
 var Sequence = require('./utils/sequence.js');
 
 var moduleNames = [
@@ -22,12 +24,34 @@ var moduleNames = [
   'blocks',
 ];
 
+function getPublicIp() {
+  var publicIp = null;
+  try {
+    var ifaces = os.networkInterfaces();
+    Object.keys(ifaces).forEach(function (ifname) {
+      ifaces[ifname].forEach(function (iface) {
+        if ('IPv4' !== iface.family || iface.internal !== false) {
+          // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+          return;
+        }
+        if (!ip.isPrivate(iface.address)) {
+          publicIp = iface.address;
+        }
+      });
+    });
+  } catch (e) {
+  }
+  return publicIp;
+}
+
 module.exports = function(options, done) {
   var modules = [];
   var dbFile = options.dbFile;
   var appConfig = options.appConfig;
   var genesisblock = options.genesisblock;
 
+  appConfig.publicIp = getPublicIp();
+  
   async.auto({
     config: function (cb) {
       if (appConfig.dapp.masterrequired && !appConfig.dapp.masterpassword) {
