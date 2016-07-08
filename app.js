@@ -49,8 +49,13 @@ function main() {
   var buildVersion = fs.readFileSync(path.join(baseDir, 'build-version'), 'utf8');
 
   var pidFile = path.join(baseDir, 'asch.pid');
+  if (fs.existsSync(pidFile)) {
+    console.log('Failed: asch server already started');
+    process.exit(1);
+    return;
+  }
   if (program.daemon) {
-    console.log('asch server started as daemon ...');
+    console.log('Asch server started as daemon ...');
     require('daemon')();
     fs.writeFileSync(pidFile, process.pid, 'utf8');
   }

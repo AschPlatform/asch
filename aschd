@@ -4,7 +4,30 @@ readonly PROGDIR=$(readlink -m $(dirname $0))
 
 if [ "$1" == "stop" ]
 then
-  kill $(cat asch.pid)
+  PID_FILE=$PROGDIR/asch.pid
+  if [ ! -f $PID_FILE ]
+  then
+    echo "Asch server not started"
+    exit
+  fi
+  pid=$(cat $PID_FILE)
+  kill $pid
+  sleep 1
+  i=1
+  while [ -f $PID_FILE ]
+  do
+    if [ $i == 5 ]
+    then
+      kill -9 $pid
+      rm -f $PID_FILE
+      echo "Asch server killed"
+      exit
+    fi
+    echo "Still waiting for asch server to stop ..."
+    sleep 1
+    ((i++))
+  done
+  echo "Asch server stopped"
 else
   node $PROGDIR/app.js --base $PROGDIR $@
 fi
