@@ -468,27 +468,11 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 }
 
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
-  async.eachSeries(transactions, function (transaction, next) {
-    library.dbLite.query("SAVEPOINT unconfirmedtrs");
-    self.processUnconfirmedTransaction(transaction, true, function (err) {
-      if (err) {
-        library.dbLite.query("ROLLBACK TO SAVEPOINT unconfirmedtrs", function (rollBackErr) {
-          next(rollBackErr || err);
-        });
-        return;
-      }
-      library.dbLite.query("RELEASE SAVEPOINT unconfirmedtrs", function (err2) {
-        if (err2) {
-          library.logger.error("Failed to commit unconfirmed transactions: " + err2);
-          process.exit(1);
-          return;
-        }
-        next();
-      });
-    });
-  }, function (err) {
-    cb(err, transactions);
-  });
+  async.eachSeries(transactions, function (transaction, cb) {
+		self.processUnconfirmedTransaction(transaction, true, cb);
+	}, function (err) {
+		cb(err, transactions);
+	});
 }
 
 Transactions.prototype.sandboxApi = function (call, args, cb) {
