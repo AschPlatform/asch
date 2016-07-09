@@ -291,6 +291,10 @@ Peer.prototype.addDapp = function (config, cb) {
 }
 
 Peer.prototype.update = function (peer, cb) {
+  if (!peer.ip || !peer.port) {
+    cb && cb();
+    return;
+  }
   var dappid = peer.dappid;
   var params = {
     ip: peer.ip,

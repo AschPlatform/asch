@@ -289,7 +289,7 @@ private.loadSignatures = function (cb) {
         return cb();
       }
 
-      library.sequence.add(function (cb) {
+      library.sequence.add(function loadSignatures(cb) {
         async.eachSeries(data.body.signatures, function (signature, cb) {
           async.eachSeries(signature.signatures, function (s, cb) {
             modules.multisignatures.processSignature({
@@ -493,7 +493,7 @@ Loader.prototype.startSyncBlocks = function () {
   library.logger.debug('startSyncBlocks enter');
   if (private.isActive) return;
   private.isActive = true;
-  library.sequence.add(function (cb) {
+  library.sequence.add(function syncBlocks (cb) {
     library.logger.debug('startSyncBlocks enter sequence');
     private.syncTrigger(true);
     var lastBlock = modules.blocks.getLastBlock();

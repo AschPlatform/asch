@@ -2158,14 +2158,14 @@ DApps.prototype.onDeleteBlocksBefore = function (block) {
   });
 }
 
-DApps.prototype.onConfirmBlock = function (block, broadcast) {
+DApps.prototype.onNewBlock = function (block, broadcast) {
   Object.keys(private.sandboxes).forEach(function (dappId) {
     broadcast && self.request(dappId, "post", "/message", {
       topic: "point",
       message: {id: block.id, height: block.height}
     }, function (err) {
       if (err) {
-        library.logger.error("onConfirmBlock message", err)
+        library.logger.error("onNewBlock message", err)
       }
     });
   });

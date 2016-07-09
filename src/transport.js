@@ -232,7 +232,9 @@ private.attachApi = function () {
 
     try {
       var block = library.base.block.objectNormalize(req.body.block);
+      var votes = library.base.consensus.normalizeVotes(req.body.votes);
     } catch (e) {
+      library.logger.log('normalize block or votes object error: ' + e.toString());
       library.logger.log('Block ' + (block ? block.id : 'null') + ' is not valid, ban 60 min', peerStr);
 
       if (peerIp && report) {
@@ -242,12 +244,12 @@ private.attachApi = function () {
       return res.sendStatus(200);
     }
 
-    library.bus.message('receiveBlock', block);
+    library.bus.message('receiveBlock', block, votes);
 
     res.sendStatus(200);
   });
   
-  router.post("/confirm", function (req, res) {
+  router.post("/votes", function (req, res) {
     res.set(private.headers);
     
     var report = library.scheme.validate(req.headers, {
@@ -291,7 +293,69 @@ private.attachApi = function () {
       if (err) {
         return res.status(200).json({success: false, error: "Schema validation error"});
       }
-      library.bus.message('receiveConfirm', req.body);
+      library.bus.message('receiveVotes', req.body);
+      res.sendStatus(200);
+    });
+  });
+  
+  router.post("/propose", function (req, res) {
+    res.set(private.headers);
+    
+    var report = library.scheme.validate(req.headers, {
+      type: "object",
+      properties: {
+        port: {
+          type: "integer",
+          minimum: 1,
+          maximum: 65535
+        }
+      },
+      required: ['port']
+    });
+
+    var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
+
+    if(req.headers['magic']!==library.config.magic){
+      return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.magic, "received":req.headers['magic']});
+    }
+    
+    library.scheme.validate(req.body, {
+      type: "object",
+      properties: {
+        height: {
+          type: "integer",
+          minimum: 1
+        },
+        id: {
+          type: "string",
+          maxLength: 30,
+        },
+        timestamp: {
+          type: "integer"
+        },
+        generatorPublicKey: {
+          type: "string",
+          format: "publicKey"
+        },
+        address: {
+          type: "string"
+        },
+        hash: {
+          type: "string",
+          format: "hex"
+        },
+        signature: {
+          type: "string",
+          format: "signature"
+        }
+      },
+      required: ["height", "id", "timestamp", "generatorPublicKey", "address", "hash", "signature"]
+    }, function (err) {
+      if (err) {
+        return res.status(200).json({success: false, error: "Schema validation error"});
+      }
+      library.bus.message('receivePropose', req.body);
       res.sendStatus(200);
     });
   });
@@ -585,9 +649,14 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
   } else {
     url = options.url;
   }
+  if (peer.address) {
+    url = 'http://' + peer.address + url;
 
+  } else {
+    url = 'http://' + ip.fromLong(peer.ip) + ':' + peer.port + url;
+  }
   var req = {
-    url: 'http://' + ip.fromLong(peer.ip) + ':' + peer.port + url,
+    url: url,
     method: options.method,
     json: true,
     headers: extend({}, private.headers, options.headers),
@@ -707,18 +776,25 @@ Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast)
   }
 }
 
-Transport.prototype.onNewBlock = function (block, broadcast) {
+Transport.prototype.onNewBlock = function (block, votes, broadcast) {
   if (broadcast) {
-    self.broadcast({limit: 100}, {api: '/blocks', data: {block: block}, method: "POST"});
+    self.broadcast({limit: 100}, {api: '/blocks', data: {block: block, votes: votes}, method: "POST"});
     library.network.io.sockets.emit('blocks/change', {});
   }
 }
 
-Transport.prototype.onConfirm = function (confirm, broadcast) {
+Transport.prototype.onNewPropose = function (propose, broadcast) {
   if (broadcast) {
-    self.broadcast({limit: 100}, {api: '/confirm', data: confirm, method: "POST"});
-    // library.network.io.sockets.emit('blocks/change', {});
+    self.broadcast({limit: 100}, {api: '/propose', data: propose, method: "POST"});
   }
+}
+
+Transport.prototype.sendVotes = function (votes, address) {
+  self.getFromPeer({ address: address }, {
+    api: '/votes',
+    data: votes,
+    method: "POST"
+  });
 }
 
 Transport.prototype.onMessage = function (msg, broadcast) {

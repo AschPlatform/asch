@@ -1,3 +1,4 @@
+var assert = require('assert');
 var crypto = require('crypto');
 var ip = require('ip');
 var ByteBuffer = require("bytebuffer");
@@ -17,10 +18,6 @@ require('array.prototype.findindex'); // Old node fix
 var genesisblock = null;
 // Private fields
 var modules, library, self, private = {}, shared = {};
-
-var pendingBlocks = {};
-var confirmStats = {};
-var confirmCache = {};
 
 private.lastBlock = {};
 private.blockStatus = new blockStatus();
@@ -71,6 +68,9 @@ private.blocksDataFields = {
 // @formatter:on
 private.loaded = false;
 private.isActive = false;
+
+private.blockCache = {};
+private.proposeCache = {};
 
 // Constructor
 function Blocks(cb, scope) {
@@ -634,14 +634,14 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
       async.eachSeries(blocks, function (block, next) {
         library.logger.debug("loadBlocksOffset processing:", block.id);
         if (verify && block.id != genesisblock.block.id) {
-          self.verifyBlock(block, function(err) {
+          self.verifyBlock(block, null, function(err) {
             if (err) {
               return next("Failed to verify block " + block.id);
             }
-            self.applyBlock(block, false, next, false);
+            self.applyBlock(block, null, false, next, false);
           });
         } else {
-          self.applyBlock(block, false, next, false);
+          self.applyBlock(block, null, false, next, false);
         }
       }, function (err) {
         cb(err, private.lastBlock);
@@ -703,7 +703,7 @@ Blocks.prototype.getLastBlock = function () {
   return private.lastBlock;
 }
 
-Blocks.prototype.verifyBlock = function (block, cb) {
+Blocks.prototype.verifyBlock = function (block, votes, cb) {
   try {
     block.id = library.base.block.getId(block);
   } catch (e) {
@@ -792,14 +792,51 @@ Blocks.prototype.verifyBlock = function (block, cb) {
 		return cb("Invalid total fee: " + block.id);
 	}
   
-  return cb();
+  if (votes) {
+    if (block.height != votes.height) {
+      return cb("Votes height is not correct");
+    }
+    if (block.id != votes.id) {
+      return cb("Votes id is not correct");
+    }
+    if (!votes.signatures || !library.base.consensus.hasEnoughVotes(votes)) {
+      return cb("Votes signature is not correct");
+    }
+    self.verifyBlockVotes(block, votes, cb);
+  } else {
+    cb(); 
+  }
 }
 
-Blocks.prototype.applyBlock = function(block, broadcast, cb, saveBlock) {
+Blocks.prototype.verifyBlockVotes = function (block, votes, cb) {
+  modules.delegates.generateDelegateList(block.height, function (err, delegatesList) {
+    if (err) {
+      library.logger.error("Failed to get delegate list while verifying block votes");
+      process.exit(-1);
+      return;
+    }
+    var publicKeySet = {};
+    delegatesList.forEach(function (item) {
+      publicKeySet[item] = true;
+    });
+    for (var i = 0; i < votes.signatures.length; ++i) {
+      var item = votes.signatures[i];
+      if (!publicKeySet[item.key]) {
+        return cb("Votes key is not in the top list: " + item.key);
+      }
+      if (!library.base.consensus.verifyVote(votes.height, votes.id, item)) {
+        return cb("Failed to verify vote");
+      }
+    }
+    cb();
+  });
+}
+
+Blocks.prototype.applyBlock = function(block, votes, broadcast, cb, saveBlock) {
 	private.isActive = true;
 
 	library.balancesSequence.add(function (cb) {
-    library.dbLite.query('SAVEPOINT processblock');
+    library.dbLite.query('SAVEPOINT applyblock');
     
 		modules.transactions.undoUnconfirmedList(function (err, unconfirmedTransactions) {
 			if (err) {
@@ -810,23 +847,29 @@ Blocks.prototype.applyBlock = function(block, broadcast, cb, saveBlock) {
 			function done(err) {
         modules.transactions.applyUnconfirmedList(unconfirmedTransactions, function (applyErr) {
           if (applyErr || err) {
-            var finalErr = 'processBlock err: ' + (applyErr || err);
-            library.dbLite.query('ROLLBACK TO SAVEPOINT processblock', function (rollbackErr) {
-              if (finishErr) {
+            var finalErr = 'applyBlock err: ' + (applyErr || err);
+            library.dbLite.query('ROLLBACK TO SAVEPOINT applyblock', function (rollbackErr) {
+              if (finalErr) {
                 finalErr += ', rollback err: ' + rollbackErr;
               }
               private.isActive = false;
               cb(finalErr);
             });
           } else {
-            library.dbLite.query('RELEASE SAVEPOINT processblock', function (releaseErr) {
+            library.dbLite.query('RELEASE SAVEPOINT applyblock', function (releaseErr) {
               private.isActive = false;
               if (releaseErr) {
-                cb('processBlock release savepoint err: ' + releaseErr);
+                cb('applyBlock release savepoint err: ' + releaseErr);
               } else {
                 library.logger.debug("Block applied corrrectly with " + block.transactions.length + " transactions");
                 private.lastBlock = block;
-                // library.bus.message('newBlock', block, broadcast);
+                if (broadcast) {
+                  library.bus.message('newBlock', block, votes, true);
+                }
+                private.blockCache = {};
+                private.proposeCache = {};
+                private.lastVoteTime = null;
+                library.base.consensus.clearState();
                 cb();
               }
             });
@@ -888,7 +931,8 @@ Blocks.prototype.applyBlock = function(block, broadcast, cb, saveBlock) {
 							private.saveBlock(block, function (err) {
 							 if (err) {
 								 library.logger.error("Failed to save block...");
-								 process.exit(0);
+								 process.exit(1);
+                 return;
 							 }
 							 modules.round.tick(block, done);
 						 });
@@ -902,7 +946,7 @@ Blocks.prototype.applyBlock = function(block, broadcast, cb, saveBlock) {
 	}, cb);
 }
 
-Blocks.prototype.processBlock = function (block, broadcast, cb) {
+Blocks.prototype.processBlock = function (block, votes, broadcast, cb) {
   if (!private.loaded) {
     return setImmediate(cb, "Blockchain is loading");
   }
@@ -912,7 +956,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
 		return setImmediate(cb, "Failed to normalize block: " + e.toString());
 	}
   
-  self.verifyBlock(block, function (err) {
+  self.verifyBlock(block, votes, function (err) {
     if (err) {
       return setImmediate(cb, "Failed to verify block: " + err);
     }
@@ -959,7 +1003,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb) {
           if (err) {
             return setImmediate(cb, "Failed to verify transaction: " + err);
           }
-          self.applyBlock(block, broadcast, cb, true);
+          self.applyBlock(block, votes, broadcast, cb, true);
         });
       });
     });
@@ -1021,7 +1065,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
               modules.peer.state(peer.ip, peer.port, 0, 3600);
               return cb(e);
             }
-            self.processBlock(block, false, function (err) {
+            self.processBlock(block, null, false, function (err) {
               if (!err) {
                 lastCommonBlockId = block.id;
                 lastValidBlock = block;
@@ -1066,6 +1110,9 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
   var transactions = modules.transactions.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
   var ready = [];
+  if (library.base.consensus.hasPendingBlock(timestamp)) {
+    return setImmediate(cb);
+  }
 
   async.eachSeries(transactions, function (transaction, next) {
     modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
@@ -1083,8 +1130,9 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
       }
     });
   }, function () {
+    var block;
     try {
-      var block = library.base.block.create({
+      block = library.base.block.create({
         keypair: keypair,
         timestamp: timestamp,
         previousBlock: private.lastBlock,
@@ -1097,13 +1145,64 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
     // self.processBlock(block, true, cb);
     
     library.logger.info("Generate new block at height " + (private.lastBlock.height + 1));
-    // TODO sequence need?
-    self.prepareBlock(block, function (err) {
-      if (err) {
-        library.logger.error("Failed to generate block: " + err); 
-      }
-      cb(err);
-    });
+    
+    async.waterfall([
+      function (next) {
+        self.verifyBlock(block, null, function (err) {
+          if (err) {
+            next("Can't verify generated block: " + err);
+          } else {
+            next();
+          }
+        });
+      },
+      function (next) {
+        modules.delegates.getActiveDelegateKeypairs(block.height, function (err, activeKeypairs) {
+          if (err) {
+            next("Failed to get active delegate keypairs: " + err);
+          } else {
+            next(null, activeKeypairs);
+          }
+        });
+      },
+      function (activeKeypairs, next) {
+        var height = block.height;
+        var id = block.id;
+        assert(activeKeypairs && activeKeypairs.length > 0, "Active keypairs should not be empty");
+        library.logger.debug("get active delegate keypairs len: " + activeKeypairs.length);
+        var localVotes = library.base.consensus.createVotes(activeKeypairs, block);
+        if (library.base.consensus.hasEnoughVotes(localVotes)) {
+          self.processBlock(block, localVotes, true, function (err) {
+            if (err) {
+              return next("Failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
+            }
+            library.logger.log('Forged new block id: ' + id +
+              ' height: ' + height +
+              ' round: ' + modules.round.calc(height) +
+              ' slot: ' + slots.getSlotNumber(block.timestamp) +
+              ' reward: ' + block.reward);
+            library.bus.message('confirmBlock', block, true);
+            return next();
+          });
+        } else {
+          if (!library.config.publicIp) {
+            return next("No public ip");
+          }
+          var serverAddr = library.config.publicIp + ':' + library.config.port;
+          var propose;
+          try {
+            propose = library.base.consensus.createPropose(keypair, block, serverAddr);
+          } catch (e) {
+            return next("Failed to create propose: " + e.toString());
+          }
+          library.base.consensus.setPendingBlock(block);
+          library.base.consensus.addPendingVotes(localVotes);
+          private.proposeCache[propose.hash] = true;
+          library.bus.message("newPropose", propose, true);
+          return next();
+        }
+      },
+    ], cb);
   });
 }
 
@@ -1111,230 +1210,130 @@ Blocks.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
 }
 
-Blocks.prototype.prepareBlock = function (block, cb) {
-  self.verifyBlock(block, function (err) {
-    if (err) {
-      cb("Can't verify block when prepare block: " + err);
-      return;
+// Events
+Blocks.prototype.onReceiveBlock = function (block, votes) {
+  if (modules.loader.syncing() || !private.loaded) {
+    return;
+  }
+   
+  if (private.blockCache[block.id]) {
+    return;
+  }
+  private.blockCache[block.id] = true;
+  
+  library.sequence.add(function receiveBlock (cb) {
+    if (block.previousBlock == private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
+      library.logger.info('Received new block id: ' + block.id + ' height: ' + block.height + ' round: ' + modules.round.calc(modules.blocks.getLastBlock().height) + ' slot: ' + slots.getSlotNumber(block.timestamp) + ' reward: ' + modules.blocks.getLastBlock().reward)
+      self.processBlock(block, votes, true, cb);
+    } else if (block.previousBlock != private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
+      // Fork: Same height but different previous block id
+      modules.delegates.fork(block, 1);
+      cb("Fork");
+    } else if (block.previousBlock == private.lastBlock.previousBlock && block.height == private.lastBlock.height && block.id != private.lastBlock.id) {
+      // Fork: Same height and previous block id, but different block id
+      modules.delegates.fork(block, 5);
+      cb("Fork");
+    } else if (block.height > private.lastBlock.height + 1) {
+      library.logger.info("receive discontinuous block height " + block.height);
+      modules.loader.startSyncBlocks();
+      cb();
+    } else {
+      cb();
     }
-    self.addPendingBlock(block);
-    library.bus.message('newBlock', block, true);
+  });
+}
 
-    modules.delegates.getActiveDelegateKeypairs(block.height, function (err, keypairs) {
-      if (err) {
-        cb("Failed to get active delegate keyparis: " + err);
-        return;
-      }
-      library.logger.debug("getActiveDelegateKeypairs length: " + keypairs.length);
-      if (keypairs.length == 0) {
-        cb();
-        return;
-      }
-      var confirm = { height: block.height, id: block.id, signatures: [] };
-      var hash = self.getConfirmHash(block.height, block.id);
-      keypairs.forEach(function (el) {
-        confirm.signatures.push({
-          key: el.publicKey.toString('hex'),
-          sig: ed.Sign(hash, el).toString('hex')
+Blocks.prototype.onReceivePropose = function (propose) {
+  if (modules.loader.syncing() || !private.loaded) {
+    return;
+  }
+  if (private.proposeCache[propose.hash]) {
+    return;
+  }
+  private.proposeCache[propose.hash] = true;
+  library.sequence.add(function receivePropose (cb) {
+    if (private.lastVoteTime && Date.now() - private.lastVoteTime < 10 * 1000) {
+      library.logger.debug("ignore the frequently propose");
+      return setImmediate(cb);
+    }
+    library.logger.debug("receive propose height " + propose.height + " bid " + propose.id);
+    library.bus.message("newPropose", propose, true);
+    async.waterfall([
+      function (next) {
+        modules.delegates.validateProposeSlot(propose, function (err) {
+          if (err) {
+            next("Failed to validate propose slot: " + err);
+          } else {
+            next();
+          }
         });
-      });
-      self.onReceiveConfirm(confirm);
+      },
+      function (next) {
+        library.base.consensus.acceptPropose(propose, function (err) {
+          if (err) {
+            next("Failed to accept propose: " + err);
+          } else {
+            next();
+          }
+        });
+      },
+      function (next) {
+        modules.delegates.getActiveDelegateKeypairs(propose.height, function (err, activeKeypairs) {
+          if (err) {
+            next("Failed to get active keypairs: " + err);
+          } else {
+            next(null, activeKeypairs);
+          }
+        });
+      },
+      function (activeKeypairs, next) {
+        if (activeKeypairs && activeKeypairs.length > 0) {
+          var votes = library.base.consensus.createVotes(activeKeypairs, propose);
+          library.logger.debug("send votes height " + votes.height + " id " + votes.id + " sigatures " + votes.signatures.length);
+          modules.transport.sendVotes(votes, propose.address);
+          private.lastVoteTime = Date.now();
+        }
+        setImmediate(next);
+      }
+    ], function (err) {
+      if (err) {
+        library.logger.error("onReceivePropose error: " + err);
+      }
+      library.logger.debug("onReceivePropose finished");
       cb();
     });
   });
 }
 
-Blocks.prototype.addPendingBlock = function (block) {
-  var blocksOfHeight = pendingBlocks[block.height];
-  if (!blocksOfHeight) {
-    blocksOfHeight = pendingBlocks[block.height] = {};
-  }
-  if (!blocksOfHeight[block.id]) {
-    blocksOfHeight[block.id] = block;
-  }
-}
-
-Blocks.prototype.getPendingBlock = function (height, id) {
-  return pendingBlocks[height] && pendingBlocks[height][id];
-}
-
-Blocks.prototype.addBlockConfirm = function (height, id, key) {
-  var statsOfHeight = confirmStats[height];
-  if (!statsOfHeight) {
-    statsOfHeight = confirmStats[height] = {};
-  }
-  var statsOfId = statsOfHeight[id];
-  if (!statsOfId) {
-    statsOfId = statsOfHeight[id] = { votes: 0 };
-  }
-  if (!statsOfId[key]) {
-    statsOfId[key] = true;
-    statsOfId.votes++;
-  }
-  return statsOfId;
-}
-
-Blocks.prototype.getBlockConfirm = function (height, id) {
-  return confirmStats[height] && confirmStats[height][id];
-}
-
-Blocks.prototype.checkBlockConfirms = function (block, cb) {
-  var height = block.height;
-  var id = block.id;
-  var confirmDetail = self.getBlockConfirm(height, id);
-  if (!confirmDetail) {
-    return setImmediate(cb);
-  }
-  library.logger.debug("votes for block id " + id + " and height " + height + ": " + confirmDetail.votes);
-  if (confirmDetail.votes > slots.delegates * 2 / 3 + 1) {
-    self.processBlock(block, false, function (err) {
-      if (err) {
-        return cb("Failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
-      }
-      delete pendingBlocks[height];
-      delete confirmStats[height];
-      confirmCache = {};
-      library.logger.log('Forged new block id: ' + id +
-        ' height: ' + height +
-        ' round: ' + modules.round.calc(height) +
-        ' slot: ' + slots.getSlotNumber(block.timestamp) +
-        ' reward: ' + block.reward);
-      library.bus.message('confirmBlock', block, true);
-      return cb();
-    });
-  } else {
-    return setImmediate(cb);
-  }
-}
-
-Blocks.prototype.getConfirmHash = function (height, id) {
-  var bytes = new ByteBuffer();
-  bytes.writeLong(height);
-  var idBytes = bignum(id).toBuffer({ size: 8 });
-  for (var j = 0; j < 8; j++) {
-    bytes.writeByte(idBytes[j]);
-  }
-  bytes.flip();
-  return crypto.createHash('sha256').update(bytes.toBuffer()).digest();
-}
-
-// Events
-Blocks.prototype.onReceiveBlock = function (block) {
+Blocks.prototype.onReceiveVotes = function (votes) {
   if (modules.loader.syncing() || !private.loaded) {
     return;
   }
-  
-  if (self.getPendingBlock(block.height, block.id)) {
-    return;
-  }
-
-  if (block.previousBlock == private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
-    library.logger.log('Received new block id: ' + block.id + ' height: ' + block.height + ' slot: ' + slots.getSlotNumber(block.timestamp) + ' reward: ' + modules.blocks.getLastBlock().reward)
-    self.prepareBlock(block, function (err) {
-      if (err) {
-        library.logger.error("Failed to prepare block: " + err);
-      }
-      // cb(err);
-    })
-  } else if (block.previousBlock != private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
-    // Fork right height and different previous block
-    modules.delegates.fork(block, 1);
-    // cb("Fork");
-  } else if (block.previousBlock == private.lastBlock.previousBlock && block.height == private.lastBlock.height && block.id != private.lastBlock.id) {
-    // Fork same height and same previous block, but different block id
-    modules.delegates.fork(block, 5);
-    // cb("Fork");
-  } else if (block.height > private.lastBlock.height + 1) {
-    library.logger.info("receive discontinuous block height " + block.height);
-    modules.loader.startSyncBlocks();
-    // cb();
-  }
-}
-
-Blocks.prototype.hasConfirmCache = function (confirm) {
-  var key = confirm.height + ":" + confirm.id + ":" + confirm.signatures[0].key;
-  return !!confirmCache[key];
-}
-
-Blocks.prototype.setConfirmCache = function (confirm) {
-  var key = confirm.height + ":" + confirm.id + ":" + confirm.signatures[0].key;
-  confirmCache[key] = true;
-}
-
-Blocks.prototype.isUsefullConfirm = function (confirm) {
-  var height = confirm.height;
-  var id = confirm.id;
-  
-  if (!confirm.signatures || confirm.signatures.length <= 0) {
-    return false;
-  }
-  var currentBlockConfirm = self.getBlockConfirm(height, id);
-  if (currentBlockConfirm && currentBlockConfirm[confirm.signatures[0].key]) {
-    return false;
-  }
-  return true;
-}
-
-Blocks.prototype.onReceiveConfirm = function (confirm) {
-  var height = confirm.height;
-  var id = confirm.id;
-  
-  if (!self.isUsefullConfirm(confirm)) {
-    return;
-  }
-  
-  if (self.hasConfirmCache(confirm)) {
-    return;
-  }
-  
-  self.setConfirmCache(confirm);
-
-  var label = confirm.height + ":" + confirm.id + ":" + confirm.signatures[0].key;
-  library.logger.debug("onReceiveConfirm label: " + label + ", count: " + confirm.signatures.length);
-  library.bus.message('confirm', confirm, true);
-  
-  library.sequence.add(function (cb) {
-    modules.delegates.generateDelegateList(height, function (err, delegatesList) {
-      if (err) {
-        library.logger.error("Failed to get delegate list while verifying confirms");
-        process.exit(-1);
-        return;
-      }
-      var publicKeySet = {};
-      delegatesList.forEach(function (item) {
-        publicKeySet[item] = true;
-      });
-      for (var i = 0; i < confirm.signatures.length; ++i) {
-        var item = confirm.signatures[i];
-        if (!publicKeySet[item.key]) {
-          library.logger.debug("generator publickey is not in the top list: " + item.key);
-          continue;
-        }
-        try {
-          var signature = new Buffer(item.sig, "hex");
-          var publicKey = new Buffer(item.key, "hex");
-          var hash = self.getConfirmHash(height, id);
-          if (ed.Verify(hash, signature, publicKey)) {
-            self.addBlockConfirm(height, id, item.key);
-          } else {
-            library.logger.error("Failed to verify confirm signature");
-          }
-        } catch (e) {
-          library.logger.error("Verify confirm signature exception: " + e);
-        }
-      }
-      var block = self.getPendingBlock(height, id);
-      if (!block) {
-        library.logger.debug("no pending block before check confirms on id " + id + " height " + height);
-        return cb();
-      }
-      self.checkBlockConfirms(block, function (err) {
+  library.sequence.add(function receiveVotes (cb) {
+    var totalVotes = library.base.consensus.addPendingVotes(votes);
+    if (totalVotes && totalVotes.signatures) {
+      library.logger.debug("receive new votes, total votes number " + totalVotes.signatures.length); 
+    }
+    if (library.base.consensus.hasEnoughVotes(totalVotes)) {
+      var block = library.base.consensus.getPendingBlock();
+      var height = block.height;
+      var id = block.id;
+      self.processBlock(block, totalVotes, true, function (err) {
         if (err) {
-          library.logger.error("checkBlockConfirms error: " + err);
+          library.logger.error("Failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
+          return cb();
         }
-        cb(err);
+        library.logger.log('Forged new block id: ' + id +
+          ' height: ' + height +
+          ' round: ' + modules.round.calc(height) +
+          ' slot: ' + slots.getSlotNumber(block.timestamp) +
+          ' reward: ' + block.reward);
+        library.bus.message('confirmBlock', block, true);
+        cb();
       });
-    });
+    } else {
+      setImmediate(cb);
+    }
   });
 }
 

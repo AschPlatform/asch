@@ -510,7 +510,7 @@ private.loop = function (cb) {
       return setImmediate(cb);
     }
 
-    library.sequence.add(function (cb) {
+    library.sequence.add(function generateBlock (cb) {
       if (slots.getSlotNumber(currentBlockData.time) == slots.getSlotNumber()) {
         modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, cb);
       } else {
@@ -569,6 +569,22 @@ Delegates.prototype.getActiveDelegateKeypairs = function (height, cb) {
       }
     }
     cb(null, results);
+  });
+}
+
+Delegates.prototype.validateProposeSlot = function (propose, cb) {
+  self.generateDelegateList(propose.height, function (err, activeDelegates) {
+    if (err) {
+      return cb(err);
+    }
+    var currentSlot = slots.getSlotNumber(propose.timestamp);
+    var delegateKey = activeDelegates[currentSlot % slots.delegates];
+
+    if (delegateKey && propose.generatorPublicKey == delegateKey) {
+      return cb();
+    }
+
+    cb("Failed to validate propose slot");
   });
 }
 
@@ -740,11 +756,9 @@ Delegates.prototype.validateBlockSlot = function (block, cb) {
       return cb(err);
     }
     var currentSlot = slots.getSlotNumber(block.timestamp);
-    var delegate_id = activeDelegates[currentSlot % slots.delegates];
-    var nextDelegate_id = activeDelegates[(currentSlot + 1) % slots.delegates];
-    var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];
+    var delegateKey = activeDelegates[currentSlot % slots.delegates];
 
-    if (delegate_id && block.generatorPublicKey == delegate_id) {
+    if (delegateKey && block.generatorPublicKey == delegateKey) {
       return cb();
     }
 

@@ -1,6 +1,6 @@
 var path = require('path');
 var fs = require('fs');
-var fs = require('os');
+var os = require('os');
 var https = require('https');
 var async = require('async');
 var z_schema = require('z-schema');
@@ -204,6 +204,7 @@ module.exports = function(options, done) {
 
     dbSequence: ["logger", function (cb, scope) {
       var sequence = new Sequence({
+        name: "db",
         onWarning: function (current, limit) {
           scope.logger.warn("DB queue", current)
         }
@@ -213,6 +214,7 @@ module.exports = function(options, done) {
 
     sequence: ["logger", function (cb, scope) {
       var sequence = new Sequence({
+        name: "normal",
         onWarning: function (current, limit) {
           scope.logger.warn("Main queue", current)
         }
@@ -222,6 +224,7 @@ module.exports = function(options, done) {
 
     balancesSequence: ["logger", function (cb, scope) {
       var sequence = new Sequence({
+        name: "balance",
         onWarning: function (current, limit) {
           scope.logger.warn("Balance queue", current)
         }
@@ -358,6 +361,7 @@ module.exports = function(options, done) {
       var Transaction = require('./base/transaction.js');
       var Block = require('./base/block.js');
       var Account = require('./base/account.js');
+      var Consensus = require('./base/consensus.js');
 
       async.auto({
         bus: function (cb) {
@@ -374,6 +378,9 @@ module.exports = function(options, done) {
             block: genesisblock
           });
         },
+        consensus: ["dbLite", "bus", "scheme", "genesisblock", function (cb, scope) {
+          new Consensus(scope, cb);
+        }],
         account: ["dbLite", "bus", "scheme", 'genesisblock', function (cb, scope) {
           new Account(scope, cb);
         }],
