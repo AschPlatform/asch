@@ -32,7 +32,7 @@ private.attachApi = function() {
     if (private.loaded) {
       res.render('wallet.html', {layout: false});
     } else {
-      res.render('loading.html');
+      res.render('index.html');
     }
   });
 

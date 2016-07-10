@@ -84,7 +84,7 @@ module.exports = function(options, done) {
     },
 
     public: function (cb) {
-      cb(null, path.join(__dirname, '../public'));
+      cb(null, options.publicDir);
     },
 
     scheme: function (cb) {

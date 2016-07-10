@@ -16,4 +16,4 @@ tmp
 build
 third_party
 *.pid
-public
+public/dist

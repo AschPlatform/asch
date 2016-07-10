@@ -22,7 +22,7 @@ function verifyGenesisBlock(scope, block) {
     assert.equal(payloadLength, block.payloadLength, 'Unexpected payloadLength');
     assert.equal(payloadHash.digest().toString('hex'), block.payloadHash, 'Unexpected payloadHash');
     assert.equal(id, block.id, 'Unexpected block id');
-    assert.equal(id, '11839820784468442760', 'Block id is incorrect');
+    // assert.equal(id, '11839820784468442760', 'Block id is incorrect');
   } catch (e) {
     assert(false, 'Failed to verify genesis block: ' + e);
   }
@@ -108,11 +108,12 @@ function main() {
   });
 
   var options = {
-    dbFile: program.blockchain || path.join(baseDir, './blockchain.db'),
+    dbFile: program.blockchain || path.join(baseDir, 'blockchain.db'),
     appConfig: appConfig,
     genesisblock: genesisblock,
     logger: logger,
-    buildVersion: buildVersion
+    buildVersion: buildVersion,
+    publicDir: path.join(baseDir, 'public', 'dist')
   };
 
   var d = require('domain').create();
