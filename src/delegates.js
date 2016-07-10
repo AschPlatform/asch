@@ -1015,7 +1015,6 @@ shared.getDelegates = function (req, cb) {
         if (voter && voter.delegates) {
           delegates.map(function (item) {
             item.voted = (voter.delegates.indexOf(item.publicKey) != -1);
-            console.log(item.voted);
           });
         }
         return cb(null, { delegates: delegates, totalCount: result.count });
