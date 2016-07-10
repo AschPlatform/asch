@@ -303,7 +303,7 @@ Round.prototype.tick = function (block, cb) {
 
         async.forEachOfSeries(private.delegatesByRound[round], function (delegate, index, next) {
           var changes = roundChanges.at(index);
-          var changeBalance = changes.blance;
+          var changeBalance = changes.balance;
           var changeFees = changes.fees;
           var changeRewards = changes.rewards;
           if (index === private.delegatesByRound[round].length - 1) {
