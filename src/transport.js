@@ -50,11 +50,11 @@ private.attachApi = function () {
     req.sanitize(req.headers, {
       type: "object",
       properties: {
-        port: {
-          type: "integer",
-          minimum: 1,
-          maximum: 65535
-        },
+        // port: {
+        //   type: "integer",
+        //   minimum: 1,
+        //   maximum: 65535
+        // },
         os: {
           type: "string",
           maxLength: 64
@@ -68,7 +68,7 @@ private.attachApi = function () {
           maxLength: 11
         }
       },
-      required: ["port", 'magic', 'version']
+      required: ['magic', 'version']
     }, function (err, report, headers) {
       if (err) return next(err);
       if (!report.isValid) return res.status(500).send({status: false, error: report.issues});
@@ -85,7 +85,7 @@ private.attachApi = function () {
         peer.dappid = req.body.dappid;
       }
 
-      if (peer.port > 0 && peer.port <= 65535 && peer.version == library.config.version && req.headers['magic'] == library.config.magic) {
+      if (peer.port && peer.port > 0 && peer.port <= 65535 && peer.version == library.config.version && req.headers['magic'] == library.config.magic) {
         modules.peer.update(peer);
       }
 
@@ -426,7 +426,7 @@ private.attachApi = function () {
     res.set(private.headers);
 
     if (modules.loader.syncing() || !private.loaded) {
-      return res.status(200).json({ success: false, message: "Peer is not ready to receive transaction" });
+      return res.status(200).json({ success: false, error:"Peer is not ready to receive transaction" });
     }
 
     var report = library.scheme.validate(req.headers, {
@@ -442,7 +442,7 @@ private.attachApi = function () {
           maxLength: 8
         }
       },
-      required: ['port', 'magic']
+      required: ['magic']
     });
 
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -454,13 +454,14 @@ private.attachApi = function () {
     try {
       var transaction = library.base.transaction.objectNormalize(req.body.transaction);
     } catch (e) {
+      library.logger.error("transaction parse error", e.toString());
       library.logger.log('Received transaction ' + (transaction ? transaction.id : 'null') + ' is not valid, ban 60 min', peerStr);
 
-      if (peerIp && report) {
+      if (peerIp && report && req.headers['port']) {
         modules.peer.state(ip.toLong(peerIp), req.headers['port'], 0, 3600);
       }
 
-      return res.status(200).json({success: false, message: "Invalid transaction body"});
+      return res.status(200).json({success: false, error:"Invalid transaction body"});
     }
 
     library.balancesSequence.add(function (cb) {
@@ -472,7 +473,7 @@ private.attachApi = function () {
     }, function (err) {
       if (err) {
         library.logger.error(err);
-        res.status(200).json({success: false, message: err});
+        res.status(200).json({success: false, error:err});
       } else {
         res.status(200).json({success: true});
       }
@@ -491,20 +492,20 @@ private.attachApi = function () {
 
     try {
       if (!req.body.dappid) {
-        return res.status(200).json({success: false, message: "missed dappid"});
+        return res.status(200).json({success: false, error:"missed dappid"});
       }
       if (!req.body.timestamp || !req.body.hash) {
         return res.status(200).json({
           success: false,
-          message: "missed hash sum"
+          error:"missed hash sum"
         });
       }
       var newHash = private.hashsum(req.body.body, req.body.timestamp);
       if (newHash !== req.body.hash) {
-        return res.status(200).json({success: false, message: "wrong hash sum"});
+        return res.status(200).json({success: false, error:"wrong hash sum"});
       }
     } catch (e) {
-      return res.status(200).json({success: false, message: e.toString()});
+      return res.status(200).json({success: false, error:e.toString()});
     }
 
     if (private.messages[req.body.hash]) {
@@ -519,7 +520,7 @@ private.attachApi = function () {
       }
 
       if (err) {
-        return res.status(200).json({success: false, message: err});
+        return res.status(200).json({success: false, error:err});
       }
 
       library.bus.message('message', req.body, true);
@@ -532,20 +533,20 @@ private.attachApi = function () {
 
     try {
       if (!req.body.dappid) {
-        return res.status(200).json({success: false, message: "missed dappid"});
+        return res.status(200).json({success: false, error:"missed dappid"});
       }
       if (!req.body.timestamp || !req.body.hash) {
         return res.status(200).json({
           success: false,
-          message: "missed hash sum"
+          error:"missed hash sum"
         });
       }
       var newHash = private.hashsum(req.body.body, req.body.timestamp);
       if (newHash !== req.body.hash) {
-        return res.status(200).json({success: false, message: "wrong hash sum"});
+        return res.status(200).json({success: false, error:"wrong hash sum"});
       }
     } catch (e) {
-      return res.status(200).json({success: false, message: e.toString()});
+      return res.status(200).json({success: false, error:e.toString()});
     }
 
     modules.dapps.request(req.body.dappid, req.body.body.method, req.body.body.path, req.body.body.query, function (err, body) {
@@ -554,7 +555,7 @@ private.attachApi = function () {
       }
 
       if (err) {
-        return res.status(200).json({success: false, message: err});
+        return res.status(200).json({success: false, error:err});
       }
 
       res.status(200).json(extend({}, body, {success: true}));
