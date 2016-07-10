@@ -1,6 +1,6 @@
 module.exports = {
   maxAmount: 100000000,
-  maxPayloadLength: 1024 * 1024,
+  maxPayloadLength: 8 * 1024 * 1024,
   blockHeaderLength: 248,
   addressLength: 208,
   maxAddressesLength: 208 * 128,
@@ -16,5 +16,5 @@ module.exports = {
   confirmationLength: 77,
   fixedPoint : Math.pow(10, 8),
   totalAmount: 10000000000000000,
-  maxTxsPerBlock: 10
+  maxTxsPerBlock: 100
 }
