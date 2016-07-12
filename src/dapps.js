@@ -1470,7 +1470,7 @@ private.list = function (filter, cb) {
 private.createBasePathes = function (cb) {
   async.series([
     function (cb) {
-      var iconsPath = path.join(library.public, 'images', 'dapps');
+      var iconsPath = path.join(library.config.publicDir, 'images', 'dapps');
       fs.exists(iconsPath, function (exists) {
         if (exists) {
           return setImmediate(cb);

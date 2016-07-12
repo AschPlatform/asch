@@ -327,7 +327,11 @@ Peer.prototype.update = function (peer, cb) {
 }
 
 Peer.prototype.getVersion = function () {
-  return {version: library.config.version, build: library.build};
+  return {
+    version: library.config.version,
+    build: library.config.buildVersion,
+    net: library.config.netVersion
+  };
 }
 
 Peer.prototype.sandboxApi = function (call, args, cb) {
@@ -480,7 +484,11 @@ shared.getPeer = function (req, cb) {
 }
 
 shared.version = function (req, cb) {
-  cb(null, {version: library.config.version, build: library.build});
+  cb(null, {
+    version: library.config.version,
+    build: library.config.buildVersion,
+    net: library.config.netVersion
+  });
 }
 
 // Export

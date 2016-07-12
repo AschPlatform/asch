@@ -1,0 +1,45 @@
+{
+  "port": 4096,
+  "address": "0.0.0.0",
+  "logLevel": "log",
+  "magic": "43194d2b",
+  "api": {
+    "access": {
+      "whiteList": []
+    }
+  },
+  "peers": {
+    "list": [],
+    "blackList": [],
+    "options": {
+      "timeout": 4000
+    }
+  },
+  "forging": {
+    "secret": [
+    ],
+    "access": {
+      "whiteList": [
+        "127.0.0.1"
+      ]
+    }
+  },
+  "loading": {
+    "verifyOnLoading": false,
+    "loadPerIteration": 5000
+  },
+  "ssl": {
+    "enabled": false,
+    "options": {
+      "port": 443,
+      "address": "0.0.0.0",
+      "key": "./ssl/server.key",
+      "cert": "./ssl/server.crt"
+    }
+  },
+  "dapp": {
+    "masterrequired": true,
+    "masterpassword": "npmWkFJhBnnd",
+    "autoexec": []
+  }
+}

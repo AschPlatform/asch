@@ -46,18 +46,12 @@ function main() {
     .parse(process.argv);
 
   var baseDir = program.base || './';
-  var buildVersion = fs.readFileSync(path.join(baseDir, 'build-version'), 'utf8');
 
   var pidFile = path.join(baseDir, 'asch.pid');
   if (fs.existsSync(pidFile)) {
     console.log('Failed: asch server already started');
     process.exit(1);
     return;
-  }
-  if (program.daemon) {
-    console.log('Asch server started as daemon ...');
-    require('daemon')();
-    fs.writeFileSync(pidFile, process.pid, 'utf8');
   }
 
   var appConfigFile = path.join(baseDir, 'config.json');
@@ -68,6 +62,12 @@ function main() {
 
   appConfig.version = version;
   appConfig.baseDir = baseDir;
+
+  var buildVersion = fs.readFileSync(path.join(baseDir, 'build-version'), 'utf8');
+  appConfig.buildVersion = buildVersion;
+  
+  appConfig.netVersion = "localnet";
+  appConfig.publicDir = path.join(baseDir, 'public', 'dist');
 
   var genesisblockFile = path.join(baseDir, 'genesisBlock.json');
   if (program.genesisblock) {
@@ -100,6 +100,12 @@ function main() {
   if (program.log) {
     appConfig.logLevel = program.log;
   }
+  
+  if (program.daemon) {
+    console.log('Asch server started as daemon ...');
+    require('daemon')();
+    fs.writeFileSync(pidFile, process.pid, 'utf8');
+  }
 
   var logger = new Logger({
     filename: path.join(baseDir, 'debug.log'),
@@ -111,77 +117,68 @@ function main() {
     dbFile: program.blockchain || path.join(baseDir, 'blockchain.db'),
     appConfig: appConfig,
     genesisblock: genesisblock,
-    logger: logger,
-    buildVersion: buildVersion,
-    publicDir: path.join(baseDir, 'public', 'dist')
+    logger: logger
   };
 
-  var d = require('domain').create();
-  d.on('error', function (err) {
-    logger.fatal('Domain error', err);
-    process.exit(0);
-  });
-  d.run(function () {
-    init(options, function(err, scope) {
-      if (err) {
-        scope.logger.fatal(err)
+  init(options, function (err, scope) {
+    if (err) {
+      scope.logger.fatal(err)
+      process.exit(1);
+      return;
+    }
+    verifyGenesisBlock(scope, scope.genesisblock.block);
+
+    scope.bus.message("bind", scope.modules);
+
+    scope.logger.info("Modules ready and launched");
+    if (!scope.config.publicIp) {
+      scope.logger.warn("Failed to get public ip, block forging MAY not work!");
+    }
+
+    process.once('cleanup', function () {
+      scope.logger.info("Cleaning up...");
+      async.eachSeries(scope.modules, function (module, cb) {
+        if (typeof (module.cleanup) == 'function') {
+          module.cleanup(cb);
+        } else {
+          setImmediate(cb);
+        }
+      }, function (err) {
+        if (err) {
+          scope.logger.error(err);
+        } else {
+          scope.logger.info("Cleaned up successfully");
+        }
+        if (fs.existsSync(pidFile)) {
+          fs.unlinkSync(pidFile);
+        }
         process.exit(1);
-        return;
-      }
-      verifyGenesisBlock(scope, scope.genesisblock.block);
-
-      scope.bus.message("bind", scope.modules);
-
-      scope.logger.info("Modules ready and launched");
-      if (!scope.config.publicIp) {
-        scope.logger.warn("Failed to get public ip, block forging MAY not work!");
-      }
-
-      process.once('cleanup', function () {
-        scope.logger.info("Cleaning up...");
-        async.eachSeries(scope.modules, function (module, cb) {
-          if (typeof (module.cleanup) == 'function') {
-            module.cleanup(cb);
-          } else {
-            setImmediate(cb);
-          }
-        }, function (err) {
-          if (err) {
-              scope.logger.error(err);
-          } else {
-              scope.logger.info("Cleaned up successfully");
-          }
-          if (fs.existsSync(pidFile)) {
-            fs.unlinkSync(pidFile);
-          }
-          process.exit(1);
-        });
       });
-
-      process.once('SIGTERM', function () {
-        process.emit('cleanup');
-      })
-
-      process.once('exit', function () {
-        process.emit('cleanup');
-      });
-
-      process.once('SIGINT', function () {
-        process.emit('cleanup');
-      });
-
-      process.on('uncaughtException', function (err) {
-        // handle the error safely
-        scope.logger.fatal('uncaughtException', { message: err.message, stack: err.stack });
-        process.emit('cleanup');
-      });
-
-      if (typeof gc !== 'undefined') {
-        setInterval(function () {
-          gc();
-        }, 60000);
-      }
     });
+
+    process.once('SIGTERM', function () {
+      process.emit('cleanup');
+    })
+
+    process.once('exit', function () {
+      process.emit('cleanup');
+    });
+
+    process.once('SIGINT', function () {
+      process.emit('cleanup');
+    });
+
+    process.on('uncaughtException', function (err) {
+      // handle the error safely
+      scope.logger.fatal('uncaughtException', { message: err.message, stack: err.stack });
+      process.emit('cleanup');
+    });
+
+    if (typeof gc !== 'undefined') {
+      setInterval(function () {
+        gc();
+      }, 60000);
+    }
   });
 }
 

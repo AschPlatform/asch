@@ -1,33 +1,72 @@
 #!/bin/bash
 
-readonly PROGDIR=$(readlink -m $(dirname $0))
+readonly PROG_DIR=$(readlink -m $(dirname $0))
+readonly PID_FILE=$PROG_DIR/asch.pid
 
-if [ "$1" == "stop" ]
-then
-  PID_FILE=$PROGDIR/asch.pid
-  if [ ! -f $PID_FILE ]
-  then
-    echo "Asch server not started"
-    exit
+function read_port() {
+  echo `cat $PROG_DIR/config.json |grep '"port"'|head -n 1| awk -F "[:,]" '{print$2}'|tr -d ' '`
+}
+
+function is_running() {
+  test -f $PID_FILE && ps -p $(cat $PID_FILE) > /dev/null
+}
+
+function status() {
+  if is_running; then
+    echo "Asch server is running"
+  else
+    echo "Asch server is not running"
   fi
-  pid=$(cat $PID_FILE)
-  kill $pid
-  sleep 1
-  i=1
-  while [ -f $PID_FILE ]
-  do
-    if [ $i == 5 ]
-    then
-      kill -9 $pid
-      rm -f $PID_FILE
-      echo "Asch server killed"
-      exit
-    fi
-    echo "Still waiting for asch server to stop ..."
+}
+
+function start() {
+  if is_running; then
+    echo "Asch server is already started"
+  else
+    node $PROG_DIR/app.js --base $PROG_DIR --daemon
+  fi
+}
+
+function stop() {
+  local pid
+  if test -f $PID_FILE; then
+    pid=$(cat $PID_FILE)
+  fi
+  if [ -n "$pid" ] && ps -p "$pid" > /dev/null; then
+    kill $pid
     sleep 1
-    ((i++))
-  done
-  echo "Asch server stopped"
-else
-  node $PROGDIR/app.js --base $PROGDIR $@
-fi
+    i=1
+    while ps -p $pid > /dev/null; do
+      if [ $i == 5 ]; then
+        kill -9 $pid
+        echo "Asch server killed"
+      fi
+      echo "Still waiting for asch server to stop ..."
+      sleep 1
+      ((i++))
+    done
+    echo "Asch server stopped"
+  else
+    echo "Asch server is not running"
+  fi
+  rm -f $PID_FILE
+}
+
+function restart() {
+  stop
+  start
+}
+
+function rebuild() {
+  echo "not support yet"
+}
+
+function reindex() {
+  echo "not support yet"
+}
+
+function main() {
+  eval $1
+}
+
+main $@

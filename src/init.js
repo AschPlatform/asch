@@ -73,18 +73,10 @@ module.exports = function(options, done) {
       cb(null, options.logger);
     },
 
-    build: function (cb) {
-      cb(null, options.buildVersion);
-    },
-
     genesisblock: function (cb) {
       cb(null, {
         block: genesisblock
       });
-    },
-
-    public: function (cb) {
-      cb(null, options.publicDir);
     },
 
     scheme: function (cb) {
@@ -232,7 +224,7 @@ module.exports = function(options, done) {
       cb(null, sequence);
     }],
 
-    connect: ['config', 'public', 'genesisblock', 'logger', 'build', 'network', function (cb, scope) {
+    connect: ['config', 'genesisblock', 'logger', 'network', function (cb, scope) {
       var bodyParser = require('body-parser');
       var methodOverride = require('method-override');
       var requestSanitizer = require('./utils/request-sanitizer');
@@ -241,11 +233,11 @@ module.exports = function(options, done) {
       scope.network.app.engine('html', require('ejs').renderFile);
       scope.network.app.use(require('express-domain-middleware'));
       scope.network.app.set('view engine', 'ejs');
-      scope.network.app.set('views', scope.public);
-      scope.network.app.use(scope.network.express.static(scope.public));
-      scope.network.app.use(bodyParser.raw({limit: "2mb"}));
-      scope.network.app.use(bodyParser.urlencoded({extended: true, limit: "2mb", parameterLimit: 5000}));
-      scope.network.app.use(bodyParser.json({limit: "2mb"}));
+      scope.network.app.set('views', scope.config.publicDir);
+      scope.network.app.use(scope.network.express.static(scope.config.publicDir));
+      scope.network.app.use(bodyParser.raw({limit: "8mb"}));
+      scope.network.app.use(bodyParser.urlencoded({extended: true, limit: "8mb", parameterLimit: 5000}));
+      scope.network.app.use(bodyParser.json({limit: "8mb"}));
       scope.network.app.use(methodOverride());
 
       var ignore = ['id', 'name', 'lastBlockId', 'blockId', 'transactionId', 'address', 'recipientId', 'senderId', 'previousBlock'];
