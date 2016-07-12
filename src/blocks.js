@@ -1252,7 +1252,7 @@ Blocks.prototype.onReceivePropose = function (propose) {
   }
   private.proposeCache[propose.hash] = true;
   library.sequence.add(function receivePropose (cb) {
-    if (private.lastVoteTime && Date.now() - private.lastVoteTime < 10 * 1000) {
+    if (private.lastVoteTime && Date.now() - private.lastVoteTime < 5 * 1000) {
       library.logger.debug("ignore the frequently propose");
       return setImmediate(cb);
     }

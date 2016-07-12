@@ -31,7 +31,7 @@ function verifyGenesisBlock(scope, block) {
 function main() {
   process.stdin.resume();
 
-  var version = '0.9.0';
+  var version = '0.9.1';
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')
@@ -62,11 +62,8 @@ function main() {
 
   appConfig.version = version;
   appConfig.baseDir = baseDir;
-
-  var buildVersion = fs.readFileSync(path.join(baseDir, 'build-version'), 'utf8');
-  appConfig.buildVersion = buildVersion;
-  
-  appConfig.netVersion = "localnet";
+  appConfig.buildVersion = 'development';
+  appConfig.netVersion = 'localnet';
   appConfig.publicDir = path.join(baseDir, 'public', 'dist');
 
   var genesisblockFile = path.join(baseDir, 'genesisBlock.json');

@@ -1,6 +1,6 @@
 {
   "name": "asch",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "private": true,
   "scripts": {
     "start": "node app.js",
@@ -48,6 +48,7 @@
     "crypto-browserify": "^3.9.13",
     "faker": "~2.1.2",
     "gulp": "^3.9.1",
+    "gulp-replace": "^0.5.4",
     "gulp-shell": "^0.5.2",
     "js-nacl": "=0.6.0",
     "jsdox": "~0.4.9",

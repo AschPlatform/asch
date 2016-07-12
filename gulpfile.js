@@ -3,16 +3,19 @@ var util = require('util');
 var moment = require('moment');
 var gulp = require('gulp');
 var shell = require('gulp-shell');
+var replace = require('gulp-replace');
 var webpack = require('webpack-stream');
 var nodeExternals = require('webpack-node-externals');
 var package = require('./package');
 
 var format = util.format;
-var dir = 'asch-linux-' + package.version;
-var fullpath = path.join(__dirname, 'build', dir);
 var buildTime = moment().format('HH:mm:ss DD/MM/YYYY');
 
-gulp.task('linux-build', function () {
+function linuxBuild(netVersion) {
+  var dir = 'asch-linux-' + package.version + '-' + netVersion;
+  var fullpath = path.join(__dirname, 'build', dir);
+  var configFile = 'config-' + netVersion + '.json';
+  var genesisBlockFile = 'genesisBlock-' + netVersion + '.json';
   return gulp.src('app.js')
     .pipe(webpack({
       output: {
@@ -26,12 +29,20 @@ gulp.task('linux-build', function () {
       },
       externals: [nodeExternals()]
     }))
+    .pipe(replace('localnet', netVersion))
+    .pipe(replace('development', buildTime))
     .pipe(gulp.dest(fullpath))
     .pipe(shell([
-      format('cp package.json genesisBlock.json config.json aschd %s', fullpath),
-      format('echo %s > %s/build-version', buildTime, fullpath),
       format('cd %s && mkdir -p public dapps tmp', fullpath),
-      format('cd %s && npm install --production', fullpath),
+      format('cp package.json aschd %s', fullpath),
+      format('cp config-%s.json %s/config.json', netVersion, fullpath),
+      format('cp genesisBlock-%s.json %s/genesisBlock.json', netVersion, fullpath),
+      format('cp -r public/dist %s/public/', fullpath),
+      // format('cd %s && npm install --production', fullpath),
       format('cd %s/.. && tar zcf %s.tar.gz %s', fullpath, dir, dir)
     ]));
+}
+
+gulp.task('linux-build-test', function () {
+  return linuxBuild('testnet');
 });

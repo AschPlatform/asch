@@ -65,6 +65,10 @@ function reindex() {
   echo "not support yet"
 }
 
+function version() {
+  node $PROG_DIR/app.js --version
+}
+
 function main() {
   eval $1
 }
