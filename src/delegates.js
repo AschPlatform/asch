@@ -503,6 +503,11 @@ private.loop = function (cb) {
     library.logger.debug('Loop:', 'lastBlock is in the same slot');
     return setImmediate(cb);
   }
+  
+  if (Date.now() % 10000 > 5000) {
+    library.logger.debug('Loop:', 'maybe too late to collect votes');
+    return setImmediate(cb);
+  }
 
   private.getBlockSlotData(currentSlot, lastBlock.height + 1, function (err, currentBlockData) {
     if (err || currentBlockData === null) {
