@@ -38,6 +38,10 @@ function Transfer() {
     if (trs.amount <= 0) {
       return cb("Invalid transaction amount");
     }
+    
+    if (trs.recipientId == sender.address) {
+      return cb("Invalid recipientId, cannot be your self");
+    }
 
     cb(null, trs);
   }
