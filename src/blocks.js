@@ -1252,8 +1252,8 @@ Blocks.prototype.onReceivePropose = function (propose) {
   }
   private.proposeCache[propose.hash] = true;
 
-  if (propose.height != private.lastBlock.id + 1) {
-    library.logger.error("invalid propose height", propose);
+  if (propose.height != private.lastBlock.height + 1) {
+    library.logger.debug("invalid propose height", propose);
     return;
   }
   library.sequence.add(function receivePropose (cb) {
