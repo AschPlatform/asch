@@ -545,17 +545,18 @@ Loader.prototype.onBlockchainReady = function () {
 
 Loader.prototype.cleanup = function (cb) {
   private.loaded = false;
-  if (!private.isActive) {
-    cb();
-  } else {
-    setImmediate(function nextWatch() {
-      if (private.isActive) {
-        setTimeout(nextWatch, 1 * 1000)
-      } else {
-        cb();
-      }
-    });
-  }
+  cb();
+  // if (!private.isActive) {
+  //   cb();
+  // } else {
+  //   setImmediate(function nextWatch() {
+  //     if (private.isActive) {
+  //       setTimeout(nextWatch, 1 * 1000)
+  //     } else {
+  //       cb();
+  //     }
+  //   });
+  // }
 }
 
 // Shared

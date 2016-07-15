@@ -861,9 +861,9 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, cb, saveBlock) {
               if (releaseErr) {
                 cb('applyBlock release savepoint err: ' + releaseErr);
               } else {
-                library.logger.debug("Block applied corrrectly with " + block.transactions.length + " transactions");
                 private.lastBlock = block;
                 if (broadcast) {
+                  library.logger.info("Block applied corrrectly with " + block.transactions.length + " transactions");
                   library.bus.message('newBlock', block, votes, true);
                 }
                 private.blockCache = {};
@@ -1345,17 +1345,18 @@ Blocks.prototype.onBind = function (scope) {
 
 Blocks.prototype.cleanup = function (cb) {
   private.loaded = false;
-  if (!private.isActive) {
-    cb();
-  } else {
-    setImmediate(function nextWatch() {
-      if (private.isActive) {
-        setTimeout(nextWatch, 1 * 1000)
-      } else {
-        cb();
-      }
-    });
-  }
+  cb();
+  // if (!private.isActive) {
+  //   cb();
+  // } else {
+  //   setImmediate(function nextWatch() {
+  //     if (private.isActive) {
+  //       setTimeout(nextWatch, 1 * 1000)
+  //     } else {
+  //       cb();
+  //     }
+  //   });
+  // }
 }
 
 // Shared
