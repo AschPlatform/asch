@@ -1251,12 +1251,17 @@ Blocks.prototype.onReceivePropose = function (propose) {
     return;
   }
   private.proposeCache[propose.hash] = true;
+
+  if (propose.height != private.lastBlock.id + 1) {
+    library.logger.error("invalid propose height", propose);
+    return;
+  }
   library.sequence.add(function receivePropose (cb) {
     if (private.lastVoteTime && Date.now() - private.lastVoteTime < 5 * 1000) {
       library.logger.debug("ignore the frequently propose");
       return setImmediate(cb);
     }
-    library.logger.debug("receive propose height " + propose.height + " bid " + propose.id);
+    library.logger.info("receive propose height " + propose.height + " bid " + propose.id);
     library.bus.message("newPropose", propose, true);
     async.waterfall([
       function (next) {
