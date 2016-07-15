@@ -727,7 +727,11 @@ function DApps(cb, scope) {
         cb(err);
       })
     }, function (err) {
-      library.logger.error(err);
+      if (err) {
+        library.logger.error('all dapps stopped with error', err);
+      } else {
+        library.logger.error('all dapps stopped successfully');
+      }
     });
   });
 

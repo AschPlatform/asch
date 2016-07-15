@@ -142,7 +142,7 @@ function main() {
         }
       }, function (err) {
         if (err) {
-          scope.logger.error(err);
+          scope.logger.error('Error while cleaning up', err);
         } else {
           scope.logger.info("Cleaned up successfully");
         }
@@ -158,7 +158,7 @@ function main() {
     })
 
     process.once('exit', function () {
-      process.emit('cleanup');
+      scope.logger.info('process exited');
     });
 
     process.once('SIGINT', function () {
