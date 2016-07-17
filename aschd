@@ -88,7 +88,7 @@ function configure() {
   # check_user
   sudo $PROG_DIR/init/install_deps.sh
   sudo $PROG_DIR/init/config_ntp.sh
-  sudo $PROG_DIR/init/config_monitor.sh
+  # sudo $PROG_DIR/init/config_monitor.sh
 }
 
 function main() {
