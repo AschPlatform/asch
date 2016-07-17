@@ -437,8 +437,12 @@ shared.getPeers = function (req, cb) {
       for (var i = 0; i < peers.length; i++) {
         peers[i].ip = ip.fromLong(peers[i].ip);
       }
-
-      cb(null, {peers: peers});
+      library.dbLite.query("select count(1) from peers", function (err, count) {
+        if (err) {
+          return cb("Can not get peers count");
+        }
+        cb(null, {peers: peers, totalCount: count[0]});
+      });
     });
   });
 }
