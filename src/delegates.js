@@ -944,7 +944,11 @@ shared.getVoters = function (req, cb) {
           library.logger.error(err);
           return cb("Database error");
         }
-
+        var lastBlock = modules.blocks.getLastBlock();
+        var totalSupply = private.blockStatus.calcSupply(lastBlock.height);
+        rows.forEach(function (row) {
+          row.weight = row.balance / totalSupply * 100;
+        });
         return cb(null, {accounts: rows});
       });
     });
