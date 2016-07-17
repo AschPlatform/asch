@@ -50,7 +50,9 @@ module.exports = function(options, done) {
   var appConfig = options.appConfig;
   var genesisblock = options.genesisblock;
 
-  appConfig.publicIp = getPublicIp();
+  if (!appConfig.publicIp) {
+    appConfig.publicIp = getPublicIp();
+  }
   
   async.auto({
     config: function (cb) {
