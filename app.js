@@ -31,7 +31,7 @@ function verifyGenesisBlock(scope, block) {
 function main() {
   process.stdin.resume();
 
-  var version = '0.9.1';
+  var version = '0.9.2';
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')
@@ -97,7 +97,7 @@ function main() {
   if (program.log) {
     appConfig.logLevel = program.log;
   }
-  
+
   if (program.daemon) {
     console.log('Asch server started as daemon ...');
     require('daemon')();
