@@ -1,6 +1,7 @@
 {
   "port": 4096,
   "address": "0.0.0.0",
+  "publicIp": "",
   "logLevel": "log",
   "magic": "43194d2b",
   "api": {
