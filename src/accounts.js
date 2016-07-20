@@ -18,7 +18,7 @@ private.blockStatus = new blockStatus();
 
 function Vote() {
   this.create = function (data, trs) {
-    trs.recipientId = data.sender.address;
+    trs.recipientId = null;
     trs.asset.votes = data.votes;
 
     return trs;
@@ -29,10 +29,6 @@ function Vote() {
   }
 
   this.verify = function (trs, sender, cb) {
-    if (trs.recipientId != trs.senderId) {
-      return setImmediate(cb, "Recipient is not identical to sender");
-    }
-
     if (!trs.asset.votes || !trs.asset.votes.length) {
       return setImmediate(cb, "No votes sent");
     }
