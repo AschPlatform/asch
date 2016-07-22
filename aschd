@@ -88,6 +88,11 @@ function upgrade() {
   local latestName="asch-linux-latest-testnet"
   mkdir -p tmp
   wget https://www.asch.so/downloads/$latestName.tar.gz -O tmp/$latestName.tar.gz
+  if [ $? -ne 0 ]; then
+    rm -f tmp/$latestName.tar.gz
+    echo "Failed to download the latest version!"
+    exit 1
+  fi
   echo "Extracting new package ..."
   tar zxf tmp/$latestName.tar.gz -C tmp/
   local extractedDir=`find tmp -maxdepth 1 -type d | grep asch |head -n 1`
