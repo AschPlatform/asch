@@ -81,7 +81,7 @@ private.findUpdate = function (lastBlock, peer, cb) {
       return cb(err);
     }
 
-    library.logger.info("Found common block " + commonBlock.id + " (at " + commonBlock.height + ")" + " with peer " + peerStr);
+    library.logger.info("Found common block " + commonBlock.id + " (at " + commonBlock.height + ")" + " with peer " + peerStr + ", last block height is " + lastBlock.height);
     var toRemove = lastBlock.height - commonBlock.height;
 
     if (toRemove > 1010) {
