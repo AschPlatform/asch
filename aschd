@@ -83,6 +83,33 @@ function configure() {
   # sudo $PROG_DIR/init/config_monitor.sh
 }
 
+function upgrade() {
+  stop
+  local latestName="asch-linux-latest-testnet"
+  mkdir -p tmp
+  wget https://www.asch.so/downloads/$latestName.tar.gz -O tmp/$latestName.tar.gz
+  echo "Extracting new package ..."
+  tar zxf tmp/$latestName.tar.gz -C tmp/
+  local extractedDir=`find tmp -maxdepth 1 -type d | grep asch |head -n 1`
+  local currentVersion=`version`
+  local newVersion=`$extractedDir/aschd version`
+  if [ "$currentVersion" == "$newVersion" ]; then
+    echo "Nothing to upgrade, the latest version is $currentVersion"
+    rm -rf $extractedDir tmp/$latestName.tar.gz
+    exit 0
+  fi
+  echo "Copying new files ..."
+  for file in `ls $extractedDir`
+  do
+    if [ "$file" != "config.json" -a "$file" != "blockchain.db" ]; then
+      echo "copy $extractedDir/$file ..."
+      cp -r $extractedDir/$file $PROG_DIR/
+    fi
+  done
+  rm -rf $extractedDir tmp/$latestName.tar.gz
+  echo "Upgrade to $newVersion done."
+}
+
 function main() {
   eval $1
 }
