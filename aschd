@@ -72,20 +72,12 @@ function version() {
 function check_os() {
 	os_num=`cat /etc/os-release | grep '\"Ubuntu\"'  | wc -l`
 	if [ $os_num -ne 1 ];then
-		echo "Linux is not Ubuntu, please configure the ntp manually!" && exit 1
-	fi
-}
-
-function check_user() {
-	uid=`id -u` 
-	if [ $uid -ne 0 ];then
-		echo "Current user is not root, please run this script as root!" && exit 2
+		echo "Linux is not Ubuntu, please configure manually!" && exit 1
 	fi
 }
 
 function configure() {
   check_os
-  # check_user
   sudo $PROG_DIR/init/install_deps.sh
   sudo $PROG_DIR/init/config_ntp.sh
   # sudo $PROG_DIR/init/config_monitor.sh
