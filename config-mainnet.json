@@ -39,8 +39,7 @@
     }
   },
   "dapp": {
-    "masterrequired": true,
-    "masterpassword": "fdsfrewbbw1",
+    "masterpassword": "",
     "autoexec": []
   }
 }

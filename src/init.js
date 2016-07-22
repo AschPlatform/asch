@@ -56,19 +56,7 @@ module.exports = function(options, done) {
   
   async.auto({
     config: function (cb) {
-      if (appConfig.dapp.masterrequired && !appConfig.dapp.masterpassword) {
-        var randomstring = require("randomstring");
-        appConfig.dapp.masterpassword = randomstring.generate({
-          length: 12,
-          readable: true,
-          charset: 'alphanumeric'
-        });
-        fs.writeFile("./config.json", JSON.stringify(appConfig, null, 4), "utf8", function (err) {
-          cb(err, appConfig)
-        });
-      } else {
-        cb(null, appConfig);
-      }
+      cb(null, appConfig);
     },
 
     logger: function (cb) {

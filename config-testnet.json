@@ -44,8 +44,7 @@
     }
   },
   "dapp": {
-    "masterrequired": true,
-    "masterpassword": "npmWkFJhBnnd",
+    "masterpassword": "",
     "autoexec": []
   }
 }

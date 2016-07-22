@@ -59,6 +59,16 @@ function main() {
     appConfigFile = path.resolve(process.cwd(), program.config);
   }
   var appConfig = JSON.parse(fs.readFileSync(appConfigFile, 'utf8'));
+  
+  if (!appConfig.dapp.masterpassword) {
+    var randomstring = require("randomstring");
+    appConfig.dapp.masterpassword = randomstring.generate({
+      length: 12,
+      readable: true,
+      charset: 'alphanumeric'
+    });
+    fs.writeFileSync(appConfigFile, JSON.stringify(appConfig, null, 2), "utf8");
+  }
 
   appConfig.version = version;
   appConfig.baseDir = baseDir;
