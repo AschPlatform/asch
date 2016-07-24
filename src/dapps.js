@@ -1897,7 +1897,7 @@ private.launchApp = function (dApp, params, cb) {
             return setImmediate(cb, err);
           }
 
-          var sandbox = new Sandbox(path.join(dappPath, "build", "app.js"), dApp.transactionId, params, private.apiHandler, true);
+          var sandbox = new Sandbox(path.join(dappPath, "build", "app.js"), dApp.transactionId, params, private.apiHandler, true, library.logger);
           private.sandboxes[dApp.transactionId] = sandbox;
 
           sandbox.on("exit", function () {
