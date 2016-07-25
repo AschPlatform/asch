@@ -2152,7 +2152,7 @@ DApps.prototype.onBlockchainReady = function () {
     async.eachSeries(dappIds, function (id, next) {
       private.launch({id: id}, function (err) {
         if (err) {
-          library.logger.error("Failed to launched dapp[" + id + "]", error);
+          library.logger.error("Failed to launched dapp[" + id + "]", err);
         } else {
           library.logger.info("Launched dapp[" + id + "] successfully");
         }
