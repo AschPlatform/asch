@@ -348,7 +348,9 @@ private.popLastBlock = function (oldLastBlock, callback) {
         });
       });
     });
-  }, callback);
+  }, function (err, previousBlock) {
+    callback(err, previousBlock);
+  });
 }
 
 private.getIdSequence = function (height, cb) {
