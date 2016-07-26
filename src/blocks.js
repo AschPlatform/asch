@@ -1256,6 +1256,10 @@ Blocks.prototype.onReceivePropose = function (propose) {
 
   if (propose.height != private.lastBlock.height + 1) {
     library.logger.debug("invalid propose height", propose);
+    if (propose.height > private.lastBlock.height + 1) {
+      library.logger.info("receive discontinuous propose height " + propose.height);
+      modules.loader.startSyncBlocks();
+    }
     return;
   }
   library.sequence.add(function receivePropose (cb) {
