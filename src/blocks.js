@@ -327,7 +327,7 @@ private.popLastBlock = function (oldLastBlock, callback) {
               if (err) {
                 return next(err);
               }
-              modules.transactions.undo(transaction, oldLastBlock, sender, cb);
+              modules.transactions.undo(transaction, oldLastBlock, sender, next);
             });
           }, function (next) {
             modules.transactions.undoUnconfirmed(transaction, next);
