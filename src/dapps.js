@@ -444,7 +444,7 @@ function DApp() {
       return setImmediate(cb, "Invalid transaction amount");
     }
 
-    if (trs.asset.dapp.category != 0 && !trs.asset.dapp.category) {
+    if (!trs.asset.dapp.category) {
       return setImmediate(cb, "Invalid dapp category");
     }
 
@@ -474,6 +474,10 @@ function DApp() {
       ) {
         return setImmediate(cb, "Invalid icon file type")
       }
+      
+      if (trs.asset.dapp.icon.length > 160) {
+        return setImmediate(cb, "Dapp icon url is too long. Maximum is 160 characters");
+      }
     }
 
     if (trs.asset.dapp.type > 1 || trs.asset.dapp.type < 0) {
@@ -486,6 +490,10 @@ function DApp() {
 
     if (trs.asset.dapp.link.indexOf(".zip") != trs.asset.dapp.link.length - 4) {
       return setImmediate(cb, "Invalid dapp file type")
+    }
+    
+    if (trs.asset.dapp.link.length > 160) {
+      return setImmediate(cb, "Dapp link is too long. Maximum is 160 characters");
     }
 
     if (!trs.asset.dapp.name || trs.asset.dapp.name.trim().length == 0 || trs.asset.dapp.name.trim() != trs.asset.dapp.name) {
@@ -1889,7 +1897,7 @@ private.launchApp = function (dApp, params, cb) {
             return setImmediate(cb, err);
           }
 
-          var sandbox = new Sandbox(path.join(dappPath, "build", "app.js"), dApp.transactionId, params, private.apiHandler, true);
+          var sandbox = new Sandbox(path.join(dappPath, "build", "app.js"), dApp.transactionId, params, private.apiHandler, true, library.logger);
           private.sandboxes[dApp.transactionId] = sandbox;
 
           sandbox.on("exit", function () {
@@ -2135,18 +2143,23 @@ DApps.prototype.onBind = function (scope) {
 }
 
 DApps.prototype.onBlockchainReady = function () {
-  if (library.config.dapp) {
-    async.eachSeries(library.config.dapp.autoexec || [], function (dapp, cb) {
-      private.launch({
-        params: dapp.params,
-        id: dapp.dappid,
-        master: library.config.dapp.masterpassword
-      }, function (err) {
-        library.logger.info("Launched " + dapp.dappid, err || "successfully")
-        cb();
+  private.getInstalledIds(function (err, dappIds) {
+    if (err) {
+      library.logger.error("Failed to get installed ids", err);
+      return;
+    }
+    library.logger.info("start to launch " + dappIds.length + " installed dapps");
+    async.eachSeries(dappIds, function (id, next) {
+      private.launch({id: id}, function (err) {
+        if (err) {
+          library.logger.error("Failed to launched dapp[" + id + "]", err);
+        } else {
+          library.logger.info("Launched dapp[" + id + "] successfully");
+        }
+        next();
       });
     });
-  }
+  });
 }
 
 DApps.prototype.onDeleteBlocksBefore = function (block) {

@@ -472,10 +472,15 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 }
 
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
-  async.eachSeries(transactions, function (transaction, cb) {
+  if (self.getUnconfirmedTransactionList().length >= constants.maxTxsPerBlock) {
+    cb("Too many transactions");
+    return;
+  }
+  var trs = transactions.slice(0, 100);
+  async.eachSeries(trs, function (transaction, cb) {
 		self.processUnconfirmedTransaction(transaction, true, cb);
 	}, function (err) {
-		cb(err, transactions);
+		cb(err, trs);
 	});
 }
 
