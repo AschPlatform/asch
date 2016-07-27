@@ -4,7 +4,7 @@ var ip = require('ip');
 var util = require('util');
 var extend = require('extend');
 var crypto = require('crypto');
-var bignum = require('./utils/bignum.js');
+var bignum = require('bignumber');
 var Router = require('./utils/router.js');
 var sandboxHelper = require('./utils/sandbox.js');
 

@@ -3,7 +3,7 @@ var crypto = require("crypto");
 var ByteBuffer = require("bytebuffer");
 var ed = require('ed25519');
 var ip = require('ip');
-var bignum = require('../utils/bignum.js');
+var bignum = require('bignumber');
 var slots = require('../utils/slots.js');
 
 function Consensus(scope, cb) {

@@ -12,6 +12,7 @@
     "array.prototype.findindex": "*",
     "asch-sandbox": "https://github.com/sqfasd/asch-sandbox/tarball/master",
     "async": "^1.5.2",
+    "bignumber": "https://github.com/sqfasd/bignumber/tarball/master",
     "body-parser": "*",
     "bytebuffer": "*",
     "change-case": "*",

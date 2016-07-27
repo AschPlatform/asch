@@ -1,7 +1,7 @@
 var crypto = require('crypto');
 var ByteBuffer = require("bytebuffer");
 var ed = require('ed25519');
-var bignum = require('../utils/bignum.js');
+var bignum = require('bignumber');
 var blockStatus = require("../utils/blockStatus.js");
 var constants = require('../utils/constants.js');
 

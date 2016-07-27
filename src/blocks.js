@@ -4,12 +4,12 @@ var ip = require('ip');
 var ByteBuffer = require("bytebuffer");
 var async = require('async');
 var ed = require('ed25519');
+var bignum = require('bignumber');
 var constants = require("./utils/constants.js");
 var blockStatus = require("./utils/blockStatus.js");
 var constants = require('./utils/constants.js');
 var Router = require('./utils/router.js');
 var slots = require('./utils/slots.js');
-var bignum = require('./utils/bignum.js');
 var TransactionTypes = require('./utils/transaction-types.js');
 var sandboxHelper = require('./utils/sandbox.js');
 

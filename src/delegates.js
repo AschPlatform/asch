@@ -2,6 +2,7 @@ var crypto = require('crypto');
 var util = require('util');
 var async = require('async');
 var ed = require('ed25519');
+var bignum = require('bignumber');
 var Router = require('./utils/router.js');
 var slots = require('./utils/slots.js');
 var blockStatus = require("./utils/blockStatus.js");
@@ -9,7 +10,6 @@ var constants = require('./utils/constants.js');
 var TransactionTypes = require('./utils/transaction-types.js');
 var MilestoneBlocks = require("./utils/milestoneBlocks.js");
 var sandboxHelper = require('./utils/sandbox.js');
-var bignum = require('./utils/bignum.js');
 
 require('array.prototype.find'); // Old node fix
 

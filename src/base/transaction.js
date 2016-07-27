@@ -2,8 +2,8 @@ var crypto = require('crypto');
 var extend = require('util-extend');
 var ByteBuffer = require("bytebuffer");
 var ed = require('ed25519');
+var bignum = require('bignumber');
 var constants = require('../utils/constants.js');
-var bignum = require('../utils/bignum.js');
 var slots = require('../utils/slots.js');
 
 var genesisblock = null;

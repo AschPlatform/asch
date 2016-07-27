@@ -1,7 +1,7 @@
 var async = require('async');
 var Router = require('./utils/router.js');
 var ip = require("ip");
-var bignum = require('./utils/bignum.js');
+var bignum = require('bignumber');
 var sandboxHelper = require('./utils/sandbox.js');
 
 require('colors');
