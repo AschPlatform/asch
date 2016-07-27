@@ -50,11 +50,6 @@ private.attachApi = function () {
     req.sanitize(req.headers, {
       type: "object",
       properties: {
-        // port: {
-        //   type: "integer",
-        //   minimum: 1,
-        //   maximum: 65535
-        // },
         os: {
           type: "string",
           maxLength: 64
@@ -73,6 +68,14 @@ private.attachApi = function () {
       if (err) return next(err);
       if (!report.isValid) return res.status(500).send({status: false, error: report.issues});
 
+      if (req.headers['magic'] !== library.config.magic) {
+        return res.status(500).send({
+          success: false,
+          error: "Request is made on the wrong network",
+          expectet: library.config.magic,
+          received: req.headers['magic']
+        });
+      }
       var peer = {
         ip: ip.toLong(peerIp),
         port: headers.port,
@@ -211,29 +214,8 @@ private.attachApi = function () {
   router.post("/blocks", function (req, res) {
     res.set(private.headers);
 
-    var report = library.scheme.validate(req.headers, {
-      type: "object",
-      properties: {
-        port: {
-          type: "integer",
-          minimum: 1,
-          maximum: 65535
-        }
-      },
-      required: ['port']
-    });
-
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
-
-    if(req.headers['magic']!==library.config.magic){
-      return res.status(200).send({
-        success: false,
-        error:"Request is made on the wrong network",
-        expectet: library.config.magic,
-        received: req.headers['magic']
-      });
-    }
 
     try {
       var block = library.base.block.objectNormalize(req.body.block);
@@ -242,7 +224,7 @@ private.attachApi = function () {
       library.logger.log('normalize block or votes object error: ' + e.toString());
       library.logger.log('Block ' + (block ? block.id : 'null') + ' is not valid, ban 60 min', peerStr);
 
-      if (peerIp && report) {
+      if (peerIp && req.headers['port'] > 0 && req.headers['port'] < 65536) {
         modules.peer.state(ip.toLong(peerIp), parseInt(req.headers['port']), 0, 3600);
       }
 
@@ -256,30 +238,6 @@ private.attachApi = function () {
   
   router.post("/votes", function (req, res) {
     res.set(private.headers);
-    
-    var report = library.scheme.validate(req.headers, {
-      type: "object",
-      properties: {
-        port: {
-          type: "integer",
-          minimum: 1,
-          maximum: 65535
-        }
-      },
-      required: ['port']
-    });
-
-    var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
-
-    if(req.headers['magic']!==library.config.magic){
-      return res.status(200).send({
-        success: false,
-        error: "Request is made on the wrong network",
-        expected: library.config.magic,
-        received: req.headers['magic']
-      });
-    }
     
     library.scheme.validate(req.body, {
       type: "object",
@@ -310,30 +268,6 @@ private.attachApi = function () {
   
   router.post("/propose", function (req, res) {
     res.set(private.headers);
-    
-    var report = library.scheme.validate(req.headers, {
-      type: "object",
-      properties: {
-        port: {
-          type: "integer",
-          minimum: 1,
-          maximum: 65535
-        }
-      },
-      required: ['port']
-    });
-
-    var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
-
-    if(req.headers['magic']!==library.config.magic){
-      return res.status(200).send({
-        success: false,
-        error: "Request is made on the wrong network",
-        expected: library.config.magic,
-        received: req.headers['magic']
-      });
-    }
     
     library.scheme.validate(req.body, {
       type: "object",
@@ -440,44 +374,16 @@ private.attachApi = function () {
   router.post("/transactions", function (req, res) {
     res.set(private.headers);
 
-    if (modules.loader.syncing() || !private.loaded) {
-      return res.status(200).json({ success: false, error:"Peer is not ready to receive transaction" });
-    }
-
-    var report = library.scheme.validate(req.headers, {
-      type: "object",
-      properties: {
-        port: {
-          type: "integer",
-          minimum: 1,
-          maximum: 65535
-        },
-        magic: {
-          type: "string",
-          maxLength: 8
-        }
-      },
-      required: ['magic']
-    });
-
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     var peerStr = peerIp ? peerIp + ":" + (isNaN(req.headers['port']) ? 'unknown' : req.headers['port']) : 'unknown';
 
-    if(req.headers['magic']!==library.config.magic) {
-      return res.status(200).send({
-        success: false,
-        error: "Request is made on the wrong network",
-        expected: library.config.magic,
-        received: req.headers['magic']
-      });
-    }
     try {
       var transaction = library.base.transaction.objectNormalize(req.body.transaction);
     } catch (e) {
       library.logger.error("transaction parse error", e.toString());
       library.logger.log('Received transaction ' + (transaction ? transaction.id : 'null') + ' is not valid, ban 60 min', peerStr);
 
-      if (peerIp && report && req.headers['port']) {
+      if (peerIp && req.headers['port'] > 0 && req.headers['port' < 65536]) {
         modules.peer.state(ip.toLong(peerIp), req.headers['port'], 0, 3600);
       }
 
@@ -606,11 +512,7 @@ private.hashsum = function (obj) {
   return bignum.fromBuffer(temp).toString();
 }
 
-// Public methods
 Transport.prototype.broadcast = function (config, options, cb) {
-  if (modules.loader.syncing() || !private.loaded) {
-    return cb && setImmediate(cb);
-  }
   config.limit = config.limit || 1;
   modules.peer.list(config, function (err, peers) {
     if (!err) {
