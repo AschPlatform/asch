@@ -721,28 +721,6 @@ function DApps(cb, scope) {
 
   private.attachApi();
 
-  process.on('exit', function () {
-    var keys = Object.keys(private.launched);
-
-    async.eachSeries(keys, function (id, cb) {
-      if (!private.launched[id]) {
-        return setImmediate(cb);
-      }
-
-      private.stop({
-        transactionId: id
-      }, function (err) {
-        cb(err);
-      })
-    }, function (err) {
-      if (err) {
-        library.logger.error('all dapps stopped with error', err);
-      } else {
-        library.logger.error('all dapps stopped successfully');
-      }
-    });
-  });
-
   fs.exists(path.join('.', 'public', 'dapps'), function (exists) {
     if (exists) {
       rmdir(path.join('.', 'public', 'dapps'), function (err) {
@@ -1900,8 +1878,8 @@ private.launchApp = function (dApp, params, cb) {
           var sandbox = new Sandbox(path.join(dappPath, "index.js"), dApp.transactionId, params, private.apiHandler, true, library.logger);
           private.sandboxes[dApp.transactionId] = sandbox;
 
-          sandbox.on("exit", function () {
-            library.logger.info("Dapp " + dApp.transactionId + " closed ");
+          sandbox.on("exit", function (code) {
+            library.logger.info("Dapp " + dApp.transactionId + " exited with code " + code);
             private.stop(dApp, function (err) {
               if (err) {
                 library.logger.error("Encountered error while stopping dapp: " + err);
@@ -2140,6 +2118,28 @@ DApps.prototype.request = function (dappid, method, path, query, cb) {
 // Events
 DApps.prototype.onBind = function (scope) {
   modules = scope;
+}
+
+DApps.prototype.cleanup = function (cb) {
+  var keys = Object.keys(private.launched);
+
+  async.eachSeries(keys, function (id, cb) {
+    if (!private.launched[id]) {
+      return setImmediate(cb);
+    }
+    private.stop({
+      transactionId: id
+    }, function (err) {
+      cb(err);
+    })
+  }, function (err) {
+    if (err) {
+      library.logger.error('all dapps stopped with error', err);
+    } else {
+      library.logger.error('all dapps stopped successfully');
+    }
+    cb();
+  });
 }
 
 DApps.prototype.onBlockchainReady = function () {
