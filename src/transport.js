@@ -227,7 +227,12 @@ private.attachApi = function () {
     var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
 
     if(req.headers['magic']!==library.config.magic){
-      return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.magic, "received":req.headers['magic']});
+      return res.status(200).send({
+        success: false,
+        error:"Request is made on the wrong network",
+        expectet: library.config.magic,
+        received: req.headers['magic']
+      });
     }
 
     try {
@@ -268,7 +273,12 @@ private.attachApi = function () {
     var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
 
     if(req.headers['magic']!==library.config.magic){
-      return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.magic, "received":req.headers['magic']});
+      return res.status(200).send({
+        success: false,
+        error: "Request is made on the wrong network",
+        expected: library.config.magic,
+        received: req.headers['magic']
+      });
     }
     
     library.scheme.validate(req.body, {
@@ -317,7 +327,12 @@ private.attachApi = function () {
     var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
 
     if(req.headers['magic']!==library.config.magic){
-      return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.magic, "received":req.headers['magic']});
+      return res.status(200).send({
+        success: false,
+        error: "Request is made on the wrong network",
+        expected: library.config.magic,
+        received: req.headers['magic']
+      });
     }
     
     library.scheme.validate(req.body, {
@@ -449,7 +464,12 @@ private.attachApi = function () {
     var peerStr = peerIp ? peerIp + ":" + (isNaN(req.headers['port']) ? 'unknown' : req.headers['port']) : 'unknown';
 
     if(req.headers['magic']!==library.config.magic) {
-      return res.status(200).send({success: false, "message":"Request is made on the wrong network","expected":library.config.magic, "received":req.headers['magic']});
+      return res.status(200).send({
+        success: false,
+        error: "Request is made on the wrong network",
+        expected: library.config.magic,
+        received: req.headers['magic']
+      });
     }
     try {
       var transaction = library.base.transaction.objectNormalize(req.body.transaction);

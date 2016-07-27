@@ -52,18 +52,18 @@ var Daccount = {
 
 // Existing delegate account in blockchain
 var Eaccount = {
-  "address": "2545742828139131960",
-  "publicKey": "c2af07df216d28602f1be038f1ecea824761f35b30cd563d50c5e6885a687999",
-  "password": "congress heart eye humor silly tribe simple find toe earth lady emerge",
+  "address": "11290433761372724326",
+  "publicKey": "b43aef00cb743cf18202120a0d04bedefafd3f831a449e474e4785714f71fe09",
+  "password": "agree crowd essay pool service pelican badge random shadow purse parent youth",
   "balance": 0,
-  "delegateName": "genesisDelegate1"
+  "delegateName": "asch_g1"
 };
 
 // Account info for genesis account - Needed for voting, registrations and Tx
 var Gaccount = {
-  "address": "10174159498857769178",
-  "publicKey": "56c27d81a9956115b4450ad57a444c0f80bcbb4cf01f0b09fed1a33f9e02c860",
-  "password": "narrow large ribbon hurt leader dream marriage evidence census attack fiction cube",
+  "address": "6792595099441914411",
+  "publicKey": "9708ab9b0be5a3124183c4ce4ef000334c0c49e4e07732d6a9f057c4d4b6de36",
+  "password": "next sheriff lounge debris praise change wire easily joke deliver damage wait",
   "balance": 10000000000000000
 };
 

@@ -17,14 +17,10 @@ var testBlocksUnder101 = 0;
 describe("POST /accounts/open", function () {
 
     it("When payload is over 2Mb. Should fail", function (done) {
-        var data = "qs";
-        for (var i = 0; i < 20; i++) {
-          data += data;
-        }
         node.api.post("/accounts/open")
             .set("Accept", "application/json")
             .send({
-                payload: data
+                payload: new Buffer(8 * 1000 * 1000).toString()
             })
             .expect("Content-Type", /json/)
             .expect(200)

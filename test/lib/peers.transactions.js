@@ -63,7 +63,7 @@ describe("POST /peer/transactions", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
-                node.expect(res.body).to.have.property("message");
+                node.expect(res.body).to.have.property("error");
                 done();
             });
     });
@@ -83,7 +83,7 @@ describe("POST /peer/transactions", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
-                node.expect(res.body).to.have.property("message");
+                node.expect(res.body).to.have.property("error");
                 done();
             });
     });
@@ -105,7 +105,7 @@ describe("POST /peer/transactions", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
-                node.expect(res.body).to.have.property("message");
+                node.expect(res.body).to.have.property("error");
                 done();
             });
     });
@@ -125,7 +125,7 @@ describe("POST /peer/transactions", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
-                node.expect(res.body).to.have.property("message");
+                node.expect(res.body).to.have.property("error");
                 done();
             });
     });
@@ -147,7 +147,7 @@ describe("POST /peer/transactions", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
-                node.expect(res.body).to.have.property("message");
+                node.expect(res.body).to.have.property("error");
                 done();
             });
     });
@@ -169,7 +169,7 @@ describe("POST /peer/transactions", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
-                node.expect(res.body).to.have.property("message");
+                node.expect(res.body).to.have.property("error");
                 done();
             });
     });
@@ -209,7 +209,7 @@ describe("POST /peer/transactions", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
-                node.expect(res.body).to.have.property("message");
+                node.expect(res.body).to.have.property("error");
                 done();
             });
     });
@@ -229,7 +229,7 @@ describe("POST /peer/transactions", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
-                node.expect(res.body).to.have.property("message");
+                node.expect(res.body).to.have.property("error");
                 done();
             });
     });
