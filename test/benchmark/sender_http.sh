@@ -7,7 +7,10 @@ do
 	#echo $j
 	for rev in `cat addr.txt`
 	do
-		curl -k -H "Content-Type: application/json" -X PUT -d '{"secret":"'"$sec"'","amount":1,"recipientId":"'"$rev"'"}' http://$ip:4096/api/transactions
-    		echo "work_id:$work_id, seq:$sq, reciver:$rev"
+		cnt=$[ $RANDOM/10000 ]
+		if [ $cnt -gt 0 ];then
+			curl -k -H "Content-Type: application/json" -X PUT -d '{"secret":"'"$sec"'","amount":'"$cnt"',"recipientId":"'"$rev"'"}' http://$ip:4096/api/transactions
+    			echo "work_id:$work_id, seq:$sq, reciver:$rev"
+		fi
 	done
 done
