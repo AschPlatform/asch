@@ -834,118 +834,97 @@ Blocks.prototype.verifyBlockVotes = function (block, votes, cb) {
   });
 }
 
-Blocks.prototype.applyBlock = function(block, votes, broadcast, cb, saveBlock) {
+Blocks.prototype.applyBlock = function(block, votes, broadcast, callback, saveBlock) {
 	private.isActive = true;
 
 	library.balancesSequence.add(function (cb) {
     library.dbLite.query('SAVEPOINT applyblock');
-    
-		modules.transactions.undoUnconfirmedList(function (err, unconfirmedTransactions) {
-			if (err) {
-				private.isActive = false;
-				return process.exit(0);
-			}
 
-			function done(err) {
-        modules.transactions.applyUnconfirmedList(unconfirmedTransactions, function (applyErr) {
-          if (applyErr || err) {
-            var finalErr = 'applyBlock err: ' + (applyErr || err);
-            library.dbLite.query('ROLLBACK TO SAVEPOINT applyblock', function (rollbackErr) {
-              if (finalErr) {
-                finalErr += ', rollback err: ' + rollbackErr;
-              }
-              private.isActive = false;
-              cb(finalErr);
-            });
+    function done(err) {
+      if (err) {
+        var finalErr = 'applyBlock err: ' + err;
+        library.dbLite.query('ROLLBACK TO SAVEPOINT applyblock', function (rollbackErr) {
+          if (finalErr) {
+            finalErr += ', rollback err: ' + rollbackErr;
+          }
+          private.isActive = false;
+          cb(finalErr);
+        });
+      } else {
+        library.dbLite.query('RELEASE SAVEPOINT applyblock', function (releaseErr) {
+          private.isActive = false;
+          if (releaseErr) {
+            cb('applyBlock release savepoint err: ' + releaseErr);
           } else {
-            library.dbLite.query('RELEASE SAVEPOINT applyblock', function (releaseErr) {
-              private.isActive = false;
-              if (releaseErr) {
-                cb('applyBlock release savepoint err: ' + releaseErr);
-              } else {
-                private.lastBlock = block;
-                if (broadcast) {
-                  library.logger.info("Block applied correctly with " + block.transactions.length + " transactions");
-                  library.bus.message('newBlock', block, votes, true);
-                }
-                private.blockCache = {};
-                private.proposeCache = {};
-                private.lastVoteTime = null;
-                library.base.consensus.clearState();
-                cb();
-              }
-            });
+            private.lastBlock = block;
+            if (broadcast) {
+              library.logger.info("Block applied correctly with " + block.transactions.length + " transactions");
+              library.bus.message('newBlock', block, votes, true);
+            }
+            private.blockCache = {};
+            private.proposeCache = {};
+            private.lastVoteTime = null;
+            library.base.consensus.clearState();
+            cb();
           }
         });
       }
+    }
 
-			var appliedTransactions = {};
-
-			async.eachSeries(block.transactions, function (transaction, cb) {
-				modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
-					modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
-						if (err) {
-							return setImmediate(cb, "Failed to apply transaction: " + transaction.id);
-						}
-						appliedTransactions[transaction.id] = transaction;
-
-						var index = unconfirmedTransactions.indexOf(transaction.id);
-						if (index >= 0) {
-							unconfirmedTransactions.splice(index, 1);
-						}
-
-						setImmediate(cb);
-					});
-				});
-			}, function (err) {
-				if (err) {
-
-					async.eachSeries(block.transactions, function (transaction, cb) {
-						modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (sender,cb) {
-							if (appliedTransactions[transaction.id]) {
-								library.base.transactions.undoUnconfirmed(transaction, sender, cb);
-							} else {
-								setImmediate(cb);
-							}
-						});
-					}, function () {
-						done(err);
-					});
-				} else {
-					async.eachSeries(block.transactions, function (transaction, cb) {
-						modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
-							if (err) {
-								library.logger.error("Failed to apply transactions: " + transaction.id);
-								process.exit(0);
-							}
-							// DATABASE: write
-							modules.transactions.apply(transaction, block, sender, function (err) {
-								if (err) {
-									library.logger.error("Failed to apply transactions: " + transaction.id);
-									process.exit(0);
-								}
-								modules.transactions.removeUnconfirmedTransaction(transaction.id);
-								setImmediate(cb);
-							});
-						});
-					}, function (err) {
-						if (saveBlock) {
-							private.saveBlock(block, function (err) {
-							 if (err) {
-								 library.logger.error("Failed to save block...");
-								 process.exit(1);
-                 return;
-							 }
-							 modules.round.tick(block, done);
-						 });
-						} else {
-							modules.round.tick(block, done);
-						}
-					});
-				}
-			});
-		});
-	}, cb);
+    async.eachSeries(block.transactions, function (transaction, next) {
+      if (modules.transactions.hasUnconfirmedTransaction(transaction)) {
+        return next();
+      }
+      modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, function (err, sender) {
+        modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
+          if (err) {
+            return next("Failed to apply transaction: " + transaction.id);
+          }
+          next();
+        });
+      });
+    }, function (err) {
+      if (err) {
+        done(err);
+      } else {
+        async.eachSeries(block.transactions, function (transaction, next) {
+          modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, function (err, sender) {
+            if (err) {
+              library.logger.error("Failed to set account before apply transaction: " + transaction.id + ", err: " + err);
+              process.exit(0);
+              return;
+            }
+            modules.transactions.apply(transaction, block, sender, function (err) {
+              if (err) {
+                library.logger.error("Failed to apply transaction: " + transaction.id + ", err: " + err);
+                process.exit(0);
+              }
+              modules.transactions.removeUnconfirmedTransaction(transaction.id);
+              setImmediate(next);
+            });
+          });
+        }, function () {
+          if (saveBlock) {
+            private.saveBlock(block, function (err) {
+              if (err) {
+                library.logger.error("Failed to save block: " +　err);
+                process.exit(1);
+                return;
+              }
+              modules.round.tick(block, done);
+            });
+          } else {
+            modules.round.tick(block, done);
+          }
+        });
+      }
+    });
+	}, function (err) {
+    if (err) {
+      library.logger.error("Failed to apply block: " + err);
+    }
+    callback(err);
+  });
 }
 
 Blocks.prototype.processBlock = function (block, votes, broadcast, cb) {
