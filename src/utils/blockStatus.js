@@ -2,11 +2,11 @@ var constants = require('./constants.js');
 
 function BlockStatus() {
   var milestones = [
-    500000000, // Initial Reward
-    400000000, // Milestone 1
-    300000000, // Milestone 2
-    200000000, // Milestone 3
-    100000000  // Milestone 4
+    350000000, // Initial Reward
+    300000000, // Milestone 1
+    200000000, // Milestone 2
+    100000000, // Milestone 3
+    50000000  // Milestone 4
   ];
 
   var distance = 3000000, // Distance between each milestone
@@ -23,7 +23,7 @@ function BlockStatus() {
   };
 
   this.calcMilestone = function (height) {
-    var location = parseInt(parseHeight(height - rewardOffset) / distance),
+    var location = Math.floor(parseHeight(height - rewardOffset) / distance),
         lastMile = milestones[milestones.length - 1];
 
     if (location > (milestones.length - 1)) {

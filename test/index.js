@@ -1,3 +1,4 @@
+require('./lib/utils.js');
 require('./lib/accounts.js');
 require('./lib/transactions.js');
 require('./lib/peers.transactions.js');
