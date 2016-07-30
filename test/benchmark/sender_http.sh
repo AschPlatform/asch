@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ $# != 3 ]; then
+if [ $# -ne 3 ]; then
 	echo "$0 <worker_id> <ip> <secret>"
 	exit 1
 fi

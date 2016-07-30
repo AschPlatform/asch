@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ $# != 3 ]; then
+if [ $# -ne 3 ]; then
 	echo "$0 <threads> <ip> <secret>"
 	exit 1
 fi
@@ -9,6 +9,6 @@ ip=$2
 sec=$3
 for i in `seq 1 $cnt`
 do
-	./sender_http.sh $i $ip $sec &
+	./sender_http.sh $i $ip "$sec" &
 done
 wait
