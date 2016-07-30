@@ -25,7 +25,7 @@ function Vote() {
   }
 
   this.calculateFee = function (trs, sender) {
-    return 1 * constants.fixedPoint;
+    return 0.1 * constants.fixedPoint;
   }
 
   this.verify = function (trs, sender, cb) {

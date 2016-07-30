@@ -27,7 +27,7 @@ var version = "0.9.0" // Node version
 
 // Holds Fee amounts for different transaction types
 var Fees = {
-  voteFee: 100000000,
+  voteFee: 10000000,
   transactionFee: 10000000,
   secondPasswordFee: 500000000,
   delegateRegistrationFee: 10000000000,
