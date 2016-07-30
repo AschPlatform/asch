@@ -583,7 +583,8 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
     method: options.method,
     json: true,
     headers: extend({}, private.headers, options.headers),
-    timeout: library.config.peers.options.timeout
+    timeout: library.config.peers.options.timeout,
+    forever: true
   };
   if (Object.prototype.toString.call(options.data) === "[object Object]" || util.isArray(options.data)) {
     req.json = options.data;
