@@ -26,9 +26,7 @@ function Transfer() {
   }
 
   this.calculateFee = function (trs, sender) {
-    var min = library.base.block.calculateFee();
-    var fee = parseFloat((trs.amount * 0.0001).toFixed(0));
-    return fee < min ? min : fee;
+    return library.base.block.calculateFee();
   }
 
   this.verify = function (trs, sender, cb) {
