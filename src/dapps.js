@@ -406,7 +406,7 @@ function DApp() {
   }
 
   this.calculateFee = function (trs, sender) {
-    return 500 * constants.fixedPoint;
+    return 100 * constants.fixedPoint;
   }
 
   function checkDuplicate (trs, cb) {
