@@ -71,6 +71,7 @@ private.isActive = false;
 
 private.blockCache = {};
 private.proposeCache = {};
+private.lastPropose = null;
 
 // Constructor
 function Blocks(cb, scope) {
@@ -904,6 +905,7 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, callback, saveBl
             });
           });
         }, function () {
+          library.logger.debug("apply block ok");
           if (saveBlock) {
             private.saveBlock(block, function (err) {
               if (err) {
@@ -911,6 +913,7 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, callback, saveBl
                 process.exit(1);
                 return;
               }
+              library.logger.debug("save block ok");
               modules.round.tick(block, done);
             });
           } else {
@@ -941,7 +944,7 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, cb) {
     if (err) {
       return setImmediate(cb, "Failed to verify block: " + err);
     }
-    
+    library.logger.debug("verify block ok");
     library.dbLite.query("SELECT id FROM blocks WHERE id=$id", { id: block.id }, ['id'], function (err, rows) {
       if (err) {
         return setImmediate(cb, "Failed to query blocks from db: " + err);
@@ -955,6 +958,7 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, cb) {
           modules.delegates.fork(block, 3);
           return setImmediate(cb, "Can't verify slot: " + err);
         }
+        library.logger.debug("verify block slot ok");
         async.eachSeries(block.transactions, function (transaction, next) {
           async.waterfall([
             function (next) {
@@ -984,6 +988,7 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, cb) {
           if (err) {
             return setImmediate(cb, "Failed to verify transaction: " + err);
           }
+          library.logger.debug("verify block transactions ok");
           self.applyBlock(block, votes, broadcast, cb, true);
         });
       });
@@ -1094,7 +1099,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
   if (library.base.consensus.hasPendingBlock(timestamp)) {
     return setImmediate(cb);
   }
-
+  library.logger.debug("generateBlock enter");
   async.eachSeries(transactions, function (transaction, next) {
     modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
       if (err || !sender) {
@@ -1111,6 +1116,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
       }
     });
   }, function () {
+    library.logger.debug("All unconfirmed transactions ready");
     var block;
     try {
       block = library.base.block.create({
@@ -1233,15 +1239,19 @@ Blocks.prototype.onReceivePropose = function (propose) {
   }
   private.proposeCache[propose.hash] = true;
 
-  if (propose.height != private.lastBlock.height + 1) {
-    library.logger.debug("invalid propose height", propose);
-    if (propose.height > private.lastBlock.height + 1) {
-      library.logger.info("receive discontinuous propose height " + propose.height);
-      modules.loader.startSyncBlocks();
-    }
-    return;
-  }
   library.sequence.add(function receivePropose (cb) {
+    if (private.lastPropose && private.lastPropose.height == propose.height && private.lastPropose.generatorPublicKey == propose.generatorPublicKey) {
+      library.logger.warn("generate different block with the same height, generator: " + propose.generatorPublicKey);
+      return setImmediate(cb);
+    }
+    if (propose.height != private.lastBlock.height + 1) {
+      library.logger.debug("invalid propose height", propose);
+      if (propose.height > private.lastBlock.height + 1) {
+        library.logger.info("receive discontinuous propose height " + propose.height);
+        modules.loader.startSyncBlocks();
+      }
+      return setImmediate(cb);
+    }
     if (private.lastVoteTime && Date.now() - private.lastVoteTime < 5 * 1000) {
       library.logger.debug("ignore the frequently propose");
       return setImmediate(cb);
@@ -1282,6 +1292,7 @@ Blocks.prototype.onReceivePropose = function (propose) {
           library.logger.debug("send votes height " + votes.height + " id " + votes.id + " sigatures " + votes.signatures.length);
           modules.transport.sendVotes(votes, propose.address);
           private.lastVoteTime = Date.now();
+          private.lastPropose = propose;
         }
         setImmediate(next);
       }

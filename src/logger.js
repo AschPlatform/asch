@@ -31,7 +31,7 @@ module.exports = function (config) {
       var log = {
         "level": name,
         "message": caption,
-        "timestamp": strftime('%F %T', new Date())
+        "timestamp": strftime('%F %T %L', new Date())
       }
 
       data && (log["data"] = data);

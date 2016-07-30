@@ -500,7 +500,7 @@ private.loop = function (cb) {
   var lastBlock = modules.blocks.getLastBlock();
 
   if (currentSlot == slots.getSlotNumber(lastBlock.timestamp)) {
-    library.logger.debug('Loop:', 'lastBlock is in the same slot');
+    // library.logger.debug('Loop:', 'lastBlock is in the same slot');
     return setImmediate(cb);
   }
   
@@ -843,7 +843,7 @@ Delegates.prototype.onBlockchainReady = function () {
     }
 
     private.loop(function () {
-      setTimeout(nextLoop, 1000);
+      setTimeout(nextLoop, 100);
     });
 
   });
