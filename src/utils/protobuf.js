@@ -33,7 +33,8 @@ Protobuf.prototype.decodeBlock = function (data) {
   return obj;
 }
 
-Protobuf.prototype.encodeBlockPropose = function (obj) {
+Protobuf.prototype.encodeBlockPropose = function (propose) {
+  var obj = extend(true, {}, propose);
   obj.generatorPublicKey = new Buffer(obj.generatorPublicKey, 'hex');
   obj.hash = new Buffer(obj.hash, 'hex');
   obj.signature = new Buffer(obj.signature, 'hex');
