@@ -311,7 +311,7 @@ private.attachApi = function () {
       if (err) {
         return res.status(200).json({success: false, error: "Schema validation error"});
       }
-      library.bus.message('receivePropose', req.body);
+      library.bus.message('receivePropose', req.body.propose);
       res.sendStatus(200);
     });
   });
