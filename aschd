@@ -59,9 +59,11 @@ function restart() {
 
 function rebuild() {
   echo "Downloading blockchain snapshot..."
-  wget http://o7dyh3w0x.bkt.clouddn.com/blockchain-testnet-snapshot.db
+  local snapshotName="blockchain-testnet-snapshot"
+  wget http://o7dyh3w0x.bkt.clouddn.com/$snapshotName.tar.gz
   stop
-  mv ./blockchain-testnet-snapshot.db $PROG_DIR/blockchain.db
+  tar zxf $snapshotName.tar.gz
+  mv ./$snapshotName.db $PROG_DIR/blockchain.db
   start
 }
 
@@ -120,6 +122,7 @@ function upgrade() {
 }
 
 function main() {
+  export PATH=$PROG_DIR/bin:$PATH
   eval $1
 }
 

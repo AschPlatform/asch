@@ -33,13 +33,14 @@ function linuxBuild(netVersion) {
     .pipe(replace('development', buildTime))
     .pipe(gulp.dest(fullpath))
     .pipe(shell([
-      format('cd %s && mkdir -p public dapps tmp logs', fullpath),
+      format('cd %s && mkdir -p public dapps tmp logs bin', fullpath),
       format('cp -r package.json aschd init proto %s', fullpath),
       format('sed -i "s/testnet/%s/g" %s/aschd', netVersion, fullpath),
       format('cp config-%s.json %s/config.json', netVersion, fullpath),
       format('cp genesisBlock-%s.json %s/genesisBlock.json', netVersion, fullpath),
       format('cp -r public/dist %s/public/', fullpath),
-      // format('cd %s && npm install --production', fullpath),
+      format('cp `which node` %s/bin/', fullpath),
+      format('cd %s && npm install --production', fullpath),
       format('cd %s/.. && tar zcf %s.tar.gz %s', fullpath, dir, dir)
     ]));
 }
