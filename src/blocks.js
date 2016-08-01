@@ -1099,11 +1099,15 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
       if (library.base.transaction.ready(transaction, sender)) {
         library.base.transaction.verify(transaction, sender, function (err) {
-          ready.push(transaction);
+          if (err) {
+            library.logger.error("Failed to verify transaction " + transaction.id, err);
+          } else {
+            ready.push(transaction);
+          }
           next();
         });
       } else {
-        setImmediate(next);
+        next();
       }
     });
   }, function () {
@@ -1159,7 +1163,6 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
               ' round: ' + modules.round.calc(height) +
               ' slot: ' + slots.getSlotNumber(block.timestamp) +
               ' reward: ' + block.reward);
-            library.bus.message('confirmBlock', block, true);
             return next();
           });
         } else {
@@ -1320,7 +1323,6 @@ Blocks.prototype.onReceiveVotes = function (votes) {
           ' round: ' + modules.round.calc(height) +
           ' slot: ' + slots.getSlotNumber(block.timestamp) +
           ' reward: ' + block.reward);
-        library.bus.message('confirmBlock', block, true);
         cb();
       });
     } else {

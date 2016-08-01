@@ -216,7 +216,12 @@ private.attachApi = function () {
 
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
-
+    if (typeof req.body.block == 'string') {
+      req.body.block = library.protobuf.decodeBlock(new Buffer(req.body.block, 'base64'));
+    }
+    if (typeof req.body.votes == 'string') {
+      req.body.votes = library.protobuf.decodeBlockVotes(new Buffer(req.body.votes, 'base64'));
+    }
     try {
       var block = library.base.block.objectNormalize(req.body.block);
       var votes = library.base.consensus.normalizeVotes(req.body.votes);
@@ -268,8 +273,10 @@ private.attachApi = function () {
   
   router.post("/propose", function (req, res) {
     res.set(private.headers);
-    
-    library.scheme.validate(req.body, {
+    if (typeof req.body.propose == 'string') {
+      req.body.propose = library.protobuf.decodeBlockPropose(new Buffer(req.body.propose, 'base64'));
+    }
+    library.scheme.validate(req.body.propose, {
       type: "object",
       properties: {
         height: {
@@ -688,28 +695,42 @@ Transport.prototype.onBlockchainReady = function () {
 
 Transport.prototype.onSignature = function (signature, broadcast) {
   if (broadcast) {
-    self.broadcast({limit: 100}, {api: '/signatures', data: {signature: signature}, method: "POST"});
+    self.broadcast({}, {api: '/signatures', data: {signature: signature}, method: "POST"});
     library.network.io.sockets.emit('signature/change', {});
   }
 }
 
 Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast) {
   if (broadcast) {
-    self.broadcast({limit: 100}, {api: '/transactions', data: {transaction: transaction}, method: "POST"});
+    var data = {
+      transaction: library.protobuf.encodeTransaction(transaction).toString('base64')
+    };
+    self.broadcast({}, {api: '/transactions', data: data, method: "POST"});
     library.network.io.sockets.emit('transactions/change', {});
   }
 }
 
 Transport.prototype.onNewBlock = function (block, votes, broadcast) {
   if (broadcast) {
-    self.broadcast({limit: 100}, {api: '/blocks', data: {block: block, votes: votes}, method: "POST"});
+    library.logger.debug('before encode');
+    var data = {
+      block: library.protobuf.encodeBlock(block).toString('base64'),
+      votes: library.protobuf.encodeBlockVotes(votes).toString('base64'),
+    };
+    library.logger.debug('after encode');
+    console.log(JSON.stringify(data).length);
+    library.logger.debug('after encode 2');
+    self.broadcast({}, {api: '/blocks', data: data, method: "POST"});
     library.network.io.sockets.emit('blocks/change', {});
   }
 }
 
 Transport.prototype.onNewPropose = function (propose, broadcast) {
   if (broadcast) {
-    self.broadcast({limit: 100}, {api: '/propose', data: propose, method: "POST"});
+    var data = {
+      propose: library.protobuf.encodeBlockPropose(propose).toString('base64')
+    };
+    self.broadcast({}, {api: '/propose', data: data, method: "POST"});
   }
 }
 
@@ -723,7 +744,7 @@ Transport.prototype.sendVotes = function (votes, address) {
 
 Transport.prototype.onMessage = function (msg, broadcast) {
   if (broadcast) {
-    self.broadcast({limit: 100, dappid: msg.dappid}, {api: '/dapp/message', data: msg, method: "POST"});
+    self.broadcast({dappid: msg.dappid}, {api: '/dapp/message', data: msg, method: "POST"});
   }
 }
 
@@ -737,7 +758,7 @@ shared.message = function (msg, cb) {
   msg.timestamp = (new Date()).getTime();
   msg.hash = private.hashsum(msg.body, msg.timestamp);
 
-  self.broadcast({limit: 100, dappid: msg.dappid}, {api: '/dapp/message', data: msg, method: "POST"});
+  self.broadcast({dappid: msg.dappid}, {api: '/dapp/message', data: msg, method: "POST"});
 
   cb(null, {});
 }

@@ -30,6 +30,7 @@
     "ip": "*",
     "json-sql": "https://github.com/sqfasd/json-sql/tarball/master",
     "method-override": "*",
+    "protocol-buffers": "^3.1.6",
     "randomstring": "*",
     "request": "*",
     "rimraf": "^2.4.1",

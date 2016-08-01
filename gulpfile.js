@@ -34,7 +34,7 @@ function linuxBuild(netVersion) {
     .pipe(gulp.dest(fullpath))
     .pipe(shell([
       format('cd %s && mkdir -p public dapps tmp logs', fullpath),
-      format('cp -r package.json aschd init %s', fullpath),
+      format('cp -r package.json aschd init proto %s', fullpath),
       format('sed -i "s/testnet/%s/g" %s/aschd', netVersion, fullpath),
       format('cp config-%s.json %s/config.json', netVersion, fullpath),
       format('cp genesisBlock-%s.json %s/genesisBlock.json', netVersion, fullpath),

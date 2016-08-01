@@ -50,7 +50,6 @@ function main() {
   var pidFile = path.join(baseDir, 'asch.pid');
   if (fs.existsSync(pidFile)) {
     console.log('Failed: asch server already started');
-    process.exit(1);
     return;
   }
 
@@ -108,6 +107,12 @@ function main() {
     appConfig.logLevel = program.log;
   }
 
+  var protoFile = path.join(baseDir, 'proto', 'index.proto');
+  if (!fs.existsSync(protoFile)) {
+    console.log('Failed: proto file not exists!');
+    return;
+  }
+
   if (program.daemon) {
     console.log('Asch server started as daemon ...');
     require('daemon')();
@@ -124,7 +129,8 @@ function main() {
     dbFile: program.blockchain || path.join(baseDir, 'blockchain.db'),
     appConfig: appConfig,
     genesisblock: genesisblock,
-    logger: logger
+    logger: logger,
+    protoFile: protoFile
   };
 
   init(options, function (err, scope) {

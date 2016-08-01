@@ -69,6 +69,11 @@ module.exports = function(options, done) {
       });
     },
 
+    protobuf: function (cb) {
+      var protobuf = require('./utils/protobuf.js');
+      protobuf(options.protoFile, cb);
+    },
+
     scheme: function (cb) {
       z_schema.registerFormat("hex", function (str) {
         try {
