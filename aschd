@@ -58,7 +58,11 @@ function restart() {
 }
 
 function rebuild() {
-  echo "not support yet"
+  echo "Downloading blockchain snapshot..."
+  wget http://o7dyh3w0x.bkt.clouddn.com/blockchain-testnet-snapshot.db
+  stop
+  mv ./blockchain-testnet-snapshot.db $PROG_DIR/blockchain.db
+  start
 }
 
 function reindex() {
