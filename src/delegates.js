@@ -505,13 +505,13 @@ private.loop = function (cb) {
   }
   
   if (Date.now() % 10000 > 5000) {
-    library.logger.debug('Loop:', 'maybe too late to collect votes');
+    library.logger.trace('Loop:', 'maybe too late to collect votes');
     return setImmediate(cb);
   }
 
   private.getBlockSlotData(currentSlot, lastBlock.height + 1, function (err, currentBlockData) {
     if (err || currentBlockData === null) {
-      library.logger.debug('Loop:', 'skipping slot');
+      library.logger.trace('Loop:', 'skipping slot');
       return setImmediate(cb);
     }
 
