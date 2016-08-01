@@ -712,14 +712,10 @@ Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast)
 
 Transport.prototype.onNewBlock = function (block, votes, broadcast) {
   if (broadcast) {
-    library.logger.debug('before encode');
     var data = {
       block: library.protobuf.encodeBlock(block).toString('base64'),
       votes: library.protobuf.encodeBlockVotes(votes).toString('base64'),
     };
-    library.logger.debug('after encode');
-    console.log(JSON.stringify(data).length);
-    library.logger.debug('after encode 2');
     self.broadcast({}, {api: '/blocks', data: data, method: "POST"});
     library.network.io.sockets.emit('blocks/change', {});
   }
