@@ -34,9 +34,9 @@ Protobuf.prototype.decodeBlock = function (data) {
 }
 
 Protobuf.prototype.encodeBlockPropose = function (obj) {
-  obj.generatorPublicKey = new Buffer(obj.generatorPublicKey);
-  obj.hash = new Buffer(obj.hash);
-  obj.signature = new Buffer(obj.signature);
+  obj.generatorPublicKey = new Buffer(obj.generatorPublicKey, 'hex');
+  obj.hash = new Buffer(obj.hash, 'hex');
+  obj.signature = new Buffer(obj.signature, 'hex');
   return this.schema.BlockPropose.encode(obj);
 }
 
