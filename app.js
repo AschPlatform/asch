@@ -42,6 +42,7 @@ function main() {
     .option('-x, --peers [peers...]', 'Peers list')
     .option('-l, --log <level>', 'Log level')
     .option('-d, --daemon', 'Run asch node as daemon')
+    .option('--reindex', 'Reindex blockchain')
     .option('--base <dir>', 'Base directory')
     .parse(process.argv);
 
@@ -133,6 +134,9 @@ function main() {
     protoFile: protoFile
   };
 
+  if (program.reindex) {
+    appConfig.loading.verifyOnLoading = true;
+  }
   init(options, function (err, scope) {
     if (err) {
       scope.logger.fatal(err)

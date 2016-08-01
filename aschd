@@ -23,7 +23,7 @@ function start() {
   if is_running; then
     echo "Asch server is already started"
   else
-    node $PROG_DIR/app.js --base $PROG_DIR --daemon
+    node $PROG_DIR/app.js --base $PROG_DIR --daemon $@
   fi
 }
 
@@ -68,7 +68,8 @@ function rebuild() {
 }
 
 function reindex() {
-  echo "not support yet"
+  stop
+  start --reindex
 }
 
 function version() {
