@@ -116,7 +116,6 @@ function upgrade() {
   done
   rm -rf $extractedDir tmp/$latestName.tar.gz
   echo "Upgrade to $newVersion done."
-  start
 }
 
 function main() {
