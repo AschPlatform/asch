@@ -2136,7 +2136,7 @@ DApps.prototype.cleanup = function (cb) {
     if (err) {
       library.logger.error('all dapps stopped with error', err);
     } else {
-      library.logger.error('all dapps stopped successfully');
+      library.logger.info('all dapps stopped successfully');
     }
     cb();
   });
