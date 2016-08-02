@@ -805,6 +805,7 @@ Blocks.prototype.verifyBlock = function (block, votes, cb) {
     if (!votes.signatures || !library.base.consensus.hasEnoughVotes(votes)) {
       return cb("Votes signature is not correct");
     }
+    votes.signatures = votes.signatures.slice(0, 6);
     self.verifyBlockVotes(block, votes, cb);
   } else {
     cb(); 
@@ -860,6 +861,7 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, callback, saveBl
             private.lastBlock = block;
             if (broadcast) {
               library.logger.info("Block applied correctly with " + block.transactions.length + " transactions");
+              votes.signatures = votes.signatures.slice(0, 6);
               library.bus.message('newBlock', block, votes, true);
             }
             private.blockCache = {};
