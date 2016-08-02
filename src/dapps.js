@@ -2175,7 +2175,7 @@ DApps.prototype.onDeleteBlocksBefore = function (block) {
   });
 }
 
-DApps.prototype.onNewBlock = function (block, broadcast) {
+DApps.prototype.onNewBlock = function (block, votes, broadcast) {
   Object.keys(private.sandboxes).forEach(function (dappId) {
     broadcast && self.request(dappId, "post", "/message", {
       topic: "point",
