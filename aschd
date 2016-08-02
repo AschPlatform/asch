@@ -106,11 +106,6 @@ function upgrade() {
   local extractedDir=`find tmp -maxdepth 1 -type d | grep asch |head -n 1`
   local currentVersion=`version`
   local newVersion=`$extractedDir/aschd version`
-  if [ "$currentVersion" == "$newVersion" ]; then
-    echo "Nothing to upgrade, the latest version is $currentVersion"
-    rm -rf $extractedDir tmp/$latestName.tar.gz
-    exit 0
-  fi
   echo "Copying new files ..."
   for file in `ls $extractedDir`
   do
