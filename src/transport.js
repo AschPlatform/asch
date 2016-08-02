@@ -37,10 +37,6 @@ private.attachApi = function () {
   router.use(function (req, res, next) {
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
-    if (peerIp == "127.0.0.1") {
-      return next();
-    }
-
     if (!peerIp) {
       return res.status(500).send({success: false, error: "Wrong header data"});
     }
@@ -75,6 +71,9 @@ private.attachApi = function () {
           expectet: library.config.magic,
           received: req.headers['magic']
         });
+      }
+      if (peerIp == "127.0.0.1") {
+        return next();
       }
       var peer = {
         ip: ip.toLong(peerIp),
