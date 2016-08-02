@@ -19,7 +19,9 @@ private.blockStatus = new blockStatus();
 function Vote() {
   this.create = function (data, trs) {
     trs.recipientId = null;
-    trs.asset.votes = data.votes;
+    trs.asset.vote = {
+      votes: data.votes
+    };
 
     return trs;
   }
@@ -29,15 +31,15 @@ function Vote() {
   }
 
   this.verify = function (trs, sender, cb) {
-    if (!trs.asset.votes || !trs.asset.votes.length) {
+    if (!trs.asset.vote || !trs.asset.vote.votes || !trs.asset.vote.votes.length) {
       return setImmediate(cb, "No votes sent");
     }
 
-    if (trs.asset.votes && trs.asset.votes.length > 33) {
+    if (trs.asset.vote.votes && trs.asset.vote.votes.length > 33) {
       return setImmediate(cb, "Voting limit exceeded. Maximum is 33 votes per transaction");
     }
 
-    modules.delegates.checkDelegates(trs.senderPublicKey, trs.asset.votes, function (err) {
+    modules.delegates.checkDelegates(trs.senderPublicKey, trs.asset.vote.votes, function (err) {
       setImmediate(cb, err, trs);
     });
   }
@@ -48,7 +50,7 @@ function Vote() {
 
   this.getBytes = function (trs) {
     try {
-      var buf = trs.asset.votes ? new Buffer(trs.asset.votes.join(''), 'utf8') : null;
+      var buf = trs.asset.vote.votes ? new Buffer(trs.asset.vote.votes.join(''), 'utf8') : null;
     } catch (e) {
       throw Error(e.toString());
     }
@@ -58,7 +60,7 @@ function Vote() {
 
   this.apply = function (trs, block, sender, cb) {
     this.scope.account.merge(sender.address, {
-      delegates: trs.asset.votes,
+      delegates: trs.asset.vote.votes,
       blockId: block.id,
       round: modules.round.calc(block.height)
     }, function (err) {
@@ -67,9 +69,9 @@ function Vote() {
   }
 
   this.undo = function (trs, block, sender, cb) {
-    if (trs.asset.votes === null) return cb();
+    if (trs.asset.vote.votes === null) return cb();
 
-    var votesInvert = Diff.reverse(trs.asset.votes);
+    var votesInvert = Diff.reverse(trs.asset.vote.votes);
 
     this.scope.account.merge(sender.address, {
       delegates: votesInvert,
@@ -81,13 +83,13 @@ function Vote() {
   }
 
   this.applyUnconfirmed = function (trs, sender, cb) {
-    modules.delegates.checkUnconfirmedDelegates(trs.senderPublicKey, trs.asset.votes, function (err) {
+    modules.delegates.checkUnconfirmedDelegates(trs.senderPublicKey, trs.asset.vote.votes, function (err) {
       if (err) {
         return setImmediate(cb, err);
       }
 
       this.scope.account.merge(sender.address, {
-        u_delegates: trs.asset.votes
+        u_delegates: trs.asset.vote.votes
       }, function (err) {
         cb(err);
       });
@@ -95,9 +97,9 @@ function Vote() {
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {
-    if (trs.asset.votes === null) return cb();
+    if (trs.asset.vote.votes === null) return cb();
 
-    var votesInvert = Diff.reverse(trs.asset.votes);
+    var votesInvert = Diff.reverse(trs.asset.vote.votes);
 
     this.scope.account.merge(sender.address, {u_delegates: votesInvert}, function (err) {
       cb(err);
@@ -105,7 +107,7 @@ function Vote() {
   }
 
   this.objectNormalize = function (trs) {
-    var report = library.scheme.validate(trs.asset, {
+    var report = library.scheme.validate(trs.asset.vote, {
       type: "object",
       properties: {
         votes: {
@@ -132,14 +134,16 @@ function Vote() {
       return null
     } else {
       var votes = raw.v_votes.split(',');
-
-      return {votes: votes};
+      var vote = {
+        votes: votes
+      };
+      return {vote: vote};
     }
   }
 
   this.dbSave = function (trs, cb) {
     library.dbLite.query("INSERT INTO votes(votes, transactionId) VALUES($votes, $transactionId)", {
-      votes: util.isArray(trs.asset.votes) ? trs.asset.votes.join(',') : null,
+      votes: util.isArray(trs.asset.vote.votes) ? trs.asset.vote.votes.join(',') : null,
       transactionId: trs.id
     }, cb);
   }
