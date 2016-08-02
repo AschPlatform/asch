@@ -516,7 +516,8 @@ private.loop = function (cb) {
     }
 
     library.sequence.add(function generateBlock (cb) {
-      if (slots.getSlotNumber(currentBlockData.time) == slots.getSlotNumber()) {
+      if (slots.getSlotNumber(currentBlockData.time) == slots.getSlotNumber() &&
+          modules.blocks.getLastBlock().timestamp < currentBlockData.time) {
         modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, cb);
       } else {
         // library.logger.log('Loop', 'exit: ' + _activeDelegates[slots.getSlotNumber() % slots.delegates] + ' delegate slot');
