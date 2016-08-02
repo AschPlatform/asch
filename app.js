@@ -139,7 +139,10 @@ function main() {
   }
   init(options, function (err, scope) {
     if (err) {
-      scope.logger.fatal(err)
+      scope.logger.fatal(err);
+      if (fs.existsSync(pidFile)) {
+        fs.unlinkSync(pidFile);
+      }
       process.exit(1);
       return;
     }
