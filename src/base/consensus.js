@@ -56,6 +56,10 @@ Consensus.prototype.hasEnoughVotes = function (votes) {
   return votes && votes.signatures && votes.signatures.length > slots.delegates * 2 / 3;
 }
 
+Consensus.prototype.hasEnoughVotesRemote = function (votes) {
+  return votes && votes.signatures && votes.signatures.length > 6;
+}
+
 Consensus.prototype.getPendingBlock = function () {
   return this.pendingBlock;
 }

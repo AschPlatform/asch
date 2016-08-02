@@ -802,10 +802,9 @@ Blocks.prototype.verifyBlock = function (block, votes, cb) {
     if (block.id != votes.id) {
       return cb("Votes id is not correct");
     }
-    if (!votes.signatures || !library.base.consensus.hasEnoughVotes(votes)) {
+    if (!votes.signatures || !library.base.consensus.hasEnoughVotesRemote(votes)) {
       return cb("Votes signature is not correct");
     }
-    votes.signatures = votes.signatures.slice(0, 6);
     self.verifyBlockVotes(block, votes, cb);
   } else {
     cb(); 
