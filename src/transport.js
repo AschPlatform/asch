@@ -383,7 +383,9 @@ private.attachApi = function () {
 
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     var peerStr = peerIp ? peerIp + ":" + (isNaN(req.headers['port']) ? 'unknown' : req.headers['port']) : 'unknown';
-
+    if (typeof req.body.transaction == 'string') {
+      req.body.transaction = library.protobuf.decodeTransaction(new Buffer(req.body.transaction, 'base64'));
+    }
     try {
       var transaction = library.base.transaction.objectNormalize(req.body.transaction);
     } catch (e) {
