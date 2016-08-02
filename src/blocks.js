@@ -1234,7 +1234,9 @@ Blocks.prototype.onReceivePropose = function (propose) {
   private.proposeCache[propose.hash] = true;
 
   library.sequence.add(function receivePropose (cb) {
-    if (private.lastPropose && private.lastPropose.height == propose.height && private.lastPropose.generatorPublicKey == propose.generatorPublicKey) {
+    if (private.lastPropose && private.lastPropose.height == propose.height &&
+        private.lastPropose.generatorPublicKey == propose.generatorPublicKey &&
+        private.lastPropose.id != propose.id) {
       library.logger.warn("generate different block with the same height, generator: " + propose.generatorPublicKey);
       return setImmediate(cb);
     }
