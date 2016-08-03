@@ -24,6 +24,12 @@ describe('utils', function () {
   it('transaction sort should be stable', function (done) {
     var sortBy = function (a, b) {
       if (a.type != b.type) {
+        if (a.type == 1) {
+          return 1;
+        }
+        if (b.type == 1) {
+          return -1;
+        }
         return a.type - b.type;
       }
       if (a.amount != b.amount) {
@@ -56,6 +62,8 @@ describe('utils', function () {
     var trs1 = clone(trs);
     trs1.sort(sortBy);
     var trs2 = clone(trs1);
+    trs2.sort(sortBy);
+    node.expect(trs1).to.eql(trs2);
     trs2.sort(sortBy);
     node.expect(trs1).to.eql(trs2);
 
