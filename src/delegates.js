@@ -487,12 +487,12 @@ private.getBlockSlotData = function (slot, height, cb) {
 
 private.loop = function (cb) {
   if (!Object.keys(private.keypairs).length) {
-    library.logger.debug('Loop:', 'no delegates');
+    library.logger.trace('Loop:', 'no delegates');
     return setImmediate(cb);
   }
 
   if (!private.loaded || modules.loader.syncing() || !modules.round.loaded()) {
-    library.logger.debug('Loop:', 'node not ready');
+    library.logger.trace('Loop:', 'node not ready');
     return setImmediate(cb);
   }
 
