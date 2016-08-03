@@ -223,7 +223,7 @@ module.exports = function(options, done) {
       var bodyParser = require('body-parser');
       var methodOverride = require('method-override');
       var requestSanitizer = require('./utils/request-sanitizer');
-      var queryParser = require('./express-query-int');
+      var queryParser = require('./utils/express-query-int');
 
       scope.network.app.engine('html', require('ejs').renderFile);
       scope.network.app.use(require('express-domain-middleware'));
