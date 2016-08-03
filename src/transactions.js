@@ -335,7 +335,8 @@ Transactions.prototype.removeUnconfirmedTransaction = function (id) {
 }
 
 Transactions.prototype.hasUnconfirmedTransaction = function (transaction) {
-  return private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined || private.doubleSpendingTransactions[transaction.id];
+  var index = private.unconfirmedTransactionsIdIndex[transaction.id];
+  return index !== undefined && private.unconfirmedTransactions[index] !== false;
 }
 
 Transactions.prototype.processUnconfirmedTransaction = function (transaction, broadcast, cb) {

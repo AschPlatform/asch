@@ -28,14 +28,18 @@ private.getAddressByPublicKey = function (publicKey) {
 }
 
 // Public methods
-Block.prototype.create = function (data) {
-  var transactions = data.transactions.sort(function compare(a, b) {
+
+Block.prototype.sortTransactions = function (data) {
+   return data.transactions.sort(function compare(a, b) {
     if (a.type < b.type) return -1;
     if (a.type > b.type) return 1;
     if (a.amount < b.amount) return -1;
     if (a.amount > b.amount) return 1;
     return 0;
-  })
+  });
+}
+Block.prototype.create = function (data) {
+  var transactions = this.sortTransactions(data);
 
   var nextHeight = (data.previousBlock) ? data.previousBlock.height + 1 : 1;
 

@@ -455,14 +455,8 @@ private.loadBlockChain = function () {
                               library.logger.info("Unable to load without verifying, clearing accounts from database and loading");
                               load(count);
                             } else {
-                              modules.blocks.loadLastBlock(function (err, block) {
-                                if (err) {
-                                  return load(count);
-                                }
-                                private.lastBlock = block;
-                                library.logger.info('Blockchain ready');
-                                library.bus.message('blockchainReady');
-                              });
+                              library.logger.info('Blockchain ready');
+                              library.bus.message('blockchainReady');
                             }
                           });
                         }

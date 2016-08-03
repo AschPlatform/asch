@@ -636,68 +636,26 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 
       async.eachSeries(blocks, function (block, next) {
         library.logger.debug("loadBlocksOffset processing:", block.id);
-        if (verify && block.id != genesisblock.block.id) {
-          self.verifyBlock(block, null, function(err) {
-            if (err) {
-              return next("Failed to verify block " + block.id);
-            }
-            self.applyBlock(block, null, false, next, false);
-          });
+        block.transactions = library.base.block.sortTransactions(block);
+        if (verify) {
+          if (!private.lastBlock || !private.lastBlock.id) {
+            // apply genesis block
+            self.applyBlock(block, null, false, false, next);
+          } else {
+            self.verifyBlock(block, null, function (err) {
+              if (err) {
+                return next(err);
+              }
+              self.applyBlock(block, null, false, false, next);
+            });
+          }
         } else {
-          self.applyBlock(block, null, false, next, false);
+          private.lastBlock = block;
+          setImmediate(next);
         }
       }, function (err) {
         cb(err, private.lastBlock);
       });
-    });
-  }, cb);
-}
-
-Blocks.prototype.loadLastBlock = function (cb) {
-  library.dbSequence.add(function (cb) {
-    library.dbLite.query("SELECT " +
-      "b.id, b.version, b.timestamp, b.height, b.previousBlock, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength, lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), " +
-      "t.id, t.type, t.timestamp, lower(hex(t.senderPublicKey)), t.senderId, t.recipientId, t.amount, t.fee, lower(hex(t.signature)), lower(hex(t.signSignature)), " +
-      "lower(hex(s.publicKey)), " +
-      "d.username, " +
-      "v.votes, " +
-      "m.min, m.lifetime, m.keysgroup, " +
-      "dapp.name, dapp.description, dapp.tags, dapp.type, dapp.link, dapp.category, dapp.icon, " +
-      "it.dappId, " +
-      "ot.dappId, ot.outTransactionId, " +
-      "lower(hex(t.requesterPublicKey)), t.signatures " +
-      "FROM blocks b " +
-      "left outer join trs as t on t.blockId=b.id " +
-      "left outer join delegates as d on d.transactionId=t.id " +
-      "left outer join votes as v on v.transactionId=t.id " +
-      "left outer join signatures as s on s.transactionId=t.id " +
-      "left outer join multisignatures as m on m.transactionId=t.id " +
-      "left outer join dapps as dapp on dapp.transactionId=t.id " +
-      "left outer join intransfer it on it.transactionId=t.id " +
-      "left outer join outtransfer ot on ot.transactionId=t.id " +
-      "where b.height = (select max(height) from blocks) " +
-      "ORDER BY b.height, t.rowid" +
-      "", {}, private.blocksDataFields, function (err, rows) {
-      if (err) {
-        return cb(err);
-      }
-
-      var block = private.readDbRows(rows)[0];
-
-      block.transactions = block.transactions.sort(function (a, b) {
-        if (block.id == genesisblock.block.id) {
-          if (a.type == TransactionTypes.VOTE)
-            return 1;
-        }
-
-        if (a.type == TransactionTypes.SIGNATURE) {
-          return 1;
-        }
-
-        return 0;
-      });
-
-      cb(null, block);
     });
   }, cb);
 }
@@ -835,7 +793,7 @@ Blocks.prototype.verifyBlockVotes = function (block, votes, cb) {
   });
 }
 
-Blocks.prototype.applyBlock = function(block, votes, broadcast, callback, saveBlock) {
+Blocks.prototype.applyBlock = function(block, votes, broadcast, saveBlock, callback) {
 	private.isActive = true;
 
 	library.balancesSequence.add(function (cb) {
@@ -872,8 +830,13 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, callback, saveBl
         });
       }
     }
-
-    async.eachSeries(block.transactions, function (transaction, nextTr) {
+    var sortedTrs = block.transactions.sort(function (a, b) {
+      if (a.type == 1) {
+        return 1;
+      }
+      return 0;
+    });
+    async.eachSeries(sortedTrs, function (transaction, nextTr) {
       async.waterfall([
         function (next) {
           modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, next);
@@ -922,7 +885,7 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, callback, saveBl
   });
 }
 
-Blocks.prototype.processBlock = function (block, votes, broadcast, cb) {
+Blocks.prototype.processBlock = function (block, votes, broadcast, save, cb) {
   if (!private.loaded) {
     return setImmediate(cb, "Blockchain is loading");
   }
@@ -931,7 +894,6 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, cb) {
 	} catch (e) {
 		return setImmediate(cb, "Failed to normalize block: " + e.toString());
 	}
-  
   self.verifyBlock(block, votes, function (err) {
     if (err) {
       return setImmediate(cb, "Failed to verify block: " + err);
@@ -942,7 +904,7 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, cb) {
         return setImmediate(cb, "Failed to query blocks from db: " + err);
       }
       var bId = rows.length && rows[0].id;
-      if (bId) {
+      if (bId && save) {
         return setImmediate(cb, "Block already exists: " + block.id);
       }
       modules.delegates.validateBlockSlot(block, function (err) {
@@ -981,7 +943,7 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, cb) {
             return setImmediate(cb, "Failed to verify transaction: " + err);
           }
           library.logger.debug("verify block transactions ok");
-          self.applyBlock(block, votes, broadcast, cb, true);
+          self.applyBlock(block, votes, broadcast, save, cb);
         });
       });
     });
@@ -1043,7 +1005,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
               modules.peer.state(peer.ip, peer.port, 0, 3600);
               return cb(e);
             }
-            self.processBlock(block, null, false, function (err) {
+            self.processBlock(block, null, false, true, function (err) {
               if (!err) {
                 lastCommonBlockId = block.id;
                 lastValidBlock = block;
@@ -1124,11 +1086,8 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
     } catch (e) {
       return setImmediate(cb, e);
     }
-
-    // self.processBlock(block, true, cb);
     
     library.logger.info("Generate new block at height " + (private.lastBlock.height + 1));
-    
     async.waterfall([
       function (next) {
         self.verifyBlock(block, null, function (err) {
@@ -1155,7 +1114,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
         library.logger.debug("get active delegate keypairs len: " + activeKeypairs.length);
         var localVotes = library.base.consensus.createVotes(activeKeypairs, block);
         if (library.base.consensus.hasEnoughVotes(localVotes)) {
-          self.processBlock(block, localVotes, true, function (err) {
+          self.processBlock(block, localVotes, true, true, function (err) {
             if (err) {
               return next("Failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
             }
