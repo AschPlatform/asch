@@ -521,7 +521,7 @@ private.hashsum = function (obj) {
 }
 
 Transport.prototype.broadcast = function (config, options, cb) {
-  config.limit = 15;
+  config.limit = 100;
   modules.peer.list(config, function (err, peers) {
     if (!err) {
       async.eachLimit(peers, 15, function (peer, cb) {
