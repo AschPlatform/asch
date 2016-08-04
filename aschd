@@ -61,7 +61,7 @@ function restart() {
 function rebuild() {
   echo "Downloading blockchain snapshot..."
   local snapshotName="blockchain-testnet-snapshot"
-  wget http://o7dyh3w0x.bkt.clouddn.com/$snapshotName.tar.gz
+  wget https://www.asch.so/downloads/$snapshotName.tar.gz
   stop
   tar zxf $snapshotName.tar.gz
   mv ./$snapshotName.db $PROG_DIR/blockchain.db
