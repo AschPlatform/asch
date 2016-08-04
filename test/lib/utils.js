@@ -44,8 +44,8 @@ describe('utils', function () {
       var trs = [];
       for (var i = 0; i < 100; ++i) {
         trs.push({
-          type: 1,
-          amount: 1,
+          type: randNumber(0, 8),
+          amount: randNumber(0, 10000),
           id: node.randomUsername()
         });
       }
