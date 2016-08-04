@@ -13,7 +13,7 @@ describe("POST /peer/transactions", function () {
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
-            .set("magic", "wrongmagic")
+            .set("magic", "wrongmag")
             .set("port",node.config.port)
             .send({
                 transaction: transaction
@@ -21,7 +21,7 @@ describe("POST /peer/transactions", function () {
             .expect("Content-Type", /json/)
             .expect(200)
             .end(function (err, res) {
-                // console.log(JSON.stringify(res.body));
+                console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
                 node.expect(res.body.expected).to.equal(node.config.magic);
                 done();

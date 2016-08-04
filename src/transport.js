@@ -62,13 +62,13 @@ private.attachApi = function () {
       required: ['magic', 'version']
     }, function (err, report, headers) {
       if (err) return next(err);
-      if (!report.isValid) return res.status(500).send({status: false, error: report.issues});
+      if (!report.isValid) return res.status(500).send({success: false, error: report.issues});
 
       if (req.headers['magic'] !== library.config.magic) {
         return res.status(500).send({
           success: false,
           error: "Request is made on the wrong network",
-          expectet: library.config.magic,
+          expected: library.config.magic,
           received: req.headers['magic']
         });
       }
