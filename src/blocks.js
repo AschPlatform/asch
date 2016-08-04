@@ -1276,7 +1276,7 @@ Blocks.prototype.onReceiveVotes = function (votes) {
       var block = library.base.consensus.getPendingBlock();
       var height = block.height;
       var id = block.id;
-      self.processBlock(block, totalVotes, true, function (err) {
+      self.processBlock(block, totalVotes, true, true, function (err) {
         if (err) {
           library.logger.error("Failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
           return cb();
