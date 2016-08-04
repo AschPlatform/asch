@@ -894,6 +894,7 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, save, cb) {
 	} catch (e) {
 		return setImmediate(cb, "Failed to normalize block: " + e.toString());
 	}
+  block.transactions = library.base.block.sortTransactions(block);
   self.verifyBlock(block, votes, function (err) {
     if (err) {
       return setImmediate(cb, "Failed to verify block: " + err);

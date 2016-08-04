@@ -52,8 +52,8 @@ var Daccount = {
 
 // Existing delegate account in blockchain
 var Eaccount = {
-  "address": "14626175350988391790",
-  "publicKey": "1e8072abb500740ab0c6d00cd8f4854dd19abe3939489b3b9ed0ccf62117814a",
+  "address": "6518038767050467653",
+  "publicKey": "8e5178db2bf10555cb57264c88833c48007100748d593570e013c9b15b17004e",
   "password": "silk palace wall awful village found text hammer move jazz squeeze express",
   "balance": 0,
   "delegateName": "asch_g1"
@@ -61,9 +61,9 @@ var Eaccount = {
 
 // Account info for genesis account - Needed for voting, registrations and Tx
 var Gaccount = {
-  "address": "8442940309030599015",
-  "publicKey": "da9a583ec5f2b4f24329185e7ff8d69d24e341e431610305ddccd3d6503035c8",
-  "password": "foil lizard oval bonus ability album legend duty side short beef ladder",
+  "address": "14762548536863074694",
+  "publicKey": "8065a105c785a08757727fded3a06f8f312e73ad40f1f3502e0232ea42e67efd",
+  "password": "someone manual strong movie roof episode eight spatial brown soldier soup motor",
   "balance": 10000000000000000
 };
 
