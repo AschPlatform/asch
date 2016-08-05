@@ -705,7 +705,7 @@ Blocks.prototype.verifyBlock = function (block, votes, cb) {
   var blockSlotNumber = slots.getSlotNumber(block.timestamp);
 	var lastBlockSlotNumber = slots.getSlotNumber(private.lastBlock.timestamp);
 
-	if (blockSlotNumber > slots.getSlotNumber() || blockSlotNumber <= lastBlockSlotNumber) {
+	if (blockSlotNumber > slots.getSlotNumber() + 1 || blockSlotNumber <= lastBlockSlotNumber) {
 		return cb("Can't verify block timestamp: " + block.id);
 	}
 
