@@ -342,9 +342,14 @@ private.loadUnconfirmedTransactions = function (cb) {
       }
     }
 
-
+    var trs = [];
+    for (var i = 0; i < transactions.length; ++i) {
+      if (!modules.transactions.hasUnconfirmedTransaction(transactions[i])) {
+        trs.push(transactions[i]);
+      }
+    }
     library.balancesSequence.add(function (cb) {
-      modules.transactions.receiveTransactions(transactions, cb);
+      modules.transactions.receiveTransactions(trs, cb);
     }, cb);
   });
 }
@@ -511,7 +516,7 @@ Loader.prototype.onPeerReady = function () {
   setImmediate(function nextLoadUnconfirmedTransactions() {
     if (!private.loaded || self.syncing()) return;
     private.loadUnconfirmedTransactions(function (err) {
-      err && library.logger.debug('loadUnconfirmedTransactions timer:', err);
+      err && library.logger.error('loadUnconfirmedTransactions timer:', err);
       setTimeout(nextLoadUnconfirmedTransactions, 14 * 1000)
     });
 
