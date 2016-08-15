@@ -76,6 +76,8 @@ function main() {
   appConfig.netVersion = 'localnet';
   appConfig.publicDir = path.join(baseDir, 'public', 'dist');
 
+  global.Config = appConfig;
+
   var genesisblockFile = path.join(baseDir, 'genesisBlock.json');
   if (program.genesisblock) {
     genesisblockFile = path.resolve(process.cwd(), program.genesisblock);
