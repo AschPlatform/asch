@@ -36,6 +36,10 @@ private.attachApi = function() {
     }
   });
 
+  router.get('/dapps/:id', function (req, res) {
+    res.render('dapps/' + req.params.id + '/index.html');
+  });
+
   router.use(function (req, res, next) {
     if (req.url.indexOf('/api/') == -1 && req.url.indexOf('/peer/') == -1) {
       return res.redirect('/');

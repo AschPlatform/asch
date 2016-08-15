@@ -1479,7 +1479,7 @@ private.createBasePathes = function (cb) {
       });
     },
     function (cb) {
-      var dappsPublic = path.join(private.appPath, 'public', 'dapps')
+      var dappsPublic = path.join(private.appPath, 'public', 'dist', 'dapps');
       fs.exists(dappsPublic, function (exists) {
         if (exists) {
           return setImmediate(cb);
@@ -1682,9 +1682,8 @@ private.installDApp = function (dapp, cb) {
 
 private.symlink = function (dapp, cb) {
   var dappPath = path.join(private.dappsPath, dapp.transactionId);
-  var dappPublicPath = path.join(dappPath, "public");
-  var dappPublicLink = path.join(private.appPath, "public", "dapps", dapp.transactionId);
-
+  var dappPublicPath = path.resolve(dappPath, "public");
+  var dappPublicLink = path.resolve(private.appPath, "public", "dist", "dapps", dapp.transactionId);
   fs.exists(dappPublicPath, function (exists) {
     if (exists) {
       fs.exists(dappPublicLink, function (exists) {
@@ -2150,7 +2149,8 @@ DApps.prototype.onBlockchainReady = function () {
     }
     library.logger.info("start to launch " + dappIds.length + " installed dapps");
     async.eachSeries(dappIds, function (id, next) {
-      private.launch({id: id}, function (err) {
+      var dappParams = library.config.dapp.params[id] || [];
+      private.launch({id: id, params: dappParams}, function (err) {
         if (err) {
           library.logger.error("Failed to launched dapp[" + id + "]", err);
         } else {
