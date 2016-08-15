@@ -3,7 +3,7 @@
   "address": "0.0.0.0",
   "publicIp": "",
   "logLevel": "log",
-  "magic": "8b77db62",
+  "magic": "5f5b3cf5",
   "api": {
     "access": {
       "whiteList": []
