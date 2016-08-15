@@ -141,6 +141,6 @@
   },
   "dapp": {
     "masterpassword": "ytfACAMegjrK",
-    "autoexec": []
+    "params": {}
   }
 }

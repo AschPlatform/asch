@@ -3,7 +3,7 @@
   "address": "0.0.0.0",
   "publicIp": "",
   "logLevel": "log",
-  "magic": "3f3e2749",
+  "magic": "8b77db62",
   "api": {
     "access": {
       "whiteList": []
@@ -40,6 +40,6 @@
   },
   "dapp": {
     "masterpassword": "",
-    "autoexec": []
+    "params": {}
   }
 }

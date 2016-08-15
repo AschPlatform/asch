@@ -45,6 +45,6 @@
   },
   "dapp": {
     "masterpassword": "",
-    "autoexec": []
+    "params": {}
   }
 }

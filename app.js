@@ -106,6 +106,25 @@ function main() {
     }
   }
 
+  if (appConfig.netVersion === 'mainnet') {
+    var seeds = [
+      757137132,
+      1815983436,
+      759980934,
+      759980683,
+      1807690192,
+      1758431015,
+      1760474482,
+      1760474149,
+      759110497,
+      757134616
+    ];
+    var ip = require('ip');
+    for (var i = 0; i < seeds.length; ++i) {
+      appConfig.peers.list.push({ip: ip.fromLong(seeds[i]), port: 80});
+    }
+  }
+
   if (program.log) {
     appConfig.logLevel = program.log;
   }
