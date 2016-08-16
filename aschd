@@ -64,6 +64,7 @@ function rebuild() {
   wget https://www.asch.so/downloads/$snapshotName.tar.gz
   stop
   tar zxf $snapshotName.tar.gz
+  rm $snapshotName.tar.gz
   mv ./$snapshotName.db $PROG_DIR/blockchain.db
   start
 }
