@@ -1065,6 +1065,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
         library.base.transaction.verify(transaction, sender, function (err) {
           if (err) {
             library.logger.error("Failed to verify transaction " + transaction.id, err);
+            modules.transactions.removeUnconfirmedTransaction(transaction.id);
           } else {
             ready.push(transaction);
           }
