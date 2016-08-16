@@ -16,6 +16,7 @@ function linuxBuild(netVersion) {
   var fullpath = path.join(__dirname, 'build', dir);
   var configFile = 'config-' + netVersion + '.json';
   var genesisBlockFile = 'genesisBlock-' + netVersion + '.json';
+  var snapshotName = 'blockchain-' + netVersion + '-snapshot';
   return gulp.src('app.js')
     .pipe(webpack({
       output: {
@@ -41,6 +42,8 @@ function linuxBuild(netVersion) {
       format('cp -r public/dist %s/public/', fullpath),
       format('cp `which node` %s/bin/', fullpath),
       format('cd %s && npm install --production', fullpath),
+      format('cd %s && wget https://www.asch.so/downloads/%s.tar.gz && tar zxf %s.tar.gz && mv %s.db blockchain.db && rm %s.*',
+        fullpath, snapshotName, snapshotName, snapshotName, snapshotName),
       format('cd %s/.. && tar zcf %s.tar.gz %s', fullpath, dir, dir)
     ]));
 }
