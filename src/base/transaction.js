@@ -547,7 +547,7 @@ Transaction.prototype.applyUnconfirmed = function (trs, sender, requester, cb) {
     private.types[trs.type].applyUnconfirmed.call(this, trs, sender, function (err) {
       if (err) {
         this.scope.account.merge(sender.address, {u_balance: amount}, function (err2) {
-          cb(err2);
+          cb(err2 || err);
         });
       } else {
         setImmediate(cb, err);

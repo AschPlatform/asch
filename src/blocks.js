@@ -846,51 +846,49 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, saveBlock, callb
             return next(null, sender);
           }
           modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
-            next(err, sender);
+            if (err && global.Config.netVersion === 'mainnet' &&
+                (block.height == 4659 || block.height == 7091 || block.height == 11920)) {
+              next(null, sender);
+            } else {
+              next(err, sender);
+            }
           });
+        },
+        function (sender, next) {
+          modules.transactions.apply(transaction, block, sender, next);
         }
       ], function (err) {
+        modules.transactions.removeUnconfirmedTransaction(transaction.id);
         if (err) {
-          library.logger.error("Failed to apply unconfirmed transaction: " + transaction.id + ", err: " + err);
-          process.exit(0);
+          var errorContext = {
+            transaction: transaction,
+            block: block,
+            error: err
+          };
+          library.logger.error("Failed to apply transaction", errorContext);
+          nextTr(err);
           return;
         }
         nextTr();
       });
-    }, function () {
-      async.eachSeries(sortedTrs, function (transaction, nextTr) {
-        async.waterfall([
-          function (next) {
-            modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, next);
-          },
-          function (sender, next) {
-            modules.transactions.apply(transaction, block, sender, next);
-          }
-        ], function (err) {
+    }, function (err) {
+      if (err) {
+        return done(err);
+      }
+      library.logger.debug("apply block ok");
+      if (saveBlock) {
+        private.saveBlock(block, function (err) {
           if (err) {
-            library.logger.error("Failed to apply transaction: " + transaction.id + ", err: " + err);
-            process.exit(0);
+            library.logger.error("Failed to save block: " + err);
+            process.exit(1);
             return;
           }
-          modules.transactions.removeUnconfirmedTransaction(transaction.id);
-          nextTr();
+          library.logger.debug("save block ok");
+          modules.round.tick(block, done);
         });
-      }, function () {
-        library.logger.debug("apply block ok");
-        if (saveBlock) {
-          private.saveBlock(block, function (err) {
-            if (err) {
-              library.logger.error("Failed to save block: " + err);
-              process.exit(1);
-              return;
-            }
-            library.logger.debug("save block ok");
-            modules.round.tick(block, done);
-          });
-        } else {
-           modules.round.tick(block, done);
-        }
-      });
+      } else {
+        modules.round.tick(block, done);
+      }
     });
 	}, function (err) {
     if (err) {
