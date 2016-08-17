@@ -848,34 +848,49 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, saveBlock, callb
           modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
             next(err, sender);
           });
-        },
-        function (sender, next) {
-          modules.transactions.apply(transaction, block, sender, next);
         }
       ], function (err) {
         if (err) {
-          library.logger.error("Failed to apply transaction: " + transaction.id + ", err: " + err);
+          library.logger.error("Failed to apply unconfirmed transaction: " + transaction.id + ", err: " + err);
           process.exit(0);
           return;
         }
-        modules.transactions.removeUnconfirmedTransaction(transaction.id);
         nextTr();
       });
     }, function () {
-      library.logger.debug("apply block ok");
-      if (saveBlock) {
-        private.saveBlock(block, function (err) {
+      async.eachSeries(sortedTrs, function (transaction, nextTr) {
+        async.waterfall([
+          function (next) {
+            modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, next);
+          },
+          function (sender, next) {
+            modules.transactions.apply(transaction, block, sender, next);
+          }
+        ], function (err) {
           if (err) {
-            library.logger.error("Failed to save block: " + err);
-            process.exit(1);
+            library.logger.error("Failed to apply transaction: " + transaction.id + ", err: " + err);
+            process.exit(0);
             return;
           }
-          library.logger.debug("save block ok");
-          modules.round.tick(block, done);
+          modules.transactions.removeUnconfirmedTransaction(transaction.id);
+          nextTr();
         });
-      } else {
-        modules.round.tick(block, done);
-      }
+      }, function () {
+        library.logger.debug("apply block ok");
+        if (saveBlock) {
+          private.saveBlock(block, function (err) {
+            if (err) {
+              library.logger.error("Failed to save block: " + err);
+              process.exit(1);
+              return;
+            }
+            library.logger.debug("save block ok");
+            modules.round.tick(block, done);
+          });
+        } else {
+           modules.round.tick(block, done);
+        }
+      });
     });
 	}, function (err) {
     if (err) {
