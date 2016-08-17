@@ -1007,6 +1007,10 @@ shared.getDelegates = function (req, cb) {
         }
       };
 
+      if (result.delegates.length > 0 && typeof result.delegates[0][result.orderBy] == 'undefined') {
+        result.orderBy = 'rate';
+      }
+
       if (["approval", "productivity", "rate", "vote", "missedblocks", "producedblocks", "fees", "rewards"].indexOf(result.orderBy) > - 1) {
         result.delegates = result.delegates.sort(compareNumber);
       } else {
