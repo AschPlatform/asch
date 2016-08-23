@@ -714,7 +714,7 @@ shared.addMultisignature = function (req, cb) {
       },
       min: {
         type: "integer",
-        minimum: 1,
+        minimum: 2,
         maximum: 16
       },
       lifetime: {
