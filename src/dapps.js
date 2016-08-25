@@ -1481,7 +1481,6 @@ private.createBasePathes = function (cb) {
     function (cb) {
       var dappsPublic = path.join(private.appPath, 'public', 'dist', 'dapps');
       fs.exists(dappsPublic, function (exists) {
-        console.log('exists ' + dappsPublic, exists);
         if (exists) {
           return setImmediate(cb);
         } else {
