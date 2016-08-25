@@ -721,9 +721,9 @@ function DApps(cb, scope) {
 
   private.attachApi();
 
-  fs.exists(path.join('.', 'public', 'dapps'), function (exists) {
+  fs.exists(path.join(library.config.publicDir, 'dapps'), function (exists) {
     if (exists) {
-      rmdir(path.join('.', 'public', 'dapps'), function (err) {
+      rmdir(path.join(library.config.publicDir, 'dapps'), function (err) {
         if (err) {
           library.logger.error(err);
         }
@@ -1459,16 +1459,16 @@ private.list = function (filter, cb) {
 
 private.createBasePathes = function (cb) {
   async.series([
-    function (cb) {
-      var iconsPath = path.join(library.config.publicDir, 'images', 'dapps');
-      fs.exists(iconsPath, function (exists) {
-        if (exists) {
-          return setImmediate(cb);
-        } else {
-          fs.mkdir(iconsPath, cb);
-        }
-      });
-    },
+    // function (cb) {
+    //   var iconsPath = path.join(library.config.publicDir, 'images', 'dapps');
+    //   fs.exists(iconsPath, function (exists) {
+    //     if (exists) {
+    //       return setImmediate(cb);
+    //     } else {
+    //       fs.mkdir(iconsPath, cb);
+    //     }
+    //   });
+    // },
     function (cb) {
       fs.exists(private.dappsPath, function (exists) {
         if (exists) {
@@ -1481,6 +1481,7 @@ private.createBasePathes = function (cb) {
     function (cb) {
       var dappsPublic = path.join(private.appPath, 'public', 'dist', 'dapps');
       fs.exists(dappsPublic, function (exists) {
+        console.log('exists ' + dappsPublic, exists);
         if (exists) {
           return setImmediate(cb);
         } else {
