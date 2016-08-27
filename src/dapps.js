@@ -907,12 +907,17 @@ private.attachApi = function () {
       if (err) return next(err);
       if (!report.isValid) return res.json({success: false, error: report.issues});
 
-      private.list(query, function (err, dapps) {
+      private.count(function (err, count) {
         if (err) {
-          return res.json({success: false, error: "Dapp not found"});
+          return res.json({success: false, error: "Failed to count dapps"});
         }
+        private.list(query, function (err, dapps) {
+          if (err) {
+            return res.json({ success: false, error: "Dapp not found" });
+          }
 
-        res.json({success: true, dapps: dapps});
+          res.json({ success: true, dapps: dapps, count: count});
+        });
       });
     });
   });
@@ -1370,6 +1375,16 @@ private.getByIds = function (ids, cb) {
     }
 
     return setImmediate(cb, null, rows);
+  });
+}
+
+private.count = function (cb) {
+  library.dbLite.query("SELECT count(*) FROM dapps", {"count": Number}, function(err, rows) {
+    if (err) {
+      return cb("Failed to count dapps");
+    } else {
+      return cb(null, { count: rows[0].count });
+    }
   });
 }
 
