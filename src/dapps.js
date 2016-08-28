@@ -1508,8 +1508,8 @@ private.createBasePathes = function (cb) {
   });
 }
 
-// private.installDependencies = function (dApp, cb) {
-//   var dappPath = path.join(private.dappsPath, dApp.transactionId);
+// private.installDependencies = function (dapp, cb) {
+//   var dappPath = path.join(private.dappsPath, dapp.transactionId);
 
 //   var packageJson = path.join(dappPath, "package.json");
 //   var config = null;
@@ -1517,7 +1517,7 @@ private.createBasePathes = function (cb) {
 //   try {
 //     config = JSON.parse(fs.readFileSync(packageJson));
 //   } catch (e) {
-//     return setImmediate(cb, "Failed to open package.json file for: " + dApp.transactionId);
+//     return setImmediate(cb, "Failed to open package.json file for: " + dapp.transactionId);
 //   }
 
 //   npm.load(config, function (err) {
@@ -1548,8 +1548,8 @@ private.getInstalledIds = function (cb) {
   });
 }
 
-private.removeDApp = function (dApp, cb) {
-  var dappPath = path.join(private.dappsPath, dApp.transactionId);
+private.removeDApp = function (dapp, cb) {
+  var dappPath = path.join(private.dappsPath, dapp.transactionId);
 
   function done(err) {
     if (err) {
@@ -1573,7 +1573,7 @@ private.removeDApp = function (dApp, cb) {
     },
     async.apply(private.readJson, path.join(dappPath, "blockchain.json")),
     function (blockchain, next) {
-      modules.sql.dropTables(dApp.transactionId, blockchain, next);
+      modules.sql.dropTables(dapp.transactionId, blockchain, next);
     }
   ], function (err) {
     done(err);
@@ -1862,8 +1862,8 @@ private.readJson = function (file, cb) {
   });
 }
 
-private.launchApp = function (dApp, params, cb) {
-  var dappPath = path.join(private.dappsPath, dApp.transactionId);
+private.launchApp = function (dapp, params, cb) {
+  var dappPath = path.join(private.dappsPath, dapp.transactionId);
   
   private.readJson(path.join(dappPath, "config.json"), function (err, dappConfig) {
     if (err) {
@@ -1877,24 +1877,24 @@ private.launchApp = function (dApp, params, cb) {
         modules.peer.addDapp({
           ip: ip.toLong(peer.ip),
           port: peer.port,
-          dappid: dApp.transactionId
+          dappid: dapp.transactionId
         }, cb);
       }, function (err) {
         if (err) {
           return setImmediate(cb, err);
         }
 
-        modules.sql.createTables(dApp.transactionId, blockchain, function (err) {
+        modules.sql.createTables(dapp.transactionId, blockchain, function (err) {
           if (err) {
             return setImmediate(cb, err);
           }
 
-          var sandbox = new Sandbox(path.join(dappPath, "index.js"), dApp.transactionId, params, private.apiHandler, true, library.logger);
-          private.sandboxes[dApp.transactionId] = sandbox;
+          var sandbox = new Sandbox(path.join(dappPath, "index.js"), dapp.transactionId, params, private.apiHandler, true, library.logger);
+          private.sandboxes[dapp.transactionId] = sandbox;
 
           sandbox.on("exit", function (code) {
-            library.logger.info("Dapp " + dApp.transactionId + " exited with code " + code);
-            private.stop(dApp, function (err) {
+            library.logger.info("Dapp " + dapp.transactionId + " exited with code " + code);
+            private.stop(dapp, function (err) {
               if (err) {
                 library.logger.error("Encountered error while stopping dapp: " + err);
               }
@@ -1902,8 +1902,8 @@ private.launchApp = function (dApp, params, cb) {
           });
 
           sandbox.on("error", function (err) {
-            library.logger.info("Encountered error in dapp " + dApp.transactionId + " " + err.toString());
-            private.stop(dApp, function (err) {
+            library.logger.info("Encountered error in dapp " + dapp.transactionId + " " + err.toString());
+            private.stop(dapp, function (err) {
               if (err) {
                 library.logger.error("Encountered error while stopping dapp: " + err);
               }
@@ -1919,8 +1919,8 @@ private.launchApp = function (dApp, params, cb) {
   });
 }
 
-private.stop = function (dApp, cb) {
-  var dappPublicLink = path.join(private.appPath, "public", "dapps", dApp.transactionId);
+private.stop = function (dapp, cb) {
+  var dappPublicLink = path.join(private.appPath, "public", "dapps", dapp.transactionId);
 
   async.series([
     function (cb) {
@@ -1933,16 +1933,16 @@ private.stop = function (dApp, cb) {
       });
     },
     function (cb) {
-      if (private.sandboxes[dApp.transactionId]) {
-        private.sandboxes[dApp.transactionId].exit();
+      if (private.sandboxes[dapp.transactionId]) {
+        private.sandboxes[dapp.transactionId].exit();
       }
 
-      delete private.sandboxes[dApp.transactionId];
+      delete private.sandboxes[dapp.transactionId];
 
       setImmediate(cb)
     },
     function (cb) {
-      delete private.routes[dApp.transactionId];
+      delete private.routes[dapp.transactionId];
       setImmediate(cb);
     }
   ], function (err) {
