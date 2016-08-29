@@ -430,7 +430,8 @@ private.loadBlockChain = function () {
           library.logger.info('Blocks ' + count);
 
           // Check if previous loading missed
-          if (reject || verify || count == 1) {
+          // if (reject || verify || count == 1) {
+          if (verify || count == 1) {
             load(count);
           } else {
             library.dbLite.query(
