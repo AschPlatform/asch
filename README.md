@@ -3,7 +3,7 @@
 ## System Dependency
 
 - nodejs v6.3.1+
-- npm 3.10.3 (not cnpm)
+- npm 3.10.3+ (not cnpm)
 - sqlite v3.8.2+
 
 ## Install node_modules
