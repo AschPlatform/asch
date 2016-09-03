@@ -1607,23 +1607,33 @@ private.downloadLink = function (dapp, dappPath, cb) {
         timeout: 30000
       });
 
+      var hasCallbacked = false;
+      var callback = function (err) {
+        if (!hasCallbacked) {
+          hasCallbacked = true;
+          if (err) {
+            fs.exists(tmpPath, function (exists) {
+              fs.unlink(tmpPath);
+            });
+          }
+          serialCb(err);
+        }
+      }
+
       download.on("response", function (response) {
         if (response.statusCode !== 200) {
-          return serialCb("Received bad response code: " + response.statusCode);
+          return callback("Faile to download dapp " + dapp.link + " with err code: " + response.statusCode);
         }
       });
 
       download.on("error", function (err) {
-        fs.exists(tmpPath, function (exists) {
-          fs.unlink(tmpPath);
-        });
-        return serialCb(err.message);
+        return callback("Failed to download dapp " + dapp.link + " with error: " + err.message);
       });
 
       download.pipe(file);
 
       file.on("finish", function () {
-        file.close(serialCb);
+        file.close(callback);
       });
     },
     decompressZip: function (serialCb) {
@@ -1633,7 +1643,7 @@ private.downloadLink = function (dapp, dappPath, cb) {
         fs.exists(tmpPath, function (exists) {
           fs.unlink(tmpPath);
         });
-        rmdir(dappPath);
+        rmdir(dappPath, function () {});
         serialCb("Failed to decompress zip file: " + err);
       });
 
@@ -1688,6 +1698,7 @@ private.installDApp = function (dapp, cb) {
   },
   function (err) {
     if (err) {
+      rmdir(dappPath, function () {});
       return setImmediate(cb, dapp.transactionId + " Installation failed: " + err);
     } else {
       return setImmediate(cb, null, dappPath);
