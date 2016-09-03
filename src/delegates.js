@@ -779,7 +779,7 @@ Delegates.prototype.getDelegates = function (query, cb) {
   modules.accounts.getAccounts({
     isDelegate: 1,
     sort: { "vote": -1, "publicKey": 1 }
-  }, ["username", "address", "publicKey", "vote", "missedblocks", "producedblocks", "fees", "rewards"], function (err, delegates) {
+  }, ["username", "address", "publicKey", "vote", "missedblocks", "producedblocks", "fees", "rewards", "balance"], function (err, delegates) {
     if (err) {
       return cb(err);
     }
@@ -1011,7 +1011,7 @@ shared.getDelegates = function (req, cb) {
         result.orderBy = 'rate';
       }
 
-      if (["approval", "productivity", "rate", "vote", "missedblocks", "producedblocks", "fees", "rewards"].indexOf(result.orderBy) > - 1) {
+      if (["approval", "productivity", "rate", "vote", "missedblocks", "producedblocks", "fees", "rewards", "balance"].indexOf(result.orderBy) > - 1) {
         result.delegates = result.delegates.sort(compareNumber);
       } else {
         result.delegates = result.delegates.sort(compareString);
