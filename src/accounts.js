@@ -199,47 +199,48 @@ private.attachApi = function () {
     });
   }
 
-  if (process.env.TOP && process.env.TOP.toUpperCase() == "TRUE") {
-    router.get('/top', function (req, res, next) {
-      req.sanitize(req.query, {
-        type: "object",
-        properties: {
-          limit: {
-            type: "integer",
-            minimum: 0,
-            maximum: 100
-          },
-          offset: {
-            type: "integer",
-            minimum: 0
-          }
+  router.get('/top', function (req, res, next) {
+    req.sanitize(req.query, {
+      type: "object",
+      properties: {
+        limit: {
+          type: "integer",
+          minimum: 0,
+          maximum: 100
+        },
+        offset: {
+          type: "integer",
+          minimum: 0
         }
-      }, function (err, report, query) {
-        if (err) return next(err);
-        if (!report.isValid) return res.json({success: false, error: report.issues});
-        self.getAccounts({
-          sort: {
-            balance: -1
-          },
-          offset: query.offset,
-          limit: query.limit
-        }, function (err, raw) {
-          if (err) {
-            return res.json({success: false, error: err.toString()});
+      }
+    }, function (err, report, query) {
+      if (err) return next(err);
+      if (!report.isValid) return res.json({ success: false, error: report.issues });
+      if (!query.limit) {
+        query.limit = 100;
+      }
+      self.getAccounts({
+        sort: {
+          balance: -1
+        },
+        offset: query.offset,
+        limit: query.limit
+      }, function (err, raw) {
+        if (err) {
+          return res.json({ success: false, error: err.toString() });
+        }
+        var accounts = raw.map(function (fullAccount) {
+          return {
+            address: fullAccount.address,
+            balance: fullAccount.balance,
+            publicKey: fullAccount.publicKey
           }
-          var accounts = raw.map(function (fullAccount) {
-            return {
-              address: fullAccount.address,
-              balance: fullAccount.balance,
-              publicKey: fullAccount.publicKey
-            }
-          });
+        });
 
-          res.json({success: true, accounts: accounts});
-        })
+        res.json({ success: true, accounts: accounts });
       })
-    });
-  }
+    })
+  });
 
   router.get('/count', function (req, res) {
     return res.json({success: true, count: Object.keys(private.accounts).length});
