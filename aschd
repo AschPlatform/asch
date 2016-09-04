@@ -119,9 +119,15 @@ function upgrade() {
   echo "Upgrade to $newVersion done."
 }
 
+function enable() {
+  local secret="$@"
+  local port=`read_port`
+  curl -k -H "Content-Type: application/json" -X POST -d '{"secret":"'"$secret"'"}' localhost:$port/api/delegates/forging/enable
+}
+
 function main() {
   export PATH=$PROG_DIR/bin:$PATH
-  eval $1
+  eval $@
 }
 
 main $@
