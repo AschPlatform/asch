@@ -59,8 +59,16 @@ gulp.task('linux-build-local', function () {
   return build('linux', 'localnet');
 });
 
+gulp.task('win64-build-test', function () {
+  return build('win64', 'testnet');
+});
+
 gulp.task('linux-build-test', function () {
   return build('linux', 'testnet');
+});
+
+gulp.task('win64-build-main', function () {
+  return build('win64', 'mainnet');
 });
 
 gulp.task('linux-build-main', function () {
