@@ -14,6 +14,5 @@ ssl/
 stacktrace*
 tmp
 build
-third_party
 *.pid
 public/dist

@@ -11,12 +11,27 @@ var package = require('./package');
 var format = util.format;
 var buildTime = moment().format('HH:mm:ss DD/MM/YYYY');
 
-function linuxBuild(netVersion) {
-  var dir = 'asch-linux-' + package.version + '-' + netVersion;
+function build(osVersion, netVersion) {
+  var dir = 'asch-' + osVersion + '-' + package.version + '-' + netVersion;
   var fullpath = path.join(__dirname, 'build', dir);
-  var configFile = 'config-' + netVersion + '.json';
-  var genesisBlockFile = 'genesisBlock-' + netVersion + '.json';
-  // var snapshotName = 'blockchain-' + netVersion + '-snapshot';
+  var cmds = [];
+  cmds.push(format('cd %s && mkdir public dapps tmp logs bin', fullpath));
+  cmds.push(format('cp -r package.json aschd init proto %s', fullpath));
+  if (netVersion != 'localnet') {
+    cmds.push(format('sed -i "s/testnet/%s/g" %s/aschd', netVersion, fullpath));
+    cmds.push(format('cp config-%s.json %s/config.json', netVersion, fullpath));
+    cmds.push(format('cp genesisBlock-%s.json %s/genesisBlock.json', netVersion, fullpath));
+  } else {
+    cmds.push(format('cp config.json %s/', fullpath));
+    cmds.push(format('cp genesisBlock.json %s/', fullpath));
+    cmds.push(format('cp third_party/sqlite3.exe %s/', fullpath));
+  }
+  if (osVersion == 'linux') {
+    cmds.push(format('cp `which node` %s/bin/', fullpath));
+  }
+  cmds.push(format('cp -r public/dist %s/public/', fullpath));
+  cmds.push(format('cd %s && npm install --production', fullpath));
+  cmds.push(format('cd %s/.. && tar zcf %s.tar.gz %s', fullpath, dir, dir));
   return gulp.src('app.js')
     .pipe(webpack({
       output: {
@@ -33,25 +48,21 @@ function linuxBuild(netVersion) {
     .pipe(replace('localnet', netVersion))
     .pipe(replace('development', buildTime))
     .pipe(gulp.dest(fullpath))
-    .pipe(shell([
-      format('cd %s && mkdir -p public dapps tmp logs bin', fullpath),
-      format('cp -r package.json aschd init proto %s', fullpath),
-      format('sed -i "s/testnet/%s/g" %s/aschd', netVersion, fullpath),
-      format('cp config-%s.json %s/config.json', netVersion, fullpath),
-      format('cp genesisBlock-%s.json %s/genesisBlock.json', netVersion, fullpath),
-      format('cp -r public/dist %s/public/', fullpath),
-      format('cp `which node` %s/bin/', fullpath),
-      format('cd %s && npm install --production', fullpath),
-      // format('cd %s && wget https://www.asch.so/downloads/%s.tar.gz && tar zxf %s.tar.gz && mv %s.db blockchain.db && rm %s.*',
-      //   fullpath, snapshotName, snapshotName, snapshotName, snapshotName),
-      format('cd %s/.. && tar zcf %s.tar.gz %s', fullpath, dir, dir)
-    ]));
+    .pipe(shell(cmds));
 }
 
+gulp.task('win64-build-local', function () {
+  return build('win64', 'localnet');
+});
+
+gulp.task('linux-build-local', function () {
+  return build('linux', 'localnet');
+});
+
 gulp.task('linux-build-test', function () {
-  return linuxBuild('testnet');
+  return build('linux', 'testnet');
 });
 
 gulp.task('linux-build-main', function () {
-  return linuxBuild('mainnet');
+  return build('linux', 'mainnet');
 });
