@@ -3,6 +3,7 @@ var Router = require('./utils/router.js');
 var ip = require("ip");
 var bignum = require('bignumber');
 var sandboxHelper = require('./utils/sandbox.js');
+var slots = require('./utils/slots.js');
 
 require('colors');
 
@@ -510,9 +511,15 @@ Loader.prototype.startSyncBlocks = function () {
 
 // Events
 Loader.prototype.onPeerReady = function () {
-  if (private.loaded) {
-    self.startSyncBlocks();
-  }
+  setImmediate(function nextSync() {
+    if (!private.loaded || self.syncing()) return;
+    var lastBlock = modules.blocks.getLastBlock();
+    var lastSlot = slots.getSlotNumber(lastBlock.timestamp);
+    if (slots.getNextSlot() - lastSlot >= 2) {
+      self.startSyncBlocks();
+    }
+    setTimeout(nextSync, 10 * 1000);
+  });
 
   setImmediate(function nextLoadUnconfirmedTransactions() {
     if (!private.loaded || self.syncing()) return;
