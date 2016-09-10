@@ -492,7 +492,7 @@ Loader.prototype.sandboxApi = function (call, args, cb) {
 
 Loader.prototype.startSyncBlocks = function () {
   library.logger.debug('startSyncBlocks enter');
-  if (private.isActive) return;
+  if (private.isActive || !private.loaded || self.syncing()) return;
   private.isActive = true;
   library.sequence.add(function syncBlocks (cb) {
     library.logger.debug('startSyncBlocks enter sequence');
@@ -512,7 +512,6 @@ Loader.prototype.startSyncBlocks = function () {
 // Events
 Loader.prototype.onPeerReady = function () {
   setImmediate(function nextSync() {
-    if (!private.loaded || self.syncing()) return;
     var lastBlock = modules.blocks.getLastBlock();
     var lastSlot = slots.getSlotNumber(lastBlock.timestamp);
     if (slots.getNextSlot() - lastSlot >= 2) {
