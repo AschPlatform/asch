@@ -15,7 +15,7 @@ function build(osVersion, netVersion) {
   var dir = 'asch-' + osVersion + '-' + package.version + '-' + netVersion;
   var fullpath = path.join(__dirname, 'build', dir);
   var cmds = [];
-  cmds.push(format('cd %s && mkdir public dapps tmp logs bin', fullpath));
+  cmds.push(format('cd %s && mkdir -p public dapps tmp logs bin', fullpath));
   cmds.push(format('cp -r package.json aschd init proto %s', fullpath));
   if (netVersion != 'localnet') {
     cmds.push(format('sed -i "s/testnet/%s/g" %s/aschd', netVersion, fullpath));

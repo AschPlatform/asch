@@ -87,8 +87,15 @@ private.attachApi = function () {
         peer.dappid = req.body.dappid;
       }
 
-      if (peer.port && peer.port > 0 && peer.port <= 65535 && peer.version == library.config.version && req.headers['magic'] == library.config.magic) {
-        modules.peer.update(peer);
+      if (peer.port && peer.port > 0 && peer.port <= 65535) {
+        if (modules.peer.isCompatible(peer.version)) {
+          peer.version && modules.peer.update(peer);
+        } else {
+          return res.status(500).send({
+            success: false,
+            error: "Version is not comtibleVersion"
+          });
+        }
       }
 
       next();
@@ -660,14 +667,18 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
     }
 
     var port = response.headers['port'];
-    if (port > 0 && port <= 65535 && response.headers['version'] == library.config.version) {
+    var version = response.headers['version'];
+    if (port > 0 && port <= 65535 && version == library.config.version) {
       modules.peer.update({
         ip: peer.ip,
         port: port,
         state: 2,
         os: response.headers['os'],
-        version: response.headers['version']
+        version: version
       });
+    } else if (!modules.peer.isCompatible(version)) {
+      library.logger.debug("Remove uncompatible peer " + peer.ip, version);
+      modules.peer.remove(peer.ip, port);
     }
 
     cb && cb(null, {body: body, peer: peer});

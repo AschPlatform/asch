@@ -31,7 +31,7 @@ function verifyGenesisBlock(scope, block) {
 function main() {
   process.stdin.resume();
 
-  var version = '1.1.0';
+  var version = '1.1.1';
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')
@@ -59,7 +59,7 @@ function main() {
     appConfigFile = path.resolve(process.cwd(), program.config);
   }
   var appConfig = JSON.parse(fs.readFileSync(appConfigFile, 'utf8'));
-  
+
   if (!appConfig.dapp.masterpassword) {
     var randomstring = require("randomstring");
     appConfig.dapp.masterpassword = randomstring.generate({

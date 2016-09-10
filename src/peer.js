@@ -102,7 +102,6 @@ private.updatePeerList = function (cb) {
           required: ['ip', 'port', 'state']
         }, function (err) {
           if (err) {
-            console.log(err, peer);
             return setImmediate(cb, "Invalid peer: " + err);
           }
 
@@ -113,6 +112,11 @@ private.updatePeerList = function (cb) {
           }
 
           if (ip.toLong("127.0.0.1") == peer.ip || peer.port == 0 || peer.port > 65535) {
+            return setImmediate(cb);
+          }
+
+          if (!self.isCompatible(peer.version)) {
+            library.logger.debug("Skip uncompatible peer " + peer.ip, peer.version);
             return setImmediate(cb);
           }
 
@@ -332,6 +336,31 @@ Peer.prototype.getVersion = function () {
     build: library.config.buildVersion,
     net: library.config.netVersion
   };
+}
+
+Peer.prototype.isCompatible = function (version) {
+  function toNumber (i) {
+    return Number(i);
+  }
+  var nums = version.split('.').map(toNumber);
+  if (nums.length != 3) {
+    return true;
+  }
+  var compatibleVersion = '0.0.0';
+  if (library.config.netVersion == 'testnet') {
+    compatibleVersion = '1.1.0';
+  } else if (library.config.netVersion == 'mainnet') {
+    compatibleVersion = '1.0.0';
+  }
+  var numsCompatible = compatibleVersion.split('.').map(toNumber);
+  for (var i = 0; i < nums.length; ++i) {
+    if (nums[i] < numsCompatible[i]) {
+      return false;
+    } else if (nums[i] > numsCompatible[i]) {
+      return true;
+    }
+  }
+  return true;
 }
 
 Peer.prototype.sandboxApi = function (call, args, cb) {
