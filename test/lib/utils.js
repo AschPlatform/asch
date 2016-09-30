@@ -3,6 +3,7 @@ var node = require("./../variables.js")
 describe('utils', function () {
   it('block reward', function (done) {
     var BlockStatus = require('../../src/utils/blockStatus.js');
+    global.Config = {netVersion: 'testnet'};
     var blockStatus = new BlockStatus();
     node.expect(blockStatus.calcMilestone(0)).to.equal(0);
     node.expect(blockStatus.calcMilestone(60480)).to.equal(0);
@@ -17,6 +18,15 @@ describe('utils', function () {
     node.expect(blockStatus.calcReward(60482)).to.equal(350000000);
     node.expect(blockStatus.calcReward(60483)).to.equal(350000000);
     node.expect(blockStatus.calcReward(3060480)).to.equal(300000000);
+
+    global.Config = {netVersion: 'mainnet'};
+    blockStatus = new BlockStatus();
+    node.expect(blockStatus.calcReward(0)).to.equal(0);
+    node.expect(blockStatus.calcReward(464499)).to.equal(0);
+    node.expect(blockStatus.calcReward(464500)).to.equal(350000000);
+    node.expect(blockStatus.calcReward(464501)).to.equal(350000000);
+    node.expect(blockStatus.calcReward(464502)).to.equal(350000000);
+    node.expect(blockStatus.calcReward(3464500)).to.equal(300000000);
 
     done();
   });
