@@ -181,7 +181,7 @@ Sql.prototype.dropTables = function (dappid, config, cb) {
   }
 
   async.eachSeries(tables, function (table, cb) {
-    if (table.type == "create") {
+    if (table.type == "table") {
       library.dbLite.query("DROP TABLE IF EXISTS " + table.name, function (err, rows) {
         setImmediate(cb, err);
       });
