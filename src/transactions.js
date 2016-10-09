@@ -15,7 +15,6 @@ var modules, library, self, private = {}, shared = {};
 private.hiddenTransactions = [];
 private.unconfirmedTransactions = [];
 private.unconfirmedTransactionsIdIndex = {};
-private.doubleSpendingTransactions = {};
 
 function Transfer() {
   this.create = function (data, trs) {
@@ -276,7 +275,7 @@ private.getById = function (id, cb) {
 private.addUnconfirmedTransaction = function (transaction, sender, cb) {
   self.applyUnconfirmed(transaction, sender, function (err) {
     if (err) {
-      self.addDoubleSpending(transaction);
+      self.removeUnconfirmedTransaction(transaction.id);
       return setImmediate(cb, err);
     }
 
@@ -292,10 +291,6 @@ private.addUnconfirmedTransaction = function (transaction, sender, cb) {
 Transactions.prototype.getUnconfirmedTransaction = function (id) {
   var index = private.unconfirmedTransactionsIdIndex[id];
   return private.unconfirmedTransactions[index];
-}
-
-Transactions.prototype.addDoubleSpending = function (transaction) {
-  private.doubleSpendingTransactions[transaction.id] = transaction;
 }
 
 Transactions.prototype.pushHiddenTransaction = function (transaction) {
@@ -344,7 +339,7 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
     return cb("No transaction to process!");
   }
   // Check transaction indexes
-  if (private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined || private.doubleSpendingTransactions[transaction.id]) {
+  if (private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined) {
     return cb("Transaction " + transaction.id + " already exists, ignoring...");
   }
 
@@ -405,13 +400,11 @@ Transactions.prototype.applyUnconfirmedList = function (ids, cb) {
     modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
       if (err) {
         self.removeUnconfirmedTransaction(id);
-        self.addDoubleSpending(transaction);
         return setImmediate(cb);
       }
       self.applyUnconfirmed(transaction, sender, function (err) {
         if (err) {
           self.removeUnconfirmedTransaction(id);
-          self.addDoubleSpending(transaction);
         }
         setImmediate(cb);
       });
