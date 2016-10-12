@@ -339,9 +339,6 @@ Peer.prototype.getVersion = function () {
 }
 
 Peer.prototype.isCompatible = function (version) {
-  function toNumber (i) {
-    return Number(i);
-  }
   var nums = version.split('.').map(toNumber);
   if (nums.length != 3) {
     return true;
@@ -352,7 +349,7 @@ Peer.prototype.isCompatible = function (version) {
   } else if (library.config.netVersion == 'mainnet') {
     compatibleVersion = '1.0.0';
   }
-  var numsCompatible = compatibleVersion.split('.').map(toNumber);
+  var numsCompatible = compatibleVersion.split('.').map(Number);
   for (var i = 0; i < nums.length; ++i) {
     if (nums[i] < numsCompatible[i]) {
       return false;
