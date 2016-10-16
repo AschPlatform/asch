@@ -41,6 +41,7 @@ node app.js --help
     -x, --peers [peers...]     Peers list
     -l, --log <level>          Log level
     -d, --daemon               Run asch node as daemon
+    -e, --execute <script>     Execute a script with all initialized modules
     --reindex                  Reindex blockchain
     --base <dir>               Base directory
 ```
