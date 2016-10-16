@@ -10,7 +10,7 @@ function BlockStatus() {
   ];
 
   var distance = 3000000, // Distance between each milestone
-      rewardOffset = 60480; // Start rewards at block (n)
+      rewardOffset = 1; // Start rewards at block (n)
 
   if (global.Config.netVersion === 'mainnet') {
     rewardOffset = 464500;

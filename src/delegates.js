@@ -19,6 +19,7 @@ var modules, library, self, private = {}, shared = {};
 private.loaded = false;
 private.blockStatus = new blockStatus();
 private.keypairs = {};
+private.forgingEanbled = true;
 
 function Delegate() {
   this.create = function (data, trs) {
@@ -284,25 +285,14 @@ private.attachApi = function () {
   });
 
   if (process.env.DEBUG) {
-    var tmpKepairs = {};
 
     router.get('/forging/disableAll', function (req, res) {
-      if (Object.keys(tmpKepairs).length != 0) {
-        return res.json({success: false});
-      }
-
-      tmpKepairs = private.keypairs;
-      private.keypairs = {};
+      self.disableForging();
       return res.json({success: true});
     });
 
     router.get('/forging/enableAll', function (req, res) {
-      if (Object.keys(tmpKepairs).length == 0) {
-        return res.json({success: false});
-      }
-
-      private.keypairs = tmpKepairs;
-      tmpKepairs = {};
+      self.enableForging();
       return res.json({success: true});
     });
   }
@@ -435,12 +425,6 @@ private.attachApi = function () {
     });
   });
 
-  /*router.map(private, {
-   "post /forging/enable": "enableForging",
-   "post /forging/disable": "disableForging",
-   "get /forging/status": "statusForging"
-   });*/
-
   library.network.app.use('/api/delegates', router);
   library.network.app.use(function (err, req, res, next) {
     if (!err) return next();
@@ -486,6 +470,10 @@ private.getBlockSlotData = function (slot, height, cb) {
 }
 
 private.loop = function (cb) {
+  if (!private.forgingEanbled) {
+    library.logger.trace('Loop:', 'forging disabled');
+    return setImmediate(cb);
+  }
   if (!Object.keys(private.keypairs).length) {
     library.logger.trace('Loop:', 'no delegates');
     return setImmediate(cb);
@@ -768,7 +756,7 @@ Delegates.prototype.validateBlockSlot = function (block, cb) {
       return cb();
     }
 
-    cb("Failed to verify slot");
+    cb("Failed to verify slot, expected delegate: " + delegateKey);
   });
 }
 
@@ -828,6 +816,14 @@ Delegates.prototype.getDelegates = function (query, cb) {
 
 Delegates.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
+}
+
+Delegates.prototype.enableForging = function () {
+  private.forgingEanbled = true;
+}
+
+Delegates.prototype.disableForging = function () {
+  private.forgingEanbled = false;
 }
 
 // Events
@@ -1069,18 +1065,6 @@ shared.getForgedByAccount = function (req, cb) {
       cb(null, {fees: account.fees, rewards: account.rewards, forged: account.fees + account.rewards});
     });
   });
-}
-
-private.enableForging = function (req, cb) {
-
-}
-
-private.disableForging = function (req, cb) {
-
-}
-
-private.statusForging = function (req, cb) {
-
 }
 
 shared.addDelegate = function (req, cb) {

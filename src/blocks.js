@@ -354,8 +354,9 @@ private.popLastBlock = function (oldLastBlock, callback) {
   });
 }
 
+// deprecated
 private.getIdSequence = function (height, cb) {
-  library.dbLite.query("SELECT s.height, group_concat(s.id) from ( " +
+  library.dbLite.query('SELECT s.height, group_concat(s.id) from ( ' +
     'SELECT id, max(height) as height ' +
     'FROM blocks ' +
     'group by (cast(height / $delegates as integer) + (case when height % $delegates > 0 then 1 else 0 end)) having height <= $height ' +
@@ -366,7 +367,7 @@ private.getIdSequence = function (height, cb) {
     'limit $limit ' +
     ') s', {
     'height': height,
-    'limit': 1000,
+    'limit': 2,
     'delegates': slots.delegates
   }, ['firstHeight', 'ids'], function (err, rows) {
     if (err || !rows.length) {
@@ -376,6 +377,20 @@ private.getIdSequence = function (height, cb) {
 
     cb(null, rows[0]);
   })
+}
+
+private.getIdSequence2 = function (height, cb) {
+  library.dbLite.query('SELECT s.height, group_concat(s.id) from ' + 
+    '(SELECT id, height from blocks order by height desc limit 5) s',
+    {'height': height},
+    ['firstHeight', 'ids'],
+    function (err, rows) {
+      if (err || !rows.length) {
+        cb(err ? err.toString() : "Can't get sequence before: " + height);
+        return;
+      }
+      cb(null, rows[0]);
+    });
 }
 
 private.readDbRows = function (rows) {
@@ -448,7 +463,7 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
     },
     function (next) {
       count++;
-      private.getIdSequence(lastBlockHeight, function (err, data) {
+      private.getIdSequence2(lastBlockHeight, function (err, data) {
         if (err) {
           return next(err)
         }
@@ -501,6 +516,10 @@ Blocks.prototype.count = function (cb) {
 
     cb(null, res);
   });
+}
+
+Blocks.prototype.getBlock = function (filter, cb) {
+  shared.getBlock({body: filter}, cb);
 }
 
 Blocks.prototype.loadBlocksData = function (filter, options, cb) {
@@ -903,10 +922,10 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, save, cb) {
     return setImmediate(cb, "Blockchain is loading");
   }
   try {
-		block = library.base.block.objectNormalize(block);
-	} catch (e) {
-		return setImmediate(cb, "Failed to normalize block: " + e.toString());
-	}
+    block = library.base.block.objectNormalize(block);
+  } catch (e) {
+    return setImmediate(cb, "Failed to normalize block: " + e.toString());
+  }
   block.transactions = library.base.block.sortTransactions(block);
   self.verifyBlock(block, votes, function (err) {
     if (err) {
@@ -966,6 +985,18 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, save, cb) {
 
 Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
   library.dbLite.query("DELETE FROM blocks WHERE height >= (SELECT height FROM blocks where id = $id)", {id: blockId}, cb);
+}
+
+Blocks.prototype.parseBlock = function (data) {
+  var blocks;
+  if (typeof data === "string") {
+    blocks = library.dbLite.parseCSV(data);
+  } else {
+    blocks = data;
+  }
+  blocks = blocks.map(library.dbLite.row2parsed, library.dbLite.parseFields(private.blocksDataFields));
+  blocks = private.readDbRows(blocks);
+  return blocks;
 }
 
 Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
@@ -1046,7 +1077,7 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 
   async.whilst(
     function () {
-      return !(block.height >= private.lastBlock.height)
+      return block.height < private.lastBlock.height
     },
     function (next) {
       blocks.unshift(private.lastBlock);

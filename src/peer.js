@@ -339,7 +339,7 @@ Peer.prototype.getVersion = function () {
 }
 
 Peer.prototype.isCompatible = function (version) {
-  var nums = version.split('.').map(toNumber);
+  var nums = version.split('.').map(Number);
   if (nums.length != 3) {
     return true;
   }

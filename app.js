@@ -42,6 +42,7 @@ function main() {
     .option('-x, --peers [peers...]', 'Peers list')
     .option('-l, --log <level>', 'Log level')
     .option('-d, --daemon', 'Run asch node as daemon')
+    .option('-e, --execute <script>', 'Execute a script with all initialized modules')
     .option('--reindex', 'Reindex blockchain')
     .option('--base <dir>', 'Base directory')
     .parse(process.argv);
@@ -73,7 +74,7 @@ function main() {
   appConfig.version = version;
   appConfig.baseDir = baseDir;
   appConfig.buildVersion = 'development';
-  appConfig.netVersion = 'localnet';
+  appConfig.netVersion = process.env.NET_VERSION || 'localnet';
   appConfig.publicDir = path.join(baseDir, 'public', 'dist');
 
   global.Config = appConfig;
@@ -168,6 +169,10 @@ function main() {
       return;
     }
     verifyGenesisBlock(scope, scope.genesisblock.block);
+
+    if (program.execute) {
+      require(path.resolve(program.execute))(scope);
+    }
 
     scope.bus.message("bind", scope.modules);
 
