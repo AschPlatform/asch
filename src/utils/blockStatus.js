@@ -54,35 +54,26 @@ function BlockStatus() {
         rewards   = [];
 
     var amount = 0, multiplier = 0;
-
+    height = height - rewardOffset + 1;
     for (var i = 0; i < milestones.length; i++) {
       if (milestone >= i) {
         multiplier = (milestones[i] / Math.pow(10,8));
 
-        if (height < rewardOffset) {
+        if (height <= 0) {
           break; // Rewards not started yet
         } else if (height < distance) {
           amount = height % distance; // Measure distance thus far
         } else {
           amount = distance; // Assign completed milestone
-          height -= distance; // Deduct from total height
-
-          // After last milestone
-          if (height > 0 && i == milestones.length - 1) {
-            var postHeight = rewardOffset - 1;
-
-            if (height >= postHeight) {
-              amount += (height - postHeight);
-            } else {
-              amount += (postHeight - height);
-            }
-          }
         }
-
         rewards.push([amount, multiplier]);
+        height -= distance; // Deduct from total height
       } else {
         break; // Milestone out of bounds
       }
+    }
+    if (height > 0) {
+      rewards.push([height, milestones[milestones.length - 1] / Math.pow(10, 8)]);
     }
 
     for (i = 0; i < rewards.length; i++) {
