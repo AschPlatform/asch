@@ -42,7 +42,6 @@ function main() {
     .option('-x, --peers [peers...]', 'Peers list')
     .option('-l, --log <level>', 'Log level')
     .option('-d, --daemon', 'Run asch node as daemon')
-    .option('-e, --execute <script>', 'Execute a script with all initialized modules')
     .option('--reindex', 'Reindex blockchain')
     .option('--base <dir>', 'Base directory')
     .parse(process.argv);
@@ -171,18 +170,19 @@ function main() {
     verifyGenesisBlock(scope, scope.genesisblock.block);
 
     if (program.execute) {
-      require(path.resolve(program.execute))(scope);
+      // only for debug use
+      // require(path.resolve(program.execute))(scope);
     }
 
-    scope.bus.message("bind", scope.modules);
+    scope.bus.message('bind', scope.modules);
 
-    scope.logger.info("Modules ready and launched");
+    scope.logger.info('Modules ready and launched');
     if (!scope.config.publicIp) {
-      scope.logger.warn("Failed to get public ip, block forging MAY not work!");
+      scope.logger.warn('Failed to get public ip, block forging MAY not work!');
     }
 
     process.once('cleanup', function () {
-      scope.logger.info("Cleaning up...");
+      scope.logger.info('Cleaning up...');
       async.eachSeries(scope.modules, function (module, cb) {
         if (typeof (module.cleanup) == 'function') {
           module.cleanup(cb);
@@ -193,7 +193,7 @@ function main() {
         if (err) {
           scope.logger.error('Error while cleaning up', err);
         } else {
-          scope.logger.info("Cleaned up successfully");
+          scope.logger.info('Cleaned up successfully');
         }
         if (fs.existsSync(pidFile)) {
           fs.unlinkSync(pidFile);
