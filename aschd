@@ -93,7 +93,6 @@ function configure() {
 }
 
 function upgrade() {
-  stop
   local latestName="asch-linux-latest-testnet"
   mkdir -p tmp
   wget https://www.asch.so/downloads/$latestName.tar.gz -O tmp/$latestName.tar.gz
@@ -107,6 +106,7 @@ function upgrade() {
   local extractedDir=`find tmp -maxdepth 1 -type d | grep asch |head -n 1`
   local currentVersion=`version`
   local newVersion=`$extractedDir/aschd version`
+  stop
   echo "Copying new files ..."
   for file in `ls $extractedDir`
   do
