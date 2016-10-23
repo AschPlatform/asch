@@ -40,7 +40,7 @@ function BlockStatus() {
   this.calcReward = function (height) {
     var height = parseHeight(height);
 
-    if (height < rewardOffset) {
+    if (height < rewardOffset || height <= 1) {
       return 0;
     } else {
       return milestones[this.calcMilestone(height)];
@@ -48,16 +48,20 @@ function BlockStatus() {
   };
 
   this.calcSupply = function (height) {
-    var height    = parseHeight(height),
-        milestone = this.calcMilestone(height),
-        supply    = constants.totalAmount / Math.pow(10,8),
-        rewards   = [];
+    var height = parseHeight(height);
+    height -= height % 101;
+    var milestone = this.calcMilestone(height);
+    var supply    = constants.totalAmount;
+    var rewards   = [];
 
+    if (height <= 0) {
+      return supply;
+    }
     var amount = 0, multiplier = 0;
     height = height - rewardOffset + 1;
     for (var i = 0; i < milestones.length; i++) {
       if (milestone >= i) {
-        multiplier = (milestones[i] / Math.pow(10,8));
+        multiplier = milestones[i];
 
         if (height <= 0) {
           break; // Rewards not started yet
@@ -73,7 +77,7 @@ function BlockStatus() {
       }
     }
     if (height > 0) {
-      rewards.push([height, milestones[milestones.length - 1] / Math.pow(10, 8)]);
+      rewards.push([height, milestones[milestones.length - 1]]);
     }
 
     for (i = 0; i < rewards.length; i++) {
@@ -81,7 +85,11 @@ function BlockStatus() {
       supply += reward[0] * reward[1];
     }
 
-    return supply * Math.pow(10,8);
+    if (rewardOffset <= 1) {
+      supply -= milestones[0];
+    }
+
+    return supply;
   };
 }
 

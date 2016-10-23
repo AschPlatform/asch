@@ -5,19 +5,31 @@ describe('utils', function () {
     var BlockStatus = require('../../src/utils/blockStatus.js');
     global.Config = {netVersion: 'testnet'};
     var blockStatus = new BlockStatus();
-    node.expect(blockStatus.calcMilestone(0)).to.equal(0);
+    node.expect(blockStatus.calcMilestone(1)).to.equal(0);
     node.expect(blockStatus.calcMilestone(60480)).to.equal(0);
     node.expect(blockStatus.calcMilestone(60481)).to.equal(0);
     node.expect(blockStatus.calcMilestone(60482)).to.equal(0);
     node.expect(blockStatus.calcMilestone(60483)).to.equal(0);
-    node.expect(blockStatus.calcMilestone(3060480)).to.equal(1);
+    node.expect(blockStatus.calcMilestone(2999999)).to.equal(0);
+    node.expect(blockStatus.calcMilestone(3000000)).to.equal(0);
+    node.expect(blockStatus.calcMilestone(3000001)).to.equal(1);
 
-    node.expect(blockStatus.calcReward(0)).to.equal(0);
+    node.expect(blockStatus.calcReward(1)).to.equal(0);
+    node.expect(blockStatus.calcReward(2)).to.equal(350000000);
     node.expect(blockStatus.calcReward(60480)).to.equal(350000000);
     node.expect(blockStatus.calcReward(60481)).to.equal(350000000);
     node.expect(blockStatus.calcReward(60482)).to.equal(350000000);
     node.expect(blockStatus.calcReward(60483)).to.equal(350000000);
-    node.expect(blockStatus.calcReward(3060480)).to.equal(300000000);
+    node.expect(blockStatus.calcReward(2999999)).to.equal(350000000);
+    node.expect(blockStatus.calcReward(3000000)).to.equal(350000000);
+    node.expect(blockStatus.calcReward(3000001)).to.equal(300000000);
+
+    node.expect(blockStatus.calcSupply(1)).to.equal(10000000000000000);
+    node.expect(blockStatus.calcSupply(2)).to.equal(10000000000000000);
+    node.expect(blockStatus.calcSupply(101)).to.equal(10000035000000000);
+    node.expect(blockStatus.calcSupply(102)).to.equal(10000035000000000);
+    node.expect(blockStatus.calcSupply(3000000)).to.equal(11049965350000000);
+    node.expect(blockStatus.calcSupply(3000003)).to.equal(11050000550000000);
 
     global.Config = {netVersion: 'mainnet'};
     blockStatus = new BlockStatus();
@@ -38,20 +50,24 @@ describe('utils', function () {
 
     node.expect(blockStatus.calcSupply(0)).to.equal(10000000000000000);
     node.expect(blockStatus.calcSupply(464499)).to.equal(10000000000000000);
-    node.expect(blockStatus.calcSupply(464500)).to.equal(10000000350000000);
-    node.expect(blockStatus.calcSupply(464501)).to.equal(10000000700000000);
-    node.expect(blockStatus.calcSupply(3464499)).to.equal(11050000000000000);
-    node.expect(blockStatus.calcSupply(3464500)).to.equal(11050000300000000);
-    node.expect(blockStatus.calcSupply(6464499)).to.equal(11950000000000000);
-    node.expect(blockStatus.calcSupply(6464500)).to.equal(11950000200000000);
-    node.expect(blockStatus.calcSupply(9464499)).to.equal(12550000000000000);
-    node.expect(blockStatus.calcSupply(9464500)).to.equal(12550000100000000);
-    node.expect(blockStatus.calcSupply(12464499)).to.equal(12850000000000000);
-    node.expect(blockStatus.calcSupply(12464500)).to.equal(12850000050000000);
-    node.expect(blockStatus.calcSupply(15464499)).to.equal(13000000000000000);
-    node.expect(blockStatus.calcSupply(15464500)).to.equal(13000000050000000);
-    node.expect(blockStatus.calcSupply(15464501)).to.equal(13000000100000000);
-    node.expect(blockStatus.calcSupply(18464501)).to.equal(13150000100000000);
+    node.expect(blockStatus.calcSupply(464500)).to.equal(10000000000000000);
+    node.expect(blockStatus.calcSupply(464501)).to.equal(10000000000000000);
+    node.expect(blockStatus.calcSupply(464600)).to.equal(10000035350000000);
+    node.expect(blockStatus.calcSupply(464601)).to.equal(10000035350000000);
+    node.expect(blockStatus.calcSupply(464700)).to.equal(10000035350000000);
+    node.expect(blockStatus.calcSupply(464701)).to.equal(10000070700000000);
+    node.expect(blockStatus.calcSupply(491077)).to.equal(10009297050000000);
+    node.expect(blockStatus.calcSupply(513236)).to.equal(10017038700000000);
+    node.expect(blockStatus.calcSupply(537943)).to.equal(10025699450000000);
+    node.expect(blockStatus.calcSupply(587374)).to.equal(10042985600000000);
+    node.expect(blockStatus.calcSupply(3464502)).to.equal(11050000900000000);
+    node.expect(blockStatus.calcSupply(6464505)).to.equal(11950001200000000);
+    node.expect(blockStatus.calcSupply(9464508)).to.equal(12550000900000000);
+    node.expect(blockStatus.calcSupply(12464511)).to.equal(12850000600000000);
+    node.expect(blockStatus.calcSupply(15464514)).to.equal(13000000750000000);
+    node.expect(blockStatus.calcSupply(15464515)).to.equal(13000000750000000);
+    node.expect(blockStatus.calcSupply(15464615)).to.equal(13000005800000000);
+    node.expect(blockStatus.calcSupply(18464517)).to.equal(13150000900000000);
 
     done();
   });
