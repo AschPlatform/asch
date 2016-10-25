@@ -34,16 +34,8 @@ function RoundChanges (round, back) {
   }
 
   this.at = function (index) {
-    var delegatesNumber;
-    if (round == 0) {
-      delegatesNumber = 1;
-    } else if (round == 1) {
-      delegatesNumber = slots.delegates - 1;
-    } else {
-      delegatesNumber = slots.delegates;
-    }
-    var fees = Math.floor(roundFees / delegatesNumber),
-        feesRemaining = roundFees - (fees * delegatesNumber),
+    var fees = Math.floor(roundFees / slots.delegates),
+        feesRemaining = roundFees - (fees * slots.delegates),
         rewards = parseInt(roundRewards[index]) || 0;
 
     return {
@@ -61,9 +53,6 @@ Round.prototype.loaded = function () {
 
 // Public methods
 Round.prototype.calc = function (height) {
-  if (height == 1) {
-    return 0;
-  }
   return Math.floor(height / slots.delegates) + (height % slots.delegates > 0 ? 1 : 0);
 }
 

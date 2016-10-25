@@ -949,6 +949,9 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, save, cb) {
         async.eachSeries(block.transactions, function (transaction, next) {
           async.waterfall([
             function (next) {
+              modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, next)
+            },
+            function (sender, next) {
               try {
                 transaction.id = library.base.transaction.getId(transaction);
               } catch (e) {
@@ -956,16 +959,23 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, save, cb) {
               }
               transaction.blockId = block.id;
 
-              library.dbLite.query("SELECT id FROM trs WHERE id=$id", { id: transaction.id }, ['id'], function (err, rows) {
-                if (err) {
-                  next("Failed to query transaction from db: " + err);
-                } else if (rows.length > 0) {
-                  modules.delegates.fork(block, 2);
-                  next("Transaction already exists: " + transaction.id);
-                } else {
-                  modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, next);
+              library.dbLite.query("SELECT id FROM trs WHERE id=$id or (recipientId=$address and timestamp=$timestamp)",
+                {
+                  id: transaction.id,
+                  address: sender.address,
+                  timestamp: transaction.timestamp
+                },
+                function (err, rows) {
+                  if (err) {
+                    next("Failed to query transaction from db: " + err);
+                  } else if (rows.length > 0) {
+                    modules.delegates.fork(block, 2);
+                    next("Transaction already exists: " + transaction.id);
+                  } else {
+                    next(null, sender);
+                  }
                 }
-              });
+              );
             },
             function (sender, next) {
               library.base.transaction.verify(transaction, sender, next);
