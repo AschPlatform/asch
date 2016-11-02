@@ -1095,8 +1095,9 @@ shared.putStorage = function (req, cb) {
       if (err) {
         return cb(err.toString());
       }
-
-      cb(null, { transactionId: transaction[0].id });
+      library.bus.once('newBlock', function () {
+        cb(null, { transactionId: transaction[0].id });
+      });
     });
   });
 }

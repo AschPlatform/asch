@@ -2,6 +2,7 @@ var path = require('path');
 var fs = require('fs');
 var os = require('os');
 var https = require('https');
+var EventEmitter = require('events');
 var async = require('async');
 var z_schema = require('z-schema');
 var ip = require('ip');
@@ -323,20 +324,22 @@ module.exports = function(options, done) {
 
     bus: function (cb) {
       var changeCase = require('change-case');
-      var bus = function () {
-        this.message = function () {
+
+      class Bus extends EventEmitter {
+        message() {
           var args = [];
           Array.prototype.push.apply(args, arguments);
           var topic = args.shift();
           modules.forEach(function (module) {
             var eventName = 'on' + changeCase.pascalCase(topic);
-            if (typeof(module[eventName]) == 'function') {
+            if (typeof (module[eventName]) == 'function') {
               module[eventName].apply(module[eventName], args);
             }
-          })
+          });
+          this.emit.apply(this, arguments);
         }
       }
-      cb(null, new bus)
+      cb(null, new Bus)
     },
 
     dbLite: function (cb) {
