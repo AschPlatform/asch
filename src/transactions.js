@@ -971,6 +971,11 @@ shared.putStorage = function (req, cb) {
         type: "string",
         minLength: 1,
         maxLength: 10
+      },
+      wait: {
+        type: "integer",
+        minimum: 0,
+        maximum: 6
       }
     },
     required: ["secret", "content"]
@@ -1095,9 +1100,18 @@ shared.putStorage = function (req, cb) {
       if (err) {
         return cb(err.toString());
       }
-      library.bus.once('newBlock', function () {
-        cb(null, { transactionId: transaction[0].id });
-      });
+      if (!body.wait) {
+        return cb(null, { transactionId: transaction[0].id });
+      }
+
+      var confirms = 0;
+      function onConfirmed() {
+        if (++confirms >= body.wait) {
+          library.bus.removeListener('newBlock', onConfirmed);
+          cb(null, { transactionId: transaction[0].id });
+        }
+      }
+      library.bus.on('newBlock', onConfirmed);
     });
   });
 }
