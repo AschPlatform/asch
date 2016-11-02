@@ -112,6 +112,11 @@ Protobuf.prototype.transactionStringToBytes = function (obj) {
       break;
     case TransactionTypes.OUT_TRANSFER:
       break;
+    case TransactionTypes.STORAGE:
+      if (obj.asset.storage) {
+        obj.asset.storage.content = new Buffer(obj.asset.storage.content, 'hex');
+      }
+      break;
     default:
       break;
   }
@@ -149,6 +154,10 @@ Protobuf.prototype.transactionBytesToString = function (obj) {
       break;
     case TransactionTypes.OUT_TRANSFER:
       break;
+    case TransactionTypes.STORAGE:
+      if (obj.asset.storage) {
+        obj.asset.storage.content = obj.asset.storage.content.toString('hex');
+      }
     default:
       break;
   }

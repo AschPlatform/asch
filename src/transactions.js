@@ -123,6 +123,112 @@ function Transfer() {
   }
 }
 
+function Storage() {
+  this.create = function (data, trs) {
+    trs.asset.storage = {
+      content: Buffer.isBuffer(data.content) ? data.content.toString('hex') : data.content
+    }
+
+    return trs;
+  }
+
+  this.calculateFee = function (trs, sender) {
+    var binary = Buffer.from(trs.asset.storage.content, 'hex');
+    return (Math.floor(binary.length / 200) + 1) * library.base.block.calculateFee();
+  }
+
+  this.verify = function (trs, sender, cb) {
+    if (!trs.asset.storage || !trs.asset.storage.content) {
+      return cb('Invalid transaction asset');
+    }
+    if (new Buffer(trs.asset.storage.content, 'hex').length > 2048) {
+      return cb('Invalid storage content size');
+    }
+
+    cb(null, trs);
+  }
+
+  this.process = function (trs, sender, cb) {
+    setImmediate(cb, null, trs);
+  }
+
+  this.getBytes = function (trs) {
+    return ByteBuffer.fromHex(trs.asset.storage.content).toBuffer();
+  }
+
+  this.apply = function (trs, block, sender, cb) {
+    setImmediate(cb);
+  }
+
+  this.undo = function (trs, block, sender, cb) {
+    setImmediate(cb);
+  }
+
+  this.applyUnconfirmed = function (trs, sender, cb) {
+    setImmediate(cb);
+  }
+
+  this.undoUnconfirmed = function (trs, sender, cb) {
+    setImmediate(cb);
+  }
+
+  this.objectNormalize = function (trs) {
+    var report = library.scheme.validate(trs.asset.storage, {
+      type: "object",
+      properties: {
+        content: {
+          type: "string",
+          format: "hex"
+        }
+      },
+      required: ['content']
+    });
+
+    if (!report) {
+      throw Error(report.getLastError());
+    }
+
+    return trs;
+  }
+
+  this.dbRead = function (raw) {
+    if (!raw.st_content) {
+      return null;
+    } else {
+      var storage = {
+        content: raw.st_content
+      }
+
+      return {storage: storage};
+    }
+  }
+
+  this.dbSave = function (trs, cb) {
+    try {
+      var content = new Buffer(trs.asset.storage.content, 'hex');
+    } catch (e) {
+      return cb(e.toString())
+    }
+
+    library.dbLite.query("INSERT INTO storages(transactionId, content) VALUES($transactionId, $content)", {
+      transactionId: trs.id,
+      content: content
+    }, cb);
+  }
+
+  this.ready = function (trs, sender) {
+    if (sender.multisignatures.length) {
+      if (!trs.signatures) {
+        return false;
+      }
+
+      return trs.signatures.length >= sender.multimin - 1;
+    } else {
+      return true;
+    }
+  }
+}
+
 // Constructor
 function Transactions(cb, scope) {
   library = scope;
@@ -132,6 +238,7 @@ function Transactions(cb, scope) {
   private.attachApi();
 
   library.base.transaction.attachAssetType(TransactionTypes.SEND, new Transfer());
+  library.base.transaction.attachAssetType(TransactionTypes.STORAGE, new Storage());
 
   setImmediate(cb, null, self);
 }
@@ -158,6 +265,33 @@ private.attachApi = function () {
   });
 
   library.network.app.use('/api/transactions', router);
+  library.network.app.use(function (err, req, res, next) {
+    if (!err) return next();
+    library.logger.error(req.url, err.toString());
+    res.status(500).send({success: false, error: err.toString()});
+  });
+
+  private.attachStorageApi();
+}
+
+private.attachStorageApi = function () {
+  var router = new Router();
+
+  router.use(function (req, res, next) {
+    if (modules) return next();
+    res.status(500).send({success: false, error: "Blockchain is loading"});
+  });
+
+  router.map(shared, {
+    "get /get": "getStorage",
+    "put /": "putStorage"
+  });
+
+  router.use(function (req, res, next) {
+    res.status(500).send({success: false, error: "API endpoint not found"});
+  });
+
+  library.network.app.use('/api/storages', router);
   library.network.app.use(function (err, req, res, next) {
     if (!err) return next();
     library.logger.error(req.url, err.toString());
@@ -806,6 +940,205 @@ shared.addTransactions = function (req, cb) {
 
       cb(null, {transactionId: transaction[0].id});
     });
+  });
+}
+
+shared.putStorage = function (req, cb) {
+  var body = req.body;
+  library.scheme.validate(body, {
+    type: "object",
+    properties: {
+      secret: {
+        type: "string",
+        minLength: 1,
+        maxLength: 100
+      },
+      secondSecret: {
+        type: "string",
+        minLength: 1,
+        maxLength: 100
+      },
+      multisigAccountPublicKey: {
+        type: "string",
+        format: "publicKey"
+      },
+      content: {
+        type: "string",
+        minLength: 1,
+        maxLength: 4096,
+      },
+      encode: {
+        type: "string",
+        minLength: 1,
+        maxLength: 10
+      }
+    },
+    required: ["secret", "content"]
+  }, function (err) {
+    if (err) {
+      return cb(err[0].message);
+    }
+    var encode = body.encode;
+    if (!encode) {
+      encode = 'raw';
+    }
+    if (encode != 'raw' && encode != 'base64' && encode != 'hex') {
+      return cb('Invalide content encode type');
+    }
+    var content;
+    if (encode != 'raw') {
+      try {
+        content = new Buffer(body.content, encode);
+      } catch (e) {
+        return cb('Invalid content format with encode type ' + encode);
+      }
+    } else {
+      content = new Buffer(body.content);
+    }
+
+    var hash = crypto.createHash('sha256').update(body.secret, 'utf8').digest();
+    var keypair = ed.MakeKeypair(hash);
+
+    library.balancesSequence.add(function (cb) {
+      if (body.multisigAccountPublicKey && body.multisigAccountPublicKey != keypair.publicKey.toString('hex')) {
+        modules.accounts.getAccount({ publicKey: body.multisigAccountPublicKey }, function (err, account) {
+          if (err) {
+            return cb(err.toString());
+          }
+
+          if (!account || !account.publicKey) {
+            return cb("Multisignature account not found");
+          }
+
+          if (!account.multisignatures || !account.multisignatures) {
+            return cb("Account does not have multisignatures enabled");
+          }
+
+          if (account.multisignatures.indexOf(keypair.publicKey.toString('hex')) < 0) {
+            return cb("Account does not belong to multisignature group");
+          }
+
+          modules.accounts.getAccount({ publicKey: keypair.publicKey }, function (err, requester) {
+            if (err) {
+              return cb(err.toString());
+            }
+
+            if (!requester || !requester.publicKey) {
+              return cb("Invalid requester");
+            }
+
+            if (requester.secondSignature && !body.secondSecret) {
+              return cb("Invalid second passphrase");
+            }
+
+            if (requester.publicKey == account.publicKey) {
+              return cb("Invalid requester");
+            }
+
+            var secondKeypair = null;
+
+            if (requester.secondSignature) {
+              var secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest();
+              secondKeypair = ed.MakeKeypair(secondHash);
+            }
+
+            try {
+              var transaction = library.base.transaction.create({
+                type: TransactionTypes.STORAGE,
+                sender: account,
+                keypair: keypair,
+                requester: keypair,
+                secondKeypair: secondKeypair,
+                content: content
+              });
+            } catch (e) {
+              return cb(e.toString());
+            }
+            modules.transactions.receiveTransactions([transaction], cb);
+          });
+        });
+      } else {
+        modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') }, function (err, account) {
+          if (err) {
+            return cb(err.toString());
+          }
+          if (!account || !account.publicKey) {
+            return cb("Account not found");
+          }
+
+          if (account.secondSignature && !body.secondSecret) {
+            return cb("Invalid second passphrase");
+          }
+
+          var secondKeypair = null;
+
+          if (account.secondSignature) {
+            var secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest();
+            secondKeypair = ed.MakeKeypair(secondHash);
+          }
+
+          try {
+            var transaction = library.base.transaction.create({
+              type: TransactionTypes.STORAGE,
+              sender: account,
+              keypair: keypair,
+              secondKeypair: secondKeypair,
+              content: content
+            });
+          } catch (e) {
+            return cb(e.toString());
+          }
+          modules.transactions.receiveTransactions([transaction], cb);
+        });
+      }
+    }, function (err, transaction) {
+      if (err) {
+        return cb(err.toString());
+      }
+
+      cb(null, { transactionId: transaction[0].id });
+    });
+  });
+}
+
+shared.getStorage = function (req, cb) {
+  var query = req.body;
+  library.scheme.validate(query, {
+    type: 'object',
+    properties: {
+      id: {
+        type: 'string',
+        minLength: 1
+      }
+    },
+    required: ['id']
+  }, function (err) {
+    if (err) {
+      return cb(err[0].message);
+    }
+
+    library.dbLite.query("select t.id, b.height, t.blockId, t.type, t.timestamp, lower(hex(t.senderPublicKey)), " +
+      "t.senderId, t.recipientId, t.amount, t.fee, lower(hex(t.signature)), lower(hex(t.signSignature)), " +
+      "lower(hex(st.content)), " +
+      "(select max(height) + 1 from blocks) - b.height " +
+      "from trs t " +
+      "inner join blocks b on t.blockId = b.id " +
+      "inner join storages st on st.transactionId = t.id " +
+      "where t.id = $id",
+      { id: query.id },
+      [
+        't_id', 'b_height', 't_blockId', 't_type', 't_timestamp', 't_senderPublicKey',
+        't_senderId', 't_recipientId', 't_amount', 't_fee', 't_signature', 't_signSignature',
+        'st_content', 'confirmations'
+      ],
+      function (err, rows) {
+        if (err || !rows.length) {
+          return cb(err || "Can't find transaction: " + query.id);
+        }
+
+        var transacton = library.base.transaction.dbRead(rows[0]);
+        cb(null, transacton);
+      });
   });
 }
 

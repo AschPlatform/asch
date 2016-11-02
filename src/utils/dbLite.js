@@ -22,6 +22,7 @@ module.exports.connect = function (connectString, cb) {
     "CREATE TABLE IF NOT EXISTS outtransfer(transactionId VARCHAR(20) NOT NULL, dappId VARCHAR(20) NOT NULL, outTransactionId VARCHAR(20) NOT NULL UNIQUE, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
     "CREATE TABLE IF NOT EXISTS peers (id INTEGER NOT NULL PRIMARY KEY, ip INTEGER NOT NULL, port TINYINT NOT NULL, state TINYINT NOT NULL, os VARCHAR(64), version VARCHAR(11), clock INT)",
     "CREATE TABLE IF NOT EXISTS peers_dapp (peerId INT NOT NULL, dappid VARCHAR(20) NOT NULL, FOREIGN KEY(peerId) REFERENCES peers(id) ON DELETE CASCADE)",
+    "CREATE TABLE IF NOT EXISTS storages(content VARBINARY(2048), transactionId VARCHAR(20) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
     // Indexes
     "CREATE UNIQUE INDEX IF NOT EXISTS blocks_height ON blocks(height)",
     "CREATE UNIQUE INDEX IF NOT EXISTS blocks_previousBlock ON blocks(previousBlock)",
@@ -46,6 +47,7 @@ module.exports.connect = function (connectString, cb) {
     "CREATE INDEX IF NOT EXISTS multisignatures_trs_id ON multisignatures(transactionId)",
     "CREATE INDEX IF NOT EXISTS dapps_trs_id ON dapps(transactionId)",
     "CREATE INDEX IF NOT EXISTS dapps_name ON dapps(name)",
+    "CREATE INDEX IF NOT EXISTS storages_trs_id ON storages(transactionId)",
     "PRAGMA foreign_keys=ON",
     "PRAGMA synchronous=OFF",
     "PRAGMA journal_mode=MEMORY",

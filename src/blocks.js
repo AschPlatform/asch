@@ -63,7 +63,8 @@ private.blocksDataFields = {
   'ot_dappId': String,
   'ot_outTransactionId': String,
   't_requesterPublicKey': String,
-  't_signatures': String
+  't_signatures': String,
+  'st_content': String,
 };
 // @formatter:on
 private.loaded = false;
@@ -581,7 +582,8 @@ Blocks.prototype.loadBlocksData = function (filter, options, cb) {
         "dapp.name, dapp.description, dapp.tags, dapp.type, dapp.link, dapp.category, dapp.icon, " +
         "it.dappId, " +
         "ot.dappId, ot.outTransactionId, " +
-        "lower(hex(t.requesterPublicKey)), t.signatures " +
+        "lower(hex(t.requesterPublicKey)), t.signatures, " +
+        "lower(hex(st.content)) " +
         "FROM blocks b " +
         "left outer join trs as t on t.blockId=b.id " +
         "left outer join delegates as d on d.transactionId=t.id " +
@@ -591,6 +593,7 @@ Blocks.prototype.loadBlocksData = function (filter, options, cb) {
         "left outer join dapps as dapp on dapp.transactionId=t.id " +
         "left outer join intransfer it on it.transactionId=t.id " +
         "left outer join outtransfer ot on ot.transactionId=t.id " +
+        "left outer join storages st on st.transactionId=t.id " +
         (filter.id || filter.lastId ? "where " : "") + " " +
         (filter.id ? " b.id = $id " : "") + (filter.id && filter.lastId ? " and " : "") + (filter.lastId ? " b.height > $height and b.height < $limit " : "") +
         limitPart +
@@ -632,7 +635,8 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
       "dapp.name, dapp.description, dapp.tags, dapp.type, dapp.link, dapp.category, dapp.icon, " +
       "it.dappId, " +
       "ot.dappId, ot.outTransactionId, " +
-      "lower(hex(t.requesterPublicKey)), t.signatures " +
+      "lower(hex(t.requesterPublicKey)), t.signatures, " +
+      "lower(hex(st.content)) " +
       "FROM blocks b " +
       "left outer join trs as t on t.blockId=b.id " +
       "left outer join delegates as d on d.transactionId=t.id " +
@@ -642,6 +646,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
       "left outer join dapps as dapp on dapp.transactionId=t.id " +
       "left outer join intransfer it on it.transactionId=t.id " +
       "left outer join outtransfer ot on ot.transactionId=t.id " +
+      "left outer join storages st on st.transactionId=t.id " +
       "where b.height >= $offset and b.height < $limit " +
       "ORDER BY b.height, t.rowid" +
       "", params, private.blocksDataFields, function (err, rows) {

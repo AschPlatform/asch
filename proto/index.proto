@@ -43,6 +43,7 @@ message Asset {
     AssetDApp dapp = 6;
     AssetInTransfer inTransfer = 7;
     AssetOutTransfer outTransfer = 8;
+    AssetStorage storage = 9;
   }
 }
 
@@ -85,6 +86,10 @@ message AssetInTransfer {
 message AssetOutTransfer {
   required string dappId = 1;
   required string transactionId = 2;
+}
+
+message AssetStorage {
+  required bytes content = 1;
 }
 
 message BlockPropose {
