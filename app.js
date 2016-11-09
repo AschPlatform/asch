@@ -42,6 +42,7 @@ function main() {
     .option('-x, --peers [peers...]', 'Peers list')
     .option('-l, --log <level>', 'Log level')
     .option('-d, --daemon', 'Run asch node as daemon')
+    .option('-e, --execute <path>', 'exe')
     .option('--reindex', 'Reindex blockchain')
     .option('--base <dir>', 'Base directory')
     .parse(process.argv);
@@ -171,7 +172,7 @@ function main() {
 
     if (program.execute) {
       // only for debug use
-      // require(path.resolve(program.execute))(scope);
+      require(path.resolve(program.execute))(scope);
     }
 
     scope.bus.message('bind', scope.modules);
