@@ -172,7 +172,7 @@ function main() {
 
     if (program.execute) {
       // only for debug use
-      require(path.resolve(program.execute))(scope);
+      // require(path.resolve(program.execute))(scope);
     }
 
     scope.bus.message('bind', scope.modules);
