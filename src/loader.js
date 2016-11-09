@@ -109,11 +109,11 @@ private.findUpdate = function (lastBlock, peer, cb) {
             var currentRound = modules.round.calc(lastBlock.height);
             var backRound = modules.round.calc(commonBlock.height);
             var backHeight = commonBlock.height;
-            if (currentRound != backRound) {
+            if (currentRound != backRound || lastBlock.height % 101 === 0) {
               if (backRound == 1) {
                 backHeight = 1;
               } else {
-                backHeight = backHeight - backHeight % 101 - 101;
+                backHeight = backHeight - backHeight % 101;
               }
               modules.blocks.getBlock({height: backHeight}, function (err, result) {
                 if (result && result.block) {
