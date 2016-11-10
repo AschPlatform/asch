@@ -64,14 +64,7 @@ function restart() {
 }
 
 function rebuild() {
-  echo "Downloading blockchain snapshot..."
-  local snapshotName="blockchain-testnet-snapshot"
-  wget https://www.asch.so/downloads/$snapshotName.tar.gz
-  stop
-  tar zxf $snapshotName.tar.gz
-  rm $snapshotName.tar.gz
-  mv ./$snapshotName.db $PROG_DIR/blockchain.db
-  start
+  cd $PROG_DIR && curl -sL http://www.asch.so/downloads/rebuild-testnet.sh | bash
 }
 
 function reindex() {
@@ -98,30 +91,7 @@ function configure() {
 }
 
 function upgrade() {
-  local latestName="asch-linux-latest-testnet"
-  mkdir -p tmp
-  wget https://www.asch.so/downloads/$latestName.tar.gz -O tmp/$latestName.tar.gz
-  if [ $? -ne 0 ]; then
-    rm -f tmp/$latestName.tar.gz
-    echo "Failed to download the latest version!"
-    exit 1
-  fi
-  echo "Extracting new package ..."
-  tar zxf tmp/$latestName.tar.gz -C tmp/
-  local extractedDir=`find tmp -maxdepth 1 -type d | grep asch |head -n 1`
-  local currentVersion=`version`
-  local newVersion=`$extractedDir/aschd version`
-  stop
-  echo "Copying new files ..."
-  for file in `ls $extractedDir`
-  do
-    if [ "$file" != "config.json" -a "$file" != "blockchain.db" ]; then
-      echo "copy $extractedDir/$file ..."
-      cp -r $extractedDir/$file $PROG_DIR/
-    fi
-  done
-  rm -rf $extractedDir tmp/$latestName.tar.gz
-  echo "Upgrade to $newVersion done."
+  cd $PROG_DIR && curl -sL http://www.asch.so/downloads/upgrade-testnet.sh | bash
 }
 
 function enable() {
@@ -132,7 +102,12 @@ function enable() {
 
 function main() {
   export PATH=$PROG_DIR/bin:$PATH
-  eval $@
+  local cmdType=`type -t $1`
+  if [ $cmdType == "function" ]; then
+    eval $@
+  else
+    echo "Command not supported"
+  fi
 }
 
 main $@

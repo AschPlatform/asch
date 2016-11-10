@@ -426,6 +426,11 @@ shared.pending = function (req, cb) {
     }
 
     var transactions = modules.transactions.getUnconfirmedTransactionList();
+    if (query.isOutTransfer) {
+      transactions = transactions.filter(function (item) {
+        return item.type == TransactionTypes.OUT_TRANSFER;
+      });
+    }
 
     var pendings = [];
     async.eachSeries(transactions, function (item, cb) {

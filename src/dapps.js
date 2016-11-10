@@ -31,6 +31,7 @@ private.sandboxes = {};
 private.dappready = {};
 private.routes = {};
 private.unconfirmedOutTansfers = {};
+private.defaultRouteId = null;
 
 function OutTransfer() {
   this.create = function (data, trs) {
@@ -1775,7 +1776,10 @@ private.dappRoutes = function (dapp, cb) {
             });
           }
         });
-
+        if (!private.defaultRouteId) {
+          private.defaultRouteId = dapp.transactionId;
+          library.network.app.use('/api/dapps/default/api/', private.routes[dapp.transactionId]);
+        }
         library.network.app.use('/api/dapps/' + dapp.transactionId + '/api/', private.routes[dapp.transactionId]);
         library.network.app.use(function (err, req, res, next) {
           if (!err) return next();
