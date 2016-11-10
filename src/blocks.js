@@ -959,7 +959,7 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, save, cb) {
               }
               transaction.blockId = block.id;
 
-              library.dbLite.query("SELECT id FROM trs WHERE id=$id or (recipientId=$address and timestamp=$timestamp)",
+              library.dbLite.query("SELECT id FROM trs WHERE id=$id; SELECT id FROM trs WHERE (senderId=$address and timestamp=$timestamp) limit 1;",
                 {
                   id: transaction.id,
                   address: sender.address,
