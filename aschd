@@ -21,7 +21,6 @@ function status() {
 
 function start() {
   res=`cat /etc/ntp.conf  | egrep -v '#' | egrep 'pool.ntp.org'`
-  echo $res
   if [ "$res" != "server pool.ntp.org prefer" ];then
     configure
   fi
