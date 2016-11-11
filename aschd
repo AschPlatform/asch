@@ -66,11 +66,6 @@ function rebuild() {
   cd $PROG_DIR && curl -sL http://www.asch.so/downloads/rebuild-testnet.sh | bash
 }
 
-function reindex() {
-  stop
-  start --reindex
-}
-
 function version() {
   node $PROG_DIR/app.js --version
 }
