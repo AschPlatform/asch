@@ -8,7 +8,11 @@ function map(root, config) {
       throw Error("wrong map config");
     }
     router[route[0]](route[1], function (req, res, next) {
-      root[config[params]]({"body": route[0] == "get" ? req.query : req.body}, function (err, response) {
+      var reqParams = {
+        body: route[0] == "get" ? req.query : req.body,
+        params: req.params
+      }
+      root[config[params]](reqParams, function (err, response) {
         if (err) {
           res.json({"success": false, "error": err});
         } else {
