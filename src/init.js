@@ -395,7 +395,7 @@ module.exports = function(options, done) {
 
           d.run(function () {
             scope.logger.debug('Loading module', name)
-            var Klass = require('./' + name);
+            var Klass = require('./core/' + name);
             var obj = new Klass(cb, scope)
             modules.push(obj);
           });
