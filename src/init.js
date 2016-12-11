@@ -343,7 +343,7 @@ module.exports = function(options, done) {
     },
 
     dbLite: function (cb) {
-      var dbLite = require('./utils/dbLite.js');
+      var dbLite = require('./utils/dblite-helper.js');
       dbLite.connect(dbFile, cb);
     },
 

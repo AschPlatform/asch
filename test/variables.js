@@ -8,8 +8,8 @@ var supertest = require("supertest");
 var async = require("async");
 var request = require("request");
 
-var DappType = require("../src/utils/dappTypes.js");
-var DappCategory = require("../src/utils/dappCategory.js");
+var DappType = require("../src/utils/dapp-types.js");
+var DappCategory = require("../src/utils/dapp-category.js");
 var TxTypes = require("../src/utils/transaction-types.js");
 
 // Node configuration
