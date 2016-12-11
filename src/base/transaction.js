@@ -456,23 +456,8 @@ Transaction.prototype.apply = function (trs, block, sender, cb) {
     blockId: block.id,
     round: calc(block.height)
   }, function (err, sender) {
-    if (err) {
-      return cb(err);
-    }
-
-    private.types[trs.type].apply.call(this, trs, block, sender, function (err) {
-      if (err) {
-        this.scope.account.merge(sender.address, {
-          balance: amount,
-          blockId: block.id,
-          round: calc(block.height)
-        }, function (err) {
-          cb(err);
-        });
-      } else {
-        setImmediate(cb);
-      }
-    }.bind(this));
+    if (err) return cb(err);
+    private.types[trs.type].apply.call(this, trs, block, sender, cb);
   }.bind(this));
 }
 
@@ -488,23 +473,8 @@ Transaction.prototype.undo = function (trs, block, sender, cb) {
     blockId: block.id,
     round: calc(block.height)
   }, function (err, sender) {
-    if (err) {
-      return cb(err);
-    }
-
-    private.types[trs.type].undo.call(this, trs, block, sender, function (err) {
-      if (err) {
-        this.scope.account.merge(sender.address, {
-          balance: amount,
-          blockId: block.id,
-          round: calc(block.height)
-        }, function (err) {
-          cb(err);
-        });
-      } else {
-        setImmediate(cb);
-      }
-    }.bind(this));
+    if (err) return cb(err);
+    private.types[trs.type].undo.call(this, trs, block, sender, cb);
   }.bind(this));
 }
 
@@ -540,19 +510,8 @@ Transaction.prototype.applyUnconfirmed = function (trs, sender, requester, cb) {
   }
 
   this.scope.account.merge(sender.address, {u_balance: -amount}, function (err, sender) {
-    if (err) {
-      return cb(err);
-    }
-
-    private.types[trs.type].applyUnconfirmed.call(this, trs, sender, function (err) {
-      if (err) {
-        this.scope.account.merge(sender.address, {u_balance: amount}, function (err2) {
-          cb(err2 || err);
-        });
-      } else {
-        setImmediate(cb, err);
-      }
-    }.bind(this));
+    if (err) return cb(err);
+    private.types[trs.type].applyUnconfirmed.call(this, trs, sender, cb);
   }.bind(this));
 }
 
@@ -564,19 +523,8 @@ Transaction.prototype.undoUnconfirmed = function (trs, sender, cb) {
   var amount = trs.amount + trs.fee;
 
   this.scope.account.merge(sender.address, {u_balance: amount}, function (err, sender) {
-    if (err) {
-      return cb(err);
-    }
-
-    private.types[trs.type].undoUnconfirmed.call(this, trs, sender, function (err) {
-      if (err) {
-        this.scope.account.merge(sender.address, {u_balance: -amount}, function (err) {
-          cb(err);
-        });
-      } else {
-        setImmediate(cb, err);
-      }
-    }.bind(this));
+    if (err) return cb(err);
+    private.types[trs.type].undoUnconfirmed.call(this, trs, sender, cb);
   }.bind(this));
 }
 
