@@ -5,7 +5,7 @@ var ed = require('ed25519');
 var bignum = require('bignumber');
 var Router = require('../utils/router.js');
 var slots = require('../utils/slots.js');
-var blockStatus = require("../utils/blockStatus.js");
+var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
 var TransactionTypes = require('../utils/transaction-types.js');
 var sandboxHelper = require('../utils/sandbox.js');
@@ -16,7 +16,7 @@ require('array.prototype.find'); // Old node fix
 var modules, library, self, private = {}, shared = {};
 
 private.loaded = false;
-private.blockStatus = new blockStatus();
+private.blockStatus = new BlockStatus();
 private.keypairs = {};
 private.forgingEanbled = true;
 

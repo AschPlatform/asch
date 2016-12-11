@@ -2,7 +2,7 @@ var node = require("./../variables.js")
 
 describe('utils', function () {
   it('test block reward', function (done) {
-    var BlockStatus = require('../../src/utils/blockStatus.js');
+    var BlockStatus = require('../../src/utils/block-status.js');
     global.Config = {netVersion: 'testnet'};
     var blockStatus = new BlockStatus();
     node.expect(blockStatus.calcMilestone(1)).to.equal(0);

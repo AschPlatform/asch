@@ -2,7 +2,7 @@ var crypto = require('crypto');
 var ByteBuffer = require("bytebuffer");
 var ed = require('ed25519');
 var bignum = require('bignumber');
-var blockStatus = require("../utils/blockStatus.js");
+var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
 
 var genesisblock = null;
@@ -15,7 +15,7 @@ function Block(scope, cb) {
 
 // Private methods
 var private = {};
-private.blockStatus = new blockStatus();
+private.blockStatus = new BlockStatus();
 private.getAddressByPublicKey = function (publicKey) {
   var publicKeyHash = crypto.createHash('sha256').update(publicKey, 'hex').digest();
   var temp = new Buffer(8);

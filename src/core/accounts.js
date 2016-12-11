@@ -5,7 +5,7 @@ var ed = require('ed25519');
 var bignum = require('bignumber');
 var slots = require('../utils/slots.js');
 var Router = require('../utils/router.js');
-var blockStatus = require("../utils/blockStatus.js");
+var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
 var TransactionTypes = require('../utils/transaction-types.js');
 var Diff = require('../utils/diff.js');
@@ -14,7 +14,7 @@ var sandboxHelper = require('../utils/sandbox.js');
 // Private fields
 var modules, library, self, private = {}, shared = {};
 
-private.blockStatus = new blockStatus();
+private.blockStatus = new BlockStatus();
 
 function Vote() {
   this.create = function (data, trs) {

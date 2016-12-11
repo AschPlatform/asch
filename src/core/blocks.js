@@ -6,7 +6,7 @@ var async = require('async');
 var ed = require('ed25519');
 var bignum = require('bignumber');
 var constants = require("../utils/constants.js");
-var blockStatus = require("../utils/blockStatus.js");
+var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
 var Router = require('../utils/router.js');
 var slots = require('../utils/slots.js');
@@ -20,7 +20,7 @@ var genesisblock = null;
 var modules, library, self, private = {}, shared = {};
 
 private.lastBlock = {};
-private.blockStatus = new blockStatus();
+private.blockStatus = new BlockStatus();
 // @formatter:off
 private.blocksDataFields = {
   'b_id': String,
