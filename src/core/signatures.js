@@ -6,7 +6,6 @@ var constants = require("../utils/constants.js");
 var slots = require('../utils/slots.js');
 var Router = require('../utils/router.js');
 var TransactionTypes = require('../utils/transaction-types.js');
-var MilestoneBlocks = require("../utils/milestoneBlocks.js");
 var sandboxHelper = require('../utils/sandbox.js');
 
 // Private fields
