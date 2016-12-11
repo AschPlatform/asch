@@ -8,7 +8,6 @@ var slots = require('../utils/slots.js');
 var blockStatus = require("../utils/blockStatus.js");
 var constants = require('../utils/constants.js');
 var TransactionTypes = require('../utils/transaction-types.js');
-var MilestoneBlocks = require("../utils/milestoneBlocks.js");
 var sandboxHelper = require('../utils/sandbox.js');
 
 require('array.prototype.find'); // Old node fix
