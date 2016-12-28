@@ -71,7 +71,7 @@ describe("POST /peer/transactions", function () {
                 var votes = [];
                 votes.push("+" + delegate1);
                 votes.push("+" + delegate2);
-                var transaction = node.asch.vote.createVote(voterAccount.password, votes);
+                var transaction = node.asch.vote.createVote(votes, voterAccount.password);
                 // console.log('createVote transaction', transaction);
                 if (transaction !== null) {
                     node.peer.post("/transactions")
@@ -98,7 +98,7 @@ describe("POST /peer/transactions", function () {
 
     it("Voting twice for a delegate. Should fail", function (done) {
         node.onNewBlock(function (err) {
-            var transaction = node.asch.vote.createVote(voterAccount.password, ["+"+delegate1]);
+            var transaction = node.asch.vote.createVote(["+"+delegate1], voterAccount.password);
             node.peer.post("/transactions")
                 .set("Accept", "application/json")
                 .set("version", node.version)
@@ -118,7 +118,7 @@ describe("POST /peer/transactions", function () {
     });
 
     it("Removing votes from a delegate. Should be ok", function (done) {
-        var transaction = node.asch.vote.createVote(voterAccount.password, ["-"+delegate1]);
+        var transaction = node.asch.vote.createVote(["-"+delegate1], voterAccount.password);
         node.peer.post("/transactions")
             .set("Accept", "application/json")
             .set("version",node.version)
@@ -138,7 +138,7 @@ describe("POST /peer/transactions", function () {
 
     it("Removing votes from a delegate and then voting again. Should fail", function (done) {
         node.onNewBlock(function (err) {
-            var transaction = node.asch.vote.createVote(voterAccount.password, ["-"+delegate2]);
+            var transaction = node.asch.vote.createVote(["-"+delegate2], voterAccount.password);
             node.peer.post("/transactions")
                 .set("Accept", "application/json")
                 .set("version", node.version)
@@ -152,7 +152,7 @@ describe("POST /peer/transactions", function () {
                 .end(function (err, res) {
                     // console.log("Sent POST /transactions with data:" + JSON.stringify(transaction) + "! Got reply:" + JSON.stringify(res.body));
                     node.expect(res.body).to.have.property("success").to.be.true;
-                    var transaction2 = node.asch.vote.createVote(voterAccount.password, ["+"+delegate2]);
+                    var transaction2 = node.asch.vote.createVote(["+"+delegate2], voterAccount.password);
                     node.peer.post("/transactions")
                         .set("Accept", "application/json")
                         .set("version", node.version)
@@ -209,7 +209,7 @@ describe("POST /peer/transactions", function () {
                         node.onNewBlock(function (err) {
                             node.expect(err).to.be.not.ok;
                             account.username = node.randomDelegateName().toLowerCase();
-                            var transaction = node.asch.delegate.createDelegate(account.password, account.username);
+                            var transaction = node.asch.delegate.createDelegate(account.username, account.password);
                             node.peer.post("/transactions")
                                 .set("Accept", "application/json")
                                 .set("version",node.version)
@@ -230,7 +230,7 @@ describe("POST /peer/transactions", function () {
     });
 
     it("Voting for a delegate. Should be ok", function (done) {
-        var transaction = node.asch.vote.createVote(account.password, ["+" + account.publicKey]);
+        var transaction = node.asch.vote.createVote(["+" + account.publicKey], account.password);
         node.onNewBlock(function (err) {
             node.expect(err).to.be.not.ok;
             node.peer.post("/transactions")

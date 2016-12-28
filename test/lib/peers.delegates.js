@@ -38,7 +38,7 @@ describe("POST /peer/transactions", function () {
                         .end(function (err, res) {
                             node.onNewBlock(function (err) {
                                 node.expect(err).to.be.not.ok;
-                                var transaction = node.asch.delegate.createDelegate(account.password, crypto.randomBytes(64).toString("hex"));
+                                var transaction = node.asch.delegate.createDelegate(crypto.randomBytes(64).toString("hex"), account.password);
                                 transaction.fee = node.Fees.delegateRegistrationFee;
 
                                 node.peer.post("/transactions")
@@ -62,7 +62,7 @@ describe("POST /peer/transactions", function () {
         });
 
         it("When account has no funds. Should fail", function (done) {
-            var transaction = node.asch.delegate.createDelegate(node.randomPassword(), node.randomDelegateName().toLowerCase());
+            var transaction = node.asch.delegate.createDelegate(node.randomDelegateName().toLowerCase(), node.randomPassword());
             transaction.fee = node.Fees.delegateRegistrationFee;
 
             node.peer.post("/transactions")
@@ -83,7 +83,7 @@ describe("POST /peer/transactions", function () {
         });
 
         it("When account has funds. Username is uppercase, Lowercase username already registered. Should fail", function (done) {
-            var transaction = node.asch.delegate.createDelegate(account2.password, account.username.toUpperCase());
+            var transaction = node.asch.delegate.createDelegate(account.username.toUpperCase(), account2.password);
 
             node.peer.post("/transactions")
                 .set("Accept", "application/json")
@@ -104,7 +104,7 @@ describe("POST /peer/transactions", function () {
 
         it("When account has funds. Username is lowercase. Should be ok", function (done) {
             account.username = node.randomDelegateName().toLowerCase();
-            var transaction = node.asch.delegate.createDelegate(account.password, account.username);
+            var transaction = node.asch.delegate.createDelegate(account.username, account.password);
 
             node.peer.post("/transactions")
                 .set("Accept", "application/json")
@@ -154,7 +154,7 @@ describe("POST /peer/transactions", function () {
                             node.onNewBlock(function (err) {
                                 node.expect(err).to.be.not.ok;
                                 account2.username = node.randomDelegateName().toLowerCase();
-                                var transaction = node.asch.delegate.createDelegate(account2.password, account2.username);
+                                var transaction = node.asch.delegate.createDelegate(account2.username, account2.password);
                                 // console.log(transaction);
 
                                 node.peer.post("/transactions")
@@ -172,7 +172,7 @@ describe("POST /peer/transactions", function () {
                                         node.expect(res.body).to.have.property("success").to.be.true;
 
                                         account2.username = node.randomDelegateName().toLowerCase();
-                                        var transaction2 = node.asch.delegate.createDelegate(account2.password, account2.username);
+                                        var transaction2 = node.asch.delegate.createDelegate(account2.username, account2.password);
 
                                         node.peer.post("/transactions")
                                             .set("Accept", "application/json")
