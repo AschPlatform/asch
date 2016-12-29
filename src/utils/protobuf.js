@@ -117,6 +117,18 @@ Protobuf.prototype.transactionStringToBytes = function (obj) {
         obj.asset.storage.content = new Buffer(obj.asset.storage.content, 'hex');
       }
       break;
+    case TransactionTypes.UIA_ISSUER:
+      break;
+    case TransactionTypes.UIA_ASSET:
+      break;
+    case TransactionTypes.UIA_FLAGS:
+      break;
+    case TransactionTypes.UIA_ACL:
+      break;
+    case TransactionTypes.UIA_ISSUE:
+      break;
+    case TransactionTypes.UIA_TRANSFER:
+      break;
     default:
       break;
   }
@@ -158,6 +170,19 @@ Protobuf.prototype.transactionBytesToString = function (obj) {
       if (obj.asset.storage) {
         obj.asset.storage.content = obj.asset.storage.content.toString('hex');
       }
+      break;
+    case TransactionTypes.UIA_ISSUER:
+      break;
+    case TransactionTypes.UIA_ASSET:
+      break;
+    case TransactionTypes.UIA_FLAGS:
+      break;
+    case TransactionTypes.UIA_ACL:
+      break;
+    case TransactionTypes.UIA_ISSUE:
+      break;
+    case TransactionTypes.UIA_TRANSFER:
+      break;
     default:
       break;
   }

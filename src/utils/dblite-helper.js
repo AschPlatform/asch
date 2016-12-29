@@ -23,6 +23,31 @@ module.exports.connect = function (connectString, cb) {
     "CREATE TABLE IF NOT EXISTS peers (id INTEGER NOT NULL PRIMARY KEY, ip INTEGER NOT NULL, port TINYINT NOT NULL, state TINYINT NOT NULL, os VARCHAR(64), version VARCHAR(11), clock INT)",
     "CREATE TABLE IF NOT EXISTS peers_dapp (peerId INT NOT NULL, dappid VARCHAR(20) NOT NULL, FOREIGN KEY(peerId) REFERENCES peers(id) ON DELETE CASCADE)",
     "CREATE TABLE IF NOT EXISTS storages(content VARBINARY(2048), transactionId VARCHAR(20) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
+
+    // UIA transactions
+    "CREATE TABLE IF NOT EXISTS issuers(name VARCHAR(16) NOT NULL PRIMARY KEY, desc VARCHAR(2048) NOT NULL, issuerId VARCHAR(21), transactionId VARCHAR(20) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
+    "CREATE TABLE IF NOT EXISTS assets(name VARCHAR(20) NOT NULL PRIMARY KEY, desc VARCHAR(2048) NOT NULL, maximum VARCHAR(50) NOT NULL, precision TINYINT NOT NULL, strategy TEXT, quantity VARCHAR(50), issuerName VARCHAR(16) NOT NULL, acl TINYINT, writeoff TINYINT, transactionId VARCHAR(20) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
+    "CREATE TABLE IF NOT EXISTS flags(currency VARCHAR(20) NOT NULL, flag TINYINT NOT NULL, flagType TINYINT NOT NULL, transactionId VARCHAR(20) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
+    "CREATE TABLE IF NOT EXISTS issues(currency VARCHAR(20) NOT NULL, amount VARCHAR(50) NOT NULL, transactionId VARCHAR(20) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
+    "CREATE TABLE IF NOT EXISTS acls(currency VARCHAR(20) NOT NULL, flag TINYINT NOT NULL, operator CHAR(1) NOT NULL, list TEXT NOT NULL, transactionId VARCHAR(20) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
+    "CREATE TABLE IF NOT EXISTS transfers(currency VARCHAR(20) NOT NULL, amount VARCHAR(50) NOT NULL, transactionId VARCHAR(20) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
+    
+    // UIA states
+    "CREATE TABLE IF NOT EXISTS mem_asset_balances(currency VARCHAR(20) NOT NULL, address VARCHAR(21) NOT NULL, balance VARCHAR(50) NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS acl_white(currency VARCHAR(20) NOT NULL, address VARCHAR(21) NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS acl_black(currency VARCHAR(20) NOT NULL, address VARCHAR(21) NOT NULL)",
+
+    // UIA indexs
+    "CREATE INDEX IF NOT EXISTS transfers_trs_id ON issuers(transactionId)",
+    "CREATE INDEX IF NOT EXISTS assets_trs_id ON assets(transactionId)",
+    "CREATE INDEX IF NOT EXISTS flags_trs_id ON flags(transactionId)",
+    "CREATE INDEX IF NOT EXISTS issues_trs_id ON issues(transactionId)",
+    "CREATE INDEX IF NOT EXISTS acls_trs_id ON acls(transactionId)",
+    "CREATE INDEX IF NOT EXISTS transfers_trs_id ON transfers(transactionId)",
+    "CREATE INDEX IF NOT EXISTS balance_address on mem_asset_balances(address)",
+    "CREATE INDEX IF NOT EXISTS acl_white_index on acl_white(currency, address)",
+    "CREATE INDEX IF NOT EXISTS acl_black_index on acl_black(currency, address)",
+
     // Indexes
     "CREATE UNIQUE INDEX IF NOT EXISTS blocks_height ON blocks(height)",
     "CREATE UNIQUE INDEX IF NOT EXISTS blocks_previousBlock ON blocks(previousBlock)",

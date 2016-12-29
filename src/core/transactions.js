@@ -12,7 +12,6 @@ var genesisblock = null;
 // Private fields
 var modules, library, self, private = {}, shared = {};
 
-private.hiddenTransactions = [];
 private.unconfirmedTransactions = [];
 private.unconfirmedTransactionsIdIndex = {};
 
@@ -427,18 +426,6 @@ Transactions.prototype.getUnconfirmedTransaction = function (id) {
   return private.unconfirmedTransactions[index];
 }
 
-Transactions.prototype.pushHiddenTransaction = function (transaction) {
-  private.hiddenTransactions.push(transaction);
-}
-
-Transactions.prototype.shiftHiddenTransaction = function () {
-  return private.hiddenTransactions.shift();
-}
-
-Transactions.prototype.deleteHiddenTransaction = function () {
-  private.hiddenTransactions = [];
-}
-
 Transactions.prototype.getUnconfirmedTransactionList = function (reverse, limit) {
   var a = [];
 
@@ -600,11 +587,10 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 }
 
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
-  // if (self.getUnconfirmedTransactionList().length >= constants.maxTxsPerBlock) {
-  //   cb("Too many transactions");
-  //   return;
-  // }
-  // var trs = transactions.slice(0, 100);
+  if (self.getUnconfirmedTransactionList().length + transactions.length > constants.maxTxsPerBlock) {
+    setImmediate(cb, "Too many transactions");
+    return;
+  }
   async.eachSeries(transactions, function (transaction, cb) {
 		self.processUnconfirmedTransaction(transaction, true, cb);
 	}, function (err) {

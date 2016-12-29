@@ -176,6 +176,7 @@ function main() {
     }
 
     scope.bus.message('bind', scope.modules);
+    global.modules = scope.modules
 
     scope.logger.info('Modules ready and launched');
     if (!scope.config.publicIp) {

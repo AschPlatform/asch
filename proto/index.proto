@@ -44,6 +44,12 @@ message Asset {
     AssetInTransfer inTransfer = 7;
     AssetOutTransfer outTransfer = 8;
     AssetStorage storage = 9;
+    AssetUIAIssuer uiaIssuer = 10;
+    AssetUIAAsset uiaAsset = 11;
+    AssetUIAFlags uiaFlags = 12;
+    AssetUIAAcl uiaAcl = 13;
+    AssetUIAIssue uiaIssue = 14;
+    AssetUIATransfer uiaTransfer = 15;
   }
 }
 
@@ -90,6 +96,42 @@ message AssetOutTransfer {
 
 message AssetStorage {
   required bytes content = 1;
+}
+
+message AssetUIAIssuer {
+  required string name = 1;
+  required string desc = 2;
+}
+
+message AssetUIAAsset {
+  required string name = 1;
+  required string desc = 2;
+  required string maximum = 3;
+  required int32 precision = 4;
+  optional string strategy = 5;
+}
+
+message AssetUIAFlags {
+  required string currency = 1;
+  required int32 flagType = 2;
+  required int32 flag = 3;
+}
+
+message AssetUIAAcl {
+  required string currency = 1;
+  required string operator = 2;
+  required int32 flag = 3;
+  repeated string list = 4;
+}
+
+message AssetUIAIssue {
+  required string currency = 1;
+  required string amount = 2;
+}
+
+message AssetUIATransfer {
+  required string currency = 1;
+  required string amount = 2;
 }
 
 message BlockPropose {

@@ -1,12 +1,10 @@
-"use strict";
-
-// Requires
 var _ = require("lodash");
 var expect = require("chai").expect;
 var chai = require("chai");
 var supertest = require("supertest");
 var async = require("async");
 var request = require("request");
+var asch = require("asch-js");
 
 var DappType = require("../src/utils/dapp-types.js");
 var DappCategory = require("../src/utils/dapp-category.js");
@@ -72,11 +70,11 @@ var XAS = Math.floor(Math.random() * (100000 * 100000000)) + 1; // Remove 1 x 0 
 
 // Used to create random delegates names
 function randomDelegateName() {
-  var size = randomNumber(1,20); // Min. delegate name size is 1, Max. delegate name is 20
+  var size = randomNumber(1, 20); // Min. delegate name size is 1, Max. delegate name is 20
   var delegateName = "";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-  for( var i=0; i < size; i++ )
+  for (var i = 0; i < size; i++)
     delegateName += possible.charAt(Math.floor(Math.random() * possible.length));
 
   return delegateName;
@@ -114,7 +112,7 @@ function getHeight(cb) {
 }
 
 function onNewBlock(cb) {
-  getHeight(function(err, height) {
+  getHeight(function (err, height) {
     //console.log("Height: " + height);
     if (err) {
       return cb(err);
@@ -160,10 +158,10 @@ function waitForNewBlock(height, cb) {
 
 // Adds peers to local node
 function addPeers(numOfPeers, cb) {
-  var operatingSystems = ["win32","win64","ubuntu","debian", "centos"];
+  var operatingSystems = ["win32", "win64", "ubuntu", "debian", "centos"];
   var ports = [4000, 5000, 7000, 8000];
 
-  var os,version,port;
+  var os, version, port;
 
   var i = 0;
   async.whilst(function () {
@@ -203,7 +201,7 @@ function randomizeSelection(length) {
 
 // Returns a random number between min (inclusive) and max (exclusive)
 function randomNumber(min, max) {
-  return  Math.floor(Math.random() * (max - min) + min);
+  return Math.floor(Math.random() * (max - min) + min);
 }
 
 // Calculates the expected fee from a transaction
@@ -213,22 +211,22 @@ function expectedFee(amount) {
 
 // Used to create random usernames
 function randomUsername() {
-  var size = randomNumber(1,16); // Min. username size is 1, Max. username size is 16
+  var size = randomNumber(1, 16); // Min. username size is 1, Max. username size is 16
   var username = "";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$&_.";
 
-  for( var i=0; i < size; i++ )
+  for (var i = 0; i < size; i++)
     username += possible.charAt(Math.floor(Math.random() * possible.length));
 
   return username;
 }
 
 function randomCapitalUsername() {
-  var size = randomNumber(1,16); // Min. username size is 1, Max. username size is 16
+  var size = randomNumber(1, 16); // Min. username size is 1, Max. username size is 16
   var username = "A";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$&_.";
 
-  for( var i=0; i < size-1; i++ )
+  for (var i = 0; i < size - 1; i++)
     username += possible.charAt(Math.floor(Math.random() * possible.length));
 
   return username;
@@ -237,11 +235,11 @@ function randomCapitalUsername() {
 // Used to create random basic accounts
 function randomAccount() {
   var account = {
-    "address" : "",
-    "publicKey" : "",
-    "password" : "",
+    "address": "",
+    "publicKey": "",
+    "password": "",
     "secondPassword": "",
-    "username" : "",
+    "username": "",
     "balance": 0
   };
 
@@ -252,10 +250,20 @@ function randomAccount() {
   return account;
 }
 
+function genNormalAccount() {
+  var password = randomPassword()
+  var keys = asch.crypto.getKeys(password)
+  return {
+    address: asch.crypto.getAddress(keys.publicKey),
+    publicKey: keys.publicKey,
+    password: password
+  }
+}
+
 // Used to create random transaction accounts (holds additional info to regular account)
 function randomTxAccount() {
   return _.defaults(randomAccount(), {
-    sentAmount:"",
+    sentAmount: "",
     paidFee: "",
     totalPaidFee: "",
     transactions: []
@@ -267,12 +275,66 @@ function randomPassword() {
   return Math.random().toString(36).substring(7);
 }
 
+function submitTransaction(trs, cb) {
+  peer.post("/transactions")
+    .set("Accept", "application/json")
+    .set("version", version)
+    .set("magic", config.magic)
+    .set("port", config.port)
+    .send({
+      transaction: trs
+    })
+    .expect("Content-Type", /json/)
+    .expect(200)
+    .end(cb);
+}
+
+function apiGet(path, cb) {
+  api.get(path)
+    .expect("Content-Type", /json/)
+    .expect(200)
+    .end(cb)
+}
+
+function giveMoney(address, amount, cb) {
+  api.put("/transactions")
+    .set("Accept", "application/json")
+    .send({
+      secret: Gaccount.password,
+      amount: amount,
+      recipientId: address
+    })
+    .expect("Content-Type", /json/)
+    .expect(200)
+    .end(cb)
+}
+
+function PIFY(fn, receiver) {
+  return (...args) => {
+    return new Promise((resolve, reject) => {
+      fn.apply(receiver, [...args, (err, result) => {
+        return err ? reject(err) : resolve(result)
+      }])
+    })
+  }
+}
+
+function EIFY(fn, receiver) {
+  return (...args) => {
+    return new Promise((resolve, reject) => {
+      fn.apply(receiver, [...args, (err, result) => {
+        return resolve([err, result])
+      }])
+    })
+  }
+}
+
 // Exports variables and functions for access from other files
 module.exports = {
   api: api,
   chai: chai,
-  peer : peer,
-  asch: require("asch-js"),
+  peer: peer,
+  asch: asch,
   supertest: supertest,
   expect: expect,
   version: version,
@@ -302,5 +364,20 @@ module.exports = {
   config: config,
   waitForNewBlock: waitForNewBlock,
   getHeight: getHeight,
-  onNewBlock: onNewBlock
+  onNewBlock: onNewBlock,
+  submitTransaction: submitTransaction,
+  apiGet: apiGet,
+  genNormalAccount: genNormalAccount,
+  PIFY: PIFY,
+  EIFY: EIFY,
+
+  submitTransactionAsyncE: EIFY(submitTransaction),
+  onNewBlockAsyncE: EIFY(onNewBlock),
+  apiGetAsyncE: EIFY(apiGet),
+  giveMoneyAsyncE: EIFY(giveMoney),
+
+  submitTransactionAsync: PIFY(submitTransaction),
+  onNewBlockAsync: PIFY(onNewBlock),
+  apiGetAsync: PIFY(apiGet),
+  giveMoneyAsync: PIFY(giveMoney),
 };

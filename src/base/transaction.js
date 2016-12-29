@@ -198,7 +198,7 @@ Transaction.prototype.process = function (trs, sender, requester, cb) {
     return setImmediate(cb, "Invalid transaction id");
   }
   if (trs.id && trs.id != txId) {
-    return setImmediate(cb, "Invalid transaction id");
+    return setImmediate(cb, "Incorrect transaction id");
   } else {
     trs.id = txId;
   }

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node app.js",
-    "test": "./node_modules/.bin/mocha test"
+    "test": "./node_modules/.bin/mocha --require mocha-babel"
   },
   "author": "Qingfeng Shan <sqf1225@foxmail.com>",
   "dependencies": {
@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "asch-js": "*",
+    "babel": "=5.8.23",
     "chai": "^3.0.0",
     "gulp": "^3.9.1",
     "gulp-replace": "^0.5.4",

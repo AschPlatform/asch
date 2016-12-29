@@ -20,6 +20,7 @@ var moduleNames = [
   'delegates',
   'round',
   'multisignatures',
+  'uia',
   'dapps',
   'sql',
   'blocks',
@@ -347,6 +348,20 @@ module.exports = function(options, done) {
       dbLite.connect(dbFile, cb);
     },
 
+    oneoff: function (cb) {
+      cb(null, new Map)
+    },
+
+    tmdb: function (cb) {
+      var Tmdb = require('./utils/tmdb.js')
+      cb(null, new Tmdb)
+    },
+
+    model: ['dbLite', function (cb, scope) {
+      var Model = require('./utils/model.js')
+      cb(null, new Model(scope.dbLite))
+    }],
+
     base: ['dbLite', 'bus', 'scheme', 'genesisblock', function (cb, scope) {
       var Transaction = require('./base/transaction.js');
       var Block = require('./base/block.js');
@@ -383,7 +398,8 @@ module.exports = function(options, done) {
       }, cb);
     }],
 
-    modules: ['network', 'connect', 'config', 'logger', 'bus', 'sequence', 'dbSequence', 'balancesSequence', 'dbLite', 'base', function (cb, scope) {
+    modules: ['network', 'connect', 'config', 'logger', 'bus', 'sequence', 'dbSequence', 'balancesSequence', 'dbLite', 'base', 'oneoff', 'tmdb', 'model', function (cb, scope) {
+      global.library = scope
       var tasks = {};
       moduleNames.forEach(function (name) {
         tasks[name] = function (cb) {

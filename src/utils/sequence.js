@@ -4,7 +4,7 @@ var extend = require('extend');
 function Sequence(config) {
   var _default = {
     onWarning: null,
-    warningLimit: 50
+    warningLimit: 300
   }
   _default = extend(_default, config);
   var self = this;
