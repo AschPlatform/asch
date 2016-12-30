@@ -30,22 +30,31 @@ function Asset() {
     var nameParts = (asset.name || '').split('.')
     if (nameParts.length != 2) return setImmediate(cb, 'Invalid asset full name')
 
+    var fullName = asset.name
     var issuerName = nameParts[0]
-    var assetName = nameParts[1]
-    if (!assetName || !/^[A-Z]{3, 6}$/.test(assetName)) return setImmediate(cb, 'Invalid asset currency name')
+    var currencyName = nameParts[1]
+    if (!currencyName || !/^[A-Z]{3,6}$/.test(currencyName)) return setImmediate(cb, 'Invalid asset currency name')
     if (!asset.desc) return setImmediate(cb, 'Invalid asset desc')
     if (asset.desc.length > 4096) return setImmediate(cb, 'Invalid asset desc size')
 
     if (asset.precision > 16 || asset.precision < 0) return setImmediate(cb, 'Invalid asset precision')
 
-    var bnMaximum = bignum(asset.maximum)
-    if (bnMaximum.lt(1) || bnMaximum.gt('1e32')) return setImmediate(cb, 'Invalid asset maximum')
+    if (asset.maximum.indexOf('.') != -1) {
+      return cb('Asset maximum should be integer')
+    }
+    var bnMaximum
+    try {
+      bnMaximum = bignum(asset.maximum)
+    } catch (e) {
+      return cb('Asset maximum should be number')
+    }
+    if (bnMaximum.lt(1) || bnMaximum.gt('1e48')) return setImmediate(cb, 'Invalid asset maximum range')
 
     if (asset.strategy && asset.strategy.length > 256) return setImmediate(cb, 'Invalid asset strategy size')
 
-    library.model.exists('assets', { name: assetName }, function (err, exists) {
+    library.model.exists('assets', { name: fullName }, function (err, exists) {
       if (err) return cb(err)
-      if (exists) return cb('Asset already exists')
+      if (exists) return cb('Double register')
       library.model.getIssuerByName(issuerName, ['issuerId'], function (err, issuer) {
         if (err) return cb(err)
         if (!issuer) return cb('Issuer not exists')
@@ -89,6 +98,7 @@ function Asset() {
     if (library.oneoff.has(key)) {
       return setImmediate(cb, 'Double submit')
     }
+    library.oneoff.set(key, true)
     setImmediate(cb)
   }
 
@@ -103,11 +113,12 @@ function Asset() {
       properties: {
         name: {
           type: 'string',
-          minLength: 1,
-          maxLength: 32
+          minLength: 3,
+          maxLength: 22
         },
         desc: {
           type: 'string',
+          minLength: 1,
           maxLength: 4096
         },
         maximum: {

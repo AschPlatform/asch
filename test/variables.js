@@ -221,6 +221,17 @@ function randomUsername() {
   return username;
 }
 
+function randomIssuerName() {
+  var size = randomNumber(1, 16); // Min. username size is 1, Max. username size is 16
+  var name = "";
+  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+  for (var i = 0; i < size; i++)
+    name += possible.charAt(Math.floor(Math.random() * possible.length));
+
+  return name;
+}
+
 function randomCapitalUsername() {
   var size = randomNumber(1, 16); // Min. username size is 1, Max. username size is 16
   var username = "A";
@@ -309,6 +320,14 @@ function giveMoney(address, amount, cb) {
     .end(cb)
 }
 
+async function giveMoneyAndWaitAsync(addresses) {
+  for (let i = 0; i < addresses.length; i++) {
+    let res = await PIFY(giveMoney)(addresses[i], randomCoin())
+    expect(res.body).to.have.property('success').to.be.true
+  }
+  await PIFY(onNewBlock)()
+}
+
 function PIFY(fn, receiver) {
   return (...args) => {
     return new Promise((resolve, reject) => {
@@ -357,6 +376,7 @@ module.exports = {
   randomAccount: randomAccount,
   randomTxAccount: randomTxAccount,
   randomUsername: randomUsername,
+  randomIssuerName: randomIssuerName,
   randomNumber: randomNumber,
   randomCapitalUsername: randomCapitalUsername,
   expectedFee: expectedFee,
@@ -380,4 +400,5 @@ module.exports = {
   onNewBlockAsync: PIFY(onNewBlock),
   apiGetAsync: PIFY(apiGet),
   giveMoneyAsync: PIFY(giveMoney),
+  giveMoneyAndWaitAsync: giveMoneyAndWaitAsync,
 };
