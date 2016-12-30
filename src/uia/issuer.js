@@ -26,7 +26,7 @@ function Issuer() {
       return setImmediate(cb, 'Invalid issuer name');
     }
     if (!issuer.desc) return setImmediate(cb, 'Invalid issuer desc')
-    if (issuer.desc.length > 2048) return setImmediate(cb, 'Invalid issuer desc size')
+    if (issuer.desc.length > 4096) return setImmediate(cb, 'Invalid issuer desc size')
 
     library.model.exists('issuers', { name: issuer.name }, function (err, exists) {
       if (err) return cb(err)

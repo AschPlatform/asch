@@ -32,9 +32,9 @@ function Asset() {
 
     var issuerName = nameParts[0]
     var assetName = nameParts[1]
-    if (!assetName || !/^[A-Z]{3}$/.test(assetName)) return setImmediate(cb, 'Invalid asset currency name')
+    if (!assetName || !/^[A-Z]{3, 6}$/.test(assetName)) return setImmediate(cb, 'Invalid asset currency name')
     if (!asset.desc) return setImmediate(cb, 'Invalid asset desc')
-    if (asset.desc.length > 2048) return setImmediate(cb, 'Invalid asset desc size')
+    if (asset.desc.length > 4096) return setImmediate(cb, 'Invalid asset desc size')
 
     if (asset.precision > 16 || asset.precision < 0) return setImmediate(cb, 'Invalid asset precision')
 

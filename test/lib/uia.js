@@ -166,7 +166,7 @@ describe('Test UIA', () => {
 
     })
 
-    it.only('Update flags and acl should be ok', async function() {
+    it('Update flags and acl should be ok', async function() {
       var currency = ISSUER1.name + '.' + ASSET1.name
 
       var [err, res] = await node.apiGetAsyncE('/uia/assets/' + currency)
@@ -231,6 +231,10 @@ describe('Test UIA', () => {
       expect(res.body).to.have.property('error').to.match(/^Permission not allowed/)
     })
 
+  })
+
+  describe('Register issuer bad cases', () => {
+    
   })
 
 })

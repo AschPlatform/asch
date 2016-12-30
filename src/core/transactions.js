@@ -140,7 +140,7 @@ function Storage() {
     if (!trs.asset.storage || !trs.asset.storage.content) {
       return cb('Invalid transaction asset');
     }
-    if (new Buffer(trs.asset.storage.content, 'hex').length > 2048) {
+    if (new Buffer(trs.asset.storage.content, 'hex').length > 4096) {
       return cb('Invalid storage content size');
     }
 
