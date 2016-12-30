@@ -66,7 +66,7 @@ var Gaccount = {
 };
 
 // Random XAS Amount
-var XAS = Math.floor(Math.random() * (100000 * 100000000)) + 1; // Remove 1 x 0 for reduced fees (delegate + Tx)
+var RANDOM_COIN = Math.floor(Math.random() * (100000 * 100000000)) + 1; // Remove 1 x 0 for reduced fees (delegate + Tx)
 
 // Used to create random delegates names
 function randomDelegateName() {
@@ -92,7 +92,7 @@ function randomProperty(obj, needKey) {
 };
 
 // Randomizes XAS amount
-function randomXAS() {
+function randomCoin() {
   return Math.floor(Math.random() * (10000 * 100000000)) + (1000 * 100000000);
 }
 
@@ -338,7 +338,7 @@ module.exports = {
   supertest: supertest,
   expect: expect,
   version: version,
-  XAS: XAS,
+  RANDOM_COIN: RANDOM_COIN,
   Gaccount: Gaccount,
   Daccount: Daccount,
   Eaccount: Eaccount,
@@ -352,7 +352,7 @@ module.exports = {
   blockTimePlus: blockTimePlus,
   randomProperty: randomProperty,
   randomDelegateName: randomDelegateName,
-  randomXAS: randomXAS,
+  randomCoin: randomCoin,
   randomPassword: randomPassword,
   randomAccount: randomAccount,
   randomTxAccount: randomTxAccount,

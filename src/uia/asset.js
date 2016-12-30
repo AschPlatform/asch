@@ -108,7 +108,7 @@ function Asset() {
         },
         desc: {
           type: 'string',
-          maxLength: 2048
+          maxLength: 4096
         },
         maximum: {
           type: 'string',

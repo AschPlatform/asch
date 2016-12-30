@@ -22,15 +22,15 @@ function Issuer() {
     if (trs.amount != 0) return setImmediate(cb, 'Invalid transaction amount')
 
     var issuer = trs.asset.uiaIssuer
-    if (!issuer.name || issuer.name.length > 16 || issuer.name.toLowerCase().indexOf('asch') != -1) {
-      return setImmediate(cb, 'Invalid issuer name');
+    if (!issuer.name || issuer.name.length > 16) {
+      return setImmediate(cb, 'Invalid issuer name')
     }
     if (!issuer.desc) return setImmediate(cb, 'Invalid issuer desc')
     if (issuer.desc.length > 4096) return setImmediate(cb, 'Invalid issuer desc size')
 
-    library.model.exists('issuers', { name: issuer.name }, function (err, exists) {
+    library.model.isIssuerExists(issuer.name, sender.address, function (err, exists) {
       if (err) return cb(err)
-      if (exists) return cb('Issuer already exists')
+      if (exists) return cb('Double register')
       setImmediate(cb, null, trs)
     })
   }
@@ -55,16 +55,21 @@ function Issuer() {
   }
 
   this.applyUnconfirmed = function (trs, sender, cb) {
-    var key = trs.asset.uiaIssuer.name + ':' + trs.type
-    if (library.oneoff.has(key)) {
+    var nameKey = trs.asset.uiaIssuer.name + ':' + trs.type
+    var idKey = sender.address + ':' + trs.type
+    if (library.oneoff.has(nameKey) || library.oneoff.has(idKey)) {
       return setImmediate(cb, 'Double submit')
     }
-    library.oneoff.set(key, true)
+    library.oneoff.set(nameKey, true)
+    library.oneoff.set(idKey, true)
     setImmediate(cb)
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {
-    library.oneoff.delete(trs.asset.uiaIssuer.name + ':' + trs.type)
+    var nameKey = trs.asset.uiaIssuer.name + ':' + trs.type
+    var idKey = sender.address + ':' + trs.type
+    library.oneoff.delete(nameKey)
+    library.oneoff.delete(idKey)
     setImmediate(cb)
   }
 
@@ -79,7 +84,8 @@ function Issuer() {
         },
         desc: {
           type: 'string',
-          maxLength: 2048
+          minLength: 1,
+          maxLength: 4096
         }
       },
       required: ['name', 'desc']

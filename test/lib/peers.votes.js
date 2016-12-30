@@ -38,7 +38,7 @@ describe("POST /peer/transactions", function () {
                     .set("Accept", "application/json")
                     .send({
                         secret: node.Gaccount.password,
-                        amount: node.XAS,
+                        amount: node.RANDOM_COIN,
                         recipientId: voterAccount.address
                     })
                     .expect("Content-Type", /json/)
@@ -49,10 +49,10 @@ describe("POST /peer/transactions", function () {
                         node.expect(res.body).to.have.property("transactionId");
                         if (res.body.success == true && res.body.transactionId != null) {
                             node.expect(res.body.transactionId).to.be.above(1);
-                            voterAccount.amount += node.XAS;
+                            voterAccount.amount += node.RANDOM_COIN;
                         } else {
                             // console.log("Transaction failed or transactionId is null");
-                            // console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + node.XAS + ", recipientId: " + voterAccount.address);
+                            // console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + node.RANDOM_COIN + ", recipientId: " + voterAccount.address);
                             node.expect("TEST").to.equal("FAILED");
                         }
                         node.onNewBlock(done);

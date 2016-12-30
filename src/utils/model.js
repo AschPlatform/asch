@@ -312,6 +312,18 @@ class Model {
       cb(null, res.length != 0)
     })
   }
+
+  isIssuerExists(name, id, cb) {
+    var sql = 'select name from issuers where name=$name;select name from issuers where issuerId=$id'
+    var values = {
+      name: name,
+      id: id
+    }
+    this.dbLite.query(sql, values, ['name'], function (err, rows) {
+      if (err) return cb('Database error: ' + err)
+      cb(null, rows && rows.length > 0)
+    })
+  }
 }
 
 module.exports = Model;

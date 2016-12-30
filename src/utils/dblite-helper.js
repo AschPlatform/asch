@@ -38,7 +38,8 @@ module.exports.connect = function (connectString, cb) {
     "CREATE TABLE IF NOT EXISTS acl_black(currency VARCHAR(22) NOT NULL, address VARCHAR(21) NOT NULL)",
 
     // UIA indexs
-    "CREATE INDEX IF NOT EXISTS transfers_trs_id ON issuers(transactionId)",
+    "CREATE INDEX IF NOT EXISTS issuers_trs_id ON issuers(transactionId)",
+    "CREATE INDEX IF NOT EXISTS issuers_issuer_id ON issuers(issuerId)",
     "CREATE INDEX IF NOT EXISTS assets_trs_id ON assets(transactionId)",
     "CREATE INDEX IF NOT EXISTS flags_trs_id ON flags(transactionId)",
     "CREATE INDEX IF NOT EXISTS issues_trs_id ON issues(transactionId)",

@@ -133,7 +133,7 @@ describe("PUT /accounts/delegates with funds", function () {
             .set("Accept", "application/json")
             .send({
                 secret: node.Gaccount.password,
-                amount: node.XAS,
+                amount: node.RANDOM_COIN,
                 recipientId: Raccount.address
             })
             .expect("Content-Type", /json/)
@@ -144,10 +144,10 @@ describe("PUT /accounts/delegates with funds", function () {
                 node.expect(res.body).to.have.property("transactionId");
                 if (res.body.success == true && res.body.transactionId != null) {
                     node.expect(res.body.transactionId).to.be.above(1);
-                    Raccount.amount += node.XAS;
+                    Raccount.amount += node.RANDOM_COIN;
                 } else {
                     // console.log("Transaction failed or transactionId is null");
-                    // console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + node.XAS + ", recipientId: " + Raccount.address);
+                    // console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + node.RANDOM_COIN + ", recipientId: " + Raccount.address);
                     node.expect("TEST").to.equal("FAILED");
                 }
                 done();
@@ -171,7 +171,7 @@ describe("PUT /accounts/delegates with funds", function () {
                     // console.log(JSON.stringify(res.body));
                     node.expect(res.body).to.have.property("success").to.be.true;
                     if (res.body.success == true && res.body.account != null) {
-                        node.expect(res.body.account.balance).to.be.equal(node.XAS);
+                        node.expect(res.body.account.balance).to.be.equal(node.RANDOM_COIN);
                     } else {
                         // console.log("Failed to open account or account object is null");
                         // console.log("Sent: secret: " + Raccount.password);
@@ -480,7 +480,7 @@ describe("PUT /delegates with funds",function () {
                     .set('Accept', 'application/json')
                     .send({
                         secret: node.Gaccount.password,
-                        amount: node.XAS,
+                        amount: node.RANDOM_COIN,
                         recipientId: R2account.address
                     })
                     .expect('Content-Type', /json/)
@@ -491,10 +491,10 @@ describe("PUT /delegates with funds",function () {
                         node.expect(res.body).to.have.property("transactionId");
                         if (res.body.success == true && res.body.transactionId != null) {
                             node.expect(res.body.transactionId).to.be.above(1);
-                            R2account.amount += node.XAS;
+                            R2account.amount += node.RANDOM_COIN;
                         } else {
                             // console.log("Transaction failed or transactionId is null");
-                            // console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + node.XAS + ", recipientId: " + R2account.address);
+                            // console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + node.RANDOM_COIN + ", recipientId: " + R2account.address);
                             node.expect("TEST").to.equal("FAILED");
                         }
                         done();
@@ -518,7 +518,7 @@ describe("PUT /delegates with funds",function () {
                     // console.log(JSON.stringify(res.body));
                     node.expect(res.body).to.have.property("success").to.be.true;
                     if (res.body.success == true && res.body.account != null) {
-                        node.expect(res.body.account.balance).to.be.equal(''+node.XAS);
+                        node.expect(res.body.account.balance).to.be.equal(''+node.RANDOM_COIN);
                     } else {
                         // console.log("Failed to open account or account object is null");
                         // console.log("Sent: secret: " + R2account.password);

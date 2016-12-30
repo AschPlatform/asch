@@ -17,6 +17,10 @@ var ASSET1 = {
   strategy: ''
 }
 
+async function registerIssuerAsync(name, desc, account) {
+  return await node.submitTransactionAsync(node.asch.uia.createIssuer(name, desc, account.password))
+}
+
 describe('Test UIA', () => {
 
   describe('Normal caces', () => {
@@ -234,7 +238,67 @@ describe('Test UIA', () => {
   })
 
   describe('Register issuer bad cases', () => {
-    
+
+    it('Invalid parameters', async function () {
+      var account = node.genNormalAccount()
+      var res = await registerIssuerAsync('', 'normal desc', account)
+      expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
+
+      res = await registerIssuerAsync('tooooooooo_long_name', 'normal desc', account)
+      expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
+
+      res = await registerIssuerAsync('normal_name', '', account)
+      expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
+
+      var largeString = new Buffer(5000).toString()
+      res = await registerIssuerAsync('normal_name', largeString, account)
+      expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
+    })
+
+    it('Insufficient balance', async function () {
+      var account = node.genNormalAccount()
+      var res = await registerIssuerAsync('normal_name', 'normal desc', account)
+      expect(res.body).to.have.property('error').to.match(/^Insufficient balance/)
+    })
+
+    it.only('Double submit', async function () {
+      var account = node.genNormalAccount()
+      var anotherAccount = node.genNormalAccount()
+      await node.giveMoneyAsync(account.address, node.randomCoin())
+      await node.giveMoneyAsync(anotherAccount.address, node.randomCoin())
+      await node.onNewBlockAsync()
+
+      var registeredName = node.randomUsername()
+      var res = await registerIssuerAsync(registeredName, 'normal desc', account)
+      expect(res.body).to.have.property('success').to.be.true
+      
+      res = await registerIssuerAsync(node.randomUsername(), 'normal desc', account)
+      expect(res.body).to.have.property('error').to.match(/^Double submit/)
+
+      res = await registerIssuerAsync(registeredName, 'normal desc', anotherAccount)
+      expect(res.body).to.have.property('error').to.match(/^Double submit/)
+    })
+
+    it('Double register', async function () {
+      var account = node.genNormalAccount()
+      await node.giveMoneyAsync(account.address, node.randomCoin())
+      await node.onNewBlockAsync()
+
+      var registeredName = node.randomUsername()
+      var res = await registerIssuerAsync(registeredName, 'normal desc', account)
+      expect(res.body).to.have.property('success').to.be.true
+      await node.onNewBlockAsync()
+
+      res = await registerIssuerAsync(node.randomUsername(), 'normal desc', account)
+      expect(res.body).to.have.property('error').to.match(/^Double register/)
+
+      var anotherAccount = node.genNormalAccount()
+      await node.giveMoneyAsync(anotherAccount.address, node.randomCoin())
+      await node.onNewBlockAsync()
+
+      res = await registerIssuerAsync(registeredName, 'normal desc', anotherAccount)
+      expect(res.body).to.have.property('error').to.match(/^Double register/)
+    })
   })
 
 })
