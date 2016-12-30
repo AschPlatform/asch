@@ -474,7 +474,7 @@ describe('Test UIA', () => {
     })
   })
 
-  describe.only('Parameter validate fail cases', () => {
+  describe('Parameter validate fail cases', () => {
     var ISSUE_ACCOUNT = node.genNormalAccount()
     var ASSET_NAME = 'NotExistName.BTC'
 
@@ -553,7 +553,7 @@ describe('Test UIA', () => {
     })
   })
 
-  describe('Asset operation fail cases', () => {
+  describe.only('Asset operation fail cases', () => {
     var ISSUE_ACCOUNT = node.genNormalAccount()
     var ISSUER_NAME = node.randomIssuerName()
     var ASSET_NAME = ISSUER_NAME + '.GOLD'
@@ -580,9 +580,6 @@ describe('Test UIA', () => {
 
       res = await updateAclAsync(ASSET_NAME, '+', 0, [node.genNormalAccount().address], account)
       expect(res.body).to.have.property('error').to.match(/^Permission not allowed/)
-
-      res = await transferAsync(ASSET_NAME, '1', [node.genNormalAccount().address], account)
-      expect(res.body).to.have.property('error').to.match(/^Permission not allowed/)
     })
 
     it('should fail to issue if amount exceed the limit', async function () {
@@ -599,10 +596,16 @@ describe('Test UIA', () => {
       await node.onNewBlockAsync()
     })
 
-    it('should fail to double submit flags', async function () {
+    it('should fail to double set flag', async function () {
+      // default acl flag is 0
       var res = await changeFlagsAsync(ASSET_NAME, 1, 0, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Flag double set/)
+    })
+
+    it('should fail to double submit flags', async function () {
+      var res = await changeFlagsAsync(ASSET_NAME, 1, 1, ISSUE_ACCOUNT)
       expect(res.body).to.have.property('success').to.be.true
-      res = await changeFlagsAsync(ASSET_NAME, 1, 1, ISSUE_ACCOUNT)
+      res = await changeFlagsAsync(ASSET_NAME, 2, 1, ISSUE_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Double submit/)
 
       await node.onNewBlockAsync()
@@ -611,16 +614,10 @@ describe('Test UIA', () => {
     it('should fail to doulbe submit acl', async function () {
       var res = await updateAclAsync(ASSET_NAME, '+', 0, [node.genNormalAccount().address], ISSUE_ACCOUNT)
       expect(res.body).to.have.property('success').to.be.true
-      await updateAclAsync(ASSET_NAME, '+', 0, [node.genNormalAccount().address], ISSUE_ACCOUNT)
+      res = await updateAclAsync(ASSET_NAME, '+', 0, [node.genNormalAccount().address], ISSUE_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Double submit/)
 
       await node.onNewBlockAsync()
-    })
-
-    it('should fail to double set flag', async function () {
-      // default acl flag is 0
-      var res = await changeFlagsAsync(ASSET_NAME, 1, 0, ISSUE_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Flag double set/)
     })
 
     it('should fail to add acl if some address is already in acl', async function () {
@@ -636,8 +633,12 @@ describe('Test UIA', () => {
       res = await updateAclAsync(ASSET_NAME, '+', 1, [address1, address2], ISSUE_ACCOUNT)
       expect(res.body).to.have.property('success').to.be.true
 
+      await node.onNewBlockAsync()
+
       res = await updateAclAsync(ASSET_NAME, '-', 0, [address1, address2], ISSUE_ACCOUNT)
       expect(res.body).to.have.property('success').to.be.true
+
+      await node.onNewBlockAsync()
     })
 
     it('should fail to do anything if asset is writeoff', async function () {
@@ -650,11 +651,12 @@ describe('Test UIA', () => {
 
       res = await changeFlagsAsync(ASSET_NAME, 1, 1, ISSUE_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Asset already writeoff/)
+      await node.onNewBlockAsync()
 
       res = await updateAclAsync(ASSET_NAME, '+', 0, [node.genNormalAccount().address], ISSUE_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Asset already writeoff/)
 
-      res = await transferAsync(ASSET_NAME, '1', [node.genNormalAccount().address], ISSUE_ACCOUNT)
+      res = await transferAsync(ASSET_NAME, '1', node.genNormalAccount().address, ISSUE_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Asset already writeoff/)
     })
   })
