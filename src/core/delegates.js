@@ -9,6 +9,7 @@ var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
 var TransactionTypes = require('../utils/transaction-types.js');
 var sandboxHelper = require('../utils/sandbox.js');
+var addressHelper = require('../utils/address.js')
 
 require('array.prototype.find'); // Old node fix
 
@@ -65,7 +66,6 @@ function Delegate() {
     //   return cb("Username should be lowercase");
     // }
 
-    var isAddress = /^[0-9]{1,21}$/g
     var allowSymbols = /^[a-z0-9!@$&_.]+$/g;
 
     var username = String(trs.asset.delegate.username).toLowerCase().trim();
@@ -78,7 +78,7 @@ function Delegate() {
       return cb("Username is too long. Maximum is 20 characters");
     }
 
-    if (isAddress.test(username)) {
+    if (!addressHelper.isAddress(username)) {
       return cb("Username can not be a potential address");
     }
 

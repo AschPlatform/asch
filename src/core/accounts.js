@@ -10,6 +10,7 @@ var constants = require('../utils/constants.js');
 var TransactionTypes = require('../utils/transaction-types.js');
 var Diff = require('../utils/diff.js');
 var sandboxHelper = require('../utils/sandbox.js');
+var addressHelper = require('../utils/address.js')
 
 // Private fields
 var modules, library, self, private = {}, shared = {};
@@ -444,8 +445,7 @@ shared.getBalance = function (req, cb) {
       return cb(err[0].message);
     }
 
-    var isAddress = /^[0-9]{1,21}$/g;
-    if (!isAddress.test(query.address)) {
+    if (!addressHelper.isAddress(query.address)) {
       return cb("Invalid address");
     }
 

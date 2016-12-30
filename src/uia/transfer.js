@@ -3,6 +3,7 @@ var async = require('async')
 var bignum = require('bignumber')
 var mathjs = require('mathjs')
 var amountHelper = require('../utils/amount.js')
+var addressHelper = require('../utils/address.js')
 
 function Transfer() {
   this.create = function (data, trs) {
@@ -20,8 +21,7 @@ function Transfer() {
   }
 
   this.verify = function (trs, sender, cb) {
-    var isAddress = /^[0-9]{1,21}$/g
-    if (!trs.recipientId || !isAddress.test(trs.recipientId)) return cb("Invalid recipient")
+    if (!addressHelper.isAddress(trs.recipientId)) return cb("Invalid recipient")
     if (trs.amount != 0) return setImmediate(cb, 'Invalid transaction amount')
 
     var asset = trs.asset.uiaTransfer
@@ -30,7 +30,7 @@ function Transfer() {
 
     library.model.getAssetByName(asset.currency, function (err, assetDetail) {
       if (err) return cb('Database error: ' + err)
-      if (!assetDetail) return cb('Cannot issue unregistered asset')
+      if (!assetDetail) return cb('Asset not exists')
       if (assetDetail.writeoff) return cb('Asset already writeoff')
 
       // if (sender.address == assetDetail.issuerId) return cb()

@@ -4,19 +4,6 @@ var node = require('./../variables.js')
 var DEBUG = require('debug')('uia')
 var expect = node.expect
 
-var ISSUER1 = {
-  name: 'issuer1_name',
-  desc: 'issuer1_desc'
-}
-
-var ASSET1 = {
-  name: 'BTC',
-  desc: 'asset1_desc',
-  maximum: '10000000000000',
-  precision: 6,
-  strategy: ''
-}
-
 async function registerIssuerAsync(name, desc, account) {
   var res = await node.submitTransactionAsync(node.asch.uia.createIssuer(name, desc, account.password))
   DEBUG('register issuer response', res.body)
@@ -37,13 +24,50 @@ async function issueAssetAsync(currency, amount, account) {
 
 async function writeoffAssetAsync(currency, account) {
   var res = await node.submitTransactionAsync(node.asch.uia.createFlags(currency, 2, 1, account.password))
-  DEBUG('issue asset response', res.body)
+  DEBUG('writeoff asset response', res.body)
+  return res
+}
+
+async function changeFlagsAsync(currency, flagType, flag, account) {
+  var res = await node.submitTransactionAsync(node.asch.uia.createFlags(currency, flagType, flag, account.password))
+  DEBUG('change flags response', res.body)
+  return res
+}
+
+async function changeFlagsAsync(currency, flagType, flag, account) {
+  var res = await node.submitTransactionAsync(node.asch.uia.createFlags(currency, flagType, flag, account.password))
+  DEBUG('change flags response', res.body)
+  return res
+}
+
+async function updateAclAsync(currency, operator, flag, list, account) {
+  var res = await node.submitTransactionAsync(node.asch.uia.createAcl(currency, operator, flag, list, account.password))
+  DEBUG('update acl response', res.body)
+  return res
+}
+
+async function transferAsync(currency, amount, recipientId, account) {
+  var res = await node.submitTransactionAsync(node.asch.uia.createTransfer(currency, amount, recipientId, account.password))
+  DEBUG('transfer asset response', res.body)
   return res
 }
 
 describe('Test UIA', () => {
 
   describe('Normal caces', () => {
+    var ISSUER1 = {
+      name: 'issuer1_name',
+      desc: 'issuer1_desc'
+    }
+
+    var ASSET1 = {
+      name: 'BTC',
+      desc: 'asset1_desc',
+      maximum: '10000000000000',
+      precision: 6,
+      strategy: ''
+    }
+
     it('Get issuers should be ok', async function () {
       var [err, res] = await node.apiGetAsyncE('/uia/issuers')
       DEBUG('get /uia/issuers response', err, res.body)
@@ -450,24 +474,11 @@ describe('Test UIA', () => {
     })
   })
 
-  describe('Issue asset fail cases', () => {
+  describe.only('Parameter validate fail cases', () => {
     var ISSUE_ACCOUNT = node.genNormalAccount()
-    var ISSUER_NAME = node.randomIssuerName()
-    var ASSET_NAME = ISSUER_NAME + '.GOLD'
-    var MAX_AMOUNT = '100000'
+    var ASSET_NAME = 'NotExistName.BTC'
 
-    before(async function() {
-      await node.giveMoneyAndWaitAsync([ISSUE_ACCOUNT.address])
-      var res = await registerIssuerAsync(ISSUER_NAME, 'valid desc', ISSUE_ACCOUNT)
-      expect(res.body).to.have.property('success').to.be.true
-      await node.onNewBlockAsync()
-
-      res = await registerAssetAsync(ASSET_NAME, 'valid desc', MAX_AMOUNT, 1, '', ISSUE_ACCOUNT)
-      expect(res.body).to.have.property('success').to.be.true
-      await node.onNewBlockAsync()
-    })
-
-    it('should fail if issue amount is invalid', async function () {
+    it('should fail to issue if amount is invalid', async function () {
       var res = await issueAssetAsync(ASSET_NAME, '', ISSUE_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
 
@@ -481,29 +492,169 @@ describe('Test UIA', () => {
       expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
     })
 
-    it('should fail if asset not exists', async function () {
-      var res = await issueAssetAsync(node.randomIssuerName() + '.CNY', '1', ISSUE_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Asset not exists/)
+    it('should fail to change flags if parameters is invalid', async function () {
+      var res = await changeFlagsAsync(ASSET_NAME, -1, 1, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid asset flag type/)
+
+      res = await changeFlagsAsync(ASSET_NAME, 1, -1, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid asset flag/)
+
+      res = await changeFlagsAsync(ASSET_NAME, 2, -1, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid asset flag/)
     })
 
-    it('should fail if asset belongs to other account', async function () {
+    it('should fail to update acl if parameters is invalid', async function () {
+      var validFlag = 0
+      var validOperator = '+'
+      var validList = [node.genNormalAccount().address]
+      var res = await updateAclAsync(ASSET_NAME, '+-', validFlag, validList, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
+
+      res = await updateAclAsync(ASSET_NAME, '|', validFlag, validList, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid acl operator/)
+
+      res = await updateAclAsync(ASSET_NAME, validOperator, -1, validList, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid acl flag/)
+
+      res = await updateAclAsync(ASSET_NAME, validOperator, validFlag, [], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid acl list/)
+
+      var bigList = []
+      for (let i = 0; i < 11; ++i) {
+        bigList.push(node.genNormalAccount().address)
+      }
+      res = await updateAclAsync(ASSET_NAME, validOperator, validFlag, bigList, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid acl list/)
+
+      var unUniqList = ['123', '123']
+      res = await updateAclAsync(ASSET_NAME, validOperator, validFlag, unUniqList, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
+
+      res = await updateAclAsync(ASSET_NAME, validOperator, validFlag, [ISSUE_ACCOUNT.address], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Issuer should not be in ACL list/)
+
+      res = await updateAclAsync(ASSET_NAME, validOperator, validFlag, ['invalid address'], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Acl contains invalid address/)
+    })
+
+    it('should fail to do anything if asset not exists', async function () {
+      var notExistAssetName = 'NotExistName.CNY'
+      var res = await issueAssetAsync(notExistAssetName, '1', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Asset not exists/)
+
+      res = await changeFlagsAsync(notExistAssetName, 1, 1, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Asset not exists/)
+
+      res = await updateAclAsync(notExistAssetName, '+', 0, ['123'], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Asset not exists/)
+
+      res = await transferAsync(notExistAssetName, '1', '123', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Asset not exists/)
+    })
+  })
+
+  describe('Asset operation fail cases', () => {
+    var ISSUE_ACCOUNT = node.genNormalAccount()
+    var ISSUER_NAME = node.randomIssuerName()
+    var ASSET_NAME = ISSUER_NAME + '.GOLD'
+    var MAX_AMOUNT = '100000'
+
+    before(async function () {
+      await node.giveMoneyAndWaitAsync([ISSUE_ACCOUNT.address])
+      var res = await registerIssuerAsync(ISSUER_NAME, 'valid desc', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+      await node.onNewBlockAsync()
+
+      res = await registerAssetAsync(ASSET_NAME, 'valid desc', MAX_AMOUNT, 1, '', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+      await node.onNewBlockAsync()
+    })
+
+    it('should have no permission to operate if asset belongs to other account', async function () {
       var account = node.genNormalAccount()
-      await node.giveMoneyAndWaitAsync([account.address])
       var res = await issueAssetAsync(ASSET_NAME, '1', account)
+      expect(res.body).to.have.property('error').to.match(/^Permission not allowed/)
+
+      res = await changeFlagsAsync(ASSET_NAME, 1, 1, account)
+      expect(res.body).to.have.property('error').to.match(/^Permission not allowed/)
+
+      res = await updateAclAsync(ASSET_NAME, '+', 0, [node.genNormalAccount().address], account)
+      expect(res.body).to.have.property('error').to.match(/^Permission not allowed/)
+
+      res = await transferAsync(ASSET_NAME, '1', [node.genNormalAccount().address], account)
       expect(res.body).to.have.property('error').to.match(/^Permission not allowed/)
     })
 
-    it('should fail if issue amount exceed the limit', async function () {
+    it('should fail to issue if amount exceed the limit', async function () {
       var res = await issueAssetAsync(ASSET_NAME, bignum(MAX_AMOUNT).plus(1).toString(), ISSUE_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Exceed issue limit/)
     })
 
-    it('should fail if asset is writeoff', async function () {
+    it('should fail to double submit issuing', async function () {
+      var res = await issueAssetAsync(ASSET_NAME, '1', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+      res = await issueAssetAsync(ASSET_NAME, '2', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Double submit/)
+
+      await node.onNewBlockAsync()
+    })
+
+    it('should fail to double submit flags', async function () {
+      var res = await changeFlagsAsync(ASSET_NAME, 1, 0, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+      res = await changeFlagsAsync(ASSET_NAME, 1, 1, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Double submit/)
+
+      await node.onNewBlockAsync()
+    })
+
+    it('should fail to doulbe submit acl', async function () {
+      var res = await updateAclAsync(ASSET_NAME, '+', 0, [node.genNormalAccount().address], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+      await updateAclAsync(ASSET_NAME, '+', 0, [node.genNormalAccount().address], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Double submit/)
+
+      await node.onNewBlockAsync()
+    })
+
+    it('should fail to double set flag', async function () {
+      // default acl flag is 0
+      var res = await changeFlagsAsync(ASSET_NAME, 1, 0, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Flag double set/)
+    })
+
+    it('should fail to add acl if some address is already in acl', async function () {
+      var address1 = node.genNormalAccount().address
+      var address2 = node.genNormalAccount().address
+      var res = await updateAclAsync(ASSET_NAME, '+', 0, [address1], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+      await node.onNewBlockAsync()
+
+      res = await updateAclAsync(ASSET_NAME, '+', 0, [address1, address2], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Double add acl address/)
+
+      res = await updateAclAsync(ASSET_NAME, '+', 1, [address1, address2], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+
+      res = await updateAclAsync(ASSET_NAME, '-', 0, [address1, address2], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+    })
+
+    it('should fail to do anything if asset is writeoff', async function () {
       var res = await writeoffAssetAsync(ASSET_NAME, ISSUE_ACCOUNT)
       expect(res.body).to.have.property('success').to.be.true
       await node.onNewBlockAsync()
 
       res = await issueAssetAsync(ASSET_NAME, '1', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Asset already writeoff/)
+
+      res = await changeFlagsAsync(ASSET_NAME, 1, 1, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Asset already writeoff/)
+
+      res = await updateAclAsync(ASSET_NAME, '+', 0, [node.genNormalAccount().address], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Asset already writeoff/)
+
+      res = await transferAsync(ASSET_NAME, '1', [node.genNormalAccount().address], ISSUE_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Asset already writeoff/)
     })
   })

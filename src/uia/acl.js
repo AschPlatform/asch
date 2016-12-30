@@ -4,6 +4,7 @@ var bignum = require('bignumber')
 var ByteBuffer = require('bytebuffer')
 var _ = require('lodash')
 var flagsHelper = require('./flags-helper')
+var addressHelper = require('../utils/address.js')
 
 function Acl() {
   this.create = function (data, trs) {
@@ -31,12 +32,11 @@ function Acl() {
     if (!flagsHelper.isValidFlag(1, asset.flag)) return setImmediate(cb, 'Invalid acl flag')
     if (!_.isArray(asset.list) || asset.list.length == 0 || asset.list.length > 10) return setImmediate(cb, 'Invalid acl list')
 
-    var isAddress = /^[0-9]{1,21}$/g
-    for (var i = 0; i < asset.list; ++i) {
-      if (!isAddress.test(asset.list[i])) return setImmediate("Invalid acl address")
-      if (sender.address === asset.list[i]) return setImmediate('Issuer should not be in ACL list')
+    for (var i = 0; i < asset.list.length; ++i) {
+      if (!addressHelper.isAddress(asset.list[i])) return setImmediate(cb, 'Acl contains invalid address')
+      if (sender.address === asset.list[i]) return setImmediate(cb, 'Issuer should not be in ACL list')
     }
-    if (_.uniq(asset.list).length != asset.list.length) return setImmediate('Duplicated acl address')
+    if (_.uniq(asset.list).length != asset.list.length) return setImmediate(cb, 'Duplicated acl address')
 
     library.model.getAssetByName(asset.currency, function (err, result) {
       if (err) return cb(err)
@@ -45,18 +45,22 @@ function Acl() {
       if (result.issuerId !== sender.address) return cb('Permission not allowed')
 
       if (result.writeoff) return cb('Asset already writeoff')
-      if (result.acl != asset.flag) return cb('Current flag not match')
+      // if (result.acl != asset.flag) return cb('Current flag not match')
 
       var table = flagsHelper.getAclTable(asset.flag)
       var condition = [
         { currency: asset.currency },
         { address: { $in: asset.list } }
       ]
-      library.model.exists(table, condition, function (err, exists) {
-        if (err) return cb(err)
-        if (exists) return cb('Some address already exists')
+      if (asset.operator == '+') {
+        library.model.exists(table, condition, function (err, exists) {
+          if (err) return cb(err)
+          if (exists) return cb('Double add acl address')
+          return cb()
+        })
+      } else {
         return cb()
-      })
+      }
     })
   }
 
@@ -103,6 +107,7 @@ function Acl() {
     if (library.oneoff.has(key)) {
       return setImmediate(cb, 'Double submit')
     }
+    library.oneoff.set(key, true)
     setImmediate(cb)
   }
 
@@ -122,6 +127,8 @@ function Acl() {
         },
         operator: {
           type: 'string',
+          minLength: 1,
+          maxLength: 1
         },
         flag: {
           type: 'integer',

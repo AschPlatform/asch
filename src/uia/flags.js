@@ -35,7 +35,7 @@ function Flags() {
       if (result.issuerId !== sender.address) return cb('Permission not allowed')
       
       if (result.writeoff) return cb('Asset already writeoff')
-      if (flagsHelper.isSameFlag(asset.flagType, asset.flag, result)) return cb('Flag already set')
+      if (flagsHelper.isSameFlag(asset.flagType, asset.flag, result)) return cb('Flag double set')
 
       return cb()
     })
@@ -71,6 +71,7 @@ function Flags() {
     if (library.oneoff.has(key)) {
       return setImmediate(cb, 'Double submit')
     }
+    library.oneoff.set(key, true)
     setImmediate(cb)
   }
 

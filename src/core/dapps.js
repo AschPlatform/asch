@@ -16,6 +16,7 @@ var TransactionTypes = require('../utils/transaction-types.js');
 var Router = require('../utils/router.js');
 var constants = require('../utils/constants.js');
 var sandboxHelper = require('../utils/sandbox.js');
+var addressHelper = require('../utils/address.js')
 
 var modules, library, self, private = {}, shared = {};
 
@@ -2311,8 +2312,7 @@ shared.sendWithdrawal = function (req, cb) {
     var keypair = ed.MakeKeypair(hash);
     var query = {};
 
-    var isAddress = /^[0-9]{1,21}$/g;
-    if (!isAddress.test(body.recipientId)) {
+    if (!addressHelper.isAddress(body.recipientId)) {
       return cb("Invalid address");
     }
 

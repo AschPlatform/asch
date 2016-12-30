@@ -7,6 +7,7 @@ var slots = require('../utils/slots.js');
 var Router = require('../utils/router.js');
 var TransactionTypes = require('../utils/transaction-types.js');
 var sandboxHelper = require('../utils/sandbox.js');
+var addressHelper = require('../utils/address.js')
 
 var genesisblock = null;
 // Private fields
@@ -28,8 +29,7 @@ function Transfer() {
   }
 
   this.verify = function (trs, sender, cb) {
-    var isAddress = /^[0-9]{1,21}$/g;
-    if (!trs.recipientId || !isAddress.test(trs.recipientId)) {
+    if (!addressHelper.isAddress(trs.recipientId)) {
       return cb("Invalid recipient");
     }
 

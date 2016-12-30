@@ -103,6 +103,7 @@ function Issue() {
     if (library.oneoff.has(key)) {
       return setImmediate(cb, 'Double submit')
     }
+    library.oneoff.set(key, true)
     setImmediate(cb)
   }
 
