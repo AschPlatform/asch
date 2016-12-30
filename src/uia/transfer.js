@@ -116,12 +116,12 @@ function Transfer() {
         currency: {
           type: 'string',
           minLength: 1,
-          maxLength: 16
+          maxLength: 22
         },
         amount: {
           type: 'string',
           minLength: 1,
-          maxLength: 33
+          maxLength: 50
         }
       },
       required: ['currency', 'amount']

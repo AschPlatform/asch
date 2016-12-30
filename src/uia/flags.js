@@ -86,7 +86,7 @@ function Flags() {
         currency: {
           type: 'string',
           minLength: 1,
-          maxLength: 16
+          maxLength: 22
         },
         flagType: {
           type: 'integer'

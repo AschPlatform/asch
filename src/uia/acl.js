@@ -118,7 +118,7 @@ function Acl() {
         currency: {
           type: 'string',
           minLength: 1,
-          maxLength: 16
+          maxLength: 22
         },
         operator: {
           type: 'string',
