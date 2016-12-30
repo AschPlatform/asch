@@ -2,6 +2,7 @@ var assert = require('assert')
 var async = require('async')
 var bignum = require('bignumber')
 var mathjs = require('mathjs')
+var amountHelper = require('../utils/amount.js')
 
 function Issue() {
   this.create = function (data, trs) {
@@ -23,15 +24,8 @@ function Issue() {
     if (trs.amount != 0) return setImmediate(cb, 'Invalid transaction amount')
 
     var amount = trs.asset.uiaIssue.amount
-    if (amount.indexOf('.') != -1) return cb('Issue amount should be integer')
-
-    var bnAmount
-    try {
-      bnAmount = bignum(amount)
-    } catch (e) {
-      return cb('Issue amount should be number')
-    }
-    if (bnAmount.lt(1) || bnAmount.gt('1e48')) return setImmediate(cb, 'Invalid asset issue amount')
+    var error = amountHelper.validate(amount)
+    if (error) return setImmediate(cb, error)
 
     library.model.getAssetByName(trs.asset.uiaIssue.currency, function (err, result) {
       if (err) return cb('Database error: ' + err)

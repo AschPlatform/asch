@@ -1,6 +1,7 @@
 var assert = require('assert')
 var async = require('async')
 var bignum = require('bignumber')
+var amountHelper = require('../utils/amount.js')
 
 function Asset() {
   this.create = function (data, trs) {
@@ -39,16 +40,8 @@ function Asset() {
 
     if (asset.precision > 16 || asset.precision < 0) return setImmediate(cb, 'Invalid asset precision')
 
-    if (asset.maximum.indexOf('.') != -1) {
-      return cb('Asset maximum should be integer')
-    }
-    var bnMaximum
-    try {
-      bnMaximum = bignum(asset.maximum)
-    } catch (e) {
-      return cb('Asset maximum should be number')
-    }
-    if (bnMaximum.lt(1) || bnMaximum.gt('1e48')) return setImmediate(cb, 'Invalid asset maximum range')
+    var error = amountHelper.validate(asset.maximum)
+    if (error) return setImmediate(cb, error)
 
     if (asset.strategy && asset.strategy.length > 256) return setImmediate(cb, 'Invalid asset strategy size')
 

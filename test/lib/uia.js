@@ -29,6 +29,18 @@ async function registerAssetAsync(name, desc, maximum, precision, strategy, acco
   return res
 }
 
+async function issueAssetAsync(currency, amount, account) {
+  var res = await node.submitTransactionAsync(node.asch.uia.createIssue(currency, amount, account.password))
+  DEBUG('issue asset response', res.body)
+  return res
+}
+
+async function writeoffAssetAsync(currency, account) {
+  var res = await node.submitTransactionAsync(node.asch.uia.createFlags(currency, 2, 1, account.password))
+  DEBUG('issue asset response', res.body)
+  return res
+}
+
 describe('Test UIA', () => {
 
   describe('Normal caces', () => {
@@ -373,27 +385,27 @@ describe('Test UIA', () => {
       expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
     })
 
-    it('Invalid asset maximum balance', async function () {
+    it('Invalid asset maximum', async function () {
       var res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '0', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Invalid asset maximum range/)
+      expect(res.body).to.have.property('error').to.match(/^Invalid amount range/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '-1', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Invalid asset maximum range/)
+      expect(res.body).to.have.property('error').to.match(/^Invalid amount range/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '1e49', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Invalid asset maximum range/)
+      expect(res.body).to.have.property('error').to.match(/^Invalid amount range/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '1000000000000000000000000000000000000000000000001', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Invalid asset maximum range/)
+      expect(res.body).to.have.property('error').to.match(/^Invalid amount range/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, 'invalid_number', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Asset maximum should be number/)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be number/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '1000.5', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Asset maximum should be integer/)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
     })
 
     it('Invalid asset precision', async function () {
@@ -417,7 +429,7 @@ describe('Test UIA', () => {
       expect(res.body).to.have.property('error').to.match(/^Issuer not exists/)
     })
 
-    it.only('Double submit and double register', async function () {
+    it('Double submit and double register', async function () {
       var account = node.genNormalAccount()
       await node.giveMoneyAndWaitAsync([account.address])
 
@@ -439,6 +451,61 @@ describe('Test UIA', () => {
   })
 
   describe('Issue asset fail cases', () => {
+    var ISSUE_ACCOUNT = node.genNormalAccount()
+    var ISSUER_NAME = node.randomIssuerName()
+    var ASSET_NAME = ISSUER_NAME + '.GOLD'
+    var MAX_AMOUNT = '100000'
+
+    before(async function() {
+      await node.giveMoneyAndWaitAsync([ISSUE_ACCOUNT.address])
+      var res = await registerIssuerAsync(ISSUER_NAME, 'valid desc', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+      await node.onNewBlockAsync()
+
+      res = await registerAssetAsync(ASSET_NAME, 'valid desc', MAX_AMOUNT, 1, '', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+      await node.onNewBlockAsync()
+    })
+
+    it('should fail if issue amount is invalid', async function () {
+      var res = await issueAssetAsync(ASSET_NAME, '', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
+
+      res = await issueAssetAsync(ASSET_NAME, '0', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Invalid amount range/)
+
+      res = await issueAssetAsync(ASSET_NAME, 'invalid_number', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be number/)
+
+      res = await issueAssetAsync(ASSET_NAME, '1000.5', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
+    })
+
+    it('should fail if asset not exists', async function () {
+      var res = await issueAssetAsync(node.randomIssuerName() + '.CNY', '1', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Asset not exists/)
+    })
+
+    it('should fail if asset belongs to other account', async function () {
+      var account = node.genNormalAccount()
+      await node.giveMoneyAndWaitAsync([account.address])
+      var res = await issueAssetAsync(ASSET_NAME, '1', account)
+      expect(res.body).to.have.property('error').to.match(/^Permission not allowed/)
+    })
+
+    it('should fail if issue amount exceed the limit', async function () {
+      var res = await issueAssetAsync(ASSET_NAME, bignum(MAX_AMOUNT).plus(1).toString(), ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Exceed issue limit/)
+    })
+
+    it('should fail if asset is writeoff', async function () {
+      var res = await writeoffAssetAsync(ASSET_NAME, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+      await node.onNewBlockAsync()
+
+      res = await issueAssetAsync(ASSET_NAME, '1', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Asset already writeoff/)
+    })
   })
 
 })

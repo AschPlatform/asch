@@ -2,6 +2,7 @@ var assert = require('assert')
 var async = require('async')
 var bignum = require('bignumber')
 var mathjs = require('mathjs')
+var amountHelper = require('../utils/amount.js')
 
 function Transfer() {
   this.create = function (data, trs) {
@@ -24,9 +25,8 @@ function Transfer() {
     if (trs.amount != 0) return setImmediate(cb, 'Invalid transaction amount')
 
     var asset = trs.asset.uiaTransfer
-    var amount = asset.amount
-    var bnAmount = bignum(amount)
-    if (bnAmount.lt(1) || bnAmount.gt('1e32')) return setImmediate(cb, 'Invalid asset transfer amount')
+    var error = amountHelper.validate(asset.amount)
+    if (error) return setImmediate(cb, error)
 
     library.model.getAssetByName(asset.currency, function (err, assetDetail) {
       if (err) return cb('Database error: ' + err)
