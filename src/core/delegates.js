@@ -78,7 +78,7 @@ function Delegate() {
       return cb("Username is too long. Maximum is 20 characters");
     }
 
-    if (!addressHelper.isAddress(username)) {
+    if (addressHelper.isAddress(username)) {
       return cb("Username can not be a potential address");
     }
 
