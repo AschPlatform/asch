@@ -120,12 +120,12 @@ const FULL_BLOCK_QUERY = "SELECT " +
   "left outer join intransfer it on it.transactionId=t.id " +
   "left outer join outtransfer ot on ot.transactionId=t.id " +
   "left outer join storages st on st.transactionId=t.id " +
-  "left outer join issuers on st.transactionId=t.id " +
-  "left outer join assets on st.transactionId=t.id " +
-  "left outer join flags on st.transactionId=t.id " +
-  "left outer join issues on st.transactionId=t.id " +
-  "left outer join transfers on st.transactionId=t.id " +
-  "left outer join acls on st.transactionId=t.id ";
+  "left outer join issuers on issuers.transactionId=t.id " +
+  "left outer join assets on assets.transactionId=t.id " +
+  "left outer join flags on flags.transactionId=t.id " +
+  "left outer join issues on issues.transactionId=t.id " +
+  "left outer join transfers on transfers.transactionId=t.id " +
+  "left outer join acls on acls.transactionId=t.id ";
 
 // Constructor
 function Blocks(cb, scope) {
@@ -1248,6 +1248,10 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 Blocks.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
+}
+
+Blocks.prototype.getDataFields = function () {
+  return private.blocksDataFields
 }
 
 // Events
