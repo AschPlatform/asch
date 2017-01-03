@@ -1,11 +1,11 @@
-var ByteBuffer = require("bytebuffer")
+var ByteBuffer = require('bytebuffer')
 var crypto = require('crypto')
 var async = require('async')
 var ed = require('ed25519')
 var extend = require('extend')
 var jsonSql = require('json-sql')()
-jsonSql.setDialect("sqlite")
-var constants = require("../utils/constants.js")
+jsonSql.setDialect('sqlite')
+var constants = require('../utils/constants.js')
 var slots = require('../utils/slots.js')
 var Router = require('../utils/router.js')
 var TransactionTypes = require('../utils/transaction-types.js')
@@ -46,31 +46,32 @@ private.attachApi = function () {
 
   router.use(function (req, res, next) {
     if (modules) return next()
-    res.status(500).send({ success: false, error: "Blockchain is loading" })
+    res.status(500).send({ success: false, error: 'Blockchain is loading' })
   })
 
   router.map(shared, {
-    "get /issuers": "getIssuers",
-    "get /issuers/:name": "getIssuer",
-    "get /issuers/:name/assets": "getIssuerAssets",
-    "get /assets": "getAssets",
-    "get /assets/:name": "getAsset",
-    "get /assets/:name/acl/:flag": "getAssetAcl",
-    "get /balances/:address": "getBalances",
+    'get /issuers': 'getIssuers',
+    'get /issuers/:name': 'getIssuer',
+    'get /issuers/:name/assets': 'getIssuerAssets',
+    'get /assets': 'getAssets',
+    'get /assets/:name': 'getAsset',
+    'get /assets/:name/acl/:flag': 'getAssetAcl',
+    'get /balances/:address': 'getBalances',
+    'get /transactions': 'getTransactions',
 
     // TODO(qingfeng) update issuer or asset description
-    // "put /issuers/:iid": "updateIssuer",
-    // "put /assets/:aid": "updateAsset",
-    "put /issuers": "registerIssuer",
-    "put /assets": "registerAssets",
-    "put /assets/:name/acl": "updateAssetAcl",
-    "put /assets/:name/issue": "issueAsset",
-    "put /assets/:name/transfer": "transferAsset",
-    "put /assets/:name/flags": "updateFlags",
+    // 'put /issuers/:iid': 'updateIssuer',
+    // 'put /assets/:aid': 'updateAsset',
+    'put /issuers': 'registerIssuer',
+    'put /assets': 'registerAssets',
+    'put /assets/:name/acl': 'updateAssetAcl',
+    'put /assets/:name/issue': 'issueAsset',
+    'put /assets/:name/transfer': 'transferAsset',
+    'put /assets/:name/flags': 'updateFlags',
   })
 
   router.use(function (req, res, next) {
-    res.status(500).send({ success: false, error: "API endpoint not found" })
+    res.status(500).send({ success: false, error: 'API endpoint not found' })
   })
 
   library.network.app.use('/api/uia', router)
@@ -104,15 +105,15 @@ shared.getFee = function (req, cb) {
 shared.getIssuers = function (req, cb) {
   var query = req.body
   library.scheme.validate(query, {
-    type: "object",
+    type: 'object',
     properties: {
       limit: {
-        type: "integer",
+        type: 'integer',
         minimum: 0,
         maximum: 100
       },
       offset: {
-        type: "integer",
+        type: 'integer',
         minimum: 0
       }
     }
@@ -150,7 +151,7 @@ shared.getIssuer = function (req, cb) {
     if (err) return cb('Invalid parameters: ' + err[0])
 
     library.model.getIssuerByName(query.name, ['name', 'desc', 'issuerId'], function (err, issuer) {
-      if (!issuer || err) return cb("Issuer not found")
+      if (!issuer || err) return cb('Issuer not found')
       cb(null, { issuer: issuer })
     });
   });
@@ -165,12 +166,12 @@ shared.getIssuerAssets = function (req, cb) {
     type: 'object',
     properties: {
       limit: {
-        type: "integer",
+        type: 'integer',
         minimum: 0,
         maximum: 100
       },
       offset: {
-        type: "integer",
+        type: 'integer',
         minimum: 0
       }
     }
@@ -203,12 +204,12 @@ shared.getAssets = function (req, cb) {
     type: 'object',
     properties: {
       limit: {
-        type: "integer",
+        type: 'integer',
         minimum: 0,
         maximum: 100
       },
       offset: {
-        type: "integer",
+        type: 'integer',
         minimum: 0
       }
     }
@@ -267,12 +268,12 @@ shared.getAssetAcl = function (req, cb) {
     type: 'object',
     properties: {
       limit: {
-        type: "integer",
+        type: 'integer',
         minimum: 0,
         maximum: 100
       },
       offset: {
-        type: "integer",
+        type: 'integer',
         minimum: 0
       }
     }
@@ -306,12 +307,12 @@ shared.getBalances = function (req, cb) {
     type: 'object',
     properties: {
       limit: {
-        type: "integer",
+        type: 'integer',
         minimum: 0,
         maximum: 100
       },
       offset: {
-        type: "integer",
+        type: 'integer',
         minimum: 0
       }
     }
@@ -338,6 +339,93 @@ shared.getBalances = function (req, cb) {
       })
     })
   });
+}
+
+shared.getTransactions = function (req, cb) {
+  var query = req.body
+  library.scheme.validate(query, {
+    type: 'object',
+    properties: {
+      limit: {
+        type: 'integer',
+        minimum: 0,
+        maximum: 100
+      },
+      offset: {
+        type: 'integer',
+        minimum: 0
+      },
+      senderPublicKey: {
+        type: 'string',
+        format: 'publicKey'
+      }
+    }
+  }, function (err) {
+    if (err) return cb('Invalid parameters: ' + err[0])
+    if (query.senderPublicKey) {
+      query.recipientId = modules.accounts.generateAddressByPublicKey(new Buffer(query.senderPublicKey, 'hex'))
+    }
+    query.uia = 1
+    modules.transactions.list(query, function (err, data) {
+      if (err) return cb('Failed to get transactions: ' + err)
+
+      var sqls = []
+      var typeToTable = {
+        9: {
+          table: 'issuers',
+          fields: ['transactionId', 'name', 'desc']
+        },
+        10: {
+          table: 'assets',
+          fields: ['transactionId', 'name', 'desc', 'maximum', 'precision', 'strategy']
+        },
+        11: {
+          table: 'flags',
+          fields: ['transactionId', 'currency', 'flagType', 'flag']
+        },
+        12: {
+          table: 'acls',
+          fields: ['transactionId', 'currency', 'operator', 'flag', 'list']
+        },
+        13: {
+          table: 'issues',
+          fields: ['transactionId', 'currency', 'amount']
+        },
+        14: {
+          table: 'transfers',
+          fields: ['transactionId', 'currency', 'amount']
+        }
+      }
+      data.transactions.forEach(function (trs) {
+        trs.t_id = trs.id
+        sqls.push({
+          query: 'select ' + typeToTable[trs.type].fields.join(',') + ' from ' + typeToTable[trs.type].table + ' where transactionId="' + trs.id + '"',
+          fields: typeToTable[trs.type].fields
+        })
+      })
+      async.mapSeries(sqls, function (sql, next) {
+        library.dbLite.query(sql.query, {}, sql.fields, next)
+      }, function (err, rows) {
+        if (err) return cb('Failed to get transaction assets: ' + err)
+
+        for (let i = 0; i < rows.length; ++i) {
+          if (rows[i].length == 0) continue
+          var t = data.transactions[i]
+          var type = t.type;
+          var table = typeToTable[type].table
+          var asset = rows[i][0]
+          for (let k in asset) {
+            asset[table + '_' + k] = asset[k]
+          }
+          if (asset.transactionId == t.id) {
+            asset.t_id = asset.transactionId
+            t.asset = library.base.transaction.dbReadAsset(t.type, asset)
+          }
+        }
+        cb(null, data)
+      })
+    })
+  })
 }
 
 shared.registerIssuer = function (req, cb) {

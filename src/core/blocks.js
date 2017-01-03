@@ -1250,10 +1250,6 @@ Blocks.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
 }
 
-Blocks.prototype.getDataFields = function () {
-  return private.blocksDataFields
-}
-
 // Events
 Blocks.prototype.onReceiveBlock = function (block, votes) {
   if (modules.loader.syncing() || !private.loaded) {

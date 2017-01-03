@@ -326,6 +326,9 @@ private.list = function (filter, cb) {
     fields_or.push('type = $type');
     params.type = filter.type;
   }
+  if (filter.uia) {
+    fields_or.push('type >=9 and type <= 14')
+  }
 
   if (filter.limit >= 0) {
     params.limit = filter.limit;
@@ -602,6 +605,10 @@ Transactions.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
 }
 
+Transactions.prototype.list = function (query, cb) {
+  private.list(query, cb)
+}
+
 // Events
 Transactions.prototype.onBind = function (scope) {
   modules = scope;
@@ -659,6 +666,11 @@ shared.getTransactions = function (req, cb) {
         type: "integer",
         minimum: 0,
         maximum: constants.fixedPoint
+      },
+      uia: {
+        type: "integer",
+        minimum: 0,
+        maximum: 1
       }
     }
   }, function (err) {

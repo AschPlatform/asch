@@ -684,5 +684,12 @@ Transaction.prototype.dbRead = function (raw) {
   }
 }
 
+Transaction.prototype.dbReadAsset = function (type, raw) {
+  if (!private.types[type]) {
+    throw Error('Unknown transaction type ' + type)
+  }
+  return private.types[type].dbRead.call(this, raw)
+}
+
 // Export
 module.exports = Transaction;
