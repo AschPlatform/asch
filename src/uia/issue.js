@@ -138,7 +138,7 @@ function Issue() {
   }
 
   this.dbRead = function (raw) {
-    if (!raw.s_publicKey) {
+    if (!raw.issues_currency) {
       return null
     } else {
       var asset = {

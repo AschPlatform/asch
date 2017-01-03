@@ -135,7 +135,7 @@ function Transfer() {
   }
 
   this.dbRead = function (raw) {
-    if (!raw.transfer_currency) {
+    if (!raw.transfers_currency) {
       return null
     } else {
       var asset = {

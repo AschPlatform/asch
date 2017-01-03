@@ -151,7 +151,7 @@ function Acl() {
   }
 
   this.dbRead = function (raw) {
-    if (!raw.acl_currency) {
+    if (!raw.acls_currency) {
       return null
     } else {
       var asset = {

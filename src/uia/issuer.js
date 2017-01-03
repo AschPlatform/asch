@@ -97,7 +97,7 @@ function Issuer() {
   }
 
   this.dbRead = function (raw) {
-    if (!raw.s_publicKey) {
+    if (!raw.issuers_name) {
       return null
     } else {
       var issuer = {

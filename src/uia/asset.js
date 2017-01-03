@@ -140,7 +140,7 @@ function Asset() {
   }
 
   this.dbRead = function (raw) {
-    if (!raw.s_publicKey) {
+    if (!raw.assets_name) {
       return null
     } else {
       var asset = {
