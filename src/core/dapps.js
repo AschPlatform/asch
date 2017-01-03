@@ -592,7 +592,7 @@ function DApp() {
     private.unconfirmedNames[trs.asset.dapp.name] = true;
     private.unconfirmedLinks[trs.asset.dapp.link] = true;
 
-    checkDuplicate(trs, cb);
+    setImmediate(cb)
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {

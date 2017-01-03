@@ -151,53 +151,26 @@ function Delegate() {
   }
 
   this.applyUnconfirmed = function (trs, sender, cb) {
-    if (sender.u_isDelegate) {
+    if (sender.isDelegate) {
       return cb("Account is already a delegate");
     }
 
-    function done() {
-      var data = {
-        address: sender.address,
-        u_isDelegate: 1,
-        isDelegate: 0
-      }
-
-      if (trs.asset.delegate.username) {
-        data.username = null;
-        data.u_username = trs.asset.delegate.username;
-      }
-
-      modules.accounts.setAccountAndGet(data, cb);
+    var nameKey = trs.asset.delegate.username + ':' + trs.type
+    var idKey = sender.address + ':' + trs.type
+    if (library.oneoff.has(nameKey) || library.oneoff.has(idKey)) {
+      return setImmediate(cb, 'Double submit')
     }
-
-    modules.accounts.getAccount({
-      u_username: trs.asset.delegate.username
-    }, function (err, account) {
-      if (err) {
-        return cb(err);
-      }
-
-      if (account) {
-        return cb("Username already exists");
-      }
-
-      done();
-    });
+    library.oneoff.set(nameKey, true)
+    library.oneoff.set(idKey, true)
+    setImmediate(cb) 
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {
-    var data = {
-      address: sender.address,
-      u_isDelegate: 0,
-      isDelegate: 0
-    }
-
-    if (trs.asset.delegate.username) {
-      data.username = null;
-      data.u_username = null;
-    }
-
-    modules.accounts.setAccountAndGet(data, cb);
+    var nameKey = trs.asset.uiaIssuer.name + ':' + trs.type
+    var idKey = sender.address + ':' + trs.type
+    library.oneoff.delete(nameKey)
+    library.oneoff.delete(idKey)
+    setImmediate(cb)
   }
 
   this.objectNormalize = function (trs) {

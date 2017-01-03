@@ -85,11 +85,15 @@ function Signature() {
   }
 
   this.applyUnconfirmed = function (trs, sender, cb) {
-    if (sender.u_secondSignature || sender.secondSignature) {
-      return setImmediate(cb, "Failed second signature: " + trs.id);
+    if (sender.secondSignature) {
+      return setImmediate(cb, "Double set second signature")
     }
-
-    modules.accounts.setAccountAndGet({address: sender.address, u_secondSignature: 1}, cb);
+    var key = sender.address + ':' + trs.type
+    if (library.oneoff.has(key)) {
+      return setImmediate(cb, 'Double submit second signature')
+    }
+    library.oneoff.set(key, true)
+    setImmediate(cb)
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {

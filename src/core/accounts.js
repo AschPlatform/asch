@@ -64,9 +64,7 @@ function Vote() {
       delegates: trs.asset.vote.votes,
       blockId: block.id,
       round: modules.round.calc(block.height)
-    }, function (err) {
-      cb(err);
-    });
+    }, cb);
   }
 
   this.undo = function (trs, block, sender, cb) {
@@ -78,33 +76,22 @@ function Vote() {
       delegates: votesInvert,
       blockId: block.id,
       round: modules.round.calc(block.height)
-    }, function (err) {
-      cb(err);
-    });
+    }, cb);
   }
 
   this.applyUnconfirmed = function (trs, sender, cb) {
-    modules.delegates.checkUnconfirmedDelegates(trs.senderPublicKey, trs.asset.vote.votes, function (err) {
-      if (err) {
-        return setImmediate(cb, err);
-      }
-
-      this.scope.account.merge(sender.address, {
-        u_delegates: trs.asset.vote.votes
-      }, function (err) {
-        cb(err);
-      });
-    }.bind(this));
+    var key = sender.address + ':' + trs.type
+    if (library.oneoff.has(key)) {
+      return setImmediate(cb, 'Double submit')
+    }
+    library.oneoff.set(key, true)
+    setImmediate(cb)
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {
-    if (trs.asset.vote.votes === null) return cb();
-
-    var votesInvert = Diff.reverse(trs.asset.vote.votes);
-
-    this.scope.account.merge(sender.address, {u_delegates: votesInvert}, function (err) {
-      cb(err);
-    });
+    var key = sender.address + ':' + trs.type
+    library.oneoff.delete(key)
+    setImmediate(cb)
   }
 
   this.objectNormalize = function (trs) {
