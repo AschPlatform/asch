@@ -153,7 +153,7 @@ function Issue() {
         amount: raw.issues_amount
       }
 
-      return { asset: asset }
+      return { uiaIssue: asset }
     }
   }
 

@@ -327,7 +327,7 @@ private.list = function (filter, cb) {
     params.type = filter.type;
   }
   if (filter.uia) {
-    fields_or.push('type >=9 and type <= 14')
+    fields_or.push('(type >=9 and type <= 14)')
   }
 
   if (filter.limit >= 0) {

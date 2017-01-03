@@ -144,7 +144,7 @@ function Transfer() {
         amount: raw.transfers_amount
       }
 
-      return { asset: asset }
+      return { uiaTransfer: asset }
     }
   }
 

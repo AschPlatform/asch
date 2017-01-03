@@ -355,15 +355,15 @@ shared.getTransactions = function (req, cb) {
         type: 'integer',
         minimum: 0
       },
-      senderPublicKey: {
+      ownerPublicKey: {
         type: 'string',
         format: 'publicKey'
       }
     }
   }, function (err) {
     if (err) return cb('Invalid parameters: ' + err[0])
-    if (query.senderPublicKey) {
-      query.recipientId = modules.accounts.generateAddressByPublicKey(new Buffer(query.senderPublicKey, 'hex'))
+    if (query.ownerPublicKey) {
+      query.ownerAddress = modules.accounts.generateAddressByPublicKey(query.ownerPublicKey)
     }
     query.uia = 1
     modules.transactions.list(query, function (err, data) {
@@ -396,7 +396,11 @@ shared.getTransactions = function (req, cb) {
           fields: ['transactionId', 'currency', 'amount']
         }
       }
+      console.log(data)
       data.transactions.forEach(function (trs) {
+        if (!typeToTable[trs.type]) {
+          return
+        }
         trs.t_id = trs.id
         sqls.push({
           query: 'select ' + typeToTable[trs.type].fields.join(',') + ' from ' + typeToTable[trs.type].table + ' where transactionId="' + trs.id + '"',

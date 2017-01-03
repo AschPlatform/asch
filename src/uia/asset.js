@@ -152,7 +152,7 @@ function Asset() {
         strategy: raw.assets_strategy
       }
 
-      return { asset: asset }
+      return { uiaAsset: asset }
     }
   }
 

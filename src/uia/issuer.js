@@ -106,7 +106,7 @@ function Issuer() {
         desc: raw.issuers_desc
       }
 
-      return { issuer: issuer }
+      return { uiaIssuer: issuer }
     }
   }
 
