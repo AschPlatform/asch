@@ -54,9 +54,9 @@ async function transferAsync(currency, amount, recipientId, account) {
 
 describe('Test UIA', () => {
 
-  describe('Normal caces', () => {
+  describe.only('Normal caces', () => {
     var ISSUER1 = {
-      name: 'issuer1_name',
+      name: 'issuername',
       desc: 'issuer1_desc'
     }
 
@@ -123,7 +123,7 @@ describe('Test UIA', () => {
       expect(err).to.not.exist
       expect(res.body.asset.name).to.equal(currency)
       expect(res.body.asset.desc).to.equal(ASSET1.desc)
-      expect(res.body.asset.maximum).to.equal(ASSET1.maxmimum)
+      expect(res.body.asset.maximum).to.equal(ASSET1.maximum)
       expect(res.body.asset.precision).to.equal(ASSET1.precision)
       expect(res.body.asset.issuerId).to.equal(node.Gaccount.address)
       expect(res.body.asset.quantity).to.equal('0')
@@ -139,13 +139,13 @@ describe('Test UIA', () => {
       DEBUG('get issuer balance before issue response', err, res.body)
       expect(err).to.not.exist
 
-      var issuerBalance = res.body.balances[0].balance
+      var issuerBalance = (res.body.balances[0] && res.body.balances[0].balance) || 0
 
       var [err, res] = await node.apiGetAsyncE('/uia/balances/' + transferAddress)
       DEBUG('get recipient balance before issue response', err, res.body)
       expect(err).to.not.exist
 
-      var recipientBalance = res.body.balances[0].balance
+      var recipientBalance = (res.body.balances[0] && res.body.balances[0].balance) || 0
 
       var [err, res] = await node.apiGetAsyncE('/uia/assets/' + currency)
       DEBUG('get asset before issue response', err, res.body)
@@ -187,6 +187,7 @@ describe('Test UIA', () => {
       trs = node.asch.uia.createTransfer(currency, transferAmount, transferAddress, node.Gaccount.password)
       DEBUG('create transfer trs', trs)
       var [err, res] = await node.submitTransactionAsyncE(trs)
+      DEBUG('transfer asset response', err, res.body)
       expect(err).to.not.exist
       expect(res.body).to.have.property('success').to.be.true
 
@@ -661,7 +662,7 @@ describe('Test UIA', () => {
     })
   })
 
-  describe.only('Test issue strategy', () => {
+  describe('Test issue strategy', () => {
     async function registerAssetWithStrategyAsync(maximum, strategy) {
       var account = node.genNormalAccount()
       var issuerName = node.randomIssuerName()
