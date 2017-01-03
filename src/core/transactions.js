@@ -13,6 +13,7 @@ var genesisblock = null;
 // Private fields
 var modules, library, self, private = {}, shared = {};
 
+private.unconfirmedNumber = 0;
 private.unconfirmedTransactions = [];
 private.unconfirmedTransactionsIdIndex = {};
 
@@ -418,6 +419,7 @@ private.addUnconfirmedTransaction = function (transaction, sender, cb) {
     private.unconfirmedTransactions.push(transaction);
     var index = private.unconfirmedTransactions.length - 1;
     private.unconfirmedTransactionsIdIndex[transaction.id] = index;
+    private.unconfirmedNumber++;
 
     setImmediate(cb);
   });
@@ -451,6 +453,7 @@ Transactions.prototype.removeUnconfirmedTransaction = function (id) {
   var index = private.unconfirmedTransactionsIdIndex[id];
   delete private.unconfirmedTransactionsIdIndex[id];
   private.unconfirmedTransactions[index] = false;
+  private.unconfirmedNumber--;
 }
 
 Transactions.prototype.hasUnconfirmedTransaction = function (transaction) {
@@ -590,7 +593,7 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 }
 
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
-  if (self.getUnconfirmedTransactionList().length + transactions.length > constants.maxTxsPerBlock) {
+  if (private.unconfirmedNumber > constants.maxTxsPerBlock) {
     setImmediate(cb, "Too many transactions");
     return;
   }

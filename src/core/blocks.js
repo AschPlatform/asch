@@ -998,17 +998,18 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, save, verifyT
               }
               transaction.blockId = block.id;
 
-              library.dbLite.query("SELECT id FROM trs WHERE id=$id; SELECT id FROM trs WHERE (senderId=$address and timestamp=$timestamp) limit 1;",
+              // library.dbLite.query("SELECT id FROM trs WHERE id=$id; SELECT id FROM trs WHERE (senderId=$address and timestamp=$timestamp) limit 1;",
+              library.dbLite.query("SELECT id FROM trs WHERE id=$id",
                 {
                   id: transaction.id,
-                  address: sender.address,
-                  timestamp: transaction.timestamp
+                  // address: sender.address,
+                  // timestamp: transaction.timestamp
                 },
                 function (err, rows) {
                   if (err) {
                     next("Failed to query transaction from db: " + err);
                   } else if (rows.length > 0) {
-                    modules.delegates.fork(block, 2);
+                    modules.transactions.removeUnconfirmedTransaction(transaction.id);
                     next("Transaction already exists: " + transaction.id);
                   } else {
                     next(null, sender);
