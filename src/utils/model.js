@@ -289,11 +289,33 @@ class Model {
       limit: filter.limit,
       offset: filter.offset,
       table: 'mem_asset_balances',
-      fields: ['currency', 'balance']
+      alias: 'b',
+      join: [
+        {
+          type: 'inner',
+          table: 'assets',
+          alias: 'a',
+          on: {
+            'a.name': 'b.currency'
+          }
+        }
+      ],
+      fields: {
+        'b.currency': 'currency',
+        'b.balance': 'balance',
+        'a.maximum': 'maximum',
+        'a.precision': 'precision',
+        'a.quantity': 'quantity',
+        'a.writeoff': 'writeoff'
+      }
     })
     var fieldConv = {
       currency: String,
-      balance: String
+      balance: String,
+      maximum: String,
+      precision: Number,
+      quantity: String,
+      writeoff: Number
     }
     this.dbLite.query(sql.query, sql.values, fieldConv, cb)
   }
