@@ -39,16 +39,15 @@ function Issue() {
       if (bignum(quantity).plus(amount).gt(maximum)) return cb('Exceed issue limit')
 
       var strategy = result.strategy
-      var issueHeight = result.height
-      var height = modules.blocks.getLastBlock().height
+      var genesisHeight = result.height
+      var height = modules.blocks.getLastBlock().height + 1
       if (strategy) {
         try {
           var context = {
             maximum: mathjs.bignumber(maximum),
             precision: precision,
-            quantity: mathjs.bignumber(quantity),
-            amount: mathjs.bignumber(amount),
-            issueHeight: issueHeight,
+            quantity: mathjs.bignumber(quantity).plus(amount),
+            genesisHeight: genesisHeight,
             height: height
           }
           if (!mathjs.eval(strategy, context)) return cb('Strategy not allowed')

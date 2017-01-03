@@ -553,7 +553,7 @@ describe('Test UIA', () => {
     })
   })
 
-  describe.only('Asset operation fail cases', () => {
+  describe('Asset operation fail cases', () => {
     var ISSUE_ACCOUNT = node.genNormalAccount()
     var ISSUER_NAME = node.randomIssuerName()
     var ASSET_NAME = ISSUER_NAME + '.GOLD'
@@ -658,6 +658,44 @@ describe('Test UIA', () => {
 
       res = await transferAsync(ASSET_NAME, '1', node.genNormalAccount().address, ISSUE_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Asset already writeoff/)
+    })
+  })
+
+  describe.only('Test issue strategy', () => {
+    async function registerAssetWithStrategyAsync(maximum, strategy) {
+      var account = node.genNormalAccount()
+      var issuerName = node.randomIssuerName()
+      var assetName = issuerName + '.RUBY'
+      await node.giveMoneyAndWaitAsync([account.address])
+      var res = await registerIssuerAsync(issuerName, 'valid desc', account)
+      expect(res.body).to.have.property('success').to.be.true
+      await node.onNewBlockAsync()
+
+      res = await registerAssetAsync(assetName, 'valid desc', maximum, 1, strategy, account)
+      expect(res.body).to.have.property('success').to.be.true
+      await node.onNewBlockAsync()
+      return {
+        account: account,
+        issuerName: issuerName,
+        assetName: assetName
+      }
+    }
+    it('normal cases should be ok', async function () {
+      var assetInfo = await registerAssetWithStrategyAsync('10000', 'quantity <= maximum / 10 * (height - genesisHeight)')
+
+      var res = await issueAssetAsync(assetInfo.assetName, '1001', assetInfo.account)
+      expect(res.body).to.have.property('error').to.match(/^Strategy not allowed/)
+
+      res = await issueAssetAsync(assetInfo.assetName, '1000', assetInfo.account)
+      expect(res.body).to.have.property('success').to.be.true
+
+      await node.onNewBlockAsync()
+      res = await issueAssetAsync(assetInfo.assetName, '1001', assetInfo.account)
+      expect(res.body).to.have.property('error').to.match(/^Strategy not allowed/)
+
+      await node.onNewBlockAsync()
+      res = await issueAssetAsync(assetInfo.assetName, '2000', assetInfo.account)
+      expect(res.body).to.have.property('success').to.be.true
     })
   })
 

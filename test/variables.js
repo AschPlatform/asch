@@ -136,7 +136,7 @@ function waitForNewBlock(height, cb) {
           return cb(err || "Got incorrect status");
         }
 
-        if (height + 2 == body.height) {
+        if (height + 1 == body.height) {
           height = body.height;
         }
 

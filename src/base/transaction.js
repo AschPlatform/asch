@@ -364,7 +364,7 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) { //inherit
   }
 
   // Calc fee
-  var fee = private.types[trs.type].calculateFee.call(this, trs, sender) || false;
+  var fee = private.types[trs.type].calculateFee.call(private.types[trs.type], trs, sender) || false;
   if (!fee || trs.fee != fee) {
     return setImmediate(cb, "Invalid transaction type/fee: " + trs.id);
   }

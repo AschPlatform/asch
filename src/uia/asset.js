@@ -73,7 +73,7 @@ function Asset() {
 
     var strategy = trs.asset.uiaAsset.strategy
     if (strategy) {
-      buffer = Buffer.concat(buffer, new Buffer(strategy, 'utf8'))
+      buffer = Buffer.concat([buffer, new Buffer(strategy, 'utf8')])
     }
     return buffer
   }
