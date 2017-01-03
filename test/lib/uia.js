@@ -54,7 +54,7 @@ async function transferAsync(currency, amount, recipientId, account) {
 
 describe('Test UIA', () => {
 
-  describe.only('Normal caces', () => {
+  describe('Normal caces', () => {
     var ISSUER1 = {
       name: 'issuername',
       desc: 'issuer1_desc'
@@ -662,7 +662,7 @@ describe('Test UIA', () => {
     })
   })
 
-  describe('Test issue strategy', () => {
+  describe.only('Test issue strategy', () => {
     async function registerAssetWithStrategyAsync(maximum, strategy) {
       var account = node.genNormalAccount()
       var issuerName = node.randomIssuerName()
@@ -683,20 +683,63 @@ describe('Test UIA', () => {
     }
     it('normal cases should be ok', async function () {
       var assetInfo = await registerAssetWithStrategyAsync('10000', 'quantity <= maximum / 10 * (height - genesisHeight)')
+      console.log(assetInfo)
+      var account = assetInfo.account
+      var assetName = assetInfo.assetName
 
-      var res = await issueAssetAsync(assetInfo.assetName, '1001', assetInfo.account)
+      var res = await issueAssetAsync(assetName, '1001', account)
       expect(res.body).to.have.property('error').to.match(/^Strategy not allowed/)
 
-      res = await issueAssetAsync(assetInfo.assetName, '1000', assetInfo.account)
+      res = await issueAssetAsync(assetName, '1000', account)
       expect(res.body).to.have.property('success').to.be.true
 
       await node.onNewBlockAsync()
-      res = await issueAssetAsync(assetInfo.assetName, '1001', assetInfo.account)
+      res = await issueAssetAsync(assetName, '1001', account)
       expect(res.body).to.have.property('error').to.match(/^Strategy not allowed/)
 
       await node.onNewBlockAsync()
-      res = await issueAssetAsync(assetInfo.assetName, '2000', assetInfo.account)
+      res = await issueAssetAsync(assetName, '2000', account)
       expect(res.body).to.have.property('success').to.be.true
+
+      await node.onNewBlockAsync()
+
+      var anotherAccount = node.genNormalAccount()
+      await node.giveMoneyAndWaitAsync([anotherAccount.address])
+      res = await transferAsync(assetName, '3001', anotherAccount.address, account)
+      expect(res.body).to.have.property('error').to.match(/^Insufficient asset balance/)
+
+      res = await transferAsync(assetName, '3000', anotherAccount.address, account)
+      expect(res.body).to.have.property('success').to.be.true
+      res = await transferAsync(assetName, '1', anotherAccount.address, account)
+      expect(res.body).to.have.property('error').to.match(/^Insufficient asset balance/)
+
+      await node.onNewBlockAsync()
+
+      res = await node.apiGetAsync('/uia/balances/' + account.address)
+      DEBUG('get sender\'s balances first time', res.body)
+      expect(res.body.balances[0].currency).to.equal(assetName)
+      expect(res.body.balances[0].balance).to.equal('0')
+
+      res = await node.apiGetAsync('/uia/balances/' + anotherAccount.address)
+      DEBUG('get recipient\'s balances first time', res.body)
+      expect(res.body.balances[0].currency).to.equal(assetName)
+      expect(res.body.balances[0].balance).to.equal('3000')
+
+      res = await transferAsync(assetName, '1000', account.address, anotherAccount)
+      expect(res.body).to.have.property('success').to.be.true
+      res = await transferAsync(assetName, '2001', account.address, anotherAccount)
+      expect(res.body).to.have.property('error').to.match(/^Insufficient asset balance/)
+      await node.onNewBlockAsync()
+
+      res = await node.apiGetAsync('/uia/balances/' + account.address)
+      DEBUG('get sender\'s balances second time', res.body)
+      expect(res.body.balances[0].currency).to.equal(assetName)
+      expect(res.body.balances[0].balance).to.equal('1000')
+
+      res = await node.apiGetAsync('/uia/balances/' + anotherAccount.address)
+      DEBUG('get recipient\'s balances second time', res.body)
+      expect(res.body.balances[0].currency).to.equal(assetName)
+      expect(res.body.balances[0].balance).to.equal('2000')
     })
   })
 

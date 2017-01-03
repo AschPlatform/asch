@@ -86,7 +86,7 @@ function Transfer() {
     var key = transfer.currency + ':' + sender.address
     var balance = library.tmdb.get(key) || '0'
     var surplus = bignum(balance).sub(transfer.amount)
-    if (surplus.lt(0)) return setImmediate(cb, 'Asset balance not enough')
+    if (surplus.lt(0)) return setImmediate(cb, 'Insufficient asset balance')
     library.tmdb.set(key, surplus.toString())
 
     var key2 = transfer.currency + ':' + trs.recipientId

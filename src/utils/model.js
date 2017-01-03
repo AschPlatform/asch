@@ -198,6 +198,7 @@ class Model {
         }
       }
       var sql = jsonSql.build(statement)
+      console.log('update asset balance =========', sql.query, sql.values)
       this.dbLite.query(sql.query, sql.values, (err) => {
         if (err) return cb('Database error when updateBalance: ' + err)
         cb()

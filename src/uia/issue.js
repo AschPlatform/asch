@@ -92,7 +92,7 @@ function Issue() {
     var amount = trs.asset.uiaIssue.amount
     var senderBalanceKey = currency + ':' + sender.address
     var balance = library.tmdb.get(senderBalanceKey) || '0'
-    if (bignum(balance).lt(amount)) return setImmediate(cb, 'Invalid balance: ' + balance)
+    if (bignum(balance).lt(amount)) return setImmediate(cb, 'Invalid asset balance: ' + balance)
     library.tmdb.set(senderBalanceKey, bignum(balance).sub(amount).toString())
     async.series([
       function (next) {

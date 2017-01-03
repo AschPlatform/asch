@@ -853,17 +853,17 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, saveBlock, callb
             return
           } else {
             private.lastBlock = block;
-            if (broadcast) {
-              library.logger.info("Block applied correctly with " + block.transactions.length + " transactions");
-              votes.signatures = votes.signatures.slice(0, 6);
-              library.bus.message('newBlock', block, votes, true);
-            }
             library.oneoff.clear()
             library.tmdb.commit()
             private.blockCache = {};
             private.proposeCache = {};
             private.lastVoteTime = null;
             library.base.consensus.clearState();
+            if (broadcast) {
+              library.logger.info("Block applied correctly with " + block.transactions.length + " transactions");
+              votes.signatures = votes.signatures.slice(0, 6);
+              library.bus.message('newBlock', block, votes, true);
+            }
             cb();
           }
         });

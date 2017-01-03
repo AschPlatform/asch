@@ -328,6 +328,10 @@ async function giveMoneyAndWaitAsync(addresses) {
   await PIFY(onNewBlock)()
 }
 
+function sleep(n, cb) {
+  setTimeout(cb, n * 1000)
+}
+
 function PIFY(fn, receiver) {
   return (...args) => {
     return new Promise((resolve, reject) => {
@@ -401,4 +405,5 @@ module.exports = {
   apiGetAsync: PIFY(apiGet),
   giveMoneyAsync: PIFY(giveMoney),
   giveMoneyAndWaitAsync: giveMoneyAndWaitAsync,
+  sleepAsync: PIFY(sleep)
 };
