@@ -1,7 +1,7 @@
 var async = require('async')
 var bignum = require('bignumber')
 var jsonSql = require('json-sql')()
-jsonSql.setDialect("sqlite")
+jsonSql.setDialect('sqlite')
 
 class Model {
   constructor(dbLite) {
@@ -19,7 +19,7 @@ class Model {
     var sql = jsonSql.build({
       type: 'select',
       table: table,
-      fields: ["count(*)"],
+      fields: ['count(*)'],
       condition: condition
     })
     sql.query = sql.query.replace(/"/g, '')
@@ -73,44 +73,44 @@ class Model {
 
   getAssets(filter, cb) {
     var sql = jsonSql.build({
-      table: "assets",
-      alias: "a",
+      table: 'assets',
+      alias: 'a',
       condition: filter.condition,
       limit: filter.limit,
       offset: filter.offset,
       join: [{
-        type: "inner",
-        table: "issuers",
-        alias: "i",
+        type: 'inner',
+        table: 'issuers',
+        alias: 'i',
         on: {
-          "a.issuerName": "i.name"
+          'a.issuerName': 'i.name'
         }
       }, {
-          type: "inner",
-          table: "trs",
-          alias: "t",
+          type: 'inner',
+          table: 'trs',
+          alias: 't',
           on: {
-            "a.transactionId": "t.id"
+            'a.transactionId': 't.id'
           }
         }, {
-          type: "inner",
-          table: "blocks",
-          alias: "b",
+          type: 'inner',
+          table: 'blocks',
+          alias: 'b',
           on: {
-            "t.blockId": "b.id"
+            't.blockId': 'b.id'
           }
         }],
       fields: [
-        { "a.name": "name" },
-        { "a.desc": "desc" },
-        { "a.maximum": "maximum" },
-        { "a.precision": "precision" },
-        { "a.strategy": "strategy" },
-        { "a.quantity": "quantity" },
-        { "b.height": "height" },
-        { "i.issuerId": "issuerId" },
-        { "a.acl": "acl" },
-        { "a.writeoff": "writeoff" }
+        { 'a.name': 'name' },
+        { 'a.desc': 'desc' },
+        { 'a.maximum': 'maximum' },
+        { 'a.precision': 'precision' },
+        { 'a.strategy': 'strategy' },
+        { 'a.quantity': 'quantity' },
+        { 'b.height': 'height' },
+        { 'i.issuerId': 'issuerId' },
+        { 'a.acl': 'acl' },
+        { 'a.writeoff': 'writeoff' }
       ]
     })
     var fieldConv = {
