@@ -465,6 +465,9 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
   if (!transaction) {
     return cb("No transaction to process!");
   }
+  if (!transaction.id) {
+    transaction.id = library.base.transaction.getId(transaction);
+  }
   // Check transaction indexes
   if (private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined) {
     return cb("Transaction " + transaction.id + " already exists, ignoring...");

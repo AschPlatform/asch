@@ -9,6 +9,7 @@ var asch = require("asch-js");
 var DappType = require("../src/utils/dapp-types.js");
 var DappCategory = require("../src/utils/dapp-category.js");
 var TxTypes = require("../src/utils/transaction-types.js");
+var addressHelper = require("../src/utils/address.js");
 
 // Node configuration
 var config = require("../config.json");
@@ -265,7 +266,7 @@ function genNormalAccount() {
   var password = randomPassword()
   var keys = asch.crypto.getKeys(password)
   return {
-    address: asch.crypto.getAddress(keys.publicKey),
+    address: addressHelper.generateBase58CheckAddress(keys.publicKey),
     publicKey: keys.publicKey,
     password: password
   }
