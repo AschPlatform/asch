@@ -292,11 +292,11 @@ describe('Test UIA', () => {
       res = await registerIssuerAsync('tooooooooo_long_name', 'normal desc', account)
       expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
 
-      res = await registerIssuerAsync('normal_name', '', account)
+      res = await registerIssuerAsync('normalname', '', account)
       expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
 
       var largeString = new Buffer(5000).toString()
-      res = await registerIssuerAsync('normal_name', largeString, account)
+      res = await registerIssuerAsync('normalname', largeString, account)
       expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
 
       res = await registerIssuerAsync('invalid_name', 'normal desc', account)
@@ -308,7 +308,7 @@ describe('Test UIA', () => {
 
     it('Insufficient balance', async function () {
       var account = node.genNormalAccount()
-      var res = await registerIssuerAsync('normal_name', 'normal desc', account)
+      var res = await registerIssuerAsync(node.randomIssuerName(), 'normal desc', account)
       expect(res.body).to.have.property('error').to.match(/^Insufficient balance/)
     })
 
@@ -662,7 +662,7 @@ describe('Test UIA', () => {
     })
   })
 
-  describe.only('Test issue strategy', () => {
+  describe('Test issue strategy', () => {
     async function registerAssetWithStrategyAsync(maximum, strategy) {
       var account = node.genNormalAccount()
       var issuerName = node.randomIssuerName()
