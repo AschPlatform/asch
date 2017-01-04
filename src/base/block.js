@@ -30,20 +30,20 @@ private.getAddressByPublicKey = function (publicKey) {
 // Public methods
 
 Block.prototype.sortTransactions = function (data) {
-   return data.transactions.sort(function compare(a, b) {
-      if (a.type != b.type) {
-        if (a.type == 1) {
-          return 1;
-        }
-        if (b.type == 1) {
-          return -1;
-        }
-        return a.type - b.type;
+  return data.transactions.sort(function compare(a, b) {
+    if (a.type != b.type) {
+      if (a.type == 1) {
+        return 1;
       }
-      if (a.amount != b.amount) {
-        return a.amount - b.amount;
+      if (b.type == 1) {
+        return -1;
       }
-      return a.id.localeCompare(b.id);
+      return a.type - b.type;
+    }
+    if (a.amount != b.amount) {
+      return a.amount - b.amount;
+    }
+    return a.id.localeCompare(b.id);
   });
 }
 Block.prototype.create = function (data) {
@@ -52,7 +52,7 @@ Block.prototype.create = function (data) {
   var nextHeight = (data.previousBlock) ? data.previousBlock.height + 1 : 1;
 
   var reward = private.blockStatus.calcReward(nextHeight),
-      totalFee = 0, totalAmount = 0, size = 0;
+    totalFee = 0, totalAmount = 0, size = 0;
 
   var blockTransactions = [];
   var payloadHash = crypto.createHash('sha256');
@@ -106,22 +106,30 @@ Block.prototype.sign = function (block, keypair) {
 }
 
 Block.prototype.getBytes = function (block) {
-  var size = 4 + 4 + 8 + 4 + 8 + 8 + 8 + 4 + 32 + 32 + 64;
+  var size = 4 + 4 + 64 + 4 + 8 + 8 + 8 + 4 + 32 + 32 + 64;
 
   try {
     var bb = new ByteBuffer(size, true);
     bb.writeInt(block.version);
     bb.writeInt(block.timestamp);
 
-    if (block.previousBlock) {
-      var pb = bignum(block.previousBlock).toBuffer({size: '8'});
-
-      for (var i = 0; i < 8; i++) {
-        bb.writeByte(pb[i]);
+    if (global.featureSwitch.enableLongId) {
+      if (block.previousBlock) {
+        bb.writeString(block.previousBlock)
+      } else {
+        bb.writeString('0')
       }
     } else {
-      for (var i = 0; i < 8; i++) {
-        bb.writeByte(0);
+      if (block.previousBlock) {
+        var pb = bignum(block.previousBlock).toBuffer({ size: '8' });
+
+        for (var i = 0; i < 8; i++) {
+          bb.writeByte(pb[i]);
+        }
+      } else {
+        for (var i = 0; i < 8; i++) {
+          bb.writeByte(0);
+        }
       }
     }
 
@@ -285,6 +293,9 @@ Block.prototype.objectNormalize = function (block) {
 }
 
 Block.prototype.getId = function (block) {
+  if (global.featureSwitch.enableLongId) {
+    return this.getId2(block)
+  }
   var hash = crypto.createHash('sha256').update(this.getBytes(block)).digest();
   var temp = new Buffer(8);
   for (var i = 0; i < 8; i++) {
@@ -293,6 +304,11 @@ Block.prototype.getId = function (block) {
 
   var id = bignum.fromBuffer(temp).toString();
   return id;
+}
+
+Block.prototype.getId2 = function (block) {
+  var hash = crypto.createHash('sha256').update(this.getBytes(block)).digest()
+  return hash.toString('hex')
 }
 
 Block.prototype.getHash = function (block) {
@@ -324,7 +340,7 @@ Block.prototype.dbRead = function (raw) {
       blockSignature: raw.b_blockSignature,
       confirmations: raw.b_confirmations
     }
-    block.totalForged  = (block.totalFee + block.reward);
+    block.totalForged = (block.totalFee + block.reward);
     return block;
   }
 }

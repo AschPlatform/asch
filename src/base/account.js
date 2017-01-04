@@ -79,7 +79,7 @@ function Account(scope, cb) {
     {
       name: "address",
       type: "String",
-      length: 22,
+      length: 50,
       not_null: true,
       unique: true,
       primary_key: true,
@@ -87,7 +87,7 @@ function Account(scope, cb) {
         required: true,
         type: "string",
         minLength: 1,
-        maxLength: 22
+        maxLength: 50
       },
       conv: String,
       constante: true
@@ -243,11 +243,11 @@ function Account(scope, cb) {
     {
       name: "blockId",
       type: "String",
-      length: 20,
+      length: 64,
       filter: {
         type: "string",
         minLength: 1,
-        maxLength: 20
+        maxLength: 64
       },
       conv: String,
       default: genesisBlock.id
@@ -378,7 +378,7 @@ Account.prototype.createTables = function (cb) {
       {
         "name": "address",
         "type": "String",
-        "length": 22
+        "length": 50
       },
       {
         "name": "amount",
@@ -392,7 +392,7 @@ Account.prototype.createTables = function (cb) {
       {
         "name": "blockId",
         "type": "String",
-        "length": 20
+        "length": 64
       },
       {
         "name": "round",
@@ -409,7 +409,7 @@ Account.prototype.createTables = function (cb) {
       {
         name: "accountId",
         type: "String",
-        length: 22,
+        length: 50,
         not_null: true
       }, {
         name: "dependentId",
@@ -436,7 +436,7 @@ Account.prototype.createTables = function (cb) {
       {
         name: "accountId",
         type: "String",
-        length: 22,
+        length: 50,
         not_null: true
       }, {
         name: "dependentId",
@@ -463,7 +463,7 @@ Account.prototype.createTables = function (cb) {
       {
         name: "accountId",
         type: "String",
-        length: 22,
+        length: 50,
         not_null: true
       }, {
         name: "dependentId",
@@ -490,7 +490,7 @@ Account.prototype.createTables = function (cb) {
       {
         name: "accountId",
         type: "String",
-        length: 22,
+        length: 50,
         not_null: true
       }, {
         name: "dependentId",

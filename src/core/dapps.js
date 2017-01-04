@@ -2284,8 +2284,8 @@ shared.sendWithdrawal = function (req, cb) {
       },
       recipientId: {
         type: "string",
-        minLength: 2,
-        maxLength: 21
+        minLength: 1,
+        maxLength: 50
       },
       secondSecret: {
         type: "string",
@@ -2295,7 +2295,7 @@ shared.sendWithdrawal = function (req, cb) {
       transactionId: {
         type: "string",
         minLength: 1,
-        maxLength: 20
+        maxLength: 64
       },
       multisigAccountPublicKey: {
         type: "string",

@@ -44,9 +44,13 @@ Consensus.prototype.verifyVote = function (height, id, voteItem) {
 Consensus.prototype.getVoteHash = function (height, id) {
   var bytes = new ByteBuffer();
   bytes.writeLong(height);
-  var idBytes = bignum(id).toBuffer({ size: 8 });
-  for (var i = 0; i < 8; i++) {
-    bytes.writeByte(idBytes[i]);
+  if (global.featureSwitch.enableLongId) {
+    bytes.writeString(id)
+  } else {
+    var idBytes = bignum(id).toBuffer({ size: 8 });
+    for (var i = 0; i < 8; i++) {
+      bytes.writeByte(idBytes[i]);
+    }
   }
   bytes.flip();
   return crypto.createHash('sha256').update(bytes.toBuffer()).digest();
@@ -126,9 +130,13 @@ Consensus.prototype.getProposeHash  = function (propose) {
   var bytes = new ByteBuffer();
   bytes.writeLong(propose.height);
 
-  var idBytes = bignum(propose.id).toBuffer({ size: 8 });
-  for (var i = 0; i < 8; i++) {
-    bytes.writeByte(idBytes[i]);
+  if (global.featureSwitch.enableLongId) {
+    bytes.writeString(id)
+  } else {
+    var idBytes = bignum(propose.id).toBuffer({ size: 8 });
+    for (var i = 0; i < 8; i++) {
+      bytes.writeByte(idBytes[i]);
+    }
   }
 
   var generatorPublicKeyBuffer = new Buffer(propose.generatorPublicKey, "hex");

@@ -86,6 +86,9 @@ Transaction.prototype.multisign = function (keypair, trs) {
 }
 
 Transaction.prototype.getId = function (trs) {
+  if (global.featureSwitch.enableLongId) {
+    return this.getId2(trs);
+  }
   var hash = this.getHash(trs);
   var temp = new Buffer(8);
   for (var i = 0; i < 8; i++) {
@@ -94,6 +97,10 @@ Transaction.prototype.getId = function (trs) {
 
   var id = bignum.fromBuffer(temp).toString();
   return id;
+}
+
+Transaction.prototype.getId2 = function (trs) {
+  return this.getHash(trs).toString('hex')
 }
 
 Transaction.prototype.getHash = function (trs) {

@@ -122,7 +122,7 @@ function main() {
     ];
     var ip = require('ip');
     for (var i = 0; i < seeds.length; ++i) {
-      appConfig.peers.list.push({ip: ip.fromLong(seeds[i]), port: 80});
+      appConfig.peers.list.push({ ip: ip.fromLong(seeds[i]), port: 80 });
     }
   }
 
@@ -159,6 +159,9 @@ function main() {
   if (program.reindex) {
     appConfig.loading.verifyOnLoading = true;
   }
+
+  global.featureSwitch = {}
+
   init(options, function (err, scope) {
     if (err) {
       scope.logger.fatal(err);

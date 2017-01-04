@@ -682,7 +682,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
             });
           }
         } else {
-          private.lastBlock = block;
+          self.setLastBlock(block);
           setImmediate(next);
         }
       }, function (err) {
@@ -690,6 +690,17 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
       });
     });
   }, cb);
+}
+
+Blocks.prototype.setLastBlock = function (block) {
+  private.lastBlock = block
+  if (global.Config.netVersion === 'mainnet') {
+    global.featureSwitch.enableLongId = private.lastBlock.height >= 1400000
+  } else if (global.Config.netVersion === 'testnet') {
+    global.featureSwitch.enableLongId = private.lastBlock.height >= 4000
+  } else {
+    global.featureSwitch.enableLongId = private.lastBlock.height >= 5
+  }
 }
 
 Blocks.prototype.getLastBlock = function () {
@@ -852,7 +863,7 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, saveBlock, callb
             process.exit(1)
             return
           } else {
-            private.lastBlock = block;
+            self.setLastBlock(block);
             library.oneoff.clear()
             library.tmdb.commit()
             private.blockCache = {};
@@ -1136,7 +1147,7 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
     function (next) {
       blocks.unshift(private.lastBlock);
       private.popLastBlock(private.lastBlock, function (err, newLastBlock) {
-        private.lastBlock = newLastBlock;
+        self.setLastBlock(newLastBlock);
         next(err);
       });
     },

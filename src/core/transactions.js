@@ -723,7 +723,8 @@ shared.getUnconfirmedTransaction = function (req, cb) {
     properties: {
       id: {
         type: 'string',
-        minLength: 1
+        minLength: 1,
+        maxLength: 64
       }
     },
     required: ['id']
