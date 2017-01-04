@@ -42,7 +42,7 @@ private.attachApi = function () {
   library.network.app.use(function (err, req, res, next) {
     if (!err) return next();
     library.logger.error(req.url, err.toString());
-    res.status(500).send({success: false, error: err.toString()});
+    res.status(500).send({ success: false, error: err.toString() });
   });
 }
 
@@ -103,7 +103,7 @@ private.findUpdate = function (lastBlock, peer, cb) {
         if (commonBlock.id == lastBlock.id) {
           return cb();
         }
-        
+
         async.series([
           function (next) {
             var currentRound = modules.round.calc(lastBlock.height);
@@ -115,7 +115,7 @@ private.findUpdate = function (lastBlock, peer, cb) {
               } else {
                 backHeight = backHeight - backHeight % 101;
               }
-              modules.blocks.getBlock({height: backHeight}, function (err, result) {
+              modules.blocks.getBlock({ height: backHeight }, function (err, result) {
                 if (result && result.block) {
                   commonBlock = result.block;
                 }
@@ -305,7 +305,19 @@ private.loadUnconfirmedTransactions = function (cb) {
   });
 }
 
-private.loadBlockChain = function () {
+private.loadBalances = function (cb) {
+  library.model.getAllNativeBalances(function (err, results) {
+    if (err) return cb('Failed to load native balances: ' + err)
+    for (let i = 0; i < results.length; ++i) {
+      let {address, balance} = results[i]
+      library.balanceCache.setNativeBalance(address, balance)
+    }
+    library.balanceCache.commit()
+    cb(null)
+  })
+}
+
+private.loadBlockChain = function (cb) {
   var offset = 0, limit = Number(library.config.loading.loadPerIteration) || 1000;
   var verify = library.config.loading.verifyOnLoading;
 
@@ -346,13 +358,16 @@ private.loadBlockChain = function () {
                   if (err.block) {
                     library.logger.error('Blockchain failed at ', err.block.height)
                     modules.blocks.simpleDeleteAfterBlock(err.block.id, function (err, res) {
+                      if (err) return cb(err)
                       library.logger.error('Blockchain clipped');
-                      library.bus.message('blockchainReady');
+                      private.loadBalances(cb);
                     })
+                  } else {
+                    cb(err);
                   }
                 } else {
                   library.logger.info('Blockchain ready');
-                  library.bus.message('blockchainReady');
+                  private.loadBalances(cb);
                 }
               }
             )
@@ -366,7 +381,7 @@ private.loadBlockChain = function () {
     if (err) {
       throw err;
     } else {
-      library.dbLite.query("select count(*) from mem_accounts where blockId = (select id from blocks where numberOfTransactions > 0 order by height desc limit 1)", {'count': Number}, function (err, rows) {
+      library.dbLite.query("select count(*) from mem_accounts where blockId = (select id from blocks where numberOfTransactions > 0 order by height desc limit 1)", { 'count': Number }, function (err, rows) {
         if (err) {
           throw err;
         }
@@ -413,7 +428,7 @@ private.loadBlockChain = function () {
                               load(count);
                             } else {
                               library.logger.info('Blockchain ready');
-                              library.bus.message('blockchainReady');
+                              private.loadBalances(cb);
                             }
                           });
                         }
@@ -444,7 +459,7 @@ Loader.prototype.startSyncBlocks = function () {
   library.logger.debug('startSyncBlocks enter');
   if (private.isActive || !private.loaded || self.syncing()) return;
   private.isActive = true;
-  library.sequence.add(function syncBlocks (cb) {
+  library.sequence.add(function syncBlocks(cb) {
     library.logger.debug('startSyncBlocks enter sequence');
     private.syncTrigger(true);
     var lastBlock = modules.blocks.getLastBlock();
@@ -492,7 +507,13 @@ Loader.prototype.onPeerReady = function () {
 Loader.prototype.onBind = function (scope) {
   modules = scope;
 
-  private.loadBlockChain();
+  private.loadBlockChain(function (err) {
+    if (err) {
+      library.logger.error('Failed to load blockchain', err)
+      return process.exit(1)
+    }
+    library.bus.message('blockchainReady');
+  });
 }
 
 Loader.prototype.onBlockchainReady = function () {

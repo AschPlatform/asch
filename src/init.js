@@ -352,9 +352,9 @@ module.exports = function(options, done) {
       cb(null, new Map)
     },
 
-    tmdb: function (cb) {
-      var Tmdb = require('./utils/tmdb.js')
-      cb(null, new Tmdb)
+    balanceCache: function (cb) {
+      var BalanceManager = require('./utils/balance-manager.js')
+      cb(null, new BalanceManager)
     },
 
     model: ['dbLite', function (cb, scope) {
@@ -398,7 +398,7 @@ module.exports = function(options, done) {
       }, cb);
     }],
 
-    modules: ['network', 'connect', 'config', 'logger', 'bus', 'sequence', 'dbSequence', 'balancesSequence', 'dbLite', 'base', 'oneoff', 'tmdb', 'model', function (cb, scope) {
+    modules: ['network', 'connect', 'config', 'logger', 'bus', 'sequence', 'dbSequence', 'balancesSequence', 'dbLite', 'base', 'oneoff', 'balanceCache', 'model', function (cb, scope) {
       global.library = scope
       var tasks = {};
       moduleNames.forEach(function (name) {

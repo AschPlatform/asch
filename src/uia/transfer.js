@@ -84,28 +84,23 @@ function Transfer() {
   this.applyUnconfirmed = function (trs, sender, cb) {
     var transfer = trs.asset.uiaTransfer
     var key = transfer.currency + ':' + sender.address
-    var balance = library.tmdb.get(key) || '0'
+    var balance = library.balanceCache.getAssetBalance(sender.address, transfer.currency) || 0
     var surplus = bignum(balance).sub(transfer.amount)
     if (surplus.lt(0)) return setImmediate(cb, 'Insufficient asset balance')
-    library.tmdb.set(key, surplus.toString())
 
-    var key2 = transfer.currency + ':' + trs.recipientId
-    var balance2 = library.tmdb.get(key2) || '0'
-    library.tmdb.set(key2, bignum(balance2).plus(transfer.amount).toString())
+    library.balanceCache.setAssetBalance(sender.address, transfer.currency, surplus.toString())
+    library.balanceCache.addAssetBalance(trs.recipientId, transfer.currency, transfer.amount)
 
     setImmediate(cb)
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {
     var transfer = trs.asset.uiaTransfer
-    var key = transfer.currency + ':' + sender.address
-    var balance = library.tmdb.get(key) || '0'
-    library.tmdb.set(key, bignum(balance).plus(transfer.amount).toString())
+    library.balanceCache.addAssetBalance(sender.address, transfer.currency, transfer.amount)
 
-    var key2 = transfer.currency + ':' + trs.recipientId
-    var balance2 = library.tmdb.get(key2) || '0'
+    var balance2 = library.balanceCache.getAssetBalance(trs.recipientId, transfer.currency) || 0
     assert(bignum(balance2).gte(transfer.amount))
-    library.tmdb.set(key2, bignum(balance2).sub(transfer.amount).toString())
+    library.balanceCache.addAssetBalance(trs.recipientId, transfer.currency, '-' + transfer.amount)
     setImmediate(cb)
   }
 

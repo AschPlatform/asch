@@ -33,9 +33,9 @@ function UIA(cb, scope) {
     if (err) return cb('Failed to load asset balances: ' + err)
     for (let i = 0; i < results.length; ++i) {
       let {currency, address, balance} = results[i]
-      library.tmdb.set(currency + ':' + address, balance)
+      library.balanceCache.setAssetBalance(address, currency, balance)
     }
-    library.tmdb.commit()
+    library.balanceCache.commit()
     cb(null, self)
   })
 }

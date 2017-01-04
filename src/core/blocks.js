@@ -699,7 +699,7 @@ Blocks.prototype.setLastBlock = function (block) {
   } else if (global.Config.netVersion === 'testnet') {
     global.featureSwitch.enableLongId = private.lastBlock.height >= 4000
   } else {
-    global.featureSwitch.enableLongId = private.lastBlock.height >= 5
+    global.featureSwitch.enableLongId = private.lastBlock.height >= 500
   }
 }
 
@@ -844,7 +844,7 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, saveBlock, callb
 
     function done(err) {
       if (err) {
-        library.tmdb.rollback()
+        library.balanceCache.rollback()
         var finalErr = 'applyBlock err: ' + err;
         library.dbLite.query('ROLLBACK TO SAVEPOINT applyblock', function (rollbackErr) {
           if (rollbackErr) {
@@ -865,7 +865,7 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, saveBlock, callb
           } else {
             self.setLastBlock(block);
             library.oneoff.clear()
-            library.tmdb.commit()
+            library.balanceCache.commit()
             private.blockCache = {};
             private.proposeCache = {};
             private.lastVoteTime = null;

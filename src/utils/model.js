@@ -347,6 +347,19 @@ class Model {
       cb(null, rows && rows.length > 0)
     })
   }
+
+  getAllNativeBalances(cb) {
+    var sql = jsonSql.build({
+      type: 'select',
+      table: 'mem_accounts',
+      fields: ['address', 'balance']
+    })
+    var fieldConv = {
+      address: String,
+      balance: String
+    }
+    this.dbLite.query(sql.query, sql.values, fieldConv, cb)
+  }
 }
 
 module.exports = Model;

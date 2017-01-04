@@ -1,5 +1,6 @@
 require('./lib/utils.js');
 require('./lib/tmdb.js');
+require('./lib/balances.js');
 require('./lib/accounts.js');
 require('./lib/transactions.js');
 require('./lib/peers.transactions.js');

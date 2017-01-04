@@ -121,7 +121,7 @@ function Account(scope, cb) {
         required: true,
         type: "integer",
         minimum: 0,
-        maximum: constants.totalAmount
+        // maximum: constants.totalAmount
       },
       conv: Number,
       default: 0

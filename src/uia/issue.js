@@ -74,9 +74,7 @@ function Issue() {
   this.apply = function (trs, block, sender, cb) {
     var currency = trs.asset.uiaIssue.currency
     var amount = trs.asset.uiaIssue.amount
-    var senderBalanceKey = currency + ':' + sender.address
-    var balance = library.tmdb.get(senderBalanceKey) || '0'
-    library.tmdb.set(senderBalanceKey, bignum(balance).plus(amount).toString())
+    library.balanceCache.addAssetBalance(sender.address, currency, amount)
     async.series([
       function (next) {
         library.model.addAssetQuantity(currency, amount, next)
@@ -91,9 +89,9 @@ function Issue() {
     var currency = trs.asset.uiaIssue.currency
     var amount = trs.asset.uiaIssue.amount
     var senderBalanceKey = currency + ':' + sender.address
-    var balance = library.tmdb.get(senderBalanceKey) || '0'
+    var balance = library.balanceCache.getAssetBalance(sender.address, currency) || 0
     if (bignum(balance).lt(amount)) return setImmediate(cb, 'Invalid asset balance: ' + balance)
-    library.tmdb.set(senderBalanceKey, bignum(balance).sub(amount).toString())
+    library.balanceCache.addAssetBalance(sender.address, currency, '-' + amount)
     async.series([
       function (next) {
         library.model.addAssetQuantity(currency, '-' + amount, next)
