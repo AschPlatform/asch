@@ -144,7 +144,7 @@ function Multisignature() {
   this.apply = function (trs, block, sender, cb) {
     private.unconfirmedSignatures[sender.address] = false;
 
-    this.scope.account.merge(sender.address, {
+    library.base.account.merge(sender.address, {
       multisignatures: trs.asset.multisignature.keysgroup,
       multimin: trs.asset.multisignature.min,
       multilifetime: trs.asset.multisignature.lifetime,
@@ -175,7 +175,7 @@ function Multisignature() {
     var multiInvert = Diff.reverse(trs.asset.multisignature.keysgroup);
 
     private.unconfirmedSignatures[sender.address] = true;
-    this.scope.account.merge(sender.address, {
+    library.base.account.merge(sender.address, {
       multisignatures: multiInvert,
       multimin: -trs.asset.multisignature.min,
       multilifetime: -trs.asset.multisignature.lifetime,
@@ -197,7 +197,7 @@ function Multisignature() {
 
     private.unconfirmedSignatures[sender.address] = true;
 
-    this.scope.account.merge(sender.address, {
+    library.base.account.merge(sender.address, {
       u_multisignatures: trs.asset.multisignature.keysgroup,
       u_multimin: trs.asset.multisignature.min,
       u_multilifetime: trs.asset.multisignature.lifetime
@@ -210,7 +210,7 @@ function Multisignature() {
     var multiInvert = Diff.reverse(trs.asset.multisignature.keysgroup);
 
     private.unconfirmedSignatures[sender.address] = false;
-    this.scope.account.merge(sender.address, {
+    library.base.account.merge(sender.address, {
       u_multisignatures: multiInvert,
       u_multimin: -trs.asset.multisignature.min,
       u_multilifetime: -trs.asset.multisignature.lifetime

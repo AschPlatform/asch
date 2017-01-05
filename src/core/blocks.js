@@ -889,7 +889,7 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, saveBlock, callb
     async.eachSeries(sortedTrs, function (transaction, nextTr) {
       async.waterfall([
         function (next) {
-          modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, next);
+          modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey , isGenesis: block.height == 1 }, next);
         },
         function (sender, next) {
           // if (modules.transactions.hasUnconfirmedTransaction(transaction)) {

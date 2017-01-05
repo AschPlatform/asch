@@ -11,10 +11,12 @@ class BalanceManager {
   }
 
   setNativeBalance(address, balance) {
+    if (typeof balance === 'number') balance = String(balance)
     this.tmdb.set([address, 1], bignum(balance).toString())
   }
 
   addNativeBalance(address, amount) {
+    if (typeof amount === 'number') amount = String(amount)
     var keys = [address, 1]
     var balance = this.tmdb.get(keys) || '0'
     this.tmdb.set(keys, bignum(balance).plus(amount).toString())
@@ -25,10 +27,12 @@ class BalanceManager {
   }
 
   setAssetBalance(address, currency, balance) {
+    if (typeof balance === 'number') amount = String(balance)
     this.tmdb.set([address, currency], bignum(balance).toString())
   }
 
   addAssetBalance(address, currency, amount) {
+    if (typeof amount === 'number') amount = String(amount)
     var keys = [address, currency]
     var balance = this.tmdb.get(keys) || '0'
     this.tmdb.set(keys, bignum(balance).plus(amount).toString())

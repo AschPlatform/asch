@@ -518,6 +518,7 @@ Transaction.prototype.applyUnconfirmed = function (trs, sender, requester, cb) {
     return setImmediate(cb, "Insufficient balance: " + sender.address);
   }
 
+  library.balanceCache.addNativeBalance(sender.address, -amount)
   this.scope.account.merge(sender.address, {u_balance: -amount}, function (err, sender) {
     if (err) return cb(err);
     private.types[trs.type].applyUnconfirmed.call(this, trs, sender, cb);
@@ -531,6 +532,7 @@ Transaction.prototype.undoUnconfirmed = function (trs, sender, cb) {
 
   var amount = trs.amount + trs.fee;
 
+  library.balanceCache.addNativeBalance(sender.address, amount)
   this.scope.account.merge(sender.address, {u_balance: amount}, function (err, sender) {
     if (err) return cb(err);
     private.types[trs.type].undoUnconfirmed.call(this, trs, sender, cb);

@@ -819,7 +819,7 @@ shared.addTransactions = function (req, cb) {
     required: ["secret", "amount", "recipientId"]
   }, function (err) {
     if (err) {
-      return cb(err[0].message);
+      return cb(err[0].message + ': ' + err[0].path);
     }
 
     var hash = crypto.createHash('sha256').update(body.secret, 'utf8').digest();

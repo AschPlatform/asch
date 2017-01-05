@@ -59,6 +59,7 @@ function Transfer() {
 
   this.apply = function (trs, block, sender, cb) {
     var transfer = trs.asset.uiaTransfer
+    library.balanceCache.addAssetBalance(trs.recipientId, transfer.currency, transfer.amount)
     async.series([
       function (next) {
         library.model.updateAssetBalance(transfer.currency, '-' + transfer.amount, sender.address, next)
@@ -71,6 +72,7 @@ function Transfer() {
 
   this.undo = function (trs, block, sender, cb) {
     var transfer = trs.asset.uiaTransfer
+    library.balanceCache.addAssetBalance(trs.recipientId, transfer.currency, '-' + transfer.amount)
     async.series([
       function (next) {
         library.model.updateAssetBalance(transfer.currency, transfer.amount, sender.address, next)
@@ -89,18 +91,12 @@ function Transfer() {
     if (surplus.lt(0)) return setImmediate(cb, 'Insufficient asset balance')
 
     library.balanceCache.setAssetBalance(sender.address, transfer.currency, surplus.toString())
-    library.balanceCache.addAssetBalance(trs.recipientId, transfer.currency, transfer.amount)
-
     setImmediate(cb)
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {
     var transfer = trs.asset.uiaTransfer
     library.balanceCache.addAssetBalance(sender.address, transfer.currency, transfer.amount)
-
-    var balance2 = library.balanceCache.getAssetBalance(trs.recipientId, transfer.currency) || 0
-    assert(bignum(balance2).gte(transfer.amount))
-    library.balanceCache.addAssetBalance(trs.recipientId, transfer.currency, '-' + transfer.amount)
     setImmediate(cb)
   }
 

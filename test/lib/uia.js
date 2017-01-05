@@ -442,7 +442,7 @@ describe('Test UIA', () => {
     })
 
     it('Invalid asset strategy', async function () {
-      var largeString = new Buffer(257).toString()
+      var largeString = new Buffer(300).toString()
       var res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, VALID_MAXIMUM, VALID_PRECISION, largeString, ISSUER_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
     })

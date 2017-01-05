@@ -205,7 +205,7 @@ describe("GET /blocks/getFee", function () {
 
 describe("GET /blocks/getFees", function () {
 
-    it("Should be ok", function (done) {
+    it.skip("Should be ok", function (done) {
         node.api.get("/blocks/getFees")
             .set("Accept", "application/json")
             .expect("Content-Type", /json/)
@@ -231,7 +231,7 @@ describe("GET /blocks/getFees", function () {
 
 describe("GET /blocks/getMagic", function () {
 
-    it("Get blockchain magic. Should be ok", function (done) {
+    it.skip("Get blockchain magic. Should be ok", function (done) {
         node.api.get("/blocks/getMagic")
             .set("Accept", "application/json")
             .expect("Content-Type", /json/)

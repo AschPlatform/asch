@@ -16,7 +16,7 @@ describe('address', function () {
     done()
   })
 
-  it('bitcoin address should not be invalid', function (done) {
+  it('bitcoin address should be invalid', function (done) {
     node.expect(address.isAddress('16UwLL9Risc3QfPqBUvKofHmBQ7wMtjvM')).to.be.false
     done()
   })

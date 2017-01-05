@@ -60,7 +60,7 @@ function Vote() {
   }
 
   this.apply = function (trs, block, sender, cb) {
-    this.scope.account.merge(sender.address, {
+    library.base.account.merge(sender.address, {
       delegates: trs.asset.vote.votes,
       blockId: block.id,
       round: modules.round.calc(block.height)
@@ -72,7 +72,7 @@ function Vote() {
 
     var votesInvert = Diff.reverse(trs.asset.vote.votes);
 
-    this.scope.account.merge(sender.address, {
+    library.base.account.merge(sender.address, {
       delegates: votesInvert,
       blockId: block.id,
       round: modules.round.calc(block.height)
@@ -297,9 +297,10 @@ Accounts.prototype.setAccountAndGet = function (data, cb) {
   if (address === null) {
     if (data.publicKey) {
       address = self.generateAddressByPublicKey(data.publicKey);
-      if (!library.balanceCache.getNativeBalance(address)) {
+      if (!data.isGenesis && !library.balanceCache.getNativeBalance(address)) {
         address = self.generateAddressByPublicKey2(data.publicKey);
       }
+      delete data.isGenesis;
     } else {
       return cb("Missing address or public key");
     }
@@ -446,6 +447,10 @@ shared.getBalance = function (req, cb) {
       return cb(err[0].message);
     }
 
+    if (!addressHelper.isAddress(query.address)) {
+      return cb('Invalid address');
+    }
+
     self.getAccount({ address: query.address }, function (err, account) {
       if (err) {
         return cb(err.toString());
@@ -537,7 +542,6 @@ shared.getDelegates = function (req, cb) {
       if (!account) {
         return cb("Account not found");
       }
-
       if (account.delegates) {
         self.getAccounts({
           isDelegate: 1,

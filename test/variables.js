@@ -1,28 +1,28 @@
-var _ = require("lodash");
-var expect = require("chai").expect;
-var chai = require("chai");
-var supertest = require("supertest");
-var async = require("async");
-var request = require("request");
-var asch = require("asch-js");
+var _ = require('lodash');
+var expect = require('chai').expect;
+var chai = require('chai');
+var supertest = require('supertest');
+var async = require('async');
+var request = require('request');
+var asch = require('asch-js');
 
-var DappType = require("../src/utils/dapp-types.js");
-var DappCategory = require("../src/utils/dapp-category.js");
-var TxTypes = require("../src/utils/transaction-types.js");
-var addressHelper = require("../src/utils/address.js");
+var DappType = require('../src/utils/dapp-types.js');
+var DappCategory = require('../src/utils/dapp-category.js');
+var TxTypes = require('../src/utils/transaction-types.js');
+var addressHelper = require('../src/utils/address.js');
 
 // Node configuration
-var config = require("../config.json");
-var constants = require("../src/utils/constants.js");
+var config = require('../config.json');
+var constants = require('../src/utils/constants.js');
 
-var baseUrl = "http://" + config.address + ":" + config.port;
-var api = supertest(baseUrl + "/api");
-var peer = supertest(baseUrl + "/peer");
+var baseUrl = 'http://' + config.address + ':' + config.port;
+var api = supertest(baseUrl + '/api');
+var peer = supertest(baseUrl + '/peer');
 
 var normalizer = 100000000; // Use this to convert XAS amount to normal value
 var blockTime = 10000; // Block time in miliseconds
 var blockTimePlus = 12000; // Block time + 2 seconds in miliseconds
-var version = "0.9.0" // Node version
+var version = '0.9.0' // Node version
 
 // Holds Fee amounts for different transaction types
 var Fees = {
@@ -35,35 +35,35 @@ var Fees = {
 };
 
 var guestbookDapp = {
-  icon: "http://o7dyh3w0x.bkt.clouddn.com/logo.png",
-  link: "https://github.com/sqfasd/hello-dapp/archive/master.zip"
+  icon: 'http://o7dyh3w0x.bkt.clouddn.com/logo.png',
+  link: 'https://github.com/sqfasd/hello-dapp/archive/master.zip'
 };
 
 // Account info for delegate to register manually
 var Daccount = {
-  "address": "4180149793392527131",
-  "publicKey": "fe16b09612ca50a6cbcc0a95bdf30bfa11e12c1aded819916cadb0c1e769b4bf",
-  "password": "demise hidden width hand solid deal doll party danger pencil foil oven",
-  "secondPassword": "brother maid replace hard scorpion clinic sentence bridge goose gun mass next",
-  "balance": 0,
-  "delegateName": "ManualDelegate",
+  'address': '4180149793392527131',
+  'publicKey': 'fe16b09612ca50a6cbcc0a95bdf30bfa11e12c1aded819916cadb0c1e769b4bf',
+  'password': 'demise hidden width hand solid deal doll party danger pencil foil oven',
+  'secondPassword': 'brother maid replace hard scorpion clinic sentence bridge goose gun mass next',
+  'balance': 0,
+  'delegateName': 'ManualDelegate',
 };
 
 // Existing delegate account in blockchain
 var Eaccount = {
-  "address": "6518038767050467653",
-  "publicKey": "8e5178db2bf10555cb57264c88833c48007100748d593570e013c9b15b17004e",
-  "password": "silk palace wall awful village found text hammer move jazz squeeze express",
-  "balance": 0,
-  "delegateName": "asch_g1"
+  'address': '6518038767050467653',
+  'publicKey': '8e5178db2bf10555cb57264c88833c48007100748d593570e013c9b15b17004e',
+  'password': 'silk palace wall awful village found text hammer move jazz squeeze express',
+  'balance': 0,
+  'delegateName': 'asch_g1'
 };
 
 // Account info for genesis account - Needed for voting, registrations and Tx
 var Gaccount = {
-  "address": "14762548536863074694",
-  "publicKey": "8065a105c785a08757727fded3a06f8f312e73ad40f1f3502e0232ea42e67efd",
-  "password": "someone manual strong movie roof episode eight spatial brown soldier soup motor",
-  "balance": 10000000000000000
+  'address': '14762548536863074694',
+  'publicKey': '8065a105c785a08757727fded3a06f8f312e73ad40f1f3502e0232ea42e67efd',
+  'password': 'someone manual strong movie roof episode eight spatial brown soldier soup motor',
+  'balance': 10000000000000000
 };
 
 // Random XAS Amount
@@ -72,8 +72,8 @@ var RANDOM_COIN = Math.floor(Math.random() * (100000 * 100000000)) + 1; // Remov
 // Used to create random delegates names
 function randomDelegateName() {
   var size = randomNumber(1, 20); // Min. delegate name size is 1, Max. delegate name is 20
-  var delegateName = "";
-  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  var delegateName = '';
+  var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
   for (var i = 0; i < size; i++)
     delegateName += possible.charAt(Math.floor(Math.random() * possible.length));
@@ -100,12 +100,12 @@ function randomCoin() {
 // Returns current block height
 function getHeight(cb) {
   request({
-    type: "GET",
-    url: baseUrl + "/api/blocks/getHeight",
+    type: 'GET',
+    url: baseUrl + '/api/blocks/getHeight',
     json: true
   }, function (err, resp, body) {
     if (err || resp.statusCode != 200) {
-      return cb(err || "Status code is not 200 (getHeight)");
+      return cb(err || 'Status code is not 200 (getHeight)');
     } else {
       return cb(null, body.height);
     }
@@ -114,7 +114,7 @@ function getHeight(cb) {
 
 function onNewBlock(cb) {
   getHeight(function (err, height) {
-    //console.log("Height: " + height);
+    //console.log('Height: ' + height);
     if (err) {
       return cb(err);
     } else {
@@ -129,12 +129,12 @@ function waitForNewBlock(height, cb) {
   async.doWhilst(
     function (cb) {
       request({
-        type: "GET",
-        url: baseUrl + "/api/blocks/getHeight",
+        type: 'GET',
+        url: baseUrl + '/api/blocks/getHeight',
         json: true
       }, function (err, resp, body) {
         if (err || resp.statusCode != 200) {
-          return cb(err || "Got incorrect status");
+          return cb(err || 'Got incorrect status');
         }
 
         if (height + 1 == body.height) {
@@ -159,7 +159,7 @@ function waitForNewBlock(height, cb) {
 
 // Adds peers to local node
 function addPeers(numOfPeers, cb) {
-  var operatingSystems = ["win32", "win64", "ubuntu", "debian", "centos"];
+  var operatingSystems = ['win32', 'win64', 'ubuntu', 'debian', 'centos'];
   var ports = [4000, 5000, 7000, 8000];
 
   var os, version, port;
@@ -173,18 +173,18 @@ function addPeers(numOfPeers, cb) {
     port = ports[randomizeSelection(ports.length)];
 
     request({
-      type: "GET",
-      url: baseUrl + "/peer/height",
+      type: 'GET',
+      url: baseUrl + '/peer/height',
       json: true,
       headers: {
-        "version": version,
-        "port": port,
-        "magic": config.magic,
-        "os": os
+        'version': version,
+        'port': port,
+        'magic': config.magic,
+        'os': os
       }
     }, function (err, resp, body) {
       if (err || resp.statusCode != 200) {
-        return next(err || "Status code is not 200 (getHeight)");
+        return next(err || 'Status code is not 200 (getHeight)');
       } else {
         i++;
         next();
@@ -213,8 +213,8 @@ function expectedFee(amount) {
 // Used to create random usernames
 function randomUsername() {
   var size = randomNumber(1, 16); // Min. username size is 1, Max. username size is 16
-  var username = "";
-  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$&_.";
+  var username = '';
+  var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$&_.';
 
   for (var i = 0; i < size; i++)
     username += possible.charAt(Math.floor(Math.random() * possible.length));
@@ -224,8 +224,8 @@ function randomUsername() {
 
 function randomIssuerName() {
   var size = randomNumber(1, 16); // Min. username size is 1, Max. username size is 16
-  var name = "";
-  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  var name = '';
+  var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
   for (var i = 0; i < size; i++)
     name += possible.charAt(Math.floor(Math.random() * possible.length));
@@ -235,8 +235,8 @@ function randomIssuerName() {
 
 function randomCapitalUsername() {
   var size = randomNumber(1, 16); // Min. username size is 1, Max. username size is 16
-  var username = "A";
-  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$&_.";
+  var username = 'A';
+  var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$&_.';
 
   for (var i = 0; i < size - 1; i++)
     username += possible.charAt(Math.floor(Math.random() * possible.length));
@@ -247,12 +247,12 @@ function randomCapitalUsername() {
 // Used to create random basic accounts
 function randomAccount() {
   var account = {
-    "address": "",
-    "publicKey": "",
-    "password": "",
-    "secondPassword": "",
-    "username": "",
-    "balance": 0
+    'address': '',
+    'publicKey': '',
+    'password': '',
+    'secondPassword': '',
+    'username': '',
+    'balance': 0
   };
 
   account.password = randomPassword();
@@ -275,9 +275,9 @@ function genNormalAccount() {
 // Used to create random transaction accounts (holds additional info to regular account)
 function randomTxAccount() {
   return _.defaults(randomAccount(), {
-    sentAmount: "",
-    paidFee: "",
-    totalPaidFee: "",
+    sentAmount: '',
+    paidFee: '',
+    totalPaidFee: '',
     transactions: []
   })
 }
@@ -288,35 +288,35 @@ function randomPassword() {
 }
 
 function submitTransaction(trs, cb) {
-  peer.post("/transactions")
-    .set("Accept", "application/json")
-    .set("version", version)
-    .set("magic", config.magic)
-    .set("port", config.port)
+  peer.post('/transactions')
+    .set('Accept', 'application/json')
+    .set('version', version)
+    .set('magic', config.magic)
+    .set('port', config.port)
     .send({
       transaction: trs
     })
-    .expect("Content-Type", /json/)
+    .expect('Content-Type', /json/)
     .expect(200)
     .end(cb);
 }
 
 function apiGet(path, cb) {
   api.get(path)
-    .expect("Content-Type", /json/)
+    .expect('Content-Type', /json/)
     .expect(200)
     .end(cb)
 }
 
 function giveMoney(address, amount, cb) {
-  api.put("/transactions")
-    .set("Accept", "application/json")
+  api.put('/transactions')
+    .set('Accept', 'application/json')
     .send({
       secret: Gaccount.password,
       amount: amount,
       recipientId: address
     })
-    .expect("Content-Type", /json/)
+    .expect('Content-Type', /json/)
     .expect(200)
     .end(cb)
 }
@@ -331,6 +331,15 @@ async function giveMoneyAndWaitAsync(addresses) {
 
 function sleep(n, cb) {
   setTimeout(cb, n * 1000)
+}
+
+function openAccount(params, cb) {
+  api.post('/accounts/open')
+    .set('Accept', 'application/json')
+    .send(params)
+    .expect('Content-Type', /json/)
+    .expect(200)
+    .end(cb)
 }
 
 function PIFY(fn, receiver) {
@@ -352,6 +361,11 @@ function EIFY(fn, receiver) {
     })
   }
 }
+
+(async function () {
+  var res = await PIFY(openAccount)({ secret: Gaccount.password })
+  expect(res.body.success).to.be.true
+})()
 
 // Exports variables and functions for access from other files
 module.exports = {
@@ -393,6 +407,7 @@ module.exports = {
   submitTransaction: submitTransaction,
   apiGet: apiGet,
   genNormalAccount: genNormalAccount,
+  openAccount: openAccount,
   PIFY: PIFY,
   EIFY: EIFY,
 
@@ -406,5 +421,6 @@ module.exports = {
   apiGetAsync: PIFY(apiGet),
   giveMoneyAsync: PIFY(giveMoney),
   giveMoneyAndWaitAsync: giveMoneyAndWaitAsync,
-  sleepAsync: PIFY(sleep)
+  sleepAsync: PIFY(sleep),
+  openAccountAsync: PIFY(openAccount)
 };

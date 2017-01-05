@@ -59,23 +59,23 @@ var accountSendTurn = 0;
 
 function sendXAS (account, i) {
     node.onNewBlock(function (err) {
-        var randomXAS = node.randomXAS();
+        var randomCoin = node.randomCoin();
 
         node.api.put("/transactions")
             .set("Accept", "application/json")
             .send({
                 secret: node.Gaccount.password,
-                amount: randomXAS,
+                amount: randomCoin,
                 recipientId: account.address
             })
             .expect("Content-Type", /json/)
             .expect(200)
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
-                // console.log("Sending " + randomXAS + " XAS to " + account.address);
+                // console.log("Sending " + randomCoin + " XAS to " + account.address);
                 node.expect(res.body).to.have.property("success").to.be.true;
                 if (res.body.success == true && i != null) {
-                    Accounts[i].balance = randomXAS / node.normalizer;
+                    Accounts[i].balance = randomCoin / node.normalizer;
                 }
             });
     });

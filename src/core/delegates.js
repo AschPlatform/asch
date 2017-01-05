@@ -166,7 +166,7 @@ function Delegate() {
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {
-    var nameKey = trs.asset.uiaIssuer.name + ':' + trs.type
+    var nameKey = trs.asset.delegate.name + ':' + trs.type
     var idKey = sender.address + ':' + trs.type
     library.oneoff.delete(nameKey)
     library.oneoff.delete(idKey)

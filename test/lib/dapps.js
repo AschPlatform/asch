@@ -7,7 +7,7 @@ var node = require("./../variables.js");
 var Dapp = {};
 var DappName = "";
 var DappToInstall = {};
-var randomXAS = 0;
+var randomCoin = 0;
 var transactionCount = 0;
 var transactionList = [];
 
@@ -99,14 +99,14 @@ before(function (done) {
 });
 
 before(function (done) {
-    // Send to XAS to account 1 address
+    // Send money to account 1 address
     setTimeout(function () {
-        randomXAS = node.randomXAS();
+        randomCoin = node.randomCoin();
         node.api.put("/transactions")
             .set("Accept", "application/json")
             .send({
                 secret: node.Gaccount.password,
-                amount: randomXAS,
+                amount: randomCoin,
                 recipientId: Account1.address
             })
             .expect("Content-Type", /json/)
@@ -115,13 +115,11 @@ before(function (done) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.true;
                 if (res.body.success == true && res.body.transactionId != null) {
-                    // console.log("Sent to " + Account1.address + " " + (randomXAS / node.normalizer) + " XAS");
                     transactionCount += 1;
                     Account1.transactions.push(transactionCount);
-                    Account1.balance += randomXAS;
+                    Account1.balance += randomCoin
                 } else {
-                    console.log("Sending XAS to Account1 failed.");
-                    console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + randomXAS + ", recipientId: " + Account1.address );
+                    console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + randomCoin + ", recipientId: " + Account1.address );
                     node.expect("TEST").to.equal("FAILED");
                 }
                 done();
@@ -131,40 +129,35 @@ before(function (done) {
 
 before(function (done) {
     setTimeout(function () {
-        randomXAS = node.randomXAS();
-        expectedFee = node.expectedFee(randomXAS);
+        randomCoin = node.randomCoin();
+        expectedFee = node.expectedFee(randomCoin);
         node.api.put("/transactions")
             .set("Accept", "application/json")
             .send({
                 secret: node.Gaccount.password,
-                amount: randomXAS,
+                amount: randomCoin,
                 recipientId: Account2.address
             })
             .expect("Content-Type", /json/)
             .expect(200)
             .end(function (err, res) {
-                // console.log(JSON.stringify(res.body));
-                // console.log("We send the XAS from genesis account to account. Recipient is: " + Account2.address);
-                console.log("Sent to " + Account2.address + " " + (randomXAS / node.normalizer) + " XAS");
-                // console.log("Expected fee (paid by sender): " + expectedFee / node.normalizer + " XAS");
                 node.expect(res.body).to.have.property("success").to.be.true;
                 if (res.body.success == true && res.body.transactionId != null) {
                     Account2.transactions.push(transactionCount);
                     transactionCount += 1;
                     totalTxFee += (expectedFee / node.normalizer);
-                    Account2.balance += randomXAS;
+                    Account2.balance += randomCoin;
                     transactionList[transactionCount - 1] = {
                         "sender": node.Gaccount.address,
                         "recipient": Account2.address,
-                        "brutoSent": (randomXAS + expectedFee) / node.normalizer,
+                        "brutoSent": (randomCoin + expectedFee) / node.normalizer,
                         "fee": expectedFee / node.normalizer,
-                        "nettoSent": randomXAS / node.normalizer,
+                        "nettoSent": randomCoin / node.normalizer,
                         "txId": res.body.transactionId,
                         "type":node.TxTypes.SEND
                     }
                 } else {
-                    console.log("Sending XAS to Account2 failed.");
-                    console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + randomXAS + ", recipientId: " + Account2.address );
+                    console.log("Sent: secret: " + node.Gaccount.password + ", amount: " + randomCoin + ", recipientId: " + Account2.address );
                     node.expect("TEST").to.equal("FAILED");
                 }
                 done();
@@ -377,7 +370,7 @@ describe("PUT /dapps", function () {
             });
     });
 
-    it("Using account with 0 XAS account. Should fail", function (done) {
+    it("Using account with 0 coin account. Should fail", function (done) {
         node.api.put("/dapps")
             .set("Accept", "application/json")
             .send({
