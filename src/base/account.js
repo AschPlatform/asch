@@ -685,6 +685,10 @@ Account.prototype.merge = function (address, diff, cb) {
     console.log("!!!!!!!!!!!!!!!!!!!!!!!", address, diff)
   }
 
+  if (diff['balance']) {
+    this.scope.balanceCache.addNativeBalance(address, diff['balance'])
+  }
+
   this.editable.forEach(function (value) {
     if (diff[value]) {
       var trueValue = diff[value];
