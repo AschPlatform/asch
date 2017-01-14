@@ -11,6 +11,7 @@ var Router = require('../utils/router.js')
 var TransactionTypes = require('../utils/transaction-types.js')
 var sandboxHelper = require('../utils/sandbox.js')
 var flagsHelper = require('../uia/flags-helper.js')
+var addressHelper = require('../utils/address.js')
 
 // Private fields
 var modules, library, self, private = {}, shared = {}
@@ -135,7 +136,22 @@ shared.getIssuers = function (req, cb) {
   })
 }
 
+shared.getIssuerByAddress = function (req, cb) {
+  if (!req.params || !addressHelper.isAddress(req.params.address)) {
+    return cb('Invalid address')
+  }
+  library.model.getIssuerByAddress(req.params.address, ['name', 'desc'], function (err, issuer) {
+    if (err) return cb('Database error: ' + err)
+    if (!issuer) return cb('Issuer not found')
+    cb(null, {issuer: issuer})
+  })
+}
+
 shared.getIssuer = function (req, cb) {
+  if (req.params && addressHelper.isAddress(req.params.name)) {
+    req.params.address = req.params.name
+    return shared.getIssuerByAddress(req, cb)
+  }
   var query = req.params
   library.scheme.validate(query, {
     type: 'object',

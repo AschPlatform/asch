@@ -80,6 +80,11 @@ function Vote() {
   }
 
   this.applyUnconfirmed = function (trs, sender, cb) {
+    if (modules.blocks.getLastBlock() &&
+        modules.blocks.getLastBlock().height < 1294343 &&
+        global.Config.netVersion === 'mainnet') {
+      return setImmediate(cb)
+    }
     var key = sender.address + ':' + trs.type
     if (library.oneoff.has(key)) {
       return setImmediate(cb, 'Double submit')

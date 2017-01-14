@@ -39,6 +39,16 @@ class Model {
     })
   }
 
+  getIssuerByAddress(address, fields, cb) {
+    var filter = {
+      condition: { issuerId: address }
+    }
+    this.getIssuers(filter, fields, function (err, issuers) {
+      if (err) return cb(err)
+      cb(null, issuers && issuers[0])
+    })
+  }
+
   getIssuers(filter, fields, cb) {
     var limit = (filter && filter.limit) || 100
     var offset = (filter && filter.offset) || 0
@@ -233,7 +243,7 @@ class Model {
       limit: filter.limit,
       offset: filter.offset
     })
-    this.dbLite.query(sql.query, sql.values, {address: String}, cb)
+    this.dbLite.query(sql.query, sql.values, { address: String }, cb)
   }
 
   addAssetAcl(table, currency, list, cb) {
@@ -321,8 +331,8 @@ class Model {
   }
 
   checkAcl(table, currency, senderId, recipientId, cb) {
-    var sql = 'select address from $table where address=$senderId and currency=$currency;' + 
-              'select address from $table where address=$recipientId and currency=$currency'
+    var sql = 'select address from $table where address=$senderId and currency=$currency;' +
+      'select address from $table where address=$recipientId and currency=$currency'
     var values = {
       table: table,
       senderId: senderId,
