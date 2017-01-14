@@ -20,10 +20,6 @@ function status() {
 }
 
 function start() {
-  res=`cat /etc/ntp.conf  | egrep -v '#' | egrep 'pool.ntp.org'`
-  if [ "$res" != "server pool.ntp.org prefer" ];then
-    configure
-  fi
   if is_running; then
     echo "Asch server is already started"
   else
