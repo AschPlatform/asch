@@ -135,9 +135,7 @@ private.attachApi = function () {
 
       var max = query.max;
       var min = query.min;
-      var ids = query.ids.split(",").filter(function (id) {
-        return /^\d+$/.test(id);
-      });
+      var ids = query.ids.split(",");
       var escapedIds = ids.map(function (id) {
         return "'" + id + "'";
       });
@@ -164,7 +162,7 @@ private.attachApi = function () {
         library.logger.log('Invalid common block request, ban 60 min', peerStr);
 
         if (report) {
-          modules.peer.state(ip.toLong(peerIp), RequestSanitizer.int(req.headers['port']), 0, 3600);
+          modules.peer.state(ip.toLong(peerIp), parseInt(req.headers['port']), 0, 3600);
         }
 
         return res.json({success: false, error: "Invalid block id sequence"});
