@@ -1105,7 +1105,8 @@ shared.putStorage = function (req, cb) {
       if (err) {
         return cb(err.toString());
       }
-      if (!body.wait) {
+      // if (!body.wait) {
+      if (1 === 1) {
         return cb(null, { transactionId: transaction[0].id });
       }
 
