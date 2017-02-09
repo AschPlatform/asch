@@ -7,11 +7,8 @@ function main() {
   # echo "Installing nodejs,npm ..."
   # apt-get install nodejs -yqq && test -f /usr/bin/node || ln -s /usr/bin/nodejs /usr/bin/node
 
-  echo "Installing wget ..."
-  apt-get install wget -yqq
-
-  echo "Installing sqlite3 ..." 
-  apt-get install sqlite3 -yqq
+  echo "Installing wget/curl/sqlite3 ..."
+  apt-get install wget curl sqlite3 -yqq
 
   echo "Install dependent package done."
 }
