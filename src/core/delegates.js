@@ -414,6 +414,9 @@ private.getKeysSortByVote = function (cb) {
     if (err) {
       cb(err)
     }
+    if (!rows || !rows.length) {
+      return cb('No active delegates found')
+    }
     cb(null, rows.map(function (el) {
       return el.publicKey
     }))
