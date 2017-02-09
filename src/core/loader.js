@@ -405,26 +405,26 @@ private.loadBlockChain = function (cb) {
               , function (err, updated) {
                 if (err) {
                   library.logger.error(err);
-                  library.logger.info("Unable to load without verifying, clearing accounts from database and loading");
+                  library.logger.info("Failed to verify db integrity 1");
                   load(count);
                 } else {
                   library.dbLite.query("select a.blockId, b.id from mem_accounts a left outer join blocks b on b.id = a.blockId where b.id is null", {}, ['a_blockId', 'b_id'], function (err, rows) {
                     if (err || rows.length > 0) {
                       library.logger.error(err || "Encountered missing block, looks like node went down during block processing");
-                      library.logger.info("Unable to load without verifying, clearing accounts from database and loading");
+                      library.logger.info("Failed to verify db integrity 2");
                       load(count);
                     } else {
                       // Load delegates
                       library.dbLite.query("SELECT lower(hex(publicKey)) FROM mem_accounts WHERE isDelegate=1", ['publicKey'], function (err, delegates) {
                         if (err || delegates.length == 0) {
                           library.logger.error(err || "No delegates, reload database");
-                          library.logger.info("Unable to load without verifying, clearing accounts from database and loading");
+                          library.logger.info("Failed to verify db integrity 3");
                           load(count);
                         } else {
                           modules.blocks.loadBlocksOffset(1, count, verify, function (err, lastBlock) {
                             if (err) {
                               library.logger.error(err || "Unable to load last block");
-                              library.logger.info("Unable to load without verifying, clearing accounts from database and loading");
+                              library.logger.info("Failed to verify db integrity 4");
                               load(count);
                             } else {
                               library.logger.info('Blockchain ready');
