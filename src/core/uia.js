@@ -58,6 +58,7 @@ private.attachApi = function () {
     'get /assets/:name': 'getAsset',
     'get /assets/:name/acl/:flag': 'getAssetAcl',
     'get /balances/:address': 'getBalances',
+    'get /balances/:address/:currency': 'getBalance',
     'get /transactions': 'getTransactions',
 
     // TODO(qingfeng) update issuer or asset description
@@ -169,8 +170,8 @@ shared.getIssuer = function (req, cb) {
     library.model.getIssuerByName(query.name, ['name', 'desc', 'issuerId'], function (err, issuer) {
       if (!issuer || err) return cb('Issuer not found')
       cb(null, { issuer: issuer })
-    });
-  });
+    })
+  })
 }
 
 shared.getIssuerAssets = function (req, cb) {
@@ -211,7 +212,7 @@ shared.getIssuerAssets = function (req, cb) {
         })
       })
     })
-  });
+  })
 }
 
 shared.getAssets = function (req, cb) {
@@ -270,8 +271,8 @@ shared.getAsset = function (req, cb) {
       if (err) return cb('Failed to get asset: ' + err)
       if (!asset) return cb('Asset not found')
       cb(null, { asset: asset })
-    });
-  });
+    })
+  })
 }
 
 shared.getAssetAcl = function (req, cb) {
@@ -313,11 +314,13 @@ shared.getAssetAcl = function (req, cb) {
         })
       })
     })
-  });
+  })
 }
 
 shared.getBalances = function (req, cb) {
-  // FIXME validate address
+  if (!req.params || !addressHelper.isAddress(req.params.address)) {
+    return cb('Invalid address')
+  }
   var query = req.body
   library.scheme.validate(query, {
     type: 'object',
@@ -354,7 +357,19 @@ shared.getBalances = function (req, cb) {
         })
       })
     })
-  });
+  })
+}
+
+shared.getBalance = function (req, cb) {
+  if (!req.params) return cb('Invalid parameters')
+  if (!addressHelper.isAddress(req.params.address)) return cb('Invalid address')
+  if (!req.params.currency || req.params.currency.length > 22) return cb('Invalid currency')
+
+  library.model.getAccountBalances(req.params.address, req.params.currency, function (err, results) {
+    if (err) return cb('Failed to get balance: ' + err)
+    if (!results || results.length == 0) return cb('Balance info not found')
+    cb(null, { balance: results[0] })
+  })
 }
 
 shared.getTransactions = function (req, cb) {
@@ -412,7 +427,6 @@ shared.getTransactions = function (req, cb) {
           fields: ['transactionId', 'currency', 'amount']
         }
       }
-      console.log(data)
       data.transactions.forEach(function (trs) {
         if (!typeToTable[trs.type]) {
           return
@@ -431,7 +445,7 @@ shared.getTransactions = function (req, cb) {
         for (let i = 0; i < rows.length; ++i) {
           if (rows[i].length == 0) continue
           var t = data.transactions[i]
-          var type = t.type;
+          var type = t.type
           var table = typeToTable[type].table
           var asset = rows[i][0]
           for (let k in asset) {
@@ -472,4 +486,4 @@ shared.updateFlags = function (req, cb) {
   cb(null, req)
 }
 
-module.exports = UIA;
+module.exports = UIA

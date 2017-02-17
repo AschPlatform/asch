@@ -291,13 +291,22 @@ class Model {
   }
 
   getAccountBalances(address, filter, cb) {
+    var condition = {
+      address: address
+    }
+    var limit
+    var offset
+    if (typeof filter === 'string') {
+      condition.currency = filter
+    } else {
+      limit = filter.limit
+      offset = filter.offset
+    }
     var sql = jsonSql.build({
       type: 'select',
-      condition: {
-        address: address,
-      },
-      limit: filter.limit,
-      offset: filter.offset,
+      condition: condition,
+      limit: limit,
+      offset: offset,
       table: 'mem_asset_balances',
       alias: 'b',
       join: [
