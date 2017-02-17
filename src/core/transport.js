@@ -409,12 +409,12 @@ private.attachApi = function () {
       }
       library.logger.log('Received transaction ' + transaction.id + ' from peer ' + peerStr);
       modules.transactions.receiveTransactions([transaction], cb);
-    }, function (err) {
+    }, function (err, transactions) {
       if (err) {
         library.logger.debug('Receive invalid transaction', err);
         res.status(200).json({success: false, error:err});
       } else {
-        res.status(200).json({success: true});
+        res.status(200).json({success: true, transactionId: transactions[0].id});
       }
     });
   });

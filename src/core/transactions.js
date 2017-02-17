@@ -284,6 +284,7 @@ private.attachStorageApi = function () {
 
   router.map(shared, {
     "get /get": "getStorage",
+    "get /:id": "getStorage",
     "put /": "putStorage"
   });
 
@@ -1123,7 +1124,12 @@ shared.putStorage = function (req, cb) {
 }
 
 shared.getStorage = function (req, cb) {
-  var query = req.body;
+  var query;
+  if (req.body && req.body.id) {
+    query = req.body;
+  } else if (req.params && req.params.id) {
+    query = req.params;
+  }
   library.scheme.validate(query, {
     type: 'object',
     properties: {

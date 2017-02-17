@@ -386,10 +386,14 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) { //inherit
     return setImmediate(cb, "Invalid transaction timestamp");
   }
 
-  // Spec
-  private.types[trs.type].verify.call(this, trs, sender, function (err) {
-    cb(err);
-  });
+  try {
+    private.types[trs.type].verify.call(this, trs, sender, function (err) {
+      cb(err);
+    });
+  } catch (e) {
+    cb('Invalid transaction asset body')
+  }
+  
 }
 
 Transaction.prototype.verifySignature = function (trs, publicKey, signature) {

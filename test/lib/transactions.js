@@ -1,6 +1,6 @@
 'use strict';
 
-var DEBUG = require('debug')('uia')
+var DEBUG = require('debug')('uia');
 var node = require('./../variables.js');
 
 // Account info for a RANDOM account (which we create later) - 0 XAS amount | Will act as delegate
