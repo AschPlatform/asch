@@ -1,4 +1,5 @@
 var ByteBuffer = require('bytebuffer')
+var bignum = require('bignumber')
 var crypto = require('crypto')
 var async = require('async')
 var ed = require('ed25519')
@@ -456,7 +457,36 @@ shared.getTransactions = function (req, cb) {
             t.asset = library.base.transaction.dbReadAsset(t.type, asset)
           }
         }
-        cb(null, data)
+        var assetNames = new Set
+        data.transactions.forEach(function (trs) {
+          if (trs.type === 13) {
+            assetNames.add(trs.asset.uiaIssue.currency)
+          } else if (trs.type === 14) {
+            assetNames.add(trs.asset.uiaTransfer.currency)
+          }
+        })
+        assetNames = Array.from(assetNames)
+        async.mapSeries(assetNames, function (name, next) {
+          library.model.getAssetByName(name, next)
+        }, function (err, assets) {
+          if (err) return cb('Failed to asset info: ' + err)
+          var precisionMap = new Map
+          assets.forEach(function (a) {
+            precisionMap.set(a.name, Math.pow(10, a.precision))
+          })
+          data.transactions.forEach(function (trs) {
+            var obj = null
+            if (trs.type === 13) {
+              obj = trs.asset.uiaIssue
+            } else if (trs.type === 14) {
+              obj = trs.asset.uiaTransfer
+            }
+            if (obj != null && precisionMap.has(obj.currency)) {
+              obj.amountShow = bignum(obj.amount).div(precisionMap.get(obj.currency)).toString()
+            }
+          })
+          cb(null, data)
+        })
       })
     })
   })
