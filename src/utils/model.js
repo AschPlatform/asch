@@ -155,7 +155,7 @@ class Model {
 
   addAssetQuantity(currency, amount, cb) {
     var sql = 'select quantity from assets where name=$name'
-    this.dbLite.query(sql, { name: currency }, { quantity: Number }, (err, rows) => {
+    this.dbLite.query(sql, { name: currency }, { quantity: String }, (err, rows) => {
       if (err) return cb('Database error when query asset: ' + err)
       if (!rows || !rows.length) return cb('Asset not exists')
       var quantity = rows[0].quantity
