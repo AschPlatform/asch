@@ -323,6 +323,9 @@ private.list = function (filter, cb) {
     owner = '(lower(hex(senderPublicKey)) = $ownerPublicKey or recipientId = $ownerAddress)';
     params.ownerPublicKey = filter.ownerPublicKey;
     params.ownerAddress = filter.ownerAddress;
+  } else if (filter.ownerAddress) {
+    owner = '(senderId = $ownerAddress or recipientId = $ownerAddress)';
+    params.ownerAddress = filter.ownerAddress;
   }
   if (filter.type >= 0) {
     fields_or.push('type = $type');
