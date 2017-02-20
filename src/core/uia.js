@@ -60,7 +60,8 @@ private.attachApi = function () {
     'get /assets/:name/acl/:flag': 'getAssetAcl',
     'get /balances/:address': 'getBalances',
     'get /balances/:address/:currency': 'getBalance',
-    'get /transactions': 'getTransactions',
+    'get /transactions/:address': 'getTransactions',
+    'get /transfers/:address/:currency': 'getTransactions',
 
     // TODO(qingfeng) update issuer or asset description
     // 'put /issuers/:iid': 'updateIssuer',
@@ -374,6 +375,9 @@ shared.getBalance = function (req, cb) {
 }
 
 shared.getTransactions = function (req, cb) {
+  if (!req.params || !addressHelper.isAddress(req.params.address)) {
+    return cb('Invalid parameters')
+  }
   var query = req.body
   library.scheme.validate(query, {
     type: 'object',
@@ -386,18 +390,12 @@ shared.getTransactions = function (req, cb) {
       offset: {
         type: 'integer',
         minimum: 0
-      },
-      ownerPublicKey: {
-        type: 'string',
-        format: 'publicKey'
       }
     }
   }, function (err) {
     if (err) return cb('Invalid parameters: ' + err[0])
-    if (query.ownerPublicKey) {
-      query.ownerAddress = modules.accounts.generateAddressByPublicKey(query.ownerPublicKey)
-    }
     query.uia = 1
+    query.ownerAddress = req.params.address
     modules.transactions.list(query, function (err, data) {
       if (err) return cb('Failed to get transactions: ' + err)
 
