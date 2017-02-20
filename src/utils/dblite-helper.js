@@ -45,7 +45,9 @@ module.exports.connect = function (connectString, cb) {
     "CREATE INDEX IF NOT EXISTS issues_trs_id ON issues(transactionId)",
     "CREATE INDEX IF NOT EXISTS acls_trs_id ON acls(transactionId)",
     "CREATE INDEX IF NOT EXISTS transfers_trs_id ON transfers(transactionId)",
+    "CREATE INDEX IF NOT EXISTS transfers_trs_currency ON transfers(currency)",
     "CREATE INDEX IF NOT EXISTS balance_address on mem_asset_balances(address)",
+    "CREATE INDEX IF NOT EXISTS balance_currency on mem_asset_balances(currency)",
     "CREATE INDEX IF NOT EXISTS acl_white_index on acl_white(currency, address)",
     "CREATE INDEX IF NOT EXISTS acl_black_index on acl_black(currency, address)",
 

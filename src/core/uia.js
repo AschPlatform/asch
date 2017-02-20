@@ -394,7 +394,11 @@ shared.getTransactions = function (req, cb) {
     }
   }, function (err) {
     if (err) return cb('Invalid parameters: ' + err[0])
-    query.uia = 1
+    if (req.params.currency) {
+      query.currency = req.params.currency
+    } else {
+      query.uia = 1
+    }
     query.ownerAddress = req.params.address
     modules.transactions.list(query, function (err, data) {
       if (err) return cb('Failed to get transactions: ' + err)

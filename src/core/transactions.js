@@ -359,6 +359,11 @@ private.list = function (filter, cb) {
     return cb("Invalid limit. Maximum is 100");
   }
 
+  var uiaCurrencyJoin = ''
+  if (filter.currency) {
+    uiaCurrencyJoin = 'inner join transfers ut on ut.transactionId = t.id and ut.currency = "' + filter.currency + '" '
+  }
+
   library.dbLite.query("select count(t.id) " +
     "from trs t " +
     "inner join blocks b on t.blockId = b.id " +
@@ -373,7 +378,7 @@ private.list = function (filter, cb) {
     // Need to fix 'or' or 'and' in query
     library.dbLite.query("select t.id, b.height, t.blockId, t.type, t.timestamp, lower(hex(t.senderPublicKey)), t.senderId, t.recipientId, t.amount, t.fee, lower(hex(t.signature)), lower(hex(t.signSignature)), t.signatures, (select max(height) + 1 from blocks) - b.height " +
       "from trs t " +
-      "inner join blocks b on t.blockId = b.id " +
+      "inner join blocks b on t.blockId = b.id " + uiaCurrencyJoin +
       (fields_or.length || owner ? "where " : "") + " " +
       (fields_or.length ? "(" + fields_or.join(' or ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner) + " " +
       (filter.orderBy ? 'order by ' + sortBy + ' ' + sortMethod : '') + " " +
@@ -678,6 +683,11 @@ shared.getTransactions = function (req, cb) {
         type: "integer",
         minimum: 0,
         maximum: 1
+      },
+      currency: {
+        type: "string",
+        minimum: 1,
+        maximum: 22
       }
     }
   }, function (err) {
