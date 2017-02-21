@@ -109,6 +109,9 @@ message AssetUIAAsset {
   required string maximum = 3;
   required int32 precision = 4;
   optional string strategy = 5;
+  optional int32 allowWriteoff = 6;
+  optional int32 allowWhitelist = 7;
+  optional int32 allowBlacklist = 8;
 }
 
 message AssetUIAFlags {
