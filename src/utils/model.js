@@ -120,7 +120,10 @@ class Model {
         { 'b.height': 'height' },
         { 'i.issuerId': 'issuerId' },
         { 'a.acl': 'acl' },
-        { 'a.writeoff': 'writeoff' }
+        { 'a.writeoff': 'writeoff' },
+        { 'a.allowWriteoff': 'allowWriteoff' },
+        { 'a.allowWhitelist': 'allowWhitelist' },
+        { 'a.allowBlacklist': 'allowBlacklist' }
       ]
     })
     var fieldConv = {
@@ -133,7 +136,10 @@ class Model {
       height: Number,
       issuerId: String,
       acl: Number,
-      writeoff: Number
+      writeoff: Number,
+      allowWriteoff: Number,
+      allowWhitelist: Number,
+      allowBlacklist: Number
     }
     this.dbLite.query(sql.query, sql.values, fieldConv, function (err, rows) {
       if (err) return cb('Database error: ' + err)
@@ -325,7 +331,10 @@ class Model {
         'a.maximum': 'maximum',
         'a.precision': 'precision',
         'a.quantity': 'quantity',
-        'a.writeoff': 'writeoff'
+        'a.writeoff': 'writeoff',
+        'a.allowWriteoff': 'allowWriteoff',
+        'a.allowWhitelist': 'allowWhitelist',
+        'a.allowBlacklist': 'allowBlacklist'
       }
     })
     var fieldConv = {
@@ -334,7 +343,11 @@ class Model {
       maximum: String,
       precision: Number,
       quantity: String,
-      writeoff: Number
+      writeoff: Number,
+      allowWriteoff: Number,
+      allowWhitelist: Number,
+      allowBlacklist: Number
+
     }
     this.dbLite.query(sql.query, sql.values, fieldConv, cb)
   }

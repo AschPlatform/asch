@@ -1,3 +1,5 @@
+var constants = require('../utils/constants.js')
+
 function Issuer() {
   this.create = function (data, trs) {
     trs.recipientId = null
@@ -13,8 +15,9 @@ function Issuer() {
   this.calculateFee = function (trs, sender) {
     // FIXME catch exception
     // FIXME bind library on global
-    var bytes = this.getBytes(trs)
-    return (Math.floor(bytes.length / 200) + 1) * library.base.block.calculateFee()
+    // var bytes = this.getBytes(trs)
+    //return (100 + (Math.floor(bytes.length / 200) + 1)) * library.base.block.calculateFee()
+    return 100 * constants.fixedPoint
   }
 
   this.verify = function (trs, sender, cb) {

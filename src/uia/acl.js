@@ -47,6 +47,9 @@ function Acl() {
       if (result.writeoff) return cb('Asset already writeoff')
       // if (result.acl != asset.flag) return cb('Current flag not match')
 
+      if (result.allowWhitelist === 0 && asset.flag === 1) return cb('Whitelist not allowed')
+      if (result.allowBlacklist === 0 && asset.flag === 0) return cb('Blacklist not allowed') 
+
       var table = flagsHelper.getAclTable(asset.flag)
       var condition = [
         { currency: asset.currency },

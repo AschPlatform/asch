@@ -2,6 +2,7 @@ var assert = require('assert')
 var async = require('async')
 var bignum = require('bignumber')
 var amountHelper = require('../utils/amount.js')
+var constants = require('../utils/constants.js')
 
 function Asset() {
   this.create = function (data, trs) {
@@ -12,15 +13,19 @@ function Asset() {
       desc: data.desc,
       maximum: data.maximum,
       precision: data.precision,
-      strategy: data.strategy
+      strategy: data.strategy,
+      allowWriteoff: data.allowWriteoff,
+      allowWhitelist: data.allowWhitelist,
+      allowBlacklist: data.allowBlacklist
     }
 
     return trs
   }
 
   this.calculateFee = function (trs, sender) {
-    var bytes = this.getBytes(trs)
-    return (Math.floor(bytes.length / 200) + 1) * library.base.block.calculateFee()
+    //var bytes = this.getBytes(trs)
+    //return (500 + (Math.floor(bytes.length / 200) + 1)) * library.base.block.calculateFee()
+    return 500 * constants.fixedPoint
   }
 
   this.verify = function (trs, sender, cb) {
@@ -45,6 +50,10 @@ function Asset() {
 
     if (asset.strategy && asset.strategy.length > 256) return setImmediate(cb, 'Invalid asset strategy size')
 
+    if (asset.allowWriteoff !== 0 && asset.allowWriteoff !== 1) return setImmediate(cb, 'Asset allowWriteoff is not valid')
+    if (asset.allowWhitelist !== 0 && asset.allowWhitelist !== 1) return setImmediate(cb, 'Asset allowWhitelist is not valid')
+    if (asset.allowBlacklist !== 0 && asset.allowBlacklist !== 1) return setImmediate(cb, 'Asset allowBlacklist is not valid')
+
     library.model.exists('assets', { name: fullName }, function (err, exists) {
       if (err) return cb(err)
       if (exists) return cb('Double register')
@@ -62,18 +71,21 @@ function Asset() {
   }
 
   this.getBytes = function (trs) {
-    var precision = new Buffer(1)
-    precision[0] = trs.asset.uiaAsset.precision
+    var asset = trs.asset.uiaAsset
     var buffer = Buffer.concat([
-      new Buffer(trs.asset.uiaAsset.name, 'utf8'),
-      new Buffer(trs.asset.uiaAsset.desc, 'utf8'),
-      new Buffer(trs.asset.uiaAsset.maximum, 'utf8'),
-      precision
+      new Buffer(asset.name, 'utf8'),
+      new Buffer(asset.desc, 'utf8'),
+      new Buffer(asset.maximum, 'utf8'),
+      Buffer.from([asset.precision || 0]),
+      new Buffer(asset.strategy || '', 'utf8'),
+      Buffer.from([asset.allowWriteoff || 0]),
+      Buffer.from([asset.allowWhitelist || 0]),
+      Buffer.from([asset.allowBlacklist || 0])
     ])
 
     var strategy = trs.asset.uiaAsset.strategy
     if (strategy) {
-      buffer = Buffer.concat([buffer, new Buffer(strategy, 'utf8')])
+      buffer = Buffer.concat([buffer, ])
     }
     return buffer
   }
@@ -127,6 +139,21 @@ function Asset() {
         strategy: {
           type: 'string',
           maxLength: 256
+        },
+        allowWriteoff: {
+          type: 'integer',
+          mininum: 0,
+          maximum: 1
+        },
+        allowWhitelist: {
+          type: 'integer',
+          mininum: 0,
+          maximum: 1
+        },
+        allowBlacklist: {
+          type: 'integer',
+          mininum: 0,
+          maximum: 1
         }
       },
       required: ['name', 'desc', 'maximum', 'precision']
@@ -149,7 +176,10 @@ function Asset() {
         desc: raw.assets_desc,
         maximum: raw.assets_maximum,
         precision: raw.assets_precision,
-        strategy: raw.assets_strategy
+        strategy: raw.assets_strategy,
+        allowWriteoff: raw.assets_allowWriteoff,
+        allowWhitelist: raw.assets_allowWhitelist,
+        allowBlacklist: raw.assets_allowBlacklist
       }
 
       return { uiaAsset: asset }
@@ -169,6 +199,9 @@ function Asset() {
       maximum: asset.maximum,
       precision: asset.precision,
       strategy: asset.strategy,
+      allowWriteoff: asset.allowWriteoff || 0,
+      allowWhitelist: asset.allowWhitelist || 0,
+      allowBlacklist: asset.allowBlacklist || 0,
       acl: 0,
       writeoff: 0
     }

@@ -13,6 +13,7 @@ describe('Test storage', () => {
     node.expect(function () { createStorage({}, 'secret') }).to.throw(Error, /Content must be hex format/)
     node.expect(function () { createStorage(123, 'secret') }).to.throw(Error, /Content must be hex format/)
     node.expect(function () { createStorage('z', 'secret') }).to.throw(Error, /Content must be hex format/)
+    node.expect(function () { createStorage('aGVsbG93b3JsZA==', 'secret') }).to.throw(Error, /Invalid content format/)
   })
 
   it('Normal storage test', async function () {

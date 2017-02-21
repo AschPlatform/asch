@@ -243,7 +243,7 @@ function Multisignature() {
     });
 
     if (!report) {
-      throw Error(report.getLastError());
+      throw Error('Invalid multisignature parameters: ' + library.scheme.getLastError());
     }
 
     return trs;

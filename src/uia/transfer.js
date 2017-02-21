@@ -32,6 +32,7 @@ function Transfer() {
       if (err) return cb('Database error: ' + err)
       if (!assetDetail) return cb('Asset not exists')
       if (assetDetail.writeoff) return cb('Asset already writeoff')
+      if (assetDetail.allowWhitelist === 0 && !assetDetail.allowBlacklist === 0) return cb()
 
       // if (sender.address == assetDetail.issuerId) return cb()
 

@@ -35,6 +35,10 @@ function Flags() {
       if (result.issuerId !== sender.address) return cb('Permission not allowed')
       
       if (result.writeoff) return cb('Asset already writeoff')
+
+      if (!result.allowWriteoff && asset.flagType === 2) return cb('Writeoff not allowed')
+      if (!result.allowWhitelist && asset.flagType === 1 && asset.flag === 1) return cb('Whitelist not allowed')
+      if (!result.allowBlacklist && asset.flagType === 1 && asset.flag === 0) return cb('Blacklist not allowed')
       if (flagsHelper.isSameFlag(asset.flagType, asset.flag, result)) return cb('Flag double set')
 
       return cb()

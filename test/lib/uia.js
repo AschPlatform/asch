@@ -11,7 +11,7 @@ async function registerIssuerAsync(name, desc, account) {
 }
 
 async function registerAssetAsync(name, desc, maximum, precision, strategy, account) {
-  var res = await node.submitTransactionAsync(node.asch.uia.createAsset(name, desc, maximum, precision, strategy, account.password))
+  var res = await node.submitTransactionAsync(node.asch.uia.createAsset(name, desc, maximum, precision, strategy, 1, 1, 1, account.password))
   DEBUG('register asset response', res.body)
   return res
 }
@@ -102,6 +102,9 @@ describe('Test UIA', () => {
         ASSET1.maximum,
         ASSET1.precision,
         ASSET1.strategy,
+        1,
+        1,
+        1,
         node.Gaccount.password)
       DEBUG('create asset trs', trs)
 
@@ -740,6 +743,59 @@ describe('Test UIA', () => {
       DEBUG('get recipient\'s balances second time', res.body)
       expect(res.body.balances[0].currency).to.equal(assetName)
       expect(res.body.balances[0].balance).to.equal('2000')
+    })
+  })
+
+  describe.only('Test modify permission', () => {
+    var ISSUE_ACCOUNT = node.genNormalAccount()
+    var ISSUER_NAME = node.randomIssuerName()
+    var ASSET_NAME = ISSUER_NAME + '.SILVER'
+    var MAX_AMOUNT = '100000'
+
+    async function registerAssetWithAllowParameters(allowWriteoff, allowWhitelist, allowBlacklist) {
+      var trs = node.asch.uia.createAsset(ASSET_NAME, 'valid desc', MAX_AMOUNT, 1, '', allowWriteoff, allowWhitelist, allowBlacklist, ISSUE_ACCOUNT.password)
+      var res = await node.submitTransactionAsync(trs)
+      DEBUG('registerAssetWithAllowParameters', res.body)
+      return res
+    }
+
+    it('Invalid allow parameters', async function () {
+      var res = await registerAssetWithAllowParameters(-1, 1, 1)
+      expect(res.body).to.have.property('error').to.match(/^Asset allowWriteoff is not valid/)
+
+      res = await registerAssetWithAllowParameters(1, 2, 1)
+      expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
+
+      res = await registerAssetWithAllowParameters(1, 1, 999)
+      expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
+    })
+
+    it('Flags modifing should be denied with special asset parameters', async function () {
+      await node.giveMoneyAndWaitAsync([ISSUE_ACCOUNT.address])
+      var res = await registerIssuerAsync(ISSUER_NAME, 'valid desc', ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('success').to.be.true
+      await node.onNewBlockAsync()
+
+      res = registerAssetWithAllowParameters(0, 0, 0)
+      await node.onNewBlockAsync()
+
+      res = await node.apiGetAsync('/uia/assets/' + ASSET_NAME)
+      DEBUG('get assets response', res.body)
+      expect(res.body.asset.allowWriteoff).to.equal(0)
+      expect(res.body.asset.allowWhitelist).to.equal(0)
+      expect(res.body.asset.allowBlacklist).to.equal(0)
+
+      res = await writeoffAssetAsync(ASSET_NAME, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Writeoff not allowed/)
+
+      res = await changeFlagsAsync(ASSET_NAME, 1, 1, ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Whitelist not allowed/)
+
+      res = await updateAclAsync(ASSET_NAME, '+', 0, [node.genNormalAccount().address], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Blacklist not allowed/)
+
+      res = await updateAclAsync(ASSET_NAME, '+', 1, [node.genNormalAccount().address], ISSUE_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Whitelist not allowed/)
     })
   })
 

@@ -105,7 +105,7 @@ const FULL_BLOCK_QUERY = "SELECT " +
   "lower(hex(t.requesterPublicKey)), t.signatures, " +
   "lower(hex(st.content)), " +
   "issuers.name, issuers.desc, " +
-  "assets.name, assets.desc, assets.maximum, assets.precision, assets.strategy," +
+  "assets.name, assets.desc, assets.maximum, assets.precision, assets.strategy, assets.allowWriteoff, assets.allowWhitelist, assets.allowBlacklist, " +
   "flags.currency, flags.flag, flags.flagType, " +
   "issues.currency, issues.amount, " +
   "transfers.currency, transfers.amount, " +
@@ -960,7 +960,7 @@ Blocks.prototype.applyBlock = function(block, votes, broadcast, saveBlock, callb
           if (err) {
             library.logger.error('Failed to redo unconfirmed transactions', err);
           }
-          cb(err)
+          cb()
         });
       })
     });

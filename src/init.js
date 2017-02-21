@@ -78,13 +78,14 @@ module.exports = function(options, done) {
 
     scheme: function (cb) {
       z_schema.registerFormat("hex", function (str) {
+        var b = null
         try {
-          new Buffer(str, "hex");
+          b = new Buffer(str, "hex");
         } catch (e) {
           return false;
         }
 
-        return true;
+        return b && b.length > 0;
       });
 
       z_schema.registerFormat('publicKey', function (str) {

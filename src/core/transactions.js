@@ -185,7 +185,7 @@ function Storage() {
     });
 
     if (!report) {
-      throw Error(report.getLastError());
+      throw Error('Invalid storage parameters: ' + library.scheme.getLastError());
     }
 
     return trs;
