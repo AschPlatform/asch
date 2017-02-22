@@ -41,6 +41,7 @@ module.exports.connect = function (connectString, cb) {
     "CREATE INDEX IF NOT EXISTS issuers_trs_id ON issuers(transactionId)",
     "CREATE INDEX IF NOT EXISTS issuers_issuer_id ON issuers(issuerId)",
     "CREATE INDEX IF NOT EXISTS assets_trs_id ON assets(transactionId)",
+    "CREATE INDEX IF NOT EXISTS assets_issuer_name ON assets(issuerName)",
     "CREATE INDEX IF NOT EXISTS flags_trs_id ON flags(transactionId)",
     "CREATE INDEX IF NOT EXISTS issues_trs_id ON issues(transactionId)",
     "CREATE INDEX IF NOT EXISTS acls_trs_id ON acls(transactionId)",
@@ -50,6 +51,8 @@ module.exports.connect = function (connectString, cb) {
     "CREATE INDEX IF NOT EXISTS balance_currency on mem_asset_balances(currency)",
     "CREATE INDEX IF NOT EXISTS acl_white_index on acl_white(currency, address)",
     "CREATE INDEX IF NOT EXISTS acl_black_index on acl_black(currency, address)",
+    "CREATE INDEX IF NOT EXISTS acl_white_currency on acl_black(currency)",
+    "CREATE INDEX IF NOT EXISTS acl_black_currency on acl_black(currency)",
 
     // Indexes
     "CREATE UNIQUE INDEX IF NOT EXISTS blocks_height ON blocks(height)",
