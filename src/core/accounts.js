@@ -278,6 +278,9 @@ Accounts.prototype.generateAddressByPublicKey = function (publicKey) {
 }
 
 Accounts.prototype.generateAddressByPublicKey2 = function (publicKey) {
+  if (!global.featureSwitch.enableUIA) {
+    return self.generateAddressByPublicKey(publicKey)
+  }
   return addressHelper.generateBase58CheckAddress(publicKey)
 }
 
