@@ -477,6 +477,9 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
   if (!transaction.id) {
     transaction.id = library.base.transaction.getId(transaction);
   }
+  if (!global.featureSwitch.enableUIA && transaction.type >= 8) {
+    return cb("Feature not activated");
+  }
   // Check transaction indexes
   if (private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined) {
     return cb("Transaction " + transaction.id + " already exists, ignoring...");

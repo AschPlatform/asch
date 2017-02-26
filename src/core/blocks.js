@@ -698,7 +698,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 Blocks.prototype.setLastBlock = function (block) {
   private.lastBlock = block
   if (global.Config.netVersion === 'mainnet') {
-    global.featureSwitch.enableLongId = private.lastBlock.height >= 1700000
+    global.featureSwitch.enableUIA = global.featureSwitch.enableLongId = private.lastBlock.height >= 1700000
   } else if (global.Config.netVersion === 'testnet') {
     global.featureSwitch.enableLongId = private.lastBlock.height >= 4000
   } else {
