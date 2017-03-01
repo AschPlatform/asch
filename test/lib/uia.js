@@ -746,7 +746,7 @@ describe('Test UIA', () => {
     })
   })
 
-  describe.only('Test modify permission', () => {
+  describe('Test modify permission', () => {
     var ISSUE_ACCOUNT = node.genNormalAccount()
     var ISSUER_NAME = node.randomIssuerName()
     var ASSET_NAME = ISSUER_NAME + '.SILVER'
