@@ -257,7 +257,7 @@ private.attachApi = function () {
         },
         id: {
           type: "string",
-          maxLength: 30,
+          maxLength: 64,
         },
         signatures: {
           type: "array",
@@ -289,7 +289,7 @@ private.attachApi = function () {
         },
         id: {
           type: "string",
-          maxLength: 30,
+          maxLength: 64,
         },
         timestamp: {
           type: "integer"

@@ -131,7 +131,7 @@ Consensus.prototype.getProposeHash  = function (propose) {
   bytes.writeLong(propose.height);
 
   if (global.featureSwitch.enableLongId) {
-    bytes.writeString(id)
+    bytes.writeString(propose.id)
   } else {
     var idBytes = bignum(propose.id).toBuffer({ size: 8 });
     for (var i = 0; i < 8; i++) {
