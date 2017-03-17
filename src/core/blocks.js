@@ -704,6 +704,10 @@ Blocks.prototype.setLastBlock = function (block) {
   } else {
     global.featureSwitch.enableLongId = private.lastBlock.height >= 5
   }
+  global.featureSwitch.fixVoteNewAddressIssue = true
+  if (global.Config.netVersion === 'mainnet' && private.lastBlock.height < 1854000) {
+    global.featureSwitch.fixVoteNewAddressIssue = false
+  }
   global.featureSwitch.enableUIA = global.featureSwitch.enableLongId
 }
 

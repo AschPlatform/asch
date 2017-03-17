@@ -281,15 +281,16 @@ Accounts.prototype.generateAddressByPublicKey2 = function (publicKey) {
   if (!global.featureSwitch.enableUIA) {
     return self.generateAddressByPublicKey(publicKey)
   }
+  var oldAddress = self.generateAddressByPublicKey(publicKey)
+  if (library.balanceCache.getNativeBalance(oldAddress)) {
+    return oldAddress
+  }
   return addressHelper.generateBase58CheckAddress(publicKey)
 }
 
 Accounts.prototype.getAccount = function (filter, fields, cb) {
   if (filter.publicKey) {
-    filter.address = self.generateAddressByPublicKey(filter.publicKey);
-    if (!library.balanceCache.getNativeBalance(filter.address)) {
-      filter.address = self.generateAddressByPublicKey2(filter.publicKey);
-    }
+    filter.address = self.generateAddressByPublicKey2(filter.publicKey);
     delete filter.publicKey;
   }
 
@@ -306,7 +307,7 @@ Accounts.prototype.setAccountAndGet = function (data, cb) {
     if (data.publicKey) {
       address = self.generateAddressByPublicKey(data.publicKey);
       if (!data.isGenesis && !library.balanceCache.getNativeBalance(address)) {
-        address = self.generateAddressByPublicKey2(data.publicKey);
+        address = addressHelper.generateBase58CheckAddress(data.publicKey);
       }
       delete data.isGenesis;
     } else {
@@ -328,10 +329,7 @@ Accounts.prototype.mergeAccountAndGet = function (data, cb) {
   var address = data.address || null;
   if (address === null) {
     if (data.publicKey) {
-      address = self.generateAddressByPublicKey(data.publicKey);
-      if (!library.balanceCache.getNativeBalance(address)) {
-        address = self.generateAddressByPublicKey2(data.publicKey);
-      }
+      address = self.generateAddressByPublicKey2(data.publicKey);
     } else {
       return cb("Missing address or public key");
     }

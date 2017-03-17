@@ -158,7 +158,7 @@ function Multisignature() {
       // Get public keys
       async.eachSeries(trs.asset.multisignature.keysgroup, function (item, cb) {
         var key = item.substring(1);
-        var address = modules.accounts.generateAddressByPublicKey(key);
+        var address = modules.accounts.generateAddressByPublicKey2(key);
 
         // Create accounts
         modules.accounts.setAccountAndGet({
@@ -382,7 +382,7 @@ shared.getAccounts = function (req, cb) {
         async.eachSeries(rows, function (account, cb) {
           var addresses = [];
           for (var i = 0; i < account.multisignatures.length; i++) {
-            addresses.push(modules.accounts.generateAddressByPublicKey(account.multisignatures[i]));
+            addresses.push(modules.accounts.generateAddressByPublicKey2(account.multisignatures[i]));
           }
 
           modules.accounts.getAccounts({

@@ -130,7 +130,11 @@ Round.prototype.backwardTick = function (block, previousBlock, cb) {
           }
           for (var i = 0; i < roundDelegates.length; i++) {
             if (private.unDelegatesByRound[round].indexOf(roundDelegates[i]) == -1) {
-              outsiders.push(modules.accounts.generateAddressByPublicKey(roundDelegates[i]));
+              if (global.featureSwitch.fixVoteNewAddressIssue) {
+                outsiders.push(modules.accounts.generateAddressByPublicKey2(roundDelegates[i]));
+              } else {
+                outsiders.push(modules.accounts.generateAddressByPublicKey(roundDelegates[i]));
+              }
             }
           }
           cb();
@@ -195,8 +199,14 @@ Round.prototype.backwardTick = function (block, previousBlock, cb) {
             return cb(err);
           }
           async.eachSeries(votes, function (vote, cb) {
+            var address = null
+            if (global.featureSwitch.fixVoteNewAddressIssue) {
+              address = modules.accounts.generateAddressByPublicKey2(vote.delegate)
+            } else {
+              address = modules.accounts.generateAddressByPublicKey(vote.delegate)
+            }
             library.dbLite.query('update mem_accounts set vote = vote + $amount where address = $address', {
-              address: modules.accounts.generateAddressByPublicKey(vote.delegate),
+              address: address,
               amount: vote.amount
             }, cb);
           }, function (err) {
@@ -268,7 +278,11 @@ Round.prototype.tick = function (block, cb) {
           }
           for (var i = 0; i < roundDelegates.length; i++) {
             if (private.delegatesByRound[round].indexOf(roundDelegates[i]) == -1) {
-              outsiders.push(modules.accounts.generateAddressByPublicKey(roundDelegates[i]));
+              if (global.featureSwitch.fixVoteNewAddressIssue) {
+                outsiders.push(modules.accounts.generateAddressByPublicKey2(roundDelegates[i]));
+              } else {
+                outsiders.push(modules.accounts.generateAddressByPublicKey(roundDelegates[i]));
+              }
             }
           }
           cb();
@@ -332,8 +346,14 @@ Round.prototype.tick = function (block, cb) {
             return cb(err);
           }
           async.eachSeries(votes, function (vote, cb) {
+            var address = null
+            if (global.featureSwitch.fixVoteNewAddressIssue) {
+              address = modules.accounts.generateAddressByPublicKey2(vote.delegate)
+            } else {
+              address = modules.accounts.generateAddressByPublicKey(vote.delegate)
+            }
             library.dbLite.query('update mem_accounts set vote = vote + $amount where address = $address', {
-              address: modules.accounts.generateAddressByPublicKey(vote.delegate),
+              address: address,
               amount: vote.amount
             }, cb);
           }, function (err) {
