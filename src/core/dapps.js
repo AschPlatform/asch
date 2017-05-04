@@ -173,7 +173,7 @@ function OutTransfer() {
 
   this.objectNormalize = function (trs) {
     var report = library.scheme.validate(trs.asset.outTransfer, {
-      object: true,
+      type: 'object',
       properties: {
         dappId: {
           type: "string",
@@ -341,7 +341,7 @@ function InTransfer() {
 
   this.objectNormalize = function (trs) {
     var report = library.scheme.validate(trs.asset.inTransfer, {
-      object: true,
+      type: 'object',
       properties: {
         dappId: {
           type: "string",

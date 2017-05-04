@@ -103,7 +103,7 @@ function Transfer() {
 
   this.objectNormalize = function (trs) {
     var report = library.scheme.validate(trs.asset.uiaTransfer, {
-      object: true,
+      type: 'object',
       properties: {
         currency: {
           type: 'string',

@@ -76,7 +76,7 @@ function Issuer() {
 
   this.objectNormalize = function (trs) {
     var report = library.scheme.validate(trs.asset.uiaIssuer, {
-      object: true,
+      type: 'object',
       properties: {
         name: {
           type: 'string',

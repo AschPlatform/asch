@@ -114,7 +114,7 @@ function Asset() {
 
   this.objectNormalize = function (trs) {
     var report = library.scheme.validate(trs.asset.uiaAsset, {
-      object: true,
+      type: 'object',
       properties: {
         name: {
           type: 'string',

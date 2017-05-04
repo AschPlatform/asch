@@ -121,7 +121,7 @@ function Acl() {
 
   this.objectNormalize = function (trs) {
     var report = library.scheme.validate(trs.asset.uiaAcl, {
-      object: true,
+      type: 'object',
       properties: {
         currency: {
           type: 'string',

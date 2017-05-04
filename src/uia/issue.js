@@ -118,7 +118,7 @@ function Issue() {
 
   this.objectNormalize = function (trs) {
     var report = library.scheme.validate(trs.asset.uiaIssue, {
-      object: true,
+      type: 'object',
       properties: {
         currency: {
           type: 'string',
