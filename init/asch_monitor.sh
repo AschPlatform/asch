@@ -13,7 +13,7 @@ function auto_restart(){
 	fi	
 	/etc/init.d/ntp stop
 	sleep 2
-	ntpdate pool.ntp.org
+	ntpdate pool.ntp.org >> $log
 	/etc/init.d/ntp start
 }
 

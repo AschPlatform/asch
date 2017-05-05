@@ -11,6 +11,7 @@ function install_ntp() {
 		echo "server pool.ntp.org prefer" >> /etc/ntp.conf
 	fi
 	/etc/init.d/ntp stop
+	sleep 2
 	ntpdate pool.ntp.org
 	/etc/init.d/ntp start
 	if [ $? -eq 0 ];then

@@ -615,8 +615,8 @@ Transactions.prototype.receiveTransactions = function (transactions, cb) {
     setImmediate(cb, "Too many transactions");
     return;
   }
-  async.eachSeries(transactions, function (transaction, cb) {
-		self.processUnconfirmedTransaction(transaction, true, function (err, next) {
+  async.eachSeries(transactions, function (transaction, next) {
+		self.processUnconfirmedTransaction(transaction, true, function (err) {
       if (err) {
         self.removeUnconfirmedTransaction(transaction.id);
       }
