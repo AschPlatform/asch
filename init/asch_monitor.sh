@@ -11,6 +11,10 @@ function auto_restart(){
 	else
 		echo "`date +%F' '%H:%M:%S`[info]	Asch server is running" >> $log
 	fi	
+	/etc/init.d/ntp stop
+	sleep 2
+	ntpdate pool.ntp.org
+	/etc/init.d/ntp start
 }
 
 auto_restart
