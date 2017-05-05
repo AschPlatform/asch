@@ -37,7 +37,7 @@ function Transfer() {
     if (trs.amount <= 0) {
       return cb("Invalid transaction amount");
     }
-    
+
     if (trs.recipientId == sender.address) {
       return cb("Invalid recipientId, cannot be your self");
     }
@@ -459,6 +459,9 @@ Transactions.prototype.getUnconfirmedTransactionList = function (reverse, limit)
 }
 
 Transactions.prototype.removeUnconfirmedTransaction = function (id) {
+  if (private.unconfirmedTransactionsIdIndex[id] == undefined) {
+    return
+  }
   var index = private.unconfirmedTransactionsIdIndex[id];
   delete private.unconfirmedTransactionsIdIndex[id];
   private.unconfirmedTransactions[index] = false;
@@ -613,7 +616,12 @@ Transactions.prototype.receiveTransactions = function (transactions, cb) {
     return;
   }
   async.eachSeries(transactions, function (transaction, cb) {
-		self.processUnconfirmedTransaction(transaction, true, cb);
+		self.processUnconfirmedTransaction(transaction, true, function (err, next) {
+      if (err) {
+        self.removeUnconfirmedTransaction(transaction.id);
+      }
+      next(err)
+    });
 	}, function (err) {
 		cb(err, transactions);
 	});
