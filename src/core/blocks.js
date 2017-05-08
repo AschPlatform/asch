@@ -1437,7 +1437,7 @@ Blocks.prototype.cleanup = function (cb) {
 // Shared
 shared.getBlock = function (req, cb) {
   if (!private.loaded) {
-    cb("Blockchain is loading")
+    return cb("Blockchain is loading")
   }
   var query = req.body;
   library.scheme.validate(query, {
@@ -1486,7 +1486,7 @@ shared.getBlock = function (req, cb) {
 
 shared.getBlocks = function (req, cb) {
   if (!private.loaded) {
-    cb("Blockchain is loading")
+    return cb("Blockchain is loading")
   }
   var query = req.body;
   library.scheme.validate(query, {
@@ -1547,7 +1547,7 @@ shared.getBlocks = function (req, cb) {
 
 shared.getHeight = function (req, cb) {
   if (!private.loaded) {
-    cb("Blockchain is loading")
+    return cb("Blockchain is loading")
   }
   var query = req.body;
   cb(null, {height: private.lastBlock.height});
@@ -1555,7 +1555,7 @@ shared.getHeight = function (req, cb) {
 
 shared.getFee = function (req, cb) {
   if (!private.loaded) {
-    cb("Blockchain is loading")
+    return cb("Blockchain is loading")
   }
   var query = req.body;
   cb(null, {fee: library.base.block.calculateFee()});
@@ -1563,7 +1563,7 @@ shared.getFee = function (req, cb) {
 
 shared.getMilestone = function (req, cb) {
   if (!private.loaded) {
-    cb("Blockchain is loading")
+    return cb("Blockchain is loading")
   }
   var query = req.body, height = private.lastBlock.height;
   cb(null, {milestone: private.blockStatus.calcMilestone(height)});
@@ -1571,7 +1571,7 @@ shared.getMilestone = function (req, cb) {
 
 shared.getReward = function (req, cb) {
   if (!private.loaded) {
-    cb("Blockchain is loading")
+    return cb("Blockchain is loading")
   }
   var query = req.body, height = private.lastBlock.height;
   cb(null, {reward: private.blockStatus.calcReward(height)});
@@ -1579,7 +1579,7 @@ shared.getReward = function (req, cb) {
 
 shared.getSupply = function (req, cb) {
   if (!private.loaded) {
-    cb("Blockchain is loading")
+    return cb("Blockchain is loading")
   }
   var query = req.body, height = private.lastBlock.height;
   cb(null, {supply: private.blockStatus.calcSupply(height)});
@@ -1587,7 +1587,7 @@ shared.getSupply = function (req, cb) {
 
 shared.getStatus = function (req, cb) {
   if (!private.loaded) {
-    cb("Blockchain is loading")
+    return cb("Blockchain is loading")
   }
   var query = req.body, height = private.lastBlock.height;
   cb(null, {
