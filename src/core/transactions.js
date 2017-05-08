@@ -606,6 +606,7 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
     if (err) {
       return cb(err);
     }
+    self.removeUnconfirmedTransaction(transaction.id)
     library.base.transaction.undoUnconfirmed(transaction, sender, cb);
   });
 }
@@ -616,12 +617,7 @@ Transactions.prototype.receiveTransactions = function (transactions, cb) {
     return;
   }
   async.eachSeries(transactions, function (transaction, next) {
-		self.processUnconfirmedTransaction(transaction, true, function (err) {
-      if (err) {
-        self.removeUnconfirmedTransaction(transaction.id);
-      }
-      next(err)
-    });
+		self.processUnconfirmedTransaction(transaction, true, cb);
 	}, function (err) {
 		cb(err, transactions);
 	});
