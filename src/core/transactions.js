@@ -617,7 +617,7 @@ Transactions.prototype.receiveTransactions = function (transactions, cb) {
     return;
   }
   async.eachSeries(transactions, function (transaction, next) {
-		self.processUnconfirmedTransaction(transaction, true, cb);
+		self.processUnconfirmedTransaction(transaction, true, next);
 	}, function (err) {
 		cb(err, transactions);
 	});
