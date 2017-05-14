@@ -244,7 +244,8 @@ function InTransfer() {
     trs.amount = data.amount;
 
     trs.asset.inTransfer = {
-      dappId: data.dappId
+      dappId: data.dappId,
+      currency: data.currency
     };
 
     return trs;

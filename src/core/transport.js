@@ -31,14 +31,14 @@ private.attachApi = function () {
 
   router.use(function (req, res, next) {
     if (modules && private.loaded) return next();
-    res.status(500).send({success: false, error: "Blockchain is loading"});
+    res.status(500).send({ success: false, error: "Blockchain is loading" });
   });
 
   router.use(function (req, res, next) {
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
     if (!peerIp) {
-      return res.status(500).send({success: false, error: "Wrong header data"});
+      return res.status(500).send({ success: false, error: "Wrong header data" });
     }
 
     req.headers['port'] = parseInt(req.headers['port']);
@@ -62,7 +62,7 @@ private.attachApi = function () {
       required: ['magic', 'version']
     }, function (err, report, headers) {
       if (err) return next(err);
-      if (!report.isValid) return res.status(500).send({success: false, error: report.issues});
+      if (!report.isValid) return res.status(500).send({ success: false, error: report.issues });
 
       if (req.headers['magic'] !== library.config.magic) {
         return res.status(500).send({
@@ -105,8 +105,8 @@ private.attachApi = function () {
 
   router.get('/list', function (req, res) {
     res.set(private.headers);
-    modules.peer.list({limit: 100}, function (err, peers) {
-      return res.status(200).json({peers: !err ? peers : []});
+    modules.peer.list({ limit: 100 }, function (err, peers) {
+      return res.status(200).json({ peers: !err ? peers : [] });
     })
   });
 
@@ -130,7 +130,7 @@ private.attachApi = function () {
       required: ['max', 'min', 'ids']
     }, function (err, report, query) {
       if (err) return next(err);
-      if (!report.isValid) return res.json({success: false, error: report.issue});
+      if (!report.isValid) return res.json({ success: false, error: report.issue });
 
 
       var max = query.max;
@@ -165,25 +165,25 @@ private.attachApi = function () {
           modules.peer.state(ip.toLong(peerIp), parseInt(req.headers['port']), 0, 3600);
         }
 
-        return res.json({success: false, error: "Invalid block id sequence"});
+        return res.json({ success: false, error: "Invalid block id sequence" });
       }
 
       library.dbLite.query("select max(height), id, previousBlock, timestamp from blocks where id in (" + escapedIds.join(',') + ") and height >= $min and height <= $max", {
         "max": max,
         "min": min
       }, {
-        "height": Number,
-        "id": String,
-        "previousBlock": String,
-        "timestamp": Number
-      }, function (err, rows) {
-        if (err) {
-          return res.json({success: false, error: "Database error"});
-        }
+          "height": Number,
+          "id": String,
+          "previousBlock": String,
+          "timestamp": Number
+        }, function (err, rows) {
+          if (err) {
+            return res.json({ success: false, error: "Database error" });
+          }
 
-        var commonBlock = rows.length ? rows[0] : null;
-        return res.json({success: true, common: commonBlock});
-      });
+          var commonBlock = rows.length ? rows[0] : null;
+          return res.json({ success: true, common: commonBlock });
+        });
     });
   });
 
@@ -192,10 +192,10 @@ private.attachApi = function () {
 
     req.sanitize(req.query, {
       type: 'object',
-      properties: {lastBlockId: {type: 'string'}}
+      properties: { lastBlockId: { type: 'string' } }
     }, function (err, report, query) {
       if (err) return next(err);
-      if (!report.isValid) return res.json({success: false, error: report.issues});
+      if (!report.isValid) return res.json({ success: false, error: report.issues });
 
       // Get 1400+ blocks with all data (joins) from provided block id
       var blocksLimit = 1440;
@@ -203,13 +203,13 @@ private.attachApi = function () {
       modules.blocks.loadBlocksData({
         limit: blocksLimit,
         lastId: query.lastBlockId
-      }, {plain: true}, function (err, data) {
+      }, { plain: true }, function (err, data) {
         res.status(200);
         if (err) {
-          return res.json({blocks: ""});
+          return res.json({ blocks: "" });
         }
 
-        res.json({blocks: data});
+        res.json({ blocks: data });
 
       });
     });
@@ -244,10 +244,10 @@ private.attachApi = function () {
 
     res.sendStatus(200);
   });
-  
+
   router.post("/votes", function (req, res) {
     res.set(private.headers);
-    
+
     library.scheme.validate(req.body, {
       type: "object",
       properties: {
@@ -268,13 +268,13 @@ private.attachApi = function () {
       required: ["height", "id", "signatures"]
     }, function (err) {
       if (err) {
-        return res.status(200).json({success: false, error: "Schema validation error"});
+        return res.status(200).json({ success: false, error: "Schema validation error" });
       }
       library.bus.message('receiveVotes', req.body);
       res.sendStatus(200);
     });
   });
-  
+
   router.post("/propose", function (req, res) {
     res.set(private.headers);
     if (typeof req.body.propose == 'string') {
@@ -313,7 +313,7 @@ private.attachApi = function () {
       required: ["height", "id", "timestamp", "generatorPublicKey", "address", "hash", "signature"]
     }, function (err) {
       if (err) {
-        return res.status(200).json({success: false, error: "Schema validation error"});
+        return res.status(200).json({ success: false, error: "Schema validation error" });
       }
       library.bus.message('receivePropose', req.body.propose);
       res.sendStatus(200);
@@ -343,14 +343,14 @@ private.attachApi = function () {
       required: ['signature']
     }, function (err) {
       if (err) {
-        return res.status(200).json({success: false, error: "Validation error"});
+        return res.status(200).json({ success: false, error: "Validation error" });
       }
 
       modules.multisignatures.processSignature(req.body.signature, function (err) {
         if (err) {
-          return res.status(200).json({success: false, error: "Process signature error"});
+          return res.status(200).json({ success: false, error: "Process signature error" });
         } else {
-          return res.status(200).json({success: true});
+          return res.status(200).json({ success: true });
         }
       });
     });
@@ -372,14 +372,14 @@ private.attachApi = function () {
 
       setImmediate(cb);
     }, function () {
-      return res.status(200).json({success: true, signatures: signatures});
+      return res.status(200).json({ success: true, signatures: signatures });
     });
   });
 
   router.get("/transactions", function (req, res) {
     res.set(private.headers);
     // Need to process headers from peer
-    res.status(200).json({transactions: modules.transactions.getUnconfirmedTransactionList()});
+    res.status(200).json({ transactions: modules.transactions.getUnconfirmedTransactionList() });
   });
 
   router.post("/transactions", function (req, res) {
@@ -400,7 +400,7 @@ private.attachApi = function () {
         modules.peer.state(ip.toLong(peerIp), req.headers['port'], 0, 3600);
       }
 
-      return res.status(200).json({success: false, error:"Invalid transaction body"});
+      return res.status(200).json({ success: false, error: "Invalid transaction body" });
     }
 
     library.balancesSequence.add(function (cb) {
@@ -412,9 +412,9 @@ private.attachApi = function () {
     }, function (err, transactions) {
       if (err) {
         library.logger.debug('Receive invalid transaction', err);
-        res.status(200).json({success: false, error:err});
+        res.status(200).json({ success: false, error: err });
       } else {
-        res.status(200).json({success: true, transactionId: transactions[0].id});
+        res.status(200).json({ success: true, transactionId: transactions[0].id });
       }
     });
   });
@@ -431,20 +431,20 @@ private.attachApi = function () {
 
     try {
       if (!req.body.dappid) {
-        return res.status(200).json({success: false, error:"missed dappid"});
+        return res.status(200).json({ success: false, error: "missed dappid" });
       }
       if (!req.body.timestamp || !req.body.hash) {
         return res.status(200).json({
           success: false,
-          error:"missed hash sum"
+          error: "missed hash sum"
         });
       }
       var newHash = private.hashsum(req.body.body, req.body.timestamp);
       if (newHash !== req.body.hash) {
-        return res.status(200).json({success: false, error:"wrong hash sum"});
+        return res.status(200).json({ success: false, error: "wrong hash sum" });
       }
     } catch (e) {
-      return res.status(200).json({success: false, error:e.toString()});
+      return res.status(200).json({ success: false, error: e.toString() });
     }
 
     if (private.messages[req.body.hash]) {
@@ -459,11 +459,11 @@ private.attachApi = function () {
       }
 
       if (err) {
-        return res.status(200).json({success: false, error:err});
+        return res.status(200).json({ success: false, error: err });
       }
 
       library.bus.message('message', req.body, true);
-      res.status(200).json(extend({}, body, {success: true}));
+      res.status(200).json(extend({}, body, { success: true }));
     });
   });
 
@@ -472,20 +472,20 @@ private.attachApi = function () {
 
     try {
       if (!req.body.dappid) {
-        return res.status(200).json({success: false, error:"missed dappid"});
+        return res.status(200).json({ success: false, error: "missed dappid" });
       }
       if (!req.body.timestamp || !req.body.hash) {
         return res.status(200).json({
           success: false,
-          error:"missed hash sum"
+          error: "missed hash sum"
         });
       }
       var newHash = private.hashsum(req.body.body, req.body.timestamp);
       if (newHash !== req.body.hash) {
-        return res.status(200).json({success: false, error:"wrong hash sum"});
+        return res.status(200).json({ success: false, error: "wrong hash sum" });
       }
     } catch (e) {
-      return res.status(200).json({success: false, error:e.toString()});
+      return res.status(200).json({ success: false, error: e.toString() });
     }
 
     modules.dapps.request(req.body.dappid, req.body.body.method, req.body.body.path, req.body.body.query, function (err, body) {
@@ -494,15 +494,15 @@ private.attachApi = function () {
       }
 
       if (err) {
-        return res.status(200).json({success: false, error:err});
+        return res.status(200).json({ success: false, error: err });
       }
 
-      res.status(200).json(extend({}, body, {success: true}));
+      res.status(200).json(extend({}, { success: true, body: body }));
     });
   });
 
   router.use(function (req, res, next) {
-    res.status(500).send({success: false, error: "API endpoint not found"});
+    res.status(500).send({ success: false, error: "API endpoint not found" });
   });
 
   library.network.app.use('/peer', router);
@@ -510,7 +510,7 @@ private.attachApi = function () {
   library.network.app.use(function (err, req, res, next) {
     if (!err) return next();
     library.logger.error(req.url, err.toString());
-    res.status(500).send({success: false, error: err.toString()});
+    res.status(500).send({ success: false, error: err.toString() });
   });
 }
 
@@ -534,7 +534,7 @@ Transport.prototype.broadcast = function (config, options, cb) {
 
         setImmediate(cb);
       }, function () {
-        cb && cb(null, {body: null, peer: peers});
+        cb && cb(null, { body: null, peer: peers });
       })
     } else {
       cb && setImmediate(cb, err);
@@ -549,18 +549,19 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
     config = {};
   }
   config.limit = 1;
-  async.retry(20, function (cb) {
-    modules.peer.list(config, function (err, peers) {
-      if (!err && peers.length) {
-        var peer = peers[0];
-        self.getFromPeer(peer, options, cb);
-      } else {
-        return cb(err || "No peers in db");
-      }
-    });
-  }, function (err, results) {
-    cb(err, results)
+  modules.peer.list(config, function (err, peers) {
+    if (!err && peers.length) {
+      var peer = peers[0];
+      self.getFromPeer(peer, options, cb);
+    } else {
+      return cb(err || "No peers in db");
+    }
   });
+  // async.retry(20, function (cb) {
+
+  // }, function (err, results) {
+  //   cb(err, results)
+  // });
 }
 
 /**
@@ -661,7 +662,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
     });
 
     if (!report) {
-      return cb && cb(null, {body: body, peer: peer});
+      return cb && cb(null, { body: body, peer: peer });
     }
 
     var port = response.headers['port'];
@@ -679,7 +680,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
       modules.peer.remove(peer.ip, port);
     }
 
-    cb && cb(null, {body: body, peer: peer});
+    cb && cb(null, { body: body, peer: peer });
   });
 }
 
@@ -705,7 +706,7 @@ Transport.prototype.onBlockchainReady = function () {
 
 Transport.prototype.onSignature = function (signature, broadcast) {
   if (broadcast) {
-    self.broadcast({}, {api: '/signatures', data: {signature: signature}, method: "POST"});
+    self.broadcast({}, { api: '/signatures', data: { signature: signature }, method: "POST" });
     library.network.io.sockets.emit('signature/change', {});
   }
 }
@@ -715,7 +716,7 @@ Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast)
     var data = {
       transaction: library.protobuf.encodeTransaction(transaction).toString('base64')
     };
-    self.broadcast({}, {api: '/transactions', data: data, method: "POST"});
+    self.broadcast({}, { api: '/transactions', data: data, method: "POST" });
     library.network.io.sockets.emit('transactions/change', {});
   }
 }
@@ -726,7 +727,7 @@ Transport.prototype.onNewBlock = function (block, votes, broadcast) {
       block: library.protobuf.encodeBlock(block).toString('base64'),
       votes: library.protobuf.encodeBlockVotes(votes).toString('base64'),
     };
-    self.broadcast({}, {api: '/blocks', data: data, method: "POST"});
+    self.broadcast({}, { api: '/blocks', data: data, method: "POST" });
     library.network.io.sockets.emit('blocks/change', {});
   }
 }
@@ -736,7 +737,7 @@ Transport.prototype.onNewPropose = function (propose, broadcast) {
     var data = {
       propose: library.protobuf.encodeBlockPropose(propose).toString('base64')
     };
-    self.broadcast({}, {api: '/propose', data: data, method: "POST"});
+    self.broadcast({}, { api: '/propose', data: data, method: "POST" });
   }
 }
 
@@ -750,7 +751,7 @@ Transport.prototype.sendVotes = function (votes, address) {
 
 Transport.prototype.onMessage = function (msg, broadcast) {
   if (broadcast) {
-    self.broadcast({dappid: msg.dappid}, {api: '/dapp/message', data: msg, method: "POST"});
+    self.broadcast({ dappid: msg.dappid }, { api: '/dapp/message', data: msg, method: "POST" });
   }
 }
 
@@ -764,7 +765,7 @@ shared.message = function (msg, cb) {
   msg.timestamp = (new Date()).getTime();
   msg.hash = private.hashsum(msg.body, msg.timestamp);
 
-  self.broadcast({dappid: msg.dappid}, {api: '/dapp/message', data: msg, method: "POST"});
+  self.broadcast({ dappid: msg.dappid }, { api: '/dapp/message', data: msg, method: "POST" });
 
   cb(null, {});
 }
@@ -774,13 +775,13 @@ shared.request = function (msg, cb) {
   msg.hash = private.hashsum(msg.body, msg.timestamp);
 
   if (msg.body.peer) {
-    self.getFromPeer({ip: msg.body.peer.ip, port: msg.body.peer.port}, {
+    self.getFromPeer({ ip: msg.body.peer.ip, port: msg.body.peer.port }, {
       api: '/dapp/request',
       data: msg,
       method: "POST"
     }, cb);
   } else {
-    self.getFromRandomPeer({dappid: msg.dappid}, {api: '/dapp/request', data: msg, method: "POST"}, cb);
+    self.getFromRandomPeer({ dappid: msg.dappid }, { api: '/dapp/request', data: msg, method: "POST" }, cb);
   }
 }
 
