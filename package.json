@@ -36,6 +36,7 @@
     "request": "2.74.0",
     "rimraf": "2.5.4",
     "socket.io": "1.4.8",
+    "sodium": "git+https://github.com/sqfasd/node-sodium.git",
     "strftime": "0.9.2",
     "util-extend": "1.0.3",
     "valid-url": "1.0.9",
