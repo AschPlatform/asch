@@ -535,18 +535,17 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
             return next();
           }
 
-          library.dbLite.query("select count(*) from blocks where id = $id " + (data.body.common.previousBlock ? "and previousBlock = $previousBlock" : "") + " and height = $height", {
+          library.dbLite.query("select previousBlock from blocks where id = $id "  + " and height = $height", {
             "id": data.body.common.id,
-            "previousBlock": data.body.common.previousBlock,
             "height": data.body.common.height
           }, {
-            "cnt": Number
+            "previousBlock": String
           }, function (err, rows) {
             if (err || !rows.length) {
               return next(err || "Can't compare blocks");
             }
-
-            if (rows[0].cnt) {
+console.log('===========', rows[0], data.body.common)
+            if (data.body.common.previousBlock === rows[0].previousBlock) {
               commonBlock = data.body.common;
             }
             next();
