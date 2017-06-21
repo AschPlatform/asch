@@ -544,7 +544,7 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
             if (err || !rows.length) {
               return next(err || "Can't compare blocks");
             }
-console.log('===========', rows[0], data.body.common)
+
             if (data.body.common.previousBlock === rows[0].previousBlock) {
               commonBlock = data.body.common;
             }
