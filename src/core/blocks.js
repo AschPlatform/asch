@@ -59,6 +59,7 @@ private.blocksDataFields = {
   'dapp_link': String,
   'dapp_category': Number,
   'dapp_icon': String,
+  'dapp_delegates': String,
   'in_dappId': String,
   'ot_dappId': String,
   'ot_outTransactionId': String,
@@ -102,7 +103,7 @@ const FULL_BLOCK_QUERY = "SELECT " +
   "d.username, " +
   "v.votes, " +
   "m.min, m.lifetime, m.keysgroup, " +
-  "dapp.name, dapp.description, dapp.tags, dapp.type, dapp.link, dapp.category, dapp.icon, " +
+  "dapp.name, dapp.description, dapp.tags, dapp.type, dapp.link, dapp.category, dapp.icon, dapp.delegates, " +
   "it.dappId, " +
   "ot.dappId, ot.outTransactionId, " +
   "lower(hex(t.requesterPublicKey)), t.signatures, " +

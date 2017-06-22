@@ -83,6 +83,7 @@ message AssetDApp {
   optional string description = 5;
   optional string tags = 6;
   optional string icon = 7;
+  repeated string delegates = 8;
 }
 
 message AssetInTransfer {
