@@ -272,6 +272,10 @@ function genNormalAccount() {
   }
 }
 
+function randomTid() {
+  return genNormalAccount().publicKey
+}
+
 // Used to create random transaction accounts (holds additional info to regular account)
 function randomTxAccount() {
   return _.defaults(randomAccount(), {
@@ -422,5 +426,6 @@ module.exports = {
   giveMoneyAsync: PIFY(giveMoney),
   giveMoneyAndWaitAsync: giveMoneyAndWaitAsync,
   sleepAsync: PIFY(sleep),
-  openAccountAsync: PIFY(openAccount)
+  openAccountAsync: PIFY(openAccount),
+  randomTid: randomTid
 };

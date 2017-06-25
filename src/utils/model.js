@@ -352,16 +352,41 @@ class Model {
     this.dbLite.query(sql.query, sql.values, fieldConv, cb)
   }
 
+  getDAppBalance(dappId, currency, cb) {
+    if (currency !== 'XAS') {
+      return this.getAccountBalances(dappId, currency, function (err, rows) {
+        if (err) return cb('Database error: ' + err)
+        if (!rows || !rows.length) return cb(null, '0')
+        return cb(null, rows[0])
+      })
+    }
+    var sql = jsonSql.build({
+      type: 'select',
+      table: 'mem_asset_balances',
+      condition: {
+        address: dappId,
+        currency: currency
+      },
+      fields: ['balance']
+    })
+    this.dbLite.query(sql.query, sql.values, function (err, rows) {
+      if (err) return cb('Database error: ' + err)
+      if (!rows || !rows.length) return cb(null, '0')
+      return cb(null, { currency: currency, balance: rows[0][0] })
+    })
+  }
+
   checkAcl(table, currency, senderId, recipientId, cb) {
-    var sql = 'select address from $table where address=$senderId and currency=$currency;' +
-      'select address from $table where address=$recipientId and currency=$currency'
+    var sqls = []
+    if (!!senderId) sqls.push('select address from $table where address=$senderId and currency=$currency')
+    if (!!recipientId) sqls.push('select address from $table where address=$recipientId and currency=$currency')
     var values = {
       table: table,
       senderId: senderId,
       recipientId: recipientId,
       currency: currency
     }
-    this.dbLite.query(sql, values, function (err, res) {
+    this.dbLite.query(sqls.join(';'), values, function (err, res) {
       if (err) return cb(err)
       cb(null, res.length != 0)
     })
@@ -390,6 +415,51 @@ class Model {
       balance: String
     }
     this.dbLite.query(sql.query, sql.values, fieldConv, cb)
+  }
+
+  getDApps(condition, cb) {
+    var sql = jsonSql.build({
+      type: 'select',
+      table: 'dapps',
+      fields: [
+        'name', 'description', 'tags', 'link', 'type', 'category', 'icon', 'delegates', 'unlockDelegates', 'transactionId'
+      ],
+      condition: condition
+    })
+    var fieldConv = {
+      name: String,
+      description: String,
+      tags: String,
+      link: String,
+      type: Number,
+      category: Number,
+      icon: String,
+      delegates: String,
+      unlockDelegates: Number,
+      transactionId: String
+    }
+    this.dbLite.query(sql.query, sql.values, fieldConv, function (err, rows) {
+      if (err) return cb('Database error: ' + err)
+      for (var i in rows) {
+        rows[i].delegates = rows[i].delegates.split(',')
+      }
+      cb(null, rows)
+    })
+  }
+
+  getDAppById(id, cb) {
+    this.getDApps({ transactionId: id }, function (err, dapps) {
+      if (err) return cb(err)
+      if (!dapps || !dapps.length) return cb('DApp not found')
+      return cb(null, dapps[0])
+    })
+  }
+
+  getDAppsByIds(ids, cb) {
+    this.getDApps({ transactionId: { $in: ids } }, function (err, dapps) {
+      if (err) return cb(err)
+      return cb(null, dapps)
+    })
   }
 }
 

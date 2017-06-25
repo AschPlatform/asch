@@ -19,7 +19,7 @@ function Transaction(scope, cb) {
 var private = {};
 private.types = {};
 
-function calc (height) {
+function calc(height) {
   return Math.floor(height / slots.delegates) + (height % slots.delegates > 0 ? 1 : 0);
 }
 
@@ -134,7 +134,7 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 
     if (trs.recipientId) {
       if (/^[0-9]{1,20}$/g.test(trs.recipientId)) {
-        var recipient = bignum(trs.recipientId).toBuffer({size: 8});
+        var recipient = bignum(trs.recipientId).toBuffer({ size: 8 });
         for (var i = 0; i < 8; i++) {
           bb.writeByte(recipient[i] || 0);
         }
@@ -242,7 +242,7 @@ Transaction.prototype.process = function (trs, sender, requester, cb) {
       return setImmediate(cb, err);
     }
 
-    this.scope.dbLite.query("SELECT count(id) FROM trs WHERE id=$id", {id: trs.id}, {"count": Number}, function (err, rows) {
+    this.scope.dbLite.query("SELECT count(id) FROM trs WHERE id=$id", { id: trs.id }, { "count": Number }, function (err, rows) {
       if (err) {
         return cb("Database error");
       }
@@ -347,7 +347,7 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) { //inherit
     multisignatures.push(trs.senderPublicKey);
   }
 
-  if (trs.signatures) {
+  if (trs.signatures && trs.type !== 7) {
     for (var d = 0; d < trs.signatures.length; d++) {
       verify = false;
 
@@ -391,9 +391,9 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) { //inherit
       cb(err);
     });
   } catch (e) {
-    cb('Invalid transaction asset body')
+    cb('Invalid transaction asset body: ' + e)
   }
-  
+
 }
 
 Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
@@ -458,6 +458,8 @@ Transaction.prototype.apply = function (trs, block, sender, cb) {
     return setImmediate(cb, "Transaction is not ready: " + trs.id);
   }
 
+  if (trs.type === 7) return private.types[trs.type].apply.call(this, trs, block, sender, cb);
+
   var amount = trs.amount + trs.fee;
 
   if (trs.blockId != genesisblock.block.id && sender.balance < amount) {
@@ -478,6 +480,8 @@ Transaction.prototype.undo = function (trs, block, sender, cb) {
   if (!private.types[trs.type]) {
     return setImmediate(cb, "Unknown transaction type " + trs.type);
   }
+
+  if (trs.type === 7) return private.types[trs.type].undo.call(this, trs, block, sender, cb);
 
   var amount = trs.amount + trs.fee;
 
@@ -516,6 +520,8 @@ Transaction.prototype.applyUnconfirmed = function (trs, sender, requester, cb) {
     return setImmediate(cb, "Account does not have a second signature");
   }
 
+  if (trs.type === 7) return private.types[trs.type].applyUnconfirmed.call(this, trs, sender, cb);
+
   var amount = trs.amount + trs.fee;
 
   if (sender.u_balance < amount && trs.blockId != genesisblock.block.id) {
@@ -523,7 +529,7 @@ Transaction.prototype.applyUnconfirmed = function (trs, sender, requester, cb) {
   }
 
   library.balanceCache.addNativeBalance(sender.address, -amount)
-  this.scope.account.merge(sender.address, {u_balance: -amount}, function (err, sender) {
+  this.scope.account.merge(sender.address, { u_balance: -amount }, function (err, sender) {
     if (err) return cb(err);
     private.types[trs.type].applyUnconfirmed.call(this, trs, sender, cb);
   }.bind(this));
@@ -534,10 +540,12 @@ Transaction.prototype.undoUnconfirmed = function (trs, sender, cb) {
     return setImmediate(cb, "Unknown transaction type " + trs.type);
   }
 
+  if (trs.type === 7) return private.types[trs.type].undoUnconfirmed.call(this, trs, sender, cb);
+
   var amount = trs.amount + trs.fee;
 
   library.balanceCache.addNativeBalance(sender.address, amount)
-  this.scope.account.merge(sender.address, {u_balance: amount}, function (err, sender) {
+  this.scope.account.merge(sender.address, { u_balance: amount }, function (err, sender) {
     if (err) return cb(err);
     private.types[trs.type].undoUnconfirmed.call(this, trs, sender, cb);
   }.bind(this));

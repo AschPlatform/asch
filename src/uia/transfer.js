@@ -32,7 +32,7 @@ function Transfer() {
       if (err) return cb('Database error: ' + err)
       if (!assetDetail) return cb('Asset not exists')
       if (assetDetail.writeoff) return cb('Asset already writeoff')
-      if (assetDetail.allowWhitelist === 0 && !assetDetail.allowBlacklist === 0) return cb()
+      if (!assetDetail.allowWhitelist && !assetDetail.allowBlacklist) return cb()
 
       // if (sender.address == assetDetail.issuerId) return cb()
 
@@ -86,7 +86,6 @@ function Transfer() {
 
   this.applyUnconfirmed = function (trs, sender, cb) {
     var transfer = trs.asset.uiaTransfer
-    var key = transfer.currency + ':' + sender.address
     var balance = library.balanceCache.getAssetBalance(sender.address, transfer.currency) || 0
     var surplus = bignum(balance).sub(transfer.amount)
     if (surplus.lt(0)) return setImmediate(cb, 'Insufficient asset balance')

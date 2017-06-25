@@ -17,9 +17,9 @@ module.exports.connect = function (connectString, cb) {
     "CREATE TABLE IF NOT EXISTS votes(votes TEXT, transactionId VARCHAR(64) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
     "CREATE TABLE IF NOT EXISTS forks_stat(delegatePublicKey BINARY(32) NOT NULL, blockTimestamp INT NOT NULL, blockId VARCHAR(64) NOT NULL, blockHeight INT NOT NULL, previousBlock VARCHAR(64) NOT NULL, cause INT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS multisignatures(min INT NOT NULL, lifetime INT NOT NULL, keysgroup TEXT NOT NULL, transactionId VARCHAR(64) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
-    "CREATE TABLE IF NOT EXISTS dapps(transactionId VARCHAR(64) NOT NULL, name VARCHAR(32) NOT NULL, description VARCHARH(160), tags VARCHARH(160), link TEXT, type INTEGER NOT NULL, category INTEGER NOT NULL, icon TEXT, delegates TEXT, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
-    "CREATE TABLE IF NOT EXISTS intransfer(dappId VARCHAR(20) NOT NULL, transactionId VARCHAR(64) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
-    "CREATE TABLE IF NOT EXISTS outtransfer(transactionId VARCHAR(64) NOT NULL, dappId VARCHAR(20) NOT NULL, outtransactionId VARCHAR(64) NOT NULL UNIQUE, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
+    "CREATE TABLE IF NOT EXISTS dapps(transactionId VARCHAR(64) NOT NULL, name VARCHAR(32) NOT NULL, description VARCHARH(160), tags VARCHARH(160), link TEXT, type INTEGER NOT NULL, category INTEGER NOT NULL, icon TEXT, delegates TEXT, unlockDelegates, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
+    "CREATE TABLE IF NOT EXISTS intransfer(dappId VARCHAR(20) NOT NULL, currency VARCHAR(22) NOT NULL, amount VARCHAR(50), transactionId VARCHAR(64) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
+    "CREATE TABLE IF NOT EXISTS outtransfer(transactionId VARCHAR(64) NOT NULL, currency VARCHAR(22) NOT NULL, amount VARCHAR(50) NOT NULL, dappId VARCHAR(20) NOT NULL, outtransactionId VARCHAR(64) NOT NULL UNIQUE, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
     "CREATE TABLE IF NOT EXISTS peers (id INTEGER NOT NULL PRIMARY KEY, ip INTEGER NOT NULL, port TINYINT NOT NULL, state TINYINT NOT NULL, os VARCHAR(64), version VARCHAR(11), clock INT)",
     "CREATE TABLE IF NOT EXISTS peers_dapp (peerId INT NOT NULL, dappid VARCHAR(20) NOT NULL, FOREIGN KEY(peerId) REFERENCES peers(id) ON DELETE CASCADE)",
     "CREATE TABLE IF NOT EXISTS storages(content VARBINARY(4096), transactionId VARCHAR(64) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
@@ -33,7 +33,7 @@ module.exports.connect = function (connectString, cb) {
     "CREATE TABLE IF NOT EXISTS transfers(currency VARCHAR(22) NOT NULL, amount VARCHAR(50) NOT NULL, transactionId VARCHAR(64) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
     
     // UIA states
-    "CREATE TABLE IF NOT EXISTS mem_asset_balances(currency VARCHAR(22) NOT NULL, address VARCHAR(50) NOT NULL, balance VARCHAR(50) NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS mem_asset_balances(currency VARCHAR(22) NOT NULL, address VARCHAR(64) NOT NULL, balance VARCHAR(50) NOT NULL)",
     "CREATE TABLE IF NOT EXISTS acl_white(currency VARCHAR(22) NOT NULL, address VARCHAR(50) NOT NULL)",
     "CREATE TABLE IF NOT EXISTS acl_black(currency VARCHAR(22) NOT NULL, address VARCHAR(50) NOT NULL)",
 

@@ -3,7 +3,7 @@ var ByteBuffer = require("bytebuffer");
 var fs = require('fs');
 var path = require('path');
 var crypto = require('crypto');
-// var npm = require('npm');
+var bignum = require('bignumber')
 var request = require('request');
 var ed = require('../utils/ed.js');
 var Sandbox = require('asch-sandbox');
@@ -17,6 +17,7 @@ var Router = require('../utils/router.js');
 var constants = require('../utils/constants.js');
 var sandboxHelper = require('../utils/sandbox.js');
 var addressHelper = require('../utils/address.js')
+var amountHelper = require('../utils/amount.js')
 
 var modules, library, self, private = {}, shared = {};
 
@@ -37,11 +38,13 @@ private.defaultRouteId = null;
 function OutTransfer() {
   this.create = function (data, trs) {
     trs.recipientId = data.recipientId;
-    trs.amount = data.amount;
+    trs.amount = 0;
 
     trs.asset.outTransfer = {
       dappId: data.dappId,
-      transactionId: data.transactionId
+      transactionId: data.transactionId,
+      currency: data.currency,
+      amount: String(data.amount)
     };
 
     return trs;
@@ -56,55 +59,96 @@ function OutTransfer() {
       return setImmediate(cb, "Invalid recipient");
     }
 
-    if (!trs.amount) {
+    var transfer = trs.asset.outTransfer
+
+    if (trs.amount) {
       return setImmediate(cb, "Invalid transaction amount");
     }
 
-    if (!trs.asset.outTransfer.dappId) {
+    if (!transfer.dappId) {
       return setImmediate(cb, "Invalid dapp id for out transfer");
     }
 
-    if (!trs.asset.outTransfer.transactionId) {
+    if (!transfer.transactionId) {
       return setImmediate(cb, "Invalid dapp id for input transfer");
     }
 
-    setImmediate(cb, null, trs);
+    if (!transfer.currency) {
+      return setImmediate(cb, "Invalid currency for out transfer")
+    }
+
+    if (!transfer.amount) {
+      return setImmediate(cb, "Invalid amount for out transfer")
+    }
+
+    if (!trs.signatures || !trs.signatures.length) {
+      return setImmediate(cb, 'Invalid signatures')
+    }
+
+    var currency = trs.asset.outTransfer.currency
+    if (currency === 'XAS') return cb()
+    library.model.getAssetByName(currency, function (err, assetDetail) {
+      if (err) return cb('Database error: ' + err)
+      if (!assetDetail) return cb('Asset not exists')
+      if (assetDetail.writeoff) return cb('Asset already writeoff')
+      if (!assetDetail.allowWhitelist && !assetDetail.allowBlacklist) return cb()
+
+      var aclTable = assetDetail.acl == 0 ? 'acl_black' : 'acl_white'
+
+      library.model.checkAcl(aclTable, currency, null, trs.recipientId, function (err, isInList) {
+        if (err) return cb('Database error when query acl: ' + err)
+        if ((assetDetail.acl == 0) == isInList) return cb('Permission not allowed')
+        cb()
+      })
+    })
   }
 
   this.process = function (trs, sender, cb) {
-    library.dbLite.query("SELECT count(*) FROM dapps WHERE transactionId=$id", {
-      id: trs.asset.outTransfer.dappId
-    }, ['count'], function (err, rows) {
+    var transfer = trs.asset.outTransfer
+    library.model.getDAppById(transfer.dappId, function (err, dapp) {
       if (err) {
         library.logger.error(err.toString());
-        return cb("Dapp not found: " + trs.asset.outTransfer.dappId);
+        return cb("Failed to find dapp: " + err);
       }
 
-      var count = rows[0].count;
-
-      if (count == 0) {
-        return cb("Dapp not found: " + trs.asset.outTransfer.dappId);
+      if (!dapp) {
+        return cb('DApp not found: ' + transfer.dappId)
       }
 
       if (private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId]) {
         return cb("Transaction is already processing: " + trs.asset.outTransfer.transactionId);
       }
 
+      if (dapp.delegates.indexOf(trs.senderPublicKey) === -1) return cb('Sender must be dapp delegate')
+
+      if (!trs.signatures || trs.signatures.length !== dapp.unlockDelegates) return cb('Invalid signature number')
+      var validSignatureNumber = 0
+      var bytes = library.base.transaction.getBytes(trs, true, true)
+      try {
+        for (let i in trs.signatures) {
+          for (let j in dapp.delegates) {
+            if (library.base.transaction.verifyBytes(bytes, dapp.delegates[j], trs.signatures[i])) {
+              validSignatureNumber++
+              break
+            }
+          }
+          if (validSignatureNumber >= dapp.unlockDelegates) break
+        }
+      } catch (e) {
+        return cb('Failed to verify signatures: ' + e)
+      }
+      if (validSignatureNumber < dapp.unlockDelegates) return cb('Valid signatures not enough')
+
       library.dbLite.query("SELECT count(*) FROM outtransfer WHERE outTransactionId = $transactionId", {
         transactionId: trs.asset.outTransfer.transactionId
       }, { 'count': Number }, function (err, rows) {
         if (err) {
           library.logger.error(err.toString());
-          return cb("Transaction is already confirmed: " + trs.asset.outTransfer.transactionId);
-        } else {
-          var count = rows[0].count;
-
-          if (count) {
-            return cb("Transaction is already confirmed");
-          } else {
-            return cb(null, trs);
-          }
+          return cb("Failed to find history outtransfer: " + err);
         }
+        var count = rows[0].count;
+        if (count) return cb("Transaction is already confirmed");
+        return cb(null, trs)
       })
     });
   }
@@ -114,7 +158,9 @@ function OutTransfer() {
       var buf = new Buffer([]);
       var dappIdBuf = new Buffer(trs.asset.outTransfer.dappId, 'utf8');
       var transactionIdBuff = new Buffer(trs.asset.outTransfer.transactionId, 'utf8');
-      buf = Buffer.concat([buf, dappIdBuf, transactionIdBuff]);
+      var currencyBuff = new Buffer(trs.asset.outTransfer.currency, 'utf8')
+      var amountBuff = new Buffer(trs.asset.outTransfer.amount, 'utf8')
+      buf = Buffer.concat([buf, dappIdBuf, transactionIdBuff, currencyBuff, amountBuff]);
     } catch (e) {
       throw Error(e.toString());
     }
@@ -123,52 +169,109 @@ function OutTransfer() {
   }
 
   this.apply = function (trs, block, sender, cb) {
-    private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId] = false;
+    var transfer = trs.asset.outTransfer
+    private.unconfirmedOutTansfers[transfer.transactionId] = false;
 
-    modules.accounts.setAccountAndGet({ address: trs.recipientId }, function (err, recipient) {
-      if (err) {
-        return cb(err);
-      }
-
-      modules.accounts.mergeAccountAndGet({
-        address: trs.recipientId,
-        balance: trs.amount,
-        u_balance: trs.amount,
-        blockId: block.id,
-        round: modules.round.calc(block.height)
-      }, function (err) {
-        cb(err);
+    if (transfer.currency !== 'XAS') {
+      library.balanceCache.addAssetBalance(trs.recipientId, transfer.currency, transfer.amount)
+      async.series([
+        function (next) {
+          library.model.updateAssetBalance(transfer.currency, '-' + transfer.amount, transfer.dappId, next)
+        },
+        function (next) {
+          library.model.updateAssetBalance('XAS', '-' + trs.fee, transfer.dappId, next)
+        },
+        function (next) {
+          library.model.updateAssetBalance(transfer.currency, transfer.amount, trs.recipientId, next)
+        }
+      ], cb)
+    } else {
+      modules.accounts.setAccountAndGet({ address: trs.recipientId }, function (err, recipient) {
+        if (err) {
+          return cb(err);
+        }
+        var amount = Number(transfer.amount)
+        modules.accounts.mergeAccountAndGet({
+          address: trs.recipientId,
+          balance: amount,
+          u_balance: amount,
+          blockId: block.id,
+          round: modules.round.calc(block.height)
+        }, function (err) {
+          if (err) return cb(err);
+          library.model.updateAssetBalance('XAS', -amount - trs.fee, transfer.dappId, cb);
+        });
       });
-    });
+    }
   }
 
   this.undo = function (trs, block, sender, cb) {
-    private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId] = true;
+    private.unconfirmedOutTansfers[transfer.transactionId] = true;
 
-    modules.accounts.setAccountAndGet({ address: trs.recipientId }, function (err, recipient) {
-      if (err) {
-        return cb(err);
-      }
-      modules.accounts.mergeAccountAndGet({
-        address: trs.recipientId,
-        balance: -trs.amount,
-        u_balance: -trs.amount,
-        blockId: block.id,
-        round: modules.round.calc(block.height)
-      }, function (err) {
-        cb(err);
+    if (transfer.currency !== 'XAS') {
+      library.balanceCache.addAssetBalance(trs.recipientId, transfer.currency, transfer.amount)
+      async.series([
+        function (next) {
+          library.model.updateAssetBalance(transfer.currency, transfer.amount, transfer.dappId, next)
+        },
+        function (next) {
+          library.model.updateAssetBalance('XAS', trs.fee, transfer.dappId, next)
+        },
+        function (next) {
+          library.model.updateAssetBalance(transfer.currency, '-' + transfer.amount, trs.recipientId, next)
+        }
+      ], cb)
+    } else {
+      modules.accounts.setAccountAndGet({ address: trs.recipientId }, function (err, recipient) {
+        if (err) {
+          return cb(err);
+        }
+        var amount = Number(transfer.amount)
+        modules.accounts.mergeAccountAndGet({
+          address: trs.recipientId,
+          balance: -amount,
+          u_balance: -amount,
+          blockId: block.id,
+          round: modules.round.calc(block.height)
+        }, function (err) {
+          if (err) return cb(err);
+          library.model.updateAssetBalance('XAS', amount + trs.fee, transfer.dappId, cb);
+        });
       });
-    });
+    }
   }
 
   this.applyUnconfirmed = function (trs, sender, cb) {
-    private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId] = true;
-    setImmediate(cb);
+    var transfer = trs.asset.outTransfer
+    private.unconfirmedOutTansfers[transfer.transactionId] = true
+    var balance = library.balanceCache.getAssetBalance(transfer.dappId, transfer.currency) || 0
+    var fee = trs.fee
+    if (transfer.currency === 'XAS') {
+      var amount = Number(transfer.amount) + fee
+      if (bignum(balance).lt(amount)) return setImmediate(cb, 'Insufficient balance')
+      library.balanceCache.addAssetBalance(transfer.dappId, transfer.currency, -amount)
+    } else {
+      var xasBalance = library.balanceCache.getAssetBalance(transfer.dappId, 'XAS') || 0
+      if (bignum(xasBalance).lt(fee)) return setImmediate(cb, 'Insufficient balance')
+      if (bignum(balance).lt(transfer.amount)) return setImmediate(cb, 'Insufficient asset balance')
+      library.balanceCache.addAssetBalance(transfer.dappId, 'XAS', -fee)
+      library.balanceCache.addAssetBalance(transfer.dappId, transfer.currency, '-' + transfer.amount)
+    }
+    setImmediate(cb)
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {
-    private.unconfirmedOutTansfers[trs.asset.outTransfer.transactionId] = false;
-    setImmediate(cb);
+    var transfer = trs.asset.outTransfer
+    private.unconfirmedOutTansfers[transfer.transactionId] = false
+    var fee = trs.fee
+    if (transfer.currency === 'XAS') {
+      var amount = Number(transfer.amount) + fee
+      library.balanceCache.addAssetBalance(transfer.dappId, transfer.currency, amount)
+    } else {
+      library.balanceCache.addAssetBalance(transfer.dappId, 'XAS', fee)
+      library.balanceCache.addAssetBalance(transfer.dappId, transfer.currency, transfer.amount)
+    }
+    setImmediate(cb)
   }
 
   this.objectNormalize = function (trs) {
@@ -182,13 +285,23 @@ function OutTransfer() {
         transactionId: {
           type: "string",
           minLength: 1
+        },
+        currency: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 22
+        },
+        amount: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 50
         }
       },
-      required: ["dappId", "transactionId"]
+      required: ["dappId", "transactionId", "currency", "amount"]
     });
 
     if (!report) {
-      throw Error("Unable to verify dapp out transaction, invalid parameters: " + library.scheme.getLastError());
+      throw Error("Unable to verify dapp out transaction, invalid parameters: " + library.scheme.getLastError().details[0].message);
     }
 
     return trs;
@@ -200,7 +313,9 @@ function OutTransfer() {
     } else {
       var outTransfer = {
         dappId: raw.ot_dappId,
-        transactionId: raw.ot_outTransactionId
+        transactionId: raw.ot_outTransactionId,
+        currency: raw.ot_currency,
+        amount: raw.ot_amount
       }
 
       return { outTransfer: outTransfer };
@@ -208,22 +323,28 @@ function OutTransfer() {
   }
 
   this.dbSave = function (trs, cb) {
-    library.dbLite.query("INSERT INTO outtransfer(dappId, transactionId, outTransactionId) VALUES($dappId, $transactionId, $outTransactionId)", {
-      dappId: trs.asset.outTransfer.dappId,
-      outTransactionId: trs.asset.outTransfer.transactionId,
-      transactionId: trs.id
-    }, function (err) {
-      if (err) {
-        return cb(err);
-      }
-
-      self.message(trs.asset.outTransfer.dappId, {
+    var transfer = trs.asset.outTransfer
+    var dappId = transfer.dappId
+    var currency = transfer.currency
+    var amount = transfer.amount
+    var outTransactionId = transfer.transactionId
+    var values = {
+      transactionId: trs.id,
+      dappId: dappId,
+      currency: currency,
+      amount: amount,
+      outTransactionId: outTransactionId
+    }
+    library.model.add('outtransfer', values, function (err) {
+      if (err) return cb(err)
+      self.message(transfer.dappId, {
         topic: "withdrawal",
         message: {
           transactionId: trs.id
         }
-      }, cb);
-    });
+      }, function () { });
+      return cb()
+    })
   }
 
   this.ready = function (trs, sender) {
@@ -241,12 +362,20 @@ function OutTransfer() {
 function InTransfer() {
   this.create = function (data, trs) {
     trs.recipientId = null;
-    trs.amount = data.amount;
 
-    trs.asset.inTransfer = {
-      dappId: data.dappId,
-      currency: data.currency
-    };
+    if (data.currency === 'XAS') {
+      trs.amount = Number(data.amount)
+      trs.asset.inTransfer = {
+        dappId: data.dappId,
+        currency: data.currency
+      };
+    } else {
+      trs.asset.inTransfer = {
+        dappId: data.dappId,
+        currency: data.currency,
+        amount: data.amount,
+      };
+    }
 
     return trs;
   }
@@ -260,8 +389,14 @@ function InTransfer() {
       return setImmediate(cb, "Invalid recipient");
     }
 
-    if (!trs.amount) {
-      return setImmediate(cb, "Invalid transaction amount");
+    var asset = trs.asset.inTransfer
+
+    if (asset.currency !== 'XAS') {
+      if (trs.amount || !asset.amount) return setImmediate(cb, "Invalid transfer amount")
+      var error = amountHelper.validate(trs.asset.inTransfer.amount)
+      if (error) return setImmediate(cb, error)
+    } else {
+      if (!trs.amount || asset.amount) return setImmediate(cb, "Invalid transfer amount")
     }
 
     library.dbLite.query("SELECT count(*) FROM dapps WHERE transactionId=$id", {
@@ -277,7 +412,22 @@ function InTransfer() {
         return setImmediate(cb, "Dapp not found: " + trs.asset.inTransfer.dappId);
       }
 
-      setImmediate(cb);
+      var currency = trs.asset.inTransfer.currency
+      if (currency === 'XAS') return cb()
+      library.model.getAssetByName(currency, function (err, assetDetail) {
+        if (err) return cb('Database error: ' + err)
+        if (!assetDetail) return cb('Asset not exists')
+        if (assetDetail.writeoff) return cb('Asset already writeoff')
+        if (!assetDetail.allowWhitelist && !assetDetail.allowBlacklist) return cb()
+
+        var aclTable = assetDetail.acl == 0 ? 'acl_black' : 'acl_white'
+
+        library.model.checkAcl(aclTable, currency, sender.address, null, function (err, isInList) {
+          if (err) return cb('Database error when query acl: ' + err)
+          if ((assetDetail.acl == 0) == isInList) return cb('Permission not allowed')
+          cb()
+        })
+      })
     });
 
   }
@@ -289,8 +439,15 @@ function InTransfer() {
   this.getBytes = function (trs) {
     try {
       var buf = new Buffer([]);
-      var nameBuf = new Buffer(trs.asset.inTransfer.dappId, 'utf8');
-      buf = Buffer.concat([buf, nameBuf]);
+      var dappId = new Buffer(trs.asset.inTransfer.dappId, 'utf8');
+      if (trs.asset.inTransfer.currency !== 'XAS') {
+        var currency = new Buffer(trs.asset.inTransfer.currency, 'utf8');
+        var amount = new Buffer(trs.asset.inTransfer.amount, 'utf8');
+        buf = Buffer.concat([buf, dappId, currency, amount]);
+      } else {
+        var currency = new Buffer(trs.asset.inTransfer.currency, 'utf8');
+        buf = Buffer.concat([buf, dappId, currency]);
+      }
     } catch (e) {
       throw Error(e.toString());
     }
@@ -299,44 +456,60 @@ function InTransfer() {
   }
 
   this.apply = function (trs, block, sender, cb) {
-    shared.getGenesis({ dappid: trs.asset.inTransfer.dappId }, function (err, res) {
-      if (err) {
-        return cb(err);
-      }
-      modules.accounts.mergeAccountAndGet({
-        address: res.authorId,
-        balance: trs.amount,
-        u_balance: trs.amount,
-        blockId: block.id,
-        round: modules.round.calc(block.height)
-      }, function (err) {
-        cb(err);
-      });
-    });
+    var asset = trs.asset.inTransfer
+    var dappId = asset.dappId
+
+    if (asset.currency === 'XAS') {
+      library.balanceCache.addAssetBalance(dappId, asset.currency, trs.amount)
+      library.model.updateAssetBalance(asset.currency, trs.amount, dappId, cb)
+    } else {
+      library.balanceCache.addAssetBalance(dappId, asset.currency, asset.amount)
+      async.series([
+        function (next) {
+          library.model.updateAssetBalance(asset.currency, '-' + asset.amount, sender.address, next)
+        },
+        function (next) {
+          library.model.updateAssetBalance(asset.currency, asset.amount, dappId, next)
+        }
+      ], cb)
+    }
   }
 
   this.undo = function (trs, block, sender, cb) {
-    shared.getGenesis({ dappid: trs.asset.inTransfer.dappId }, function (err, res) {
-      if (err) {
-        return cb(err);
-      }
-      modules.accounts.mergeAccountAndGet({
-        address: res.authorId,
-        balance: -trs.amount,
-        u_balance: -trs.amount,
-        blockId: block.id,
-        round: modules.round.calc(block.height)
-      }, function (err) {
-        cb(err);
-      });
-    });
+    var transfer = trs.asset.inTransfer
+    var dappId = asset.dappId
+
+    if (transfer.currency === 'XAS') {
+      library.balanceCache.addAssetBalance(dappId, transfer.currency, '-' + trs.amount)
+      library.model.updateAssetBalance(transfer.currency, '-' + trs.amount, dappId, cb)
+    } else {
+      library.balanceCache.addAssetBalance(dappId, transfer.currency, transfer.amount)
+      async.series([
+        function (next) {
+          library.model.updateAssetBalance(transfer.currency, transfer.amount, sender.address, next)
+        },
+        function (next) {
+          library.model.updateAssetBalance(transfer.currency, '-' + transfer.amount, dappId, next)
+        }
+      ], cb)
+    }
   }
 
   this.applyUnconfirmed = function (trs, sender, cb) {
+    var transfer = trs.asset.inTransfer
+    if (transfer.currency === 'XAS') return setImmediate(cb)
+    var balance = library.balanceCache.getAssetBalance(sender.address, transfer.currency) || 0
+    var surplus = bignum(balance).sub(transfer.amount)
+    if (surplus.lt(0)) return setImmediate(cb, 'Insufficient asset balance')
+
+    library.balanceCache.setAssetBalance(sender.address, transfer.currency, surplus.toString())
     setImmediate(cb);
   }
 
   this.undoUnconfirmed = function (trs, sender, cb) {
+    var transfer = trs.asset.inTransfer
+    if (transfer.currency === 'XAS') return setImmediate(cb)
+    library.balanceCache.addAssetBalance(sender.address, transfer.currency, transfer.amount)
     setImmediate(cb);
   }
 
@@ -348,23 +521,35 @@ function InTransfer() {
           type: "string",
           minLength: 1
         },
+        currency: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 22
+        },
+        amount: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 50
+        }
       },
-      required: ["dappId"]
+      required: ["dappId", 'currency']
     });
 
     if (!report) {
-      throw Error("Unable to verify dapp transaction, invalid parameters: " + library.scheme.getLastError());
+      throw Error("Unable to verify dapp transaction, invalid parameters: " + library.scheme.getLastError().details[0].message);
     }
 
     return trs;
   }
 
   this.dbRead = function (raw) {
-    if (!raw.in_dappId) {
+    if (!raw.it_dappId) {
       return null;
     } else {
       var inTransfer = {
-        dappId: raw.in_dappId
+        dappId: raw.it_dappId,
+        currency: raw.it_currency,
+        amount: raw.it_amount
       }
 
       return { inTransfer: inTransfer };
@@ -372,10 +557,16 @@ function InTransfer() {
   }
 
   this.dbSave = function (trs, cb) {
-    library.dbLite.query("INSERT INTO intransfer(dappId, transactionId) VALUES($dappId, $transactionId)", {
+    var dappId = trs.asset.inTransfer.dappId
+    var currency = trs.asset.inTransfer.currency
+    var amount = trs.asset.inTransfer.amount
+    var values = {
+      transactionId: trs.id,
       dappId: trs.asset.inTransfer.dappId,
-      transactionId: trs.id
-    }, cb);
+      currency: trs.asset.inTransfer.currency,
+      amount: trs.asset.inTransfer.amount
+    }
+    library.model.add('intransfer', values, cb)
   }
 
   this.ready = function (trs, sender) {
@@ -403,7 +594,8 @@ function DApp() {
       type: data.dapp_type,
       link: data.link,
       icon: data.icon,
-      delegates: data.delegates
+      delegates: data.delegates,
+      unlockDelegates: data.unlockDelegates
     };
 
     return trs;
@@ -536,11 +728,13 @@ function DApp() {
       return setImmediate(cb, "Invalid dapp delegates");
     }
     for (let i in dapp.delegates) {
-      try {
-        new Buffer(dapp.delegates[i], "hex");
-      } catch (e) {
+      if (dapp.delegates[i].length != 64) {
         return setImmediate(cb, "Invalid dapp delegates format");
       }
+    }
+
+    if (!dapp.unlockDelegates || dapp.unlockDelegates < 3 || dapp.unlockDelegates > dapp.delegates.length) {
+      return setImmediate(cb, "Invalid unlock delegates number")
     }
 
     checkDuplicate(trs, cb);
@@ -579,6 +773,7 @@ function DApp() {
       bb.writeInt(dapp.type);
       bb.writeInt(dapp.category);
       bb.writeString(dapp.delegates.join(','))
+      bb.writeInt(dapp.unlockDelegates)
       bb.flip();
 
       buf = Buffer.concat([buf, bb.toBuffer()]);
@@ -668,9 +863,14 @@ function DApp() {
           minLength: 5,
           maxLength: 101,
           uniqueItems: true
+        },
+        unlockDelegates: {
+          type: "integer",
+          minimum: 3,
+          maximum: 101
         }
       },
-      required: ["type", "name", "category", "delegates"]
+      required: ["type", "name", "category", "delegates", "unlockDelegates"]
     });
 
     if (!report) {
@@ -692,7 +892,8 @@ function DApp() {
         link: raw.dapp_link,
         category: raw.dapp_category,
         icon: raw.dapp_icon,
-        delegates: raw.dapp_delegates.split(',')
+        delegates: raw.dapp_delegates.split(','),
+        unlockDelegates: raw.dapp_unlockDelegates
       }
 
       return { dapp: dapp };
@@ -701,8 +902,6 @@ function DApp() {
 
   this.dbSave = function (trs, cb) {
     var dapp = trs.asset.dapp
-    var sql = "INSERT INTO dapps(type, name, description, tags, link, category, icon, transactionId) " +
-              "VALUES($type, $name, $description, $tags, $link, $category, $icon, $transactionId)"
     var values = {
       type: dapp.type,
       name: dapp.name,
@@ -712,17 +911,18 @@ function DApp() {
       icon: dapp.icon || null,
       category: dapp.category,
       delegates: dapp.delegates.join(','),
+      unlockDelegates: dapp.unlockDelegates,
       transactionId: trs.id
     }
-    library.dbLite.query(sql, values, function (err) {
+    library.model.add('dapps', values, function (err) {
       if (err) {
-        return setImmediate(cb, err);
+        return cb(err);
       } else {
         // Broadcast
         library.network.io.sockets.emit('dapps/change', {});
-        return setImmediate(cb);
+        return cb();
       }
-    });
+    })
   }
 
   this.ready = function (trs, sender) {
@@ -878,7 +1078,8 @@ private.attachApi = function () {
               dapp_type: body.type,
               link: body.link,
               icon: body.icon,
-              delegates: body.delegates
+              delegates: body.delegates,
+              unlockDelegates: body.unlockDelegates
             });
           } catch (e) {
             return cb(e.toString());
@@ -1371,7 +1572,8 @@ private.attachApi = function () {
   });
 
   router.map(private, {
-    "put /transaction": "addTransactions"
+    "put /transaction": "addTransactions",
+    "get /balances/:dappId/:currency": "getDAppBalance"
   });
 
   library.network.app.use('/api/dapps', router);
@@ -1384,30 +1586,22 @@ private.attachApi = function () {
 
 // Private methods
 private.get = function (id, cb) {
-  library.dbLite.query("SELECT name, description, tags, link, type, category, icon, transactionId FROM dapps WHERE transactionId = $id", { id: id }, ['name', 'description', 'tags', 'link', 'type', 'category', 'icon', 'transactionId'], function (err, rows) {
-    if (err) {
-      library.logger.error('Database error while get dapp: ' + err);
-      return setImmediate(cb, "Database error");
-    } else if (rows.length == 0) {
-      return setImmediate(cb, "DApp not found");
-    } else {
-      return setImmediate(cb, null, rows[0]);
-    }
-  });
+  library.model.getDAppById(id, cb)
 }
 
 private.getByIds = function (ids, cb) {
-  for (var i = 0; i < ids.length; i++) {
-    ids[i] = "'" + ids[i] + "'";
-  }
+  library.model.getDAppsByIds(ids, cb)
+}
 
-  library.dbLite.query("SELECT name, description, tags, link, type, category, icon, transactionId FROM dapps WHERE transactionId IN (" + ids.join(',') + ")", {}, ['name', 'description', 'tags', 'link', 'type', 'category', 'icon', 'transactionId'], function (err, rows) {
-    if (err) {
-      return setImmediate(cb, err ? "Database error" : "DApp not found");
-    }
+private.getDAppBalance = function (req, cb) {
+  if (!req.params) return cb('Invalid parameters')
+  if (!req.params.dappId || req.params.dappId.length > 64) return cb('Invalid dapp id')
+  if (!req.params.currency || req.params.currency.length > 22) return cb('Invalid currency')
 
-    return setImmediate(cb, null, rows);
-  });
+  library.model.getDAppBalance(req.params.dappId, req.params.currency, function (err, balance) {
+    if (err) return cb('Failed to get balance: ' + err)
+    cb(null, { balance: balance })
+  })
 }
 
 private.count = function (cb) {
@@ -1481,7 +1675,7 @@ private.list = function (filter, cb) {
   }
 
   // Need to fix 'or' or 'and' in query
-  library.dbLite.query("select name, description, tags, link, type, category, icon, transactionId " +
+  library.dbLite.query("select name, description, tags, link, type, category, icon, delegates, unlockDelegates, transactionId " +
     "from dapps " +
     (fields.length ? "where " + fields.join(' or ') + " " : "") +
     (filter.orderBy ? 'order by ' + sortBy + ' ' + sortMethod : '') + " " +
@@ -1494,10 +1688,16 @@ private.list = function (filter, cb) {
       type: Number,
       category: Number,
       icon: String,
+      delegates: String,
+      unlockDelegates: Number,
       transactionId: String
     }, function (err, rows) {
       if (err) {
         return cb(err);
+      }
+
+      for (var i in rows) {
+        rows[i].delegates = rows[i].delegates.split(',')
       }
 
       cb(null, rows);
