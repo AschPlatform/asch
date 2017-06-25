@@ -2055,10 +2055,6 @@ private.launch = function (body, cb) {
 
     body.params = body.params || [''];
 
-    if (body.params.length > 0) {
-      body.params.push("modules.full.json");
-    }
-
     async.auto({
       dapp: async.apply(private.get, body.id),
 
@@ -2072,7 +2068,7 @@ private.launch = function (body, cb) {
       }],
 
       launch: ['symlink', function (next, results) {
-        private.launchApp(results.dapp, body.params || ['', 'modules.full.json'], next);
+        private.launchApp(results.dapp, body.params, next);
       }],
 
       route: ['launch', function (next, results) {
@@ -2471,6 +2467,10 @@ shared.getGenesis = function (req, cb) {
         associate: rows[0].multisignature ? rows[0].multisignature.split(",") : []
       });
     });
+}
+
+shared.getDApp = function (req, cb) {
+  library.model.getDAppById(req.dappid, cb)
 }
 
 shared.setReady = function (req, cb) {
