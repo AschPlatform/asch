@@ -945,7 +945,6 @@ function DApps(cb, scope) {
 
   private.appPath = library.config.baseDir;
   private.dappsPath = library.config.dappsDir
-  console.log('private.dappsPath', private.dappsPath)
 
   library.base.transaction.attachAssetType(TransactionTypes.DAPP, new DApp());
   library.base.transaction.attachAssetType(TransactionTypes.IN_TRANSFER, new InTransfer());
