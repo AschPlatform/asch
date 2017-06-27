@@ -496,8 +496,8 @@ private.attachApi = function () {
       if (err) {
         return res.status(200).json({ success: false, error: err });
       }
-
-      res.status(200).json(extend({}, { success: true, body: body }));
+      // console.log('dapp request', body)
+      res.status(200).json(extend({}, { success: true}, body));
     });
   });
 

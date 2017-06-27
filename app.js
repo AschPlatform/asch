@@ -43,7 +43,7 @@ function main() {
     .option('-l, --log <level>', 'Log level')
     .option('-d, --daemon', 'Run asch node as daemon')
     .option('-e, --execute <path>', 'exe')
-    .option('--reindex', 'Reindex blockchain')
+    .option('--dapps <dir>', 'DApps directory')
     .option('--base <dir>', 'Base directory')
     .parse(process.argv);
 
@@ -76,6 +76,7 @@ function main() {
   appConfig.buildVersion = 'development';
   appConfig.netVersion = process.env.NET_VERSION || 'localnet';
   appConfig.publicDir = path.join(baseDir, 'public', 'dist');
+  appConfig.dappsDir = program.dapps || path.join(baseDir, 'dapps')
 
   global.Config = appConfig;
 

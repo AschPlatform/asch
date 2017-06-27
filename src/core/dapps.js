@@ -944,7 +944,8 @@ function DApps(cb, scope) {
   self.__private = private;
 
   private.appPath = library.config.baseDir;
-  private.dappsPath = path.join(library.config.baseDir, 'dapps');
+  private.dappsPath = library.config.dappsDir
+  console.log('private.dappsPath', private.dappsPath)
 
   library.base.transaction.attachAssetType(TransactionTypes.DAPP, new DApp());
   library.base.transaction.attachAssetType(TransactionTypes.IN_TRANSFER, new InTransfer());
@@ -2131,7 +2132,7 @@ private.launchApp = function (dapp, params, cb) {
             return setImmediate(cb, err);
           }
 
-          var sandbox = new Sandbox(path.join(dappPath, "index.js"), dapp.transactionId, params, private.apiHandler, true, library.logger);
+          var sandbox = new Sandbox(dappPath, dapp.transactionId, params, private.apiHandler, true, library.logger);
           private.sandboxes[dapp.transactionId] = sandbox;
 
           sandbox.on("exit", function (code) {
