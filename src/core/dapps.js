@@ -1988,8 +1988,11 @@ private.dappRoutes = function (dapp, cb) {
   routes.forEach(function (router) {
     if (router.method == "get" || router.method == "post" || router.method == "put") {
       private.routes[dapp.transactionId][router.method](router.path, function (req, res) {
-
-        self.request(dapp.transactionId, router.method, router.path, (router.method == "get") ? req.query : req.body, function (err, body) {
+        var reqParams = {
+          query: (router.method == "get") ? req.query : req.body,
+          params: req.params
+        }
+        self.request(dapp.transactionId, router.method, router.path, reqParams, function (err, body) {
           if (!err && body.error) {
             err = body.error;
           }
@@ -2331,7 +2334,7 @@ DApps.prototype.sandboxApi = function (call, args, cb) {
 }
 
 DApps.prototype.message = function (dappid, body, cb) {
-  self.request(dappid, "post", "/message", body, cb);
+  self.request(dappid, "post", "/message", { query: body }, cb);
 }
 
 DApps.prototype.request = function (dappid, method, path, query, cb) {
@@ -2398,10 +2401,13 @@ DApps.prototype.onBlockchainReady = function () {
 
 DApps.prototype.onDeleteBlocksBefore = function (block) {
   Object.keys(private.sandboxes).forEach(function (dappId) {
-    self.request(dappId, "post", "/message", {
-      topic: "rollback",
-      message: { pointId: block.id, pointHeight: block.height }
-    }, function (err) {
+    let req = {
+      query: {
+        topic: "rollback",
+        message: { pointId: block.id, pointHeight: block.height }
+      }
+    }
+    self.request(dappId, "post", "/message", req, function (err) {
       if (err) {
         library.logger.error("onDeleteBlocksBefore message", err)
       }
@@ -2410,11 +2416,14 @@ DApps.prototype.onDeleteBlocksBefore = function (block) {
 }
 
 DApps.prototype.onNewBlock = function (block, votes, broadcast) {
-  Object.keys(private.sandboxes).forEach(function (dappId) {
-    broadcast && self.request(dappId, "post", "/message", {
+  let req = {
+    query: {
       topic: "point",
       message: { id: block.id, height: block.height }
-    }, function (err) {
+    }
+  }
+  Object.keys(private.sandboxes).forEach(function (dappId) {
+    broadcast && self.request(dappId, "post", "/message", req, function (err) {
       if (err) {
         library.logger.error("onNewBlock message", err)
       }
