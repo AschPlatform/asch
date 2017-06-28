@@ -11,6 +11,7 @@
     "array.prototype.find": "1.0.0",
     "array.prototype.findindex": "2.0.0",
     "asch-sandbox": "https://github.com/sqfasd/asch-sandbox/tarball/master",
+    "asch-js": "*",
     "async": "1.5.2",
     "bignumber": "https://github.com/sqfasd/bignumber/tarball/master",
     "body-parser": "1.15.2",
@@ -43,7 +44,6 @@
     "z-schema": "https://github.com/sqfasd/z-schema/tarball/master"
   },
   "devDependencies": {
-    "asch-js": "*",
     "babel": "=5.8.23",
     "chai": "^3.0.0",
     "gulp": "^3.9.1",
