@@ -369,7 +369,7 @@ private.list = function (filter, cb) {
 
   library.dbLite.query("select count(t.id) " +
     "from trs t " +
-    "inner join blocks b on t.blockId = b.id " +
+    "inner join blocks b on t.blockId = b.id " + uiaCurrencyJoin +
     (fields_or.length || owner ? "where " : "") + " " +
     (fields_or.length ? "(" + fields_or.join(' or ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner), params, {"count": Number}, function (err, rows) {
     if (err) {

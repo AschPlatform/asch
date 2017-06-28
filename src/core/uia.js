@@ -458,6 +458,7 @@ shared.getTransactions = function (req, cb) {
             asset.t_id = asset.transactionId
             t.asset = library.base.transaction.dbReadAsset(t.type, asset)
           }
+          delete t.t_id
         }
         var assetNames = new Set
         data.transactions.forEach(function (trs) {
