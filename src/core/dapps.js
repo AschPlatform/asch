@@ -1981,49 +1981,38 @@ private.dappRoutes = function (dapp, cb) {
   var dappPath = path.join(private.dappsPath, dapp.transactionId);
   var dappRoutesPath = path.join(dappPath, "routes.json");
 
-  fs.exists(dappRoutesPath, function (exists) {
-    if (exists) {
-      private.readJson(dappRoutesPath, function (err, routes) {
-        if (err) {
-          return setImmediate(cb, "Failed to read routes.json file for: " + dapp.transactionId);
-        }
+  var routes = Sandbox.routes
 
-        private.routes[dapp.transactionId] = new Router();
+  private.routes[dapp.transactionId] = new Router();
 
-        routes.forEach(function (router) {
-          if (router.method == "get" || router.method == "post" || router.method == "put") {
-            private.routes[dapp.transactionId][router.method](router.path, function (req, res) {
+  routes.forEach(function (router) {
+    if (router.method == "get" || router.method == "post" || router.method == "put") {
+      private.routes[dapp.transactionId][router.method](router.path, function (req, res) {
 
-              self.request(dapp.transactionId, router.method, router.path, (router.method == "get") ? req.query : req.body, function (err, body) {
-                if (!err && body.error) {
-                  err = body.error;
-                }
-                if (err) {
-                  body = { error: err.toString() }
-                }
-                body.success = !err
-                res.json(body);
-              });
-            });
+        self.request(dapp.transactionId, router.method, router.path, (router.method == "get") ? req.query : req.body, function (err, body) {
+          if (!err && body.error) {
+            err = body.error;
           }
+          if (err) {
+            body = { error: err.toString() }
+          }
+          body.success = !err
+          res.json(body);
         });
-        if (!private.defaultRouteId) {
-          private.defaultRouteId = dapp.transactionId;
-          library.network.app.use('/api/dapps/default/api/', private.routes[dapp.transactionId]);
-        }
-        library.network.app.use('/api/dapps/' + dapp.transactionId + '/api/', private.routes[dapp.transactionId]);
-        library.network.app.use(function (err, req, res, next) {
-          if (!err) return next();
-          library.logger.error(req.url, err.toString());
-          res.status(500).send({ success: false, error: err.toString() });
-        });
-
-        return setImmediate(cb);
       });
-    } else {
-      return setImmediate(cb);
     }
   });
+  if (!private.defaultRouteId) {
+    private.defaultRouteId = dapp.transactionId;
+    library.network.app.use('/api/dapps/default/api/', private.routes[dapp.transactionId]);
+  }
+  library.network.app.use('/api/dapps/' + dapp.transactionId + '/api/', private.routes[dapp.transactionId]);
+  library.network.app.use(function (err, req, res, next) {
+    if (!err) return next();
+    library.logger.error(req.url, err.toString());
+    res.status(500).send({ success: false, error: err.toString() });
+  });
+  return setImmediate(cb)
 }
 
 private.launch = function (body, cb) {
@@ -2111,52 +2100,40 @@ private.launchApp = function (dapp, params, cb) {
     if (err) {
       return setImmediate(cb, "Failed to read config.json file for: " + dapp.transactionId);
     }
-    private.readJson(path.join(dappPath, "blockchain.json"), function (err, blockchain) {
+    async.eachSeries(dappConfig.peers, function (peer, cb) {
+      modules.peer.addDapp({
+        ip: ip.toLong(peer.ip),
+        port: peer.port,
+        dappid: dapp.transactionId
+      }, cb);
+    }, function (err) {
       if (err) {
-        return setImmediate(cb, "Failed to read blockchain.json file for: " + dapp.transactionId);
+        return setImmediate(cb, err);
       }
-      async.eachSeries(dappConfig.peers, function (peer, cb) {
-        modules.peer.addDapp({
-          ip: ip.toLong(peer.ip),
-          port: peer.port,
-          dappid: dapp.transactionId
-        }, cb);
-      }, function (err) {
-        if (err) {
-          return setImmediate(cb, err);
-        }
 
-        modules.sql.createTables(dapp.transactionId, blockchain, function (err) {
+      var sandbox = new Sandbox(dappPath, dapp.transactionId, params, private.apiHandler, true, library.logger);
+      private.sandboxes[dapp.transactionId] = sandbox;
+
+      sandbox.on("exit", function (code) {
+        library.logger.info("Dapp " + dapp.transactionId + " exited with code " + code);
+        private.stop(dapp, function (err) {
           if (err) {
-            return setImmediate(cb, err);
+            library.logger.error("Encountered error while stopping dapp: " + err);
           }
-
-          var sandbox = new Sandbox(dappPath, dapp.transactionId, params, private.apiHandler, true, library.logger);
-          private.sandboxes[dapp.transactionId] = sandbox;
-
-          sandbox.on("exit", function (code) {
-            library.logger.info("Dapp " + dapp.transactionId + " exited with code " + code);
-            private.stop(dapp, function (err) {
-              if (err) {
-                library.logger.error("Encountered error while stopping dapp: " + err);
-              }
-            });
-          });
-
-          sandbox.on("error", function (err) {
-            library.logger.info("Encountered error in dapp " + dapp.transactionId + " " + err.toString());
-            private.stop(dapp, function (err) {
-              if (err) {
-                library.logger.error("Encountered error while stopping dapp: " + err);
-              }
-            });
-          });
-
-          sandbox.run();
-
-          return setImmediate(cb);
         });
       });
+
+      sandbox.on("error", function (err) {
+        library.logger.info("Encountered error in dapp " + dapp.transactionId + " " + err.toString());
+        private.stop(dapp, function (err) {
+          if (err) {
+            library.logger.error("Encountered error while stopping dapp: " + err);
+          }
+        });
+      });
+
+      sandbox.run();
+      return cb(null)
     });
   });
 }
