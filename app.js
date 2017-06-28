@@ -201,6 +201,7 @@ function main() {
         } else {
           scope.logger.info('Cleaned up successfully');
         }
+        scope.dbLite.close();
         if (fs.existsSync(pidFile)) {
           fs.unlinkSync(pidFile);
         }
