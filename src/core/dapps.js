@@ -2659,7 +2659,7 @@ shared.getWithdrawalLastTransaction = function (req, cb) {
 }
 
 shared.getBalanceTransactions = function (req, cb) {
-  library.dbLite.query("SELECT t.id, lower(hex(t.senderPublicKey)), t.amount FROM trs t " +
+  library.dbLite.query("SELECT t.id, lower(hex(t.senderPublicKey)), t.amount, dt.currency, dt.amount as amount2 FROM trs t " +
     "inner join blocks b on t.blockId = b.id and t.type = $type " +
     "inner join intransfer dt on dt.transactionId = t.id and dt.dappId = $dappid " +
     (req.body.lastTransactionId ? "where b.height > (select height from blocks ib inner join trs it on ib.id = it.blockId and it.id = $lastId) " : "") +
@@ -2670,7 +2670,9 @@ shared.getBalanceTransactions = function (req, cb) {
     }, {
       id: String,
       senderPublicKey: String,
-      amount: Number
+      amount: String,
+      currency: String,
+      amount2: String
     }, function (err, rows) {
       if (err) {
         return cb("Database error");
