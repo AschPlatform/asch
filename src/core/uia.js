@@ -70,7 +70,7 @@ private.attachApi = function () {
     'put /assets': 'registerAssets',
     'put /assets/:name/acl': 'updateAssetAcl',
     'put /assets/:name/issue': 'issueAsset',
-    'put /assets/:name/transfer': 'transferAsset',
+    'put /transfers': 'transferAsset',
     'put /assets/:name/flags': 'updateFlags',
   })
 
@@ -146,7 +146,7 @@ shared.getIssuerByAddress = function (req, cb) {
   library.model.getIssuerByAddress(req.params.address, ['name', 'desc'], function (err, issuer) {
     if (err) return cb('Database error: ' + err)
     if (!issuer) return cb('Issuer not found')
-    cb(null, {issuer: issuer})
+    cb(null, { issuer: issuer })
   })
 }
 
@@ -474,7 +474,7 @@ shared.getTransactions = function (req, cb) {
           if (err) return cb('Failed to asset info: ' + err)
           var precisionMap = new Map
           assets.forEach(function (a) {
-            precisionMap.set(a.name, Math.pow(10, a.precision))
+            precisionMap.set(a.name, a.precision)
           })
           data.transactions.forEach(function (trs) {
             var obj = null
@@ -484,7 +484,9 @@ shared.getTransactions = function (req, cb) {
               obj = trs.asset.uiaTransfer
             }
             if (obj != null && precisionMap.has(obj.currency)) {
-              obj.amountShow = bignum(obj.amount).div(precisionMap.get(obj.currency)).toString()
+              var precision = precisionMap.get(obj.currency)
+              obj.amountShow = bignum(obj.amount).div(Math.pow(10, precision)).toString()
+              obj.precision = precision
             }
           })
           cb(null, data)
@@ -511,7 +513,160 @@ shared.issueAsset = function (req, cb) {
 }
 
 shared.transferAsset = function (req, cb) {
-  cb(null, req)
+  var body = req.body;
+  library.scheme.validate(body, {
+    type: "object",
+    properties: {
+      secret: {
+        type: "string",
+        minLength: 1,
+        maxLength: 100
+      },
+      currency: {
+        type: "string",
+        maxLength: 22
+      },
+      amount: {
+        type: "string",
+        maxLength: 50
+      },
+      recipientId: {
+        type: "string",
+        minLength: 1
+      },
+      publicKey: {
+        type: "string",
+        format: "publicKey"
+      },
+      secondSecret: {
+        type: "string",
+        minLength: 1,
+        maxLength: 100
+      },
+      multisigAccountPublicKey: {
+        type: "string",
+        format: "publicKey"
+      }
+    },
+    required: ["secret", "amount", "recipientId", "currency"]
+  }, function (err) {
+    if (err) {
+      return cb(err[0].message + ': ' + err[0].path);
+    }
+
+    var hash = crypto.createHash('sha256').update(body.secret, 'utf8').digest();
+    var keypair = ed.MakeKeypair(hash);
+
+    if (body.publicKey) {
+      if (keypair.publicKey.toString('hex') != body.publicKey) {
+        return cb("Invalid passphrase");
+      }
+    }
+
+    library.balancesSequence.add(function (cb) {
+      if (body.multisigAccountPublicKey && body.multisigAccountPublicKey != keypair.publicKey.toString('hex')) {
+        modules.accounts.getAccount({ publicKey: body.multisigAccountPublicKey }, function (err, account) {
+          if (err) {
+            return cb(err.toString());
+          }
+
+          if (!account || !account.publicKey) {
+            return cb("Multisignature account not found");
+          }
+
+          if (!account.multisignatures || !account.multisignatures) {
+            return cb("Account does not have multisignatures enabled");
+          }
+
+          if (account.multisignatures.indexOf(keypair.publicKey.toString('hex')) < 0) {
+            return cb("Account does not belong to multisignature group");
+          }
+
+          modules.accounts.getAccount({ publicKey: keypair.publicKey }, function (err, requester) {
+            if (err) {
+              return cb(err.toString());
+            }
+
+            if (!requester || !requester.publicKey) {
+              return cb("Invalid requester");
+            }
+
+            if (requester.secondSignature && !body.secondSecret) {
+              return cb("Invalid second passphrase");
+            }
+
+            if (requester.publicKey == account.publicKey) {
+              return cb("Invalid requester");
+            }
+
+            var secondKeypair = null;
+
+            if (requester.secondSignature) {
+              var secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest();
+              secondKeypair = ed.MakeKeypair(secondHash);
+            }
+
+            try {
+              var transaction = library.base.transaction.create({
+                type: TransactionTypes.UIA_TRANSFER,
+                amount: body.amount,
+                currency: body.currency,
+                sender: account,
+                recipientId: body.recipientId,
+                keypair: keypair,
+                requester: keypair,
+                secondKeypair: secondKeypair
+              });
+            } catch (e) {
+              return cb(e.toString());
+            }
+            modules.transactions.receiveTransactions([transaction], cb);
+          });
+        });
+      } else {
+        modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') }, function (err, account) {
+          if (err) {
+            return cb(err.toString());
+          }
+          if (!account || !account.publicKey) {
+            return cb("Account not found");
+          }
+
+          if (account.secondSignature && !body.secondSecret) {
+            return cb("Invalid second passphrase");
+          }
+
+          var secondKeypair = null;
+
+          if (account.secondSignature) {
+            var secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest();
+            secondKeypair = ed.MakeKeypair(secondHash);
+          }
+
+          try {
+            var transaction = library.base.transaction.create({
+              type: TransactionTypes.UIA_TRANSFER,
+              currency: body.currency,
+              amount: body.amount,
+              sender: account,
+              recipientId: body.recipientId,
+              keypair: keypair,
+              secondKeypair: secondKeypair
+            });
+          } catch (e) {
+            return cb(e.toString());
+          }
+          modules.transactions.receiveTransactions([transaction], cb);
+        });
+      }
+    }, function (err, transaction) {
+      if (err) {
+        return cb(err.toString());
+      }
+
+      cb(null, { transactionId: transaction[0].id });
+    });
+  });
 }
 
 shared.updateFlags = function (req, cb) {
