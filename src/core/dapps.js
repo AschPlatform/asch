@@ -2692,4 +2692,30 @@ shared.submitOutTransfer = function (req, cb) {
   }, cb);
 }
 
+shared.registerInterface = function (req, cb) {
+  let dappId = req.dappid
+  let method = req.body.method
+  let path = req.body.path
+  private.routes[dappId][method](path, function (req, res) {
+    var reqParams = {
+      query: (method == "get") ? req.query : req.body,
+      params: req.params
+    }
+    self.request(dappId, method, path, reqParams, function (err, body) {
+      if (!body) {
+        body = {}
+      }
+      if (!err && body.error) {
+        err = body.error;
+      }
+      if (err) {
+        body = { error: err.toString() }
+      }
+      body.success = !err
+      res.json(body);
+    });
+  });
+  cb(null)
+}
+
 module.exports = DApps;
