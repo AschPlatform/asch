@@ -338,7 +338,7 @@ function OutTransfer() {
     library.model.add('outtransfer', values, function (err) {
       if (err) return cb(err)
       self.message(transfer.dappId, {
-        topic: "withdrawal",
+        topic: "withdrawalCompleted",
         message: {
           transactionId: trs.id
         }
@@ -2679,6 +2679,17 @@ shared.getBalanceTransactions = function (req, cb) {
       }
       cb(null, rows);
     });
+}
+
+shared.submitOutTransfer = function (req, cb) {
+  let trs = req.body
+  library.balancesSequence.add(function (cb) {
+    if (modules.transactions.hasUnconfirmedTransaction(trs)) {
+      return cb('Already exists');
+    }
+    library.logger.log('Submit outtransfer transaction ' + trs.id + ' from dapp ' + req.dappid);
+    modules.transactions.receiveTransactions([trs], cb);
+  }, cb);
 }
 
 module.exports = DApps;
