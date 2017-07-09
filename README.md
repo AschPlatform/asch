@@ -50,7 +50,7 @@ node app.js --help
 ## Front end (wallet ui)
 
 ```
-git clone https://github.com/sqfasd/asch-frontend
+git clone https://github.com/AschPlatform/asch-frontend
 cd asch-frontend
 npm install
 bower install
@@ -78,12 +78,11 @@ Then you can open ```localhost:4096``` in you browser
 
 ## Releated projects
 
-- [asch_docs](https://github.com/sqfasd/asch_docs)
-- [asch-frontend](https://github.com/sqfasd/asch-frontend)
-- [asch-cli](https://github.com/sqfasd/asch-cli)
-- [asch-js](https://github.com/sqfasd/asch-js)
-- [asch-sandbox](https://github.com/sqfasd/asch-sandbox)
-- [asch-dice-game-dapp](https://github.com/sqfasd/asch-dice-game-dapp)
+- [asch_docs](https://github.com/AschPlatform/asch-docs)
+- [asch-frontend](https://github.com/AschPlatform/asch-frontend)
+- [asch-cli](https://github.com/AschPlatform/asch-cli)
+- [asch-js](https://github.com/AschPlatform/asch-js)
+- [asch-sandbox](https://github.com/AschPlatform/asch-sandbox)
 
 ## License
 
