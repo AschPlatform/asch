@@ -488,7 +488,7 @@ private.attachApi = function () {
       return res.status(200).json({ success: false, error: e.toString() });
     }
 
-    modules.dapps.request(req.body.dappid, req.body.body.method, req.body.body.path, req.body.body.query, function (err, body) {
+    modules.dapps.request(req.body.dappid, req.body.body.method, req.body.body.path, { query: req.body.body.query }, function (err, body) {
       if (!err && body.error) {
         err = body.error;
       }
@@ -497,7 +497,7 @@ private.attachApi = function () {
         return res.status(200).json({ success: false, error: err });
       }
       // console.log('dapp request', body)
-      res.status(200).json(extend({}, { success: true}, body));
+      res.status(200).json(extend({}, { success: true }, body));
     });
   });
 
