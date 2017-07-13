@@ -8,11 +8,12 @@ More infomation please visit our [official website](https://www.asch.so)
 
 - nodejs v6.3.1+
 - npm 3.10.3+ (not cnpm)
+- node-gyp v3.6.2+ (suggested)
 - sqlite v3.8.2+
 - g++
 - libssl
 
-## Install node_modules
+## Installation
 
 ```
 npm install
