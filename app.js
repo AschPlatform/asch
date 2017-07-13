@@ -139,7 +139,7 @@ function main() {
 
   if (program.daemon) {
     console.log('Asch server started as daemon ...');
-    require('daemon')();
+    require('daemon')({cwd: process.cwd()});
     fs.writeFileSync(pidFile, process.pid, 'utf8');
   }
 
