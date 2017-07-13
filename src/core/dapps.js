@@ -528,7 +528,7 @@ function InTransfer() {
         },
         amount: {
           type: 'string',
-          minLength: 1,
+          minLength: 0,
           maxLength: 50
         }
       },
@@ -536,7 +536,7 @@ function InTransfer() {
     });
 
     if (!report) {
-      throw Error("Unable to verify dapp transaction, invalid parameters: " + library.scheme.getLastError().details[0].message);
+      throw Error("Unable to verify dapp intransfer, invalid parameters: " + library.scheme.getLastError().details[0].message);
     }
 
     return trs;

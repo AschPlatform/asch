@@ -1010,7 +1010,7 @@ Blocks.prototype.processBlock = function (block, votes, broadcast, save, verifyT
         async.eachSeries(block.transactions, function (transaction, next) {
           async.waterfall([
             function (next) {
-              modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, next)
+              modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, next)
             },
             function (sender, next) {
               try {
@@ -1122,7 +1122,8 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
             try {
               block = library.base.block.objectNormalize(block);
             } catch (e) {
-              library.logger.log('Block ' + (block ? block.id : 'null') + ' is not valid, ban 60 min', peerStr);
+              library.logger.error('Failed to normalize block: ' + e, block)
+              library.logger.error('Block ' + (block ? block.id : 'null') + ' is not valid, ban 60 min', peerStr);
               modules.peer.state(peer.ip, peer.port, 0, 3600);
               return cb(e);
             }
@@ -1132,7 +1133,8 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
                 lastValidBlock = block;
                 library.logger.log('Block ' + block.id + ' loaded from ' + peerStr + ' at', block.height);
               } else {
-                library.logger.log('Block ' + (block ? block.id : 'null') + ' is not valid, ban 60 min', peerStr);
+                library.logger.error('Failed to process block: ' + err, block)
+                library.logger.error('Block ' + (block ? block.id : 'null') + ' is not valid, ban 60 min', peerStr);
                 modules.peer.state(peer.ip, peer.port, 0, 3600);
               }
 
