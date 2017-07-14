@@ -1087,7 +1087,7 @@ shared.addDelegate = function (req, cb) {
             return cb(err.toString());
           }
 
-          if (!account || !account.publicKey) {
+          if (!account) {
             return cb("Multisignature account not found");
           }
 
@@ -1144,7 +1144,7 @@ shared.addDelegate = function (req, cb) {
             return cb(err.toString());
           }
 
-          if (!account || !account.publicKey) {
+          if (!account) {
             return cb("Account not found");
           }
 

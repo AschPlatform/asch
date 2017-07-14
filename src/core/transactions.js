@@ -871,7 +871,7 @@ shared.addTransactions = function (req, cb) {
               return cb(err.toString());
             }
 
-            if (!account || !account.publicKey) {
+            if (!account) {
               return cb("Multisignature account not found");
             }
 
@@ -928,7 +928,7 @@ shared.addTransactions = function (req, cb) {
             if (err) {
               return cb(err.toString());
             }
-            if (!account || !account.publicKey) {
+            if (!account) {
               return cb("Account not found");
             }
 
@@ -1037,7 +1037,7 @@ shared.putStorage = function (req, cb) {
             return cb(err.toString());
           }
 
-          if (!account || !account.publicKey) {
+          if (!account) {
             return cb("Multisignature account not found");
           }
 
@@ -1093,7 +1093,7 @@ shared.putStorage = function (req, cb) {
           if (err) {
             return cb(err.toString());
           }
-          if (!account || !account.publicKey) {
+          if (!account) {
             return cb("Account not found");
           }
 
