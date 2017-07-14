@@ -261,7 +261,10 @@ function dblite() {
 	}
 
 	// all IO handled here
-	program.stderr.on('data', onerror);
+	program.stderr.on('data', function (data) {
+		busy = false
+		onerror(data)
+	});
 	program.stdin.on('error', onerror);
 	program.stdout.on('error', onerror);
 	program.stderr.on('error', onerror);
