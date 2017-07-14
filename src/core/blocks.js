@@ -1088,7 +1088,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
       count++;
       modules.transport.getFromPeer(peer, {
         method: "GET",
-        api: '/blocks?lastBlockId=' + lastCommonBlockId
+        api: '/blocks?lastBlockId=' + lastCommonBlockId + '&limit=200'
       }, function (err, data) {
         if (err || data.body.error) {
           return next(err || data.body.error.toString());

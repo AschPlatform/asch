@@ -198,7 +198,11 @@ private.attachApi = function () {
       if (!report.isValid) return res.json({ success: false, error: report.issues });
 
       // Get 1400+ blocks with all data (joins) from provided block id
-      var blocksLimit = 1440;
+      var blocksLimit = 200;
+      if (query.limit) {
+        blocksLimit = Math.min(blocksLimit, Number(query.limit))
+      }
+      console.log('---------------limit', blocksLimit)
 
       modules.blocks.loadBlocksData({
         limit: blocksLimit,
