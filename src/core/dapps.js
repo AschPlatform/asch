@@ -1971,7 +1971,7 @@ private.apiHandler = function (message, callback) {
       return setImmediate(callback, "This module doesn't have sandbox api");
     }
 
-    modules[module].sandboxApi(call, { "body": message.args, "dappid": message.dappid }, callback);
+    modules[module].sandboxApi(call, { "body": message.args, "dappId": message.dappId }, callback);
   } catch (e) {
     return setImmediate(callback, "Invalid call " + e.toString());
   }
@@ -2107,7 +2107,7 @@ private.launchApp = function (dapp, params, cb) {
       modules.peer.addDapp({
         ip: ip.toLong(peer.ip),
         port: peer.port,
-        dappid: dapp.transactionId
+        dappId: dapp.transactionId
       }, cb);
     }, function (err) {
       if (err) {
@@ -2333,18 +2333,18 @@ DApps.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
 }
 
-DApps.prototype.message = function (dappid, body, cb) {
-  self.request(dappid, "post", "/message", { query: body }, cb);
+DApps.prototype.message = function (dappId, body, cb) {
+  self.request(dappId, "post", "/message", { query: body }, cb);
 }
 
-DApps.prototype.request = function (dappid, method, path, query, cb) {
-  if (!private.sandboxes[dappid]) {
+DApps.prototype.request = function (dappId, method, path, query, cb) {
+  if (!private.sandboxes[dappId]) {
     return cb("Dapp not found");
   }
-  if (!private.dappready[dappid]) {
+  if (!private.dappready[dappId]) {
     return cb("Dapp not ready");
   }
-  private.sandboxes[dappid].sendMessage({
+  private.sandboxes[dappId].sendMessage({
     method: method,
     path: path,
     query: query
@@ -2435,7 +2435,7 @@ DApps.prototype.onNewBlock = function (block, votes, broadcast) {
 shared.getGenesis = function (req, cb) {
   library.dbLite.query("SELECT b.height, b.id, GROUP_CONCAT(m.dependentId), t.senderId FROM trs t " +
     "inner join blocks b on t.blockId = b.id and t.id = $id " +
-    "left outer join mem_accounts2multisignatures m on m.accountId = t.senderId and t.id = $id", { id: req.dappid }, {
+    "left outer join mem_accounts2multisignatures m on m.accountId = t.senderId and t.id = $id", { id: req.dappId }, {
       height: Number,
       id: String,
       multisignature: String,
@@ -2449,26 +2449,26 @@ shared.getGenesis = function (req, cb) {
         pointId: rows[0].id,
         pointHeight: rows[0].height,
         authorId: rows[0].authorId,
-        dappid: req.dappid,
+        dappId: req.dappId,
         associate: rows[0].multisignature ? rows[0].multisignature.split(",") : []
       });
     });
 }
 
 shared.getDApp = function (req, cb) {
-  library.model.getDAppById(req.dappid, cb)
+  library.model.getDAppById(req.dappId, cb)
 }
 
 shared.setReady = function (req, cb) {
-  private.dappready[req.dappid] = true;
+  private.dappready[req.dappId] = true;
   cb(null, {});
 }
 
 shared.getCommonBlock = function (req, cb) {
   library.dbLite.query("SELECT b.height, t.id, t.senderId, t.amount FROM trs t " +
     "inner join blocks b on t.blockId = b.id and t.id = $id and t.type = $type" +
-    "inner join intransfer dt on dt.transactionId = t.id and dt.dappid = $dappid", {
-      dappid: req.dappid,
+    "inner join intransfer dt on dt.transactionId = t.id and dt.dappId = $dappId", {
+      dappId: req.dappId,
       type: TransactionTypes.IN_TRANSFER
     }, {
       height: Number,
@@ -2584,7 +2584,7 @@ shared.sendWithdrawal = function (req, cb) {
                 keypair: keypair,
                 secondKeypair: secondKeypair,
                 requester: keypair,
-                dappId: req.dappid,
+                dappId: req.dappId,
                 transactionId: body.transactionId
               });
             } catch (e) {
@@ -2621,7 +2621,7 @@ shared.sendWithdrawal = function (req, cb) {
               recipientId: body.recipientId,
               keypair: keypair,
               secondKeypair: secondKeypair,
-              dappId: req.dappid,
+              dappId: req.dappId,
               transactionId: body.transactionId
             });
           } catch (e) {
@@ -2644,9 +2644,9 @@ shared.sendWithdrawal = function (req, cb) {
 shared.getWithdrawalLastTransaction = function (req, cb) {
   library.dbLite.query("SELECT ot.outTransactionId FROM trs t " +
     "inner join blocks b on t.blockId = b.id and t.type = $type " +
-    "inner join outtransfer ot on ot.transactionId = t.id and ot.dappId = $dappid " +
+    "inner join outtransfer ot on ot.transactionId = t.id and ot.dappId = $dappId " +
     "order by b.height desc limit 1", {
-      dappid: req.dappid,
+      dappId: req.dappId,
       type: TransactionTypes.OUT_TRANSFER
     }, {
       id: String
@@ -2661,10 +2661,10 @@ shared.getWithdrawalLastTransaction = function (req, cb) {
 shared.getBalanceTransactions = function (req, cb) {
   library.dbLite.query("SELECT t.id, lower(hex(t.senderPublicKey)), t.amount, dt.currency, dt.amount as amount2 FROM trs t " +
     "inner join blocks b on t.blockId = b.id and t.type = $type " +
-    "inner join intransfer dt on dt.transactionId = t.id and dt.dappId = $dappid " +
+    "inner join intransfer dt on dt.transactionId = t.id and dt.dappId = $dappId " +
     (req.body.lastTransactionId ? "where b.height > (select height from blocks ib inner join trs it on ib.id = it.blockId and it.id = $lastId) " : "") +
     "order by b.height", {
-      dappid: req.dappid,
+      dappId: req.dappId,
       type: TransactionTypes.IN_TRANSFER,
       lastId: req.body.lastTransactionId
     }, {
@@ -2687,13 +2687,13 @@ shared.submitOutTransfer = function (req, cb) {
     if (modules.transactions.hasUnconfirmedTransaction(trs)) {
       return cb('Already exists');
     }
-    library.logger.log('Submit outtransfer transaction ' + trs.id + ' from dapp ' + req.dappid);
+    library.logger.log('Submit outtransfer transaction ' + trs.id + ' from dapp ' + req.dappId);
     modules.transactions.receiveTransactions([trs], cb);
   }, cb);
 }
 
 shared.registerInterface = function (req, cb) {
-  let dappId = req.dappid
+  let dappId = req.dappId
   let method = req.body.method
   let path = req.body.path
   private.routes[dappId][method](path, function (req, res) {

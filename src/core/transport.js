@@ -83,8 +83,8 @@ private.attachApi = function () {
         version: headers.version
       };
 
-      if (req.body && req.body.dappid) {
-        peer.dappid = req.body.dappid;
+      if (req.body && req.body.dappId) {
+        peer.dappId = req.body.dappId;
       }
 
       if (peer.port && peer.port > 0 && peer.port <= 65535) {
@@ -434,8 +434,8 @@ private.attachApi = function () {
     res.set(private.headers);
 
     try {
-      if (!req.body.dappid) {
-        return res.status(200).json({ success: false, error: "missed dappid" });
+      if (!req.body.dappId) {
+        return res.status(200).json({ success: false, error: "missed dappId" });
       }
       if (!req.body.timestamp || !req.body.hash) {
         return res.status(200).json({
@@ -457,7 +457,7 @@ private.attachApi = function () {
 
     private.messages[req.body.hash] = true;
 
-    modules.dapps.message(req.body.dappid, req.body.body, function (err, body) {
+    modules.dapps.message(req.body.dappId, req.body.body, function (err, body) {
       if (!err && body.error) {
         err = body.error;
       }
@@ -475,8 +475,8 @@ private.attachApi = function () {
     res.set(private.headers);
 
     try {
-      if (!req.body.dappid) {
-        return res.status(200).json({ success: false, error: "missed dappid" });
+      if (!req.body.dappId) {
+        return res.status(200).json({ success: false, error: "missed dappId" });
       }
       if (!req.body.timestamp || !req.body.hash) {
         return res.status(200).json({
@@ -492,7 +492,7 @@ private.attachApi = function () {
       return res.status(200).json({ success: false, error: e.toString() });
     }
 
-    modules.dapps.request(req.body.dappid, req.body.body.method, req.body.body.path, { query: req.body.body.query }, function (err, body) {
+    modules.dapps.request(req.body.dappId, req.body.body.method, req.body.body.path, { query: req.body.body.query }, function (err, body) {
       if (!err && body.error) {
         err = body.error;
       }
@@ -755,7 +755,7 @@ Transport.prototype.sendVotes = function (votes, address) {
 
 Transport.prototype.onMessage = function (msg, broadcast) {
   if (broadcast) {
-    self.broadcast({ dappid: msg.dappid }, { api: '/dapp/message', data: msg, method: "POST" });
+    self.broadcast({ dappId: msg.dappId }, { api: '/dapp/message', data: msg, method: "POST" });
   }
 }
 
@@ -769,7 +769,7 @@ shared.message = function (msg, cb) {
   msg.timestamp = (new Date()).getTime();
   msg.hash = private.hashsum(msg.body, msg.timestamp);
 
-  self.broadcast({ dappid: msg.dappid }, { api: '/dapp/message', data: msg, method: "POST" });
+  self.broadcast({ dappId: msg.dappId }, { api: '/dapp/message', data: msg, method: "POST" });
 
   cb(null, {});
 }
@@ -785,7 +785,7 @@ shared.request = function (msg, cb) {
       method: "POST"
     }, cb);
   } else {
-    self.getFromRandomPeer({ dappid: msg.dappid }, { api: '/dapp/request', data: msg, method: "POST" }, cb);
+    self.getFromRandomPeer({ dappId: msg.dappId }, { api: '/dapp/request', data: msg, method: "POST" }, cb);
   }
 }
 

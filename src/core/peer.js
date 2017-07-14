@@ -225,7 +225,7 @@ private.getByFilter = function (filter, cb) {
 Peer.prototype.list = function (options, cb) {
   options.limit = options.limit || 100;
 
-  library.dbLite.query("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.dappid ? " inner join peers_dapp pd on p.id = pd.peerId and pd.dappid = $dappid " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
+  library.dbLite.query("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.dappId ? " inner join peers_dapp pd on p.id = pd.peerId and pd.dappId = $dappId " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
     "ip": String,
     "port": Number,
     "state": Number,
@@ -288,7 +288,7 @@ Peer.prototype.addDapp = function (config, cb) {
     var peerId = data[0].id;
 
     library.dbLite.query("INSERT OR IGNORE INTO peers_dapp (peerId, dappId) VALUES ($peerId, $dappId);", {
-      dappId: config.dappid,
+      dappId: config.dappId,
       peerId: peerId
     }, cb);
   });
@@ -299,7 +299,7 @@ Peer.prototype.update = function (peer, cb) {
     cb && cb();
     return;
   }
-  var dappid = peer.dappid;
+  var dappId = peer.dappId;
   var params = {
     ip: peer.ip,
     port: peer.port,
@@ -317,8 +317,8 @@ Peer.prototype.update = function (peer, cb) {
       library.dbLite.query("UPDATE peers SET os = $os, version = $version" + (peer.state !== undefined ? ", state = CASE WHEN state = 0 THEN state ELSE $state END " : "") + " WHERE ip = $ip and port = $port;", params, cb);
     },
     function (cb) {
-      if (dappid) {
-        self.addDapp({dappid: dappid, ip: peer.ip, port: peer.port}, cb);
+      if (dappId) {
+        self.addDapp({dappId: dappId, ip: peer.ip, port: peer.port}, cb);
       } else {
         setImmediate(cb);
       }

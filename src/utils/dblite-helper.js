@@ -21,7 +21,7 @@ module.exports.connect = function (connectString, cb) {
     "CREATE TABLE IF NOT EXISTS intransfer(dappId VARCHAR(20) NOT NULL, currency VARCHAR(22) NOT NULL, amount VARCHAR(50), transactionId VARCHAR(64) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
     "CREATE TABLE IF NOT EXISTS outtransfer(transactionId VARCHAR(64) NOT NULL, currency VARCHAR(22) NOT NULL, amount VARCHAR(50) NOT NULL, dappId VARCHAR(20) NOT NULL, outtransactionId VARCHAR(64) NOT NULL UNIQUE, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
     "CREATE TABLE IF NOT EXISTS peers (id INTEGER NOT NULL PRIMARY KEY, ip INTEGER NOT NULL, port TINYINT NOT NULL, state TINYINT NOT NULL, os VARCHAR(64), version VARCHAR(11), clock INT)",
-    "CREATE TABLE IF NOT EXISTS peers_dapp (peerId INT NOT NULL, dappid VARCHAR(20) NOT NULL, FOREIGN KEY(peerId) REFERENCES peers(id) ON DELETE CASCADE)",
+    "CREATE TABLE IF NOT EXISTS peers_dapp (peerId INT NOT NULL, dappId VARCHAR(20) NOT NULL, FOREIGN KEY(peerId) REFERENCES peers(id) ON DELETE CASCADE)",
     "CREATE TABLE IF NOT EXISTS storages(content VARBINARY(4096), transactionId VARCHAR(64) NOT NULL, FOREIGN KEY(transactionId) REFERENCES trs(id) ON DELETE CASCADE)",
 
     // UIA transactions
@@ -59,7 +59,7 @@ module.exports.connect = function (connectString, cb) {
     "CREATE UNIQUE INDEX IF NOT EXISTS blocks_previousBlock ON blocks(previousBlock)",
     "CREATE UNIQUE INDEX IF Not EXISTS out_transaction_id ON outtransfer(outTransactionId)",
     "CREATE UNIQUE INDEX IF NOT EXISTS peers_unique ON peers(ip, port)",
-    "CREATE UNIQUE INDEX IF NOT EXISTS peers_dapp_unique ON peers_dapp(peerId, dappid)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS peers_dapp_unique ON peers_dapp(peerId, dappId)",
     "CREATE INDEX IF NOT EXISTS blocks_generator_public_key ON blocks(generatorPublicKey)",
     "CREATE INDEX IF NOT EXISTS blocks_reward ON blocks(reward)",
     "CREATE INDEX IF NOT EXISTS blocks_totalFee ON blocks(totalFee)",
