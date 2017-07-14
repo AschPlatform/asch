@@ -2007,9 +2007,9 @@ private.dappRoutes = function (dapp, cb) {
   });
   if (!private.defaultRouteId) {
     private.defaultRouteId = dapp.transactionId;
-    library.network.app.use('/api/dapps/default/api/', private.routes[dapp.transactionId]);
+    library.network.app.use('/api/dapps/default/', private.routes[dapp.transactionId]);
   }
-  library.network.app.use('/api/dapps/' + dapp.transactionId + '/api/', private.routes[dapp.transactionId]);
+  library.network.app.use('/api/dapps/' + dapp.transactionId + '/', private.routes[dapp.transactionId]);
   library.network.app.use(function (err, req, res, next) {
     if (!err) return next();
     library.logger.error(req.url, err.toString());
