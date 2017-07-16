@@ -81,8 +81,8 @@ function Vote() {
 
   this.applyUnconfirmed = function (trs, sender, cb) {
     if (modules.blocks.getLastBlock() &&
-        modules.blocks.getLastBlock().height < 1294343 &&
-        global.Config.netVersion === 'mainnet') {
+      modules.blocks.getLastBlock().height < 1294343 &&
+      global.Config.netVersion === 'mainnet') {
       return setImmediate(cb)
     }
     var key = sender.address + ':' + trs.type
@@ -254,12 +254,41 @@ private.attachApi = function () {
 private.openAccount = function (secret, cb) {
   var hash = crypto.createHash('sha256').update(secret, 'utf8').digest();
   var keypair = ed.MakeKeypair(hash);
-
-  self.setAccountAndGet({ publicKey: keypair.publicKey.toString('hex') }, cb);
+  var address = self.generateAddressByPublicKey2(keypair.publicKey.toString('hex'));
+  self.getAccount({ address: address }, function (err, account) {
+    if (err) return cb(err)
+    var account = account || {
+      address: address,
+      unconfirmedBalance: 0,
+      balance: 0,
+      // publicKey: account.publicKey,
+      unconfirmedSignature: '',
+      secondSignature: '',
+      secondPublicKey: '',
+      multisignatures: '',
+      u_multisignatures: ''
+    }
+    return cb(null, account)
+  });
 }
 
 private.openAccount2 = function (publicKey, cb) {
-  self.setAccountAndGet({ publicKey: publicKey }, cb);
+  var address = self.generateAddressByPublicKey2(publicKey);
+  self.getAccount({ address: address }, function (err, account) {
+    if (err) return cb(err)
+    var account = account || {
+      address: address,
+      unconfirmedBalance: 0,
+      balance: 0,
+      // publicKey: account.publicKey,
+      unconfirmedSignature: '',
+      secondSignature: '',
+      secondPublicKey: '',
+      multisignatures: '',
+      u_multisignatures: ''
+    }
+    return cb(null, account)
+  });
 }
 
 // Public methods
@@ -756,7 +785,17 @@ shared.getAccount = function (req, cb) {
         return cb(err.toString());
       }
       if (!account) {
-        return cb("Account not found");
+        account = {
+          address: query.address,
+          unconfirmedBalance: 0,
+          balance: 0,
+          publicKey: '',
+          unconfirmedSignature: '',
+          secondSignature: '',
+          secondPublicKey: '',
+          multisignatures: '',
+          u_multisignatures: ''
+        }
       }
 
       var latestBlock = modules.blocks.getLastBlock();
