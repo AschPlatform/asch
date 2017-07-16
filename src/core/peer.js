@@ -97,6 +97,10 @@ private.updatePeerList = function (cb) {
             },
             version: {
               type: "string"
+            },
+            dappId: {
+              type: "string",
+              length: 64
             }
           },
           required: ['ip', 'port', 'state']
@@ -234,6 +238,29 @@ Peer.prototype.list = function (options, cb) {
   }, function (err, rows) {
     cb(err, rows);
   });
+}
+
+Peer.prototype.listWithDApp = function (options, cb) {
+  options.limit = options.limit || 100;
+
+  library.dbLite.query("select p.ip, p.port, p.state, p.os, p.version, pd.dappId from peers p inner join peers_dapp pd on p.id = pd.peerId  where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
+    "ip": String,
+    "port": Number,
+    "state": Number,
+    "os": String,
+    "version": String
+  }, function (err, rows) {
+    cb(err, rows);
+  });
+}
+
+Peer.prototype.reset = function (cb) {
+  library.dbLite.query('update peers set state = 2', function (err) {
+    if (cb) return cb(err)
+    if (err) {
+      library.logger.error('Failed to reset peers: ' + e)
+    }
+  })
 }
 
 Peer.prototype.state = function (pip, port, state, timeoutSeconds, cb) {

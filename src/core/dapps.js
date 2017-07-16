@@ -2461,6 +2461,7 @@ shared.getDApp = function (req, cb) {
 
 shared.setReady = function (req, cb) {
   private.dappready[req.dappId] = true;
+  library.bus.message('dappReady', req.dappId, true);
   cb(null, {});
 }
 

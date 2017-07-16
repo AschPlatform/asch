@@ -72,7 +72,10 @@ private.attachApi = function () {
           received: req.headers['magic']
         });
       }
-      if (peerIp == "127.0.0.1") {
+      // if (peerIp == "127.0.0.1") {
+      //   return next();
+      // }
+      if (!req.headers.version) {
         return next();
       }
       var peer = {
@@ -105,7 +108,7 @@ private.attachApi = function () {
 
   router.get('/list', function (req, res) {
     res.set(private.headers);
-    modules.peer.list({ limit: 100 }, function (err, peers) {
+    modules.peer.listWithDApp({ limit: 100 }, function (err, peers) {
       return res.status(200).json({ peers: !err ? peers : [] });
     })
   });
@@ -202,7 +205,6 @@ private.attachApi = function () {
       if (query.limit) {
         blocksLimit = Math.min(blocksLimit, Number(query.limit))
       }
-      console.log('---------------limit', blocksLimit)
 
       modules.blocks.loadBlocksData({
         limit: blocksLimit,
@@ -452,11 +454,10 @@ private.attachApi = function () {
     }
 
     if (private.messages[req.body.hash]) {
-      return res.status(200);
+      return res.sendStatus(200);
     }
 
     private.messages[req.body.hash] = true;
-
     modules.dapps.message(req.body.dappId, req.body.body, function (err, body) {
       if (!err && body.error) {
         err = body.error;
@@ -500,8 +501,27 @@ private.attachApi = function () {
       if (err) {
         return res.status(200).json({ success: false, error: err });
       }
-      // console.log('dapp request', body)
       res.status(200).json(extend({}, { success: true }, body));
+    });
+  });
+
+  router.post("/dappReady", function (req, res) {
+    res.set(private.headers);
+
+    library.scheme.validate(req.body, {
+      type: "object",
+      properties: {
+        dappId: {
+          type: "string",
+          length: 64
+        }
+      },
+      required: ["dappId"]
+    }, function (err) {
+      if (err) {
+        return res.status(200).json({ success: false, error: "Schema validation error" });
+      }
+      res.sendStatus(200);
     });
   });
 
@@ -558,6 +578,7 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
       var peer = peers[0];
       self.getFromPeer(peer, options, cb);
     } else {
+      modules.peer.reset()
       return cb(err || "No peers in db");
     }
   });
@@ -619,6 +640,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
       });
 
       if (peer) {
+        // TODO use ban instead of remove
         if (err && (err.code == "ETIMEDOUT" || err.code == "ESOCKETTIMEDOUT" || err.code == "ECONNREFUSED")) {
           modules.peer.remove(peer.ip, peer.port, function (err) {
             if (!err) {
@@ -742,6 +764,15 @@ Transport.prototype.onNewPropose = function (propose, broadcast) {
       propose: library.protobuf.encodeBlockPropose(propose).toString('base64')
     };
     self.broadcast({}, { api: '/propose', data: data, method: "POST" });
+  }
+}
+
+Transport.prototype.onDappReady = function (dappId, broadcast) {
+  if (broadcast) {
+    var data = {
+      dappId: dappId
+    }
+    self.broadcast({}, { api: '/dappReady', data: data, method: "POST"})
   }
 }
 
