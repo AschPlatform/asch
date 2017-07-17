@@ -706,8 +706,10 @@ Blocks.prototype.setLastBlock = function (block) {
   private.lastBlock = block
   if (global.Config.netVersion === 'mainnet') {
     global.featureSwitch.enableLongId = private.lastBlock.height >= 1700000
+    global.featureSwitch.enable1_3_0 = private.lastBlock.height >= 2900000
   } else {
     global.featureSwitch.enableLongId = true
+    global.featureSwitch.enable1_3_0 = true
   }
   global.featureSwitch.fixVoteNewAddressIssue = true
   if (global.Config.netVersion === 'mainnet' && private.lastBlock.height < 1854000) {
@@ -1114,8 +1116,8 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
         // This code is for compatible with old nodes
         if (blocks[0] && blocks[0].length == 63) {
           blocks.forEach(function (b) {
-            for (var i = 64; i >= 25; --i) {
-              b[i] = b[i - 1]
+            for (var i = 80; i >= 25; --i) {
+              b[i] = b[i - 2]
             }
             b[23] = ''
             b[24] = ''

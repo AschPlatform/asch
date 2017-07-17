@@ -42,6 +42,21 @@ function Transfer() {
       return cb("Invalid recipientId, cannot be your self");
     }
 
+    var invalidAddress = [
+      'A6EDct7J1Pu3YqWVSAFuLytm9uMmVNxbBr',
+      'ANS1ofMhh78dcVmofuKTRYw2NfeKtEtKtz',
+      'A4wDzYuLktRbgQhYkTj2WRy8hoUv8vPvXt',
+      'ACvzmUneM9TqeSEJ1Ln84pwcL1AF9CDWh',
+      'A21WZ51qakBSskTFeaMTeSSmw3kJjL6sbv',
+      'A5LMyHfcmbpdaEDv4jT9ZdpvorbgHjyBVd',
+      '12448977009388136020',
+      '8604983529040791399'
+    ]
+
+    if (invalidAddress.indexOf(sender.address) !== -1) {
+      return cb('Invalid recipient address')
+    }
+
     var lastBlock = modules.blocks.getLastBlock()
     if (sender.lockHeight && lastBlock && lastBlock.height + 1 <= sender.lockHeight) {
       return cb('Account is locked')
@@ -568,7 +583,10 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
   if (!transaction.id) {
     transaction.id = library.base.transaction.getId(transaction);
   }
-  if (!global.featureSwitch.enableUIA && transaction.type >= 8) {
+  if (!global.featureSwitch.enableUIA && transaction.type >= 8 && transaction.type <= 14) {
+    return cb("Feature not activated");
+  }
+  if (!global.featureSwitch.enable1_3_0 && ([5, 6, 7, 100].indexOf(transaction.type) !== -1 || transaction.message || transaction.args)) {
     return cb("Feature not activated");
   }
   // Check transaction indexes
