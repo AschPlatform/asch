@@ -143,6 +143,12 @@ class Model {
     }
     this.dbLite.query(sql.query, sql.values, fieldConv, function (err, rows) {
       if (err) return cb('Database error: ' + err)
+      for (let i = 0; i < rows.length; ++i) {
+        rows[i].maximum = bignum(rows[i].maximum).toString(10)
+        rows[i].maximumShow = bignum(rows[i].maximum).div(Math.pow(10, rows[i].precision)).toString(10)
+        rows[i].quantity = bignum(rows[i].quantity).toString(10)
+        rows[i].quantityShow = bignum(rows[i].quantity).div(Math.pow(10, rows[i].precision)).toString(10)
+      }
       cb(null, rows)
     })
   }
@@ -349,7 +355,18 @@ class Model {
       allowBlacklist: Number
 
     }
-    this.dbLite.query(sql.query, sql.values, fieldConv, cb)
+    this.dbLite.query(sql.query, sql.values, fieldConv, function (err, rows) {
+      if (err) return cb('Database error: ' + err)
+      for (let i = 0; i < rows.length; ++i) {
+        rows[i].maximum = bignum(rows[i].maximum).toString(10)
+        rows[i].maximumShow = bignum(rows[i].maximum).div(Math.pow(10, rows[i].precision)).toString(10)
+        rows[i].quantity = bignum(rows[i].quantity).toString(10)
+        rows[i].quantityShow = bignum(rows[i].quantity).div(Math.pow(10, rows[i].precision)).toString(10)
+        rows[i].balance = bignum(rows[i].balance).toString(10)
+        rows[i].balanceShow = bignum(rows[i].balance).div(Math.pow(10, rows[i].precision)).toString(10)
+      }
+      cb(null, rows)
+    })
   }
 
   getDAppBalance(dappId, currency, cb) {
