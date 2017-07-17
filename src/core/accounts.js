@@ -796,7 +796,8 @@ shared.getAccount = function (req, cb) {
           secondSignature: '',
           secondPublicKey: '',
           multisignatures: '',
-          u_multisignatures: ''
+          u_multisignatures: '',
+          lockHeight: 0
         }
       }
 
@@ -811,7 +812,8 @@ shared.getAccount = function (req, cb) {
           secondSignature: account.secondSignature,
           secondPublicKey: account.secondPublicKey,
           multisignatures: account.multisignatures,
-          u_multisignatures: account.u_multisignatures
+          u_multisignatures: account.u_multisignatures,
+          lockHeight: account.lockHeight
         },
         latestBlock: {
           height: latestBlock.height,

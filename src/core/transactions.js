@@ -250,7 +250,7 @@ function Lock() {
     if (trs.args[0].legth > 50) return cb('Invalid lock height')
     var lockHeight = Number(trs.args[0])
     if (isNaN(lockHeight) || lockHeight < 0) return cb('Invalid lock height')
-    if (sender.lockHeight > 0) return cb('Account already locked')
+    if (sender.lockHeight > 0 && lockHeight <= sender.lockHeight) return cb('Account already locked')
 
     cb(null, trs);
   }
