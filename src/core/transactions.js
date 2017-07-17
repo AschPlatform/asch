@@ -42,6 +42,11 @@ function Transfer() {
       return cb("Invalid recipientId, cannot be your self");
     }
 
+    var lastBlock = modules.blocks.getLastBlock()
+    if (sender.lockHeight && lastBlock && lastBlock.height + 1 <= sender.lockHeight) {
+      return cb('Account is locked')
+    }
+
     cb(null, trs);
   }
 
@@ -54,7 +59,7 @@ function Transfer() {
   }
 
   this.apply = function (trs, block, sender, cb) {
-    modules.accounts.setAccountAndGet({address: trs.recipientId}, function (err, recipient) {
+    modules.accounts.setAccountAndGet({ address: trs.recipientId }, function (err, recipient) {
       if (err) {
         return cb(err);
       }
@@ -72,7 +77,7 @@ function Transfer() {
   }
 
   this.undo = function (trs, block, sender, cb) {
-    modules.accounts.setAccountAndGet({address: trs.recipientId}, function (err, recipient) {
+    modules.accounts.setAccountAndGet({ address: trs.recipientId }, function (err, recipient) {
       if (err) {
         return cb(err);
       }
@@ -199,7 +204,7 @@ function Storage() {
         content: raw.st_content
       }
 
-      return {storage: storage};
+      return { storage: storage };
     }
   }
 
@@ -229,6 +234,83 @@ function Storage() {
   }
 }
 
+function Lock() {
+  this.create = function (data, trs) {
+    trs.args = data.args
+
+    return trs;
+  }
+
+  this.calculateFee = function (trs, sender) {
+    return library.base.block.calculateFee();
+  }
+
+  this.verify = function (trs, sender, cb) {
+    if (trs.args.length > 1) return cb('Invalid args length')
+    if (trs.args[0].legth > 50) return cb('Invalid lock height')
+    var lockHeight = Number(trs.args[0])
+    if (isNaN(lockHeight) || lockHeight < 0) return cb('Invalid lock height')
+    if (sender.lockHeight > 0) return cb('Account already locked')
+
+    cb(null, trs);
+  }
+
+  this.process = function (trs, sender, cb) {
+    setImmediate(cb, null, trs);
+  }
+
+  this.getBytes = function (trs) {
+    return null
+  }
+
+  this.apply = function (trs, block, sender, cb) {
+    library.base.account.set(sender.address, { lockHeight: Number(trs.args[0]) }, cb)
+  }
+
+  this.undo = function (trs, block, sender, cb) {
+    library.base.account.set(sender.address, { lockHeight: 0 }, cb)
+  }
+
+  this.applyUnconfirmed = function (trs, sender, cb) {
+    var key = sender.address + ':' + trs.type
+    if (library.oneoff.has(key)) {
+      return setImmediate(cb, 'Double submit')
+    }
+    library.oneoff.set(key, true)
+    setImmediate(cb)
+  }
+
+  this.undoUnconfirmed = function (trs, sender, cb) {
+    var key = sender.address + ':' + trs.type
+    library.oneoff.delete(key)
+    setImmediate(cb)
+  }
+
+  this.objectNormalize = function (trs) {
+    return trs;
+  }
+
+  this.dbRead = function (raw) {
+    return null;
+  }
+
+  this.dbSave = function (trs, cb) {
+    setImmediate(cb);
+  }
+
+  this.ready = function (trs, sender) {
+    if (sender.multisignatures.length) {
+      if (!trs.signatures) {
+        return false;
+      }
+
+      return trs.signatures.length >= sender.multimin - 1;
+    } else {
+      return true;
+    }
+  }
+}
+
 // Constructor
 function Transactions(cb, scope) {
   library = scope;
@@ -239,6 +321,7 @@ function Transactions(cb, scope) {
 
   library.base.transaction.attachAssetType(TransactionTypes.SEND, new Transfer());
   library.base.transaction.attachAssetType(TransactionTypes.STORAGE, new Storage());
+  library.base.transaction.attachAssetType(TransactionTypes.LOCK, new Lock());
 
   setImmediate(cb, null, self);
 }
@@ -249,7 +332,7 @@ private.attachApi = function () {
 
   router.use(function (req, res, next) {
     if (modules) return next();
-    res.status(500).send({success: false, error: "Blockchain is loading"});
+    res.status(500).send({ success: false, error: "Blockchain is loading" });
   });
 
   router.map(shared, {
@@ -261,14 +344,14 @@ private.attachApi = function () {
   });
 
   router.use(function (req, res, next) {
-    res.status(500).send({success: false, error: "API endpoint not found"});
+    res.status(500).send({ success: false, error: "API endpoint not found" });
   });
 
   library.network.app.use('/api/transactions', router);
   library.network.app.use(function (err, req, res, next) {
     if (!err) return next();
     library.logger.error(req.url, err.toString());
-    res.status(500).send({success: false, error: err.toString()});
+    res.status(500).send({ success: false, error: err.toString() });
   });
 
   private.attachStorageApi();
@@ -279,7 +362,7 @@ private.attachStorageApi = function () {
 
   router.use(function (req, res, next) {
     if (modules) return next();
-    res.status(500).send({success: false, error: "Blockchain is loading"});
+    res.status(500).send({ success: false, error: "Blockchain is loading" });
   });
 
   router.map(shared, {
@@ -289,14 +372,14 @@ private.attachStorageApi = function () {
   });
 
   router.use(function (req, res, next) {
-    res.status(500).send({success: false, error: "API endpoint not found"});
+    res.status(500).send({ success: false, error: "API endpoint not found" });
   });
 
   library.network.app.use('/api/storages', router);
   library.network.app.use(function (err, req, res, next) {
     if (!err) return next();
     library.logger.error(req.url, err.toString());
-    res.status(500).send({success: false, error: err.toString()});
+    res.status(500).send({ success: false, error: err.toString() });
   });
 }
 
@@ -335,6 +418,11 @@ private.list = function (filter, cb) {
     fields_or.push('(type >=9 and type <= 14)')
   }
 
+  if (filter.message) {
+    fields_or.push('message = $message')
+    params.message = filter.message
+  }
+
   if (filter.limit >= 0) {
     params.limit = filter.limit;
   }
@@ -371,51 +459,51 @@ private.list = function (filter, cb) {
     "from trs t " +
     "inner join blocks b on t.blockId = b.id " + uiaCurrencyJoin +
     (fields_or.length || owner ? "where " : "") + " " +
-    (fields_or.length ? "(" + fields_or.join(' or ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner), params, {"count": Number}, function (err, rows) {
-    if (err) {
-      return cb(err);
-    }
-
-    var count = rows.length ? rows[0].count : 0;
-
-    // Need to fix 'or' or 'and' in query
-    library.dbLite.query("select t.id, b.height, t.blockId, t.type, t.timestamp, lower(hex(t.senderPublicKey)), t.senderId, t.recipientId, t.amount, t.fee, lower(hex(t.signature)), lower(hex(t.signSignature)), t.signatures, (select max(height) + 1 from blocks) - b.height " +
-      "from trs t " +
-      "inner join blocks b on t.blockId = b.id " + uiaCurrencyJoin +
-      (fields_or.length || owner ? "where " : "") + " " +
-      (fields_or.length ? "(" + fields_or.join(' or ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner) + " " +
-      (filter.orderBy ? 'order by ' + sortBy + ' ' + sortMethod : '') + " " +
-      (filter.limit ? 'limit $limit' : '') + " " +
-      (filter.offset ? 'offset $offset' : ''), params, ['t_id', 'b_height', 't_blockId', 't_type', 't_timestamp', 't_senderPublicKey', 't_senderId', 't_recipientId', 't_amount', 't_fee', 't_signature', 't_signSignature', 't_signatures', 'confirmations'], function (err, rows) {
+    (fields_or.length ? "(" + fields_or.join(' or ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner), params, { "count": Number }, function (err, rows) {
       if (err) {
         return cb(err);
       }
 
-      var transactions = [];
-      for (var i = 0; i < rows.length; i++) {
-        transactions.push(library.base.transaction.dbRead(rows[i]));
-      }
-      var data = {
-        transactions: transactions,
-        count: count
-      }
-      cb(null, data);
+      var count = rows.length ? rows[0].count : 0;
+
+      // Need to fix 'or' or 'and' in query
+      library.dbLite.query("select t.id, b.height, t.blockId, t.type, t.timestamp, lower(hex(t.senderPublicKey)), t.senderId, t.recipientId, t.amount, t.fee, lower(hex(t.signature)), lower(hex(t.signSignature)), t.signatures, t.args, t.message, (select max(height) + 1 from blocks) - b.height " +
+        "from trs t " +
+        "inner join blocks b on t.blockId = b.id " + uiaCurrencyJoin +
+        (fields_or.length || owner ? "where " : "") + " " +
+        (fields_or.length ? "(" + fields_or.join(' or ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner) + " " +
+        (filter.orderBy ? 'order by ' + sortBy + ' ' + sortMethod : '') + " " +
+        (filter.limit ? 'limit $limit' : '') + " " +
+        (filter.offset ? 'offset $offset' : ''), params, ['t_id', 'b_height', 't_blockId', 't_type', 't_timestamp', 't_senderPublicKey', 't_senderId', 't_recipientId', 't_amount', 't_fee', 't_signature', 't_signSignature', 't_signatures', 't_args', 't_message', 'confirmations'], function (err, rows) {
+          if (err) {
+            return cb(err);
+          }
+
+          var transactions = [];
+          for (var i = 0; i < rows.length; i++) {
+            transactions.push(library.base.transaction.dbRead(rows[i]));
+          }
+          var data = {
+            transactions: transactions,
+            count: count
+          }
+          cb(null, data);
+        });
     });
-  });
 }
 
 private.getById = function (id, cb) {
-  library.dbLite.query("select t.id, b.height, t.blockId, t.type, t.timestamp, lower(hex(t.senderPublicKey)), t.senderId, t.recipientId, t.amount, t.fee, lower(hex(t.signature)), lower(hex(t.signSignature)), (select max(height) + 1 from blocks) - b.height " +
+  library.dbLite.query("select t.id, b.height, t.blockId, t.type, t.timestamp, lower(hex(t.senderPublicKey)), t.senderId, t.recipientId, t.amount, t.fee, lower(hex(t.signature)), lower(hex(t.signSignature)), t.args, t.message, (select max(height) + 1 from blocks) - b.height " +
     "from trs t " +
     "inner join blocks b on t.blockId = b.id " +
-    "where t.id = $id", {id: id}, ['t_id', 'b_height', 't_blockId', 't_type', 't_timestamp', 't_senderPublicKey', 't_senderId', 't_recipientId', 't_amount', 't_fee', 't_signature', 't_signSignature', 'confirmations'], function (err, rows) {
-    if (err || !rows.length) {
-      return cb(err || "Can't find transaction: " + id);
-    }
+    "where t.id = $id", { id: id }, ['t_id', 'b_height', 't_blockId', 't_type', 't_timestamp', 't_senderPublicKey', 't_senderId', 't_recipientId', 't_amount', 't_fee', 't_signature', 't_signSignature', 't_args', 't_message', 'confirmations'], function (err, rows) {
+      if (err || !rows.length) {
+        return cb(err || "Can't find transaction: " + id);
+      }
 
-    var transacton = library.base.transaction.dbRead(rows[0]);
-    cb(null, transacton);
-  });
+      var transacton = library.base.transaction.dbRead(rows[0]);
+      cb(null, transacton);
+    });
 }
 
 private.addUnconfirmedTransaction = function (transaction, sender, cb) {
@@ -488,7 +576,7 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
     return cb("Transaction " + transaction.id + " already exists, ignoring...");
   }
 
-  modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
+  modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, function (err, sender) {
     function done(err) {
       if (err) {
         return cb(err);
@@ -510,7 +598,7 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
     }
 
     if (transaction.requesterPublicKey && sender && sender.multisignatures && sender.multisignatures.length) {
-      modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
+      modules.accounts.getAccount({ publicKey: transaction.requesterPublicKey }, function (err, requester) {
         if (err) {
           return done(err);
         }
@@ -542,7 +630,7 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 Transactions.prototype.applyUnconfirmedList = function (ids, cb) {
   async.eachSeries(ids, function (id, cb) {
     var transaction = self.getUnconfirmedTransaction(id);
-    modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
+    modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, function (err, sender) {
       if (err) {
         self.removeUnconfirmedTransaction(id);
         return setImmediate(cb);
@@ -584,7 +672,7 @@ Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
     return cb("Invalid block id");
   } else {
     if (transaction.requesterPublicKey) {
-      modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
+      modules.accounts.getAccount({ publicKey: transaction.requesterPublicKey }, function (err, requester) {
         if (err) {
           return cb(err);
         }
@@ -602,7 +690,7 @@ Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
 }
 
 Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
-  modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
+  modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, function (err, sender) {
     if (err) {
       return cb(err);
     }
@@ -617,10 +705,10 @@ Transactions.prototype.receiveTransactions = function (transactions, cb) {
     return;
   }
   async.eachSeries(transactions, function (transaction, next) {
-		self.processUnconfirmedTransaction(transaction, true, next);
-	}, function (err) {
-		cb(err, transactions);
-	});
+    self.processUnconfirmedTransaction(transaction, true, next);
+  }, function (err) {
+    cb(err, transactions);
+  });
 }
 
 Transactions.prototype.sandboxApi = function (call, args, cb) {
@@ -710,7 +798,7 @@ shared.getTransactions = function (req, cb) {
         return cb("Failed to get transactions");
       }
 
-      cb(null, {transactions: data.transactions, count: data.count});
+      cb(null, { transactions: data.transactions, count: data.count });
     });
   });
 }
@@ -735,7 +823,7 @@ shared.getTransaction = function (req, cb) {
       if (!transaction || err) {
         return cb("Transaction not found");
       }
-      cb(null, {transaction: transaction});
+      cb(null, { transaction: transaction });
     });
   });
 }
@@ -763,7 +851,7 @@ shared.getUnconfirmedTransaction = function (req, cb) {
       return cb("Transaction not found");
     }
 
-    cb(null, {transaction: unconfirmedTransaction});
+    cb(null, { transaction: unconfirmedTransaction });
   });
 }
 
@@ -800,7 +888,7 @@ shared.getUnconfirmedTransactions = function (req, cb) {
       }
     }
 
-    cb(null, {transactions: toSend});
+    cb(null, { transactions: toSend });
   });
 }
 
@@ -866,7 +954,7 @@ shared.addTransactions = function (req, cb) {
         }
 
         if (body.multisigAccountPublicKey && body.multisigAccountPublicKey != keypair.publicKey.toString('hex')) {
-          modules.accounts.getAccount({publicKey: body.multisigAccountPublicKey}, function (err, account) {
+          modules.accounts.getAccount({ publicKey: body.multisigAccountPublicKey }, function (err, account) {
             if (err) {
               return cb(err.toString());
             }
@@ -883,7 +971,7 @@ shared.addTransactions = function (req, cb) {
               return cb("Account does not belong to multisignature group");
             }
 
-            modules.accounts.getAccount({publicKey: keypair.publicKey}, function (err, requester) {
+            modules.accounts.getAccount({ publicKey: keypair.publicKey }, function (err, requester) {
               if (err) {
                 return cb(err.toString());
               }
@@ -924,7 +1012,7 @@ shared.addTransactions = function (req, cb) {
             });
           });
         } else {
-          modules.accounts.getAccount({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
+          modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') }, function (err, account) {
             if (err) {
               return cb(err.toString());
             }
@@ -964,7 +1052,7 @@ shared.addTransactions = function (req, cb) {
         return cb(err.toString());
       }
 
-      cb(null, {transactionId: transaction[0].id});
+      cb(null, { transactionId: transaction[0].id });
     });
   });
 }

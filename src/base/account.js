@@ -309,6 +309,15 @@ function Account(scope, cb) {
       },
       conv: Number,
       default: 0
+    },
+    {
+      name: "lockHeight",
+      type: "BigInt",
+      filter: {
+        type: "integer"
+      },
+      conv: Number,
+      default: 0
     }
   ];
 

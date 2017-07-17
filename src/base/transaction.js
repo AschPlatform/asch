@@ -149,6 +149,13 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 
     bb.writeLong(trs.amount);
 
+    if (trs.message) bb.writeString(trs.message);
+    if (trs.args) {
+      for (var i = 0; i < trs.args.length; ++i) {
+        bb.writeString(trs.args[i])
+      }
+    }
+
     if (assetSize > 0) {
       for (var i = 0; i < assetSize; i++) {
         bb.writeByte(assetBytes[i]);
@@ -565,7 +572,7 @@ Transaction.prototype.dbSave = function (trs, cb) {
     return cb(e.toString())
   }
 
-  this.scope.dbLite.query("INSERT INTO trs(id, blockId, type, timestamp, senderPublicKey, requesterPublicKey, senderId, recipientId, amount, fee, signature, signSignature, signatures) VALUES($id, $blockId, $type, $timestamp, $senderPublicKey, $requesterPublicKey, $senderId, $recipientId, $amount, $fee, $signature, $signSignature, $signatures)", {
+  this.scope.dbLite.query("INSERT INTO trs(id, blockId, type, timestamp, senderPublicKey, requesterPublicKey, senderId, recipientId, amount, fee, signature, signSignature, signatures, args, message) VALUES($id, $blockId, $type, $timestamp, $senderPublicKey, $requesterPublicKey, $senderId, $recipientId, $amount, $fee, $signature, $signSignature, $signatures, $args, $message)", {
     id: trs.id,
     blockId: trs.blockId,
     type: trs.type,
@@ -578,7 +585,9 @@ Transaction.prototype.dbSave = function (trs, cb) {
     fee: trs.fee,
     signature: signature,
     signSignature: signSignature,
-    signatures: trs.signatures ? trs.signatures.join(',') : null
+    signatures: trs.signatures ? trs.signatures.join(',') : null,
+    args: JSON.stringify(trs.args) || null,
+    message: trs.message || null
   }, function (err) {
     if (err) {
       return cb(err);
@@ -652,12 +661,20 @@ Transaction.prototype.objectNormalize = function (trs) {
       },
       asset: {
         type: "object"
+      },
+      args: {
+        type: "array"
+      },
+      message: {
+        type: "string",
+        maxLength: 256
       }
     },
     required: ['type', 'timestamp', 'senderPublicKey', 'signature']
   });
 
   if (!report) {
+    library.logger.error('Failed to normalize transaction body: ' +this.scope.scheme.getLastError().details[0].message, trs)
     throw Error(this.scope.scheme.getLastError());
   }
 
@@ -690,6 +707,8 @@ Transaction.prototype.dbRead = function (raw) {
       signSignature: raw.t_signSignature,
       signatures: raw.t_signatures ? raw.t_signatures.split(',') : null,
       confirmations: raw.confirmations,
+      args: raw.t_args ? JSON.parse(raw.t_args) : null,
+      message: raw.t_message,
       asset: {}
     }
 

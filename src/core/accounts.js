@@ -10,7 +10,7 @@ var constants = require('../utils/constants.js');
 var TransactionTypes = require('../utils/transaction-types.js');
 var Diff = require('../utils/diff.js');
 var sandboxHelper = require('../utils/sandbox.js');
-var addressHelper = require('../utils/address.js')
+var addressHelper = require('../utils/address.js');
 
 // Private fields
 var modules, library, self, private = {}, shared = {};
@@ -408,7 +408,8 @@ shared.open = function (req, cb) {
           secondSignature: account.secondSignature,
           secondPublicKey: account.secondPublicKey,
           multisignatures: account.multisignatures,
-          u_multisignatures: account.u_multisignatures
+          u_multisignatures: account.u_multisignatures,
+          lockHeight: account.lockHeight || 0
         };
 
         return cb(null, { account: accountData });
@@ -446,7 +447,8 @@ shared.open2 = function (req, cb) {
           secondSignature: account.secondSignature,
           secondPublicKey: account.secondPublicKey,
           multisignatures: account.multisignatures,
-          u_multisignatures: account.u_multisignatures
+          u_multisignatures: account.u_multisignatures,
+          lockHeight: account.lockHeight || 0
         };
         var latestBlock = modules.blocks.getLastBlock();
         var ret = {

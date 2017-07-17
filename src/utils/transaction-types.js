@@ -15,5 +15,7 @@ module.exports = {
   UIA_FLAGS: 11,
   UIA_ACL: 12,
   UIA_ISSUE: 13,
-  UIA_TRANSFER: 14
+  UIA_TRANSFER: 14,
+
+  LOCK: 100
 }
