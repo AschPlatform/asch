@@ -53,9 +53,9 @@ function Transfer() {
       '8604983529040791399'
     ]
 
-    if (invalidAddress.indexOf(sender.address) !== -1) {
-      return cb('Invalid recipient address')
-    }
+    // if (invalidAddress.indexOf(sender.address) !== -1) {
+    //   return cb('Invalid sender address')
+    // }
 
     var lastBlock = modules.blocks.getLastBlock()
     if (sender.lockHeight && lastBlock && lastBlock.height + 1 <= sender.lockHeight) {
@@ -264,8 +264,11 @@ function Lock() {
     if (trs.args.length > 1) return cb('Invalid args length')
     if (trs.args[0].legth > 50) return cb('Invalid lock height')
     var lockHeight = Number(trs.args[0])
-    if (isNaN(lockHeight) || lockHeight < 0) return cb('Invalid lock height')
-    if (sender.lockHeight > 0 && lockHeight <= sender.lockHeight) return cb('Account already locked')
+
+    var lastBlock = modules.blocks.getLastBlock()
+
+    if (isNaN(lockHeight) || lockHeight <= lastBlock.height) return cb('Invalid lock height')
+    if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight) return cb('Account is locked')
 
     cb(null, trs);
   }
