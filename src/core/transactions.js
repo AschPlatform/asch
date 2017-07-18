@@ -42,21 +42,6 @@ function Transfer() {
       return cb("Invalid recipientId, cannot be your self");
     }
 
-    var invalidAddress = [
-      'A6EDct7J1Pu3YqWVSAFuLytm9uMmVNxbBr',
-      'ANS1ofMhh78dcVmofuKTRYw2NfeKtEtKtz',
-      'A4wDzYuLktRbgQhYkTj2WRy8hoUv8vPvXt',
-      'ACvzmUneM9TqeSEJ1Ln84pwcL1AF9CDWh',
-      'A21WZ51qakBSskTFeaMTeSSmw3kJjL6sbv',
-      'A5LMyHfcmbpdaEDv4jT9ZdpvorbgHjyBVd',
-      '12448977009388136020',
-      '8604983529040791399'
-    ]
-
-    // if (invalidAddress.indexOf(sender.address) !== -1) {
-    //   return cb('Invalid sender address')
-    // }
-
     var lastBlock = modules.blocks.getLastBlock()
     if (sender.lockHeight && lastBlock && lastBlock.height + 1 <= sender.lockHeight) {
       return cb('Account is locked')
