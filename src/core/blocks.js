@@ -1115,14 +1115,25 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
         // add two new field: trs.args and trs.message
         // This code is for compatible with old nodes
         if (blocks[0] && blocks[0].length == 63) {
-          blocks.forEach(function (b) {
-            for (var i = 80; i >= 25; --i) {
-              b[i] = b[i - 2]
-            }
-            b[23] = ''
-            b[24] = ''
-          })
-        }
+	          blocks.forEach(function (b) {
+	            for (var i = 80; i >= 25; --i) {
+	              b[i] = b[i - 2]
+	            }
+	            b[23] = ''
+	            b[24] = ''
+              if (b[14] >= 8 && b[14] <= 14) {
+                for (var i = 80; i >= 48; --i) {
+                  b[i] = b[i-6]
+                }
+                b[42] = ''
+                b[43] = ''
+                b[44] = ''
+                b[45] = ''
+                b[46] = ''
+                b[47] = ''
+              }
+	          })
+	        }
 
         blocks = blocks.map(library.dbLite.row2parsed, library.dbLite.parseFields(private.blocksDataFields));
         blocks = private.readDbRows(blocks);
