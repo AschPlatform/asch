@@ -1,6 +1,38 @@
 var strftime = require('strftime').utc();
 var fs = require('fs');
 require('colors');
+Object.defineProperty(global, '__stack', {
+    get: function() {
+            var orig = Error.prepareStackTrace;
+            Error.prepareStackTrace = function(_, stack) {
+                        return stack;
+                    };
+            var err = new Error;
+            Error.captureStackTrace(err, arguments.callee);
+            var stack = err.stack;
+            Error.prepareStackTrace = orig;
+            return stack;
+        }
+});
+
+var stack_level = 2;
+
+Object.defineProperty(global, '__line', {
+    get: function() {
+            return __stack[stack_level].getLineNumber();
+        }
+});
+
+Object.defineProperty(global, '__function', {
+    get: function() {
+            return __stack[stack_level].getFunctionName();
+        }
+});
+Object.defineProperty(global, '__file', {
+  get: function(){
+      return __stack[stack_level].getFileName().split('/').slice(-1)[0];
+    }
+});
 
 module.exports = function (config) {
   config = config || {};
@@ -41,7 +73,7 @@ module.exports = function (config) {
       }
       if (config.echo && config.levels[config.echo] <= config.levels[log.level]) {
         try {
-          console.log(log.level.bgYellow.black, log.timestamp.grey, log.message, log.data ? log.data : '');
+          console.log(log.level.bgYellow.black, log.timestamp.grey, __file + ':' + __line, log.message, log.data ? log.data : '');
         }catch (e){
           console.log(e)
         }
