@@ -1,7 +1,7 @@
 var async = require('async')
 var bignum = require('bignumber')
 var jsonSql = require('json-sql')()
-jsonSql.setDialect('sqlite')
+var amountHelper = require('./amount')
 
 class Model {
   constructor(dbLite) {
@@ -144,10 +144,11 @@ class Model {
     this.dbLite.query(sql.query, sql.values, fieldConv, function (err, rows) {
       if (err) return cb('Database error: ' + err)
       for (let i = 0; i < rows.length; ++i) {
+        let precision = rows[i].precision
         rows[i].maximum = bignum(rows[i].maximum).toString(10)
-        rows[i].maximumShow = bignum(rows[i].maximum).div(Math.pow(10, rows[i].precision)).toString(10)
+        rows[i].maximumShow = amountHelper.calcRealAmount(rows[i].maximum, precision)
         rows[i].quantity = bignum(rows[i].quantity).toString(10)
-        rows[i].quantityShow = bignum(rows[i].quantity).div(Math.pow(10, rows[i].precision)).toString(10)
+        rows[i].quantityShow = amountHelper.calcRealAmount(rows[i].quantity, precision)
       }
       cb(null, rows)
     })
@@ -358,12 +359,13 @@ class Model {
     this.dbLite.query(sql.query, sql.values, fieldConv, function (err, rows) {
       if (err) return cb('Database error: ' + err)
       for (let i = 0; i < rows.length; ++i) {
+        let precision = rows[i].precision
         rows[i].maximum = bignum(rows[i].maximum).toString(10)
-        rows[i].maximumShow = bignum(rows[i].maximum).div(Math.pow(10, rows[i].precision)).toString(10)
+        rows[i].maximumShow = amountHelper.calcRealAmount(rows[i].maximum, precision)
         rows[i].quantity = bignum(rows[i].quantity).toString(10)
-        rows[i].quantityShow = bignum(rows[i].quantity).div(Math.pow(10, rows[i].precision)).toString(10)
+        rows[i].quantityShow = amountHelper.calcRealAmount(rows[i].quantity, precision)
         rows[i].balance = bignum(rows[i].balance).toString(10)
-        rows[i].balanceShow = bignum(rows[i].balance).div(Math.pow(10, rows[i].precision)).toString(10)
+        rows[i].balanceShow = amountHelper.calcRealAmount(rows[i].balance, precision)
       }
       cb(null, rows)
     })
