@@ -51,6 +51,31 @@ function build(osVersion, netVersion) {
     .pipe(shell(cmds));
 }
 
+function buildSource(netVersion) {
+  var dir = 'asch-' + 'linux' + '-' + package.version + '-' + netVersion;
+  var fullpath = path.join(__dirname, 'build', dir);
+  return gulp.src('app.js')
+    .pipe(webpack({
+      output: {
+        filename: 'app.js'
+      },
+      target: 'node',
+      context: __dirname,
+      node: {
+        __filename: true,
+        __dirname: true
+      },
+      externals: [nodeExternals()]
+    }))
+    .pipe(replace('localnet', netVersion))
+    .pipe(replace('development', buildTime))
+    .pipe(gulp.dest(fullpath));
+}
+
+gulp.task('build-src-main', function () {
+  return buildSource('mainnet');
+})
+
 gulp.task('win64-build-local', function () {
   return build('win64', 'localnet');
 });
