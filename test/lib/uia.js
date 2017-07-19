@@ -47,7 +47,7 @@ async function updateAclAsync(currency, operator, flag, list, account) {
 }
 
 async function transferAsync(currency, amount, recipientId, account) {
-  var res = await node.submitTransactionAsync(node.asch.uia.createTransfer(currency, amount, recipientId, account.password))
+  var res = await node.submitTransactionAsync(node.asch.uia.createTransfer(currency, amount, recipientId, '', account.password))
   DEBUG('transfer asset response', res.body)
   return res
 }
@@ -187,7 +187,7 @@ describe('Test UIA', () => {
       expect(res.body.balances[0].balance).to.equal(issuerBalance)
 
       var transferAmount = '10'
-      trs = node.asch.uia.createTransfer(currency, transferAmount, transferAddress, node.Gaccount.password)
+      trs = node.asch.uia.createTransfer(currency, transferAmount, transferAddress, '', node.Gaccount.password)
       DEBUG('create transfer trs', trs)
       var [err, res] = await node.submitTransactionAsyncE(trs)
       DEBUG('transfer asset response', err, res.body)
@@ -266,17 +266,17 @@ describe('Test UIA', () => {
       expect(res.body.list).to.be.instanceOf(Array)
       expect(res.body.count == origCount + 2).to.be.ok
 
-      trs = node.asch.uia.createTransfer(currency, '10', account1.address, node.Gaccount.password)
+      trs = node.asch.uia.createTransfer(currency, '10', account1.address, '', node.Gaccount.password)
       res = await node.submitTransactionAsync(trs)
       DEBUG('transfer to account1 response', res.body)
       expect(res.body).to.have.property('success').to.be.true
 
-      trs = node.asch.uia.createTransfer(currency, '10', account2.address, node.Gaccount.password)
+      trs = node.asch.uia.createTransfer(currency, '10', account2.address, '', node.Gaccount.password)
       res = await node.submitTransactionAsync(trs)
       DEBUG('transfer to account2 response', res.body)
       expect(res.body).to.have.property('success').to.be.true
 
-      trs = node.asch.uia.createTransfer(currency, '10', node.genNormalAccount().address, node.Gaccount.password)
+      trs = node.asch.uia.createTransfer(currency, '10', node.genNormalAccount().address, '', node.Gaccount.password)
       res = await node.submitTransactionAsync(trs)
       DEBUG('transfer to random account response', res.body)
       expect(res.body).to.have.property('success').to.be.false
