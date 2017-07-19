@@ -417,7 +417,7 @@ private.attachApi = function () {
       modules.transactions.receiveTransactions([transaction], cb);
     }, function (err, transactions) {
       if (err) {
-        library.logger.debug('Receive invalid transaction', err);
+        library.logger.warn('Receive invalid transaction', err);
         res.status(200).json({ success: false, error: err });
       } else {
         res.status(200).json({ success: true, transactionId: transactions[0].id });
