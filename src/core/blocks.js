@@ -162,6 +162,7 @@ private.attachApi = function () {
 
   router.map(shared, {
     "get /get": "getBlock",
+    "get /full": "getFullBlock",
     "get /": "getBlocks",
     "get /getHeight": "getHeight",
     "get /getFee": "getFee",
@@ -1115,25 +1116,25 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
         // add two new field: trs.args and trs.message
         // This code is for compatible with old nodes
         if (blocks[0] && blocks[0].length == 63) {
-	          blocks.forEach(function (b) {
-	            for (var i = 80; i >= 25; --i) {
-	              b[i] = b[i - 2]
-	            }
-	            b[23] = ''
-	            b[24] = ''
-              if (b[14] >= 8 && b[14] <= 14) {
-                for (var i = 80; i >= 48; --i) {
-                  b[i] = b[i-6]
-                }
-                b[42] = ''
-                b[43] = ''
-                b[44] = ''
-                b[45] = ''
-                b[46] = ''
-                b[47] = ''
+          blocks.forEach(function (b) {
+            for (var i = 80; i >= 25; --i) {
+              b[i] = b[i - 2]
+            }
+            b[23] = ''
+            b[24] = ''
+            if (b[14] >= 8 && b[14] <= 14) {
+              for (var i = 80; i >= 48; --i) {
+                b[i] = b[i - 6]
               }
-	          })
-	        }
+              b[42] = ''
+              b[43] = ''
+              b[44] = ''
+              b[45] = ''
+              b[46] = ''
+              b[47] = ''
+            }
+          })
+        }
 
         blocks = blocks.map(library.dbLite.row2parsed, library.dbLite.parseFields(private.blocksDataFields));
         blocks = private.readDbRows(blocks);
@@ -1512,6 +1513,47 @@ shared.getBlock = function (req, cb) {
         }
         cb(null, { block: block });
       });
+    }, cb);
+  });
+}
+
+shared.getFullBlock = function (req, cb) {
+  if (!private.loaded) {
+    return cb("Blockchain is loading")
+  }
+  var query = req.body;
+  library.scheme.validate(query, {
+    type: "object",
+    properties: {
+      id: {
+        type: 'string',
+        minLength: 1
+      },
+      height: {
+        type: 'integer',
+        minimum: 1
+      }
+    }
+  }, function (err) {
+    if (err) {
+      return cb(err[0].message);
+    }
+
+    library.dbSequence.add(function (cb) {
+      var condition = ''
+      if (query.id) {
+        condition = 'where b.id = "' + query.id + '"'
+      } else if (query.height) {
+        condition = 'where b.height = ' + query.height
+      } else {
+        return cb('Invalid params')
+      }
+      library.dbLite.query(FULL_BLOCK_QUERY + condition, {}, private.blocksDataFields, function (err, rows) {
+        if (err) return cb('Database error: ' + err)
+        if (!rows || !rows.length) return cb('Block not found')
+        var blocks = private.readDbRows(rows)
+        return cb(null, { block: blocks[0] })
+      })
     }, cb);
   });
 }
