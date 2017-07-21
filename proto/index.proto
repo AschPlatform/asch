@@ -90,11 +90,15 @@ message AssetDApp {
 
 message AssetInTransfer {
   required string dappId = 1;
+  optional string currency = 2;
+  optional string amount = 3;
 }
 
 message AssetOutTransfer {
   required string dappId = 1;
   required string transactionId = 2;
+  optional string currency = 3;
+  optional string amount = 4;
 }
 
 message AssetStorage {
