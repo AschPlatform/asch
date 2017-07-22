@@ -247,7 +247,7 @@ function Lock() {
 
   this.verify = function (trs, sender, cb) {
     if (trs.args.length > 1) return cb('Invalid args length')
-    if (trs.args[0].legth > 50) return cb('Invalid lock height')
+    if (trs.args[0].length > 50) return cb('Invalid lock height')
     var lockHeight = Number(trs.args[0])
 
     var lastBlock = modules.blocks.getLastBlock()
