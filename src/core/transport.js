@@ -398,6 +398,7 @@ private.attachApi = function () {
     }
     try {
       var transaction = library.base.transaction.objectNormalize(req.body.transaction);
+      transaction.asset = transaction.asset || {}
     } catch (e) {
       library.logger.error("transaction parse error", e.toString());
       library.logger.log('Received transaction ' + (transaction ? transaction.id : 'null') + ' is not valid, ban 60 min', peerStr);
