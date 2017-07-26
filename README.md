@@ -1,3 +1,11 @@
+[![Build Status](https://travis-ci.org/aschplatform/asch.png?branch=master)](https://travis-ci.org/aschplatform/asch)
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg?style=flat)](http://aschplatform.mit-license.org)
+[![Dependency Status](https://david-dm.org/aschplatform/asch.png?theme=shields.io)](https://david-dm.org/aschplatform/asch)
+[![devDependency Status](https://david-dm.org/aschplatform/asch/dev-status.png?theme=shields.io)](https://david-dm.org/aschplatform/asch#info=devDependencies)
+[![NpmDownload Status](http://img.shields.io/npm/dm/asch.svg)](https://www.npmjs.org/package/asch)
+[![NPM Version](https://img.shields.io/npm/v/asch.svg?style=flat)](https://www.npmjs.org/package/asch)
+- - -
+
 # Asch
 [![Build Status](https://travis-ci.org/AschPlatform/asch.svg?branch=master)](https://travis-ci.org/AschPlatform/asch)
 
