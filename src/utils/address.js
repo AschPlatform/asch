@@ -19,6 +19,19 @@ module.exports = {
     return true
   },
 
+  isBase58CheckAddress: function (address) {
+    if (typeof address !== 'string') {
+      return false
+    }
+    if (!base58check.decodeUnsafe(address.slice(1))) {
+      return false
+    }
+    if (['A'].indexOf(address[0]) == -1) {
+      return false
+    }
+    return true
+  },
+
   generateBase58CheckAddress: function (publicKey) {
     if (typeof publicKey === 'string') {
       publicKey = Buffer.from(publicKey, 'hex')

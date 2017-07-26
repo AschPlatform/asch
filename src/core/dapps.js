@@ -389,6 +389,10 @@ function InTransfer() {
       return setImmediate(cb, "Invalid recipient");
     }
 
+    if (!addressHelper.isBase58CheckAddress(sender.address)) {
+      return setImmediate(cb, "Old address not supported")
+    }
+
     var asset = trs.asset.inTransfer
 
     if (asset.currency !== 'XAS') {
