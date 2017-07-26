@@ -1,7 +1,26 @@
 language: node_js
-
-node_js:  
-     - 8.2.1  
+os:
+  - linux
+env:
+  - CXX=g++-4.8
+node_js:
+  - 6.3.1
+  - 7
+  - 8.2.1  
+notifications:
+  recipients:
+    - sqf1225@foxmail.com
+    - ghostsky2009@gmail.com
+    - i@yanyiwu.com
+  email:
+    on_success: change
+    on_failure: always
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-4.8
 before_script:
      - node app.js --base . --daemon
      - npm test
