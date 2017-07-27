@@ -16,6 +16,12 @@ More infomation please visit our [official website](https://www.asch.so)
 ## Installation
 
 ```
+sudo apt-get install make gcc g++ build-essential autoconf automake wget
+wget https://download.libsodium.org/libsodium/releases/LATEST.tar.gz
+tar zxf LATEST.tar.gz && cd libsodium-1.0.10
+./configure && make -j2 && make install
+ldconfig
+
 npm install
 ```
 
