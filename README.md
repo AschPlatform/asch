@@ -7,8 +7,8 @@ More infomation please visit our [official website](https://www.asch.so)
 
 ## System Dependency
 
-- nodejs v6.3.1+
-- npm 3.10.3+ (not cnpm)
+- nodejs v8.2.1+
+- npm 5.3.0+ (not cnpm)
 - node-gyp v3.6.2+ (suggested)
 - sqlite v3.8.2+
 - g++
@@ -17,6 +17,15 @@ More infomation please visit our [official website](https://www.asch.so)
 ## Installation
 
 ```
+git clone https://github.com/AschPlatform/asch
+cd asch
+mkdir tmp && cd tmp
+sudo apt-get install sqlite libssl-dev openssl make gcc g++ build-essential autoconf automake wget
+wget https://download.libsodium.org/libsodium/releases/LATEST.tar.gz
+tar zxf LATEST.tar.gz && cd libsodium-1.0.10
+./configure && make -j2 && make install
+ldconfig
+cd ..
 npm install
 ```
 
