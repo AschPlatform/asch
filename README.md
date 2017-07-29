@@ -101,7 +101,7 @@ Then you can open ```localhost:4096``` in you browser
 - [asch-cli](https://github.com/AschPlatform/asch-cli)
 - [asch-js](https://github.com/AschPlatform/asch-js)
 - [asch-sandbox](https://github.com/AschPlatform/asch-sandbox)
-- [asch-explorer] The [website](http://explorer.asch.pub/) of asch blockchain.
+- [asch-explorer] website: [aschd.org](http://aschd.org)
 
 ## License
 
