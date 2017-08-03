@@ -1,3 +1,8 @@
+[![Build Status](https://travis-ci.org/aschplatform/asch.png?branch=master)](https://travis-ci.org/aschplatform/asch)
+[![Author](https://img.shields.io/badge/author-@AschPlatform-blue.svg?style=flat)](http://github.com/AschPlatform) 
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg?style=flat)](http://aschplatform.mit-license.org)
+- - -
+
 # Asch
 
 Asch system is a decentralized application platform, which is designed to lower the threshold for developers, such as using JavaScript as develop language, supporting relational database to save transaction data, and making DAPP development be similar with traditional Web application. It is sure that these characteristics are very attractive to developers and SMEs. The ecosystem of the whole platform cannot be improved until developers make a huge progress on productivity. Also, Asch platform is designed to be open for various fields, not limited to some particular parts such as finance, file storage, or copyright proof. It provides underlying and abstract API which can be combined freely to create different types of applications. In consensus mechanism, Asch inherits and enhances DPOS algorithm, by which the possibility of forks and risk of duplicate payments would be significantly reduced. Furthermore, Asch sidechain mode not only can mitigate the pressure of blockchain expansion, but also make DAPP more flexible and personal. Asch system, as a proactive, low-cost and full stack solution, will surely be a next generation incubator of decentralized applications.
@@ -6,8 +11,8 @@ More infomation please visit our [official website](https://www.asch.so)
 
 ## System Dependency
 
-- nodejs v6.3.1+
-- npm 3.10.3+ (not cnpm)
+- nodejs v8.2.1+
+- npm 5.3.0+ (not cnpm)
 - node-gyp v3.6.2+ (suggested)
 - sqlite v3.8.2+
 - g++
@@ -18,14 +23,13 @@ More infomation please visit our [official website](https://www.asch.so)
 ```
 git clone https://github.com/AschPlatform/asch
 cd asch
-
 mkdir tmp && cd tmp
-sudo apt-get install make gcc g++ build-essential autoconf automake wget
+sudo apt-get install sqlite libssl-dev openssl make gcc g++ build-essential autoconf automake wget
 wget https://download.libsodium.org/libsodium/releases/LATEST.tar.gz
 tar zxf LATEST.tar.gz && cd libsodium-1.0.10
 ./configure && make -j2 && make install
 ldconfig
-
+cd ..
 npm install
 ```
 
@@ -63,6 +67,9 @@ node app.js --help
 ```
 git clone https://github.com/AschPlatform/asch-frontend
 cd asch-frontend
+npm install bower -g
+npm install browserify -g
+npm install gulp  -g
 npm install
 bower install
 npm run build
@@ -89,17 +96,18 @@ Then you can open ```localhost:4096``` in you browser
 
 ## Releated projects
 
-- [asch_docs](https://github.com/AschPlatform/asch-docs)
+- [asch-docs](https://github.com/AschPlatform/asch-docs)
 - [asch-frontend](https://github.com/AschPlatform/asch-frontend)
 - [asch-cli](https://github.com/AschPlatform/asch-cli)
 - [asch-js](https://github.com/AschPlatform/asch-js)
 - [asch-sandbox](https://github.com/AschPlatform/asch-sandbox)
+- [asch-explorer] website: [aschd.org](http://aschd.org)
 
 ## License
 
 The MIT License (MIT)
 
-Copyright (c) 2016 Asch</br>
+Copyright (c) 2016-2017 Asch</br>
 Copyright (c) 2015 Crypti
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -107,3 +115,5 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+[asch-explorer]:https://github.com/sportshark/asch-explorer
