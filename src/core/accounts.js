@@ -318,12 +318,30 @@ Accounts.prototype.generateAddressByPublicKey2 = function (publicKey) {
 }
 
 Accounts.prototype.getAccount = function (filter, fields, cb) {
+  library.logger.debug('Accounts.prototype.getAccount ',filter)
+  if (typeof fields === 'function') {
+    cb = fields
+  }
+  var publicKey = filter.publicKey
   if (filter.publicKey) {
     filter.address = self.generateAddressByPublicKey2(filter.publicKey);
     delete filter.publicKey;
   }
+  library.logger.debug('Accounts.prototype.getAccount=========', publicKey)
 
-  library.base.account.get(filter, fields, cb);
+  function done(err, account) {
+    library.logger.debug('Accounts.prototype.getAccount=========' + err, account)
+    if (!err && account && !account.publicKey) {
+      account.publicKey = publicKey
+    }
+    cb(err, account)
+  }
+
+  if (typeof fields === 'function') {
+    library.base.account.get(filter, done);
+  } else {
+    library.base.account.get(filter, fields, done);
+  }
 }
 
 Accounts.prototype.getAccounts = function (filter, fields, cb) {
@@ -331,6 +349,7 @@ Accounts.prototype.getAccounts = function (filter, fields, cb) {
 }
 
 Accounts.prototype.setAccountAndGet = function (data, cb) {
+  library.logger.debug('setAccountAndGet data is:',data)
   var address = data.address || null;
   if (address === null) {
     if (data.publicKey) {
@@ -340,6 +359,7 @@ Accounts.prototype.setAccountAndGet = function (data, cb) {
       }
       delete data.isGenesis;
     } else {
+      library.logger.debug('setAccountAndGet error and data is:',data)
       return cb("Missing address or public key");
     }
   }
