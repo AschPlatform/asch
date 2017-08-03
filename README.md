@@ -18,25 +18,49 @@ More infomation please visit our [official website](https://www.asch.so)
 - g++
 - libssl
 
-## Installation
+## Installation for ubuntu 14.04.x or higher.
 
 ```
-git clone https://github.com/AschPlatform/asch
-cd asch
-mkdir tmp && cd tmp
-sudo apt-get install sqlite libssl-dev openssl make gcc g++ build-essential autoconf automake wget
-wget https://download.libsodium.org/libsodium/releases/LATEST.tar.gz
-tar zxf LATEST.tar.gz && cd libsodium-1.0.10
-./configure && make -j2 && make install
-ldconfig
-cd ..
+# Install dependency package
+sudo apt-get install curl sqlite wget git libssl-dev openssl make gcc g++ autoconf automake -y
+# Install libsodium
+sudo apt-get install libtool-bin -y
+
+# Install nvm 
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+# This loads nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+# Install node and npm for current user.
+nvm install node8
+# check node version and it should be v8.x.x
+node --version
+
+# git clone sourece code
+git clone https://github.com/AschPlatform/asch && cd asch
+
+# Install node packages
 npm install
 ```
 
-## Run
+## Installation for windows docker.
+[Please install Docker for Windows firstly](https://store.docker.com/search?offering=community&type=edition)
+```
+# pull asch code docker image
+docker pull aschplatform/asch:v1.3.0
+# run docker and asch
+docker run -i -t --name asch1.3.0 -p 4096:4096 aschplatform/asch:v1.3.0 /bin/bash
+root@e149b6732a48:/# cd /data/asch && ./aschd start
+Asch server started as daemon ...
+```
+
+## Run 
 
 ```
-node app.js
+cd asch && node app.js
+or
+cd asch && ./aschd start
 ```
 
 ## Usage
@@ -65,13 +89,15 @@ node app.js --help
 ## Front end (wallet ui)
 
 ```
-git clone https://github.com/AschPlatform/asch-frontend
-cd asch-frontend
+git clone https://github.com/AschPlatform/asch-frontend && cd asch-frontend
+
 npm install bower -g
 npm install browserify -g
 npm install gulp  -g
+
 npm install
 bower install
+
 npm run build
 gulp build-test
 
