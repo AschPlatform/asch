@@ -37,6 +37,7 @@ Transaction.prototype.create = function (data) {
     throw Error("Can't find keypair");
   }
 
+  library.logger.debug('=============transaction.create', data.sender)
   var trs = {
     type: data.type,
     amount: 0,

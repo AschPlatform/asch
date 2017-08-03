@@ -582,6 +582,7 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
     return cb("Transaction " + transaction.id + " already exists, ignoring...");
   }
 
+  library.logger.debug('------------before setAccountAndGet', transaction)
   modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey }, function (err, sender) {
     function done(err) {
       if (err) {
@@ -1018,7 +1019,9 @@ shared.addTransactions = function (req, cb) {
             });
           });
         } else {
+          library.logger.debug('publicKey is: ',keypair.publicKey.toString('hex'))
           modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') }, function (err, account) {
+            library.logger.debug('after getAccount =============', account)
             if (err) {
               return cb(err.toString());
             }

@@ -578,6 +578,7 @@ Account.prototype.toDB = function (raw) {
 }
 
 Account.prototype.get = function (filter, fields, cb) {
+  library.logger.debug('enter Account.prototype.get....')
   if (typeof(fields) == 'function') {
     cb = fields;
     fields = this.fields.map(function (field) {
@@ -586,6 +587,7 @@ Account.prototype.get = function (filter, fields, cb) {
   }
 
   this.getAll(filter, fields, function (err, data) {
+    library.logger.debug('enter Account.prototype.get.... callback' + err, data)
     cb(err, data && data.length ? data[0] : null)
   })
 }
