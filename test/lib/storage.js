@@ -19,6 +19,7 @@ describe('Test storage', () => {
   it('Normal storage test', async function () {
     var account1 = node.genNormalAccount()
     await node.giveMoneyAndWaitAsync([account1.address])
+    // content must be hex format
     var res = await node.submitTransactionAsync(node.asch.storage.createStorage('1234abcd', account1.password))
     DEBUG('submit storage response', res.body)
   })

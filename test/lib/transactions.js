@@ -651,6 +651,7 @@ describe('PUT /signatures', function () {
                     node.expect(res.body).to.have.property('success').to.be.true;
                     node.expect(res.body).to.have.property('transaction').that.is.an('object');
                     if (res.body.success == true && res.body.transaction != null) {
+			// console.log(Account1)
                         node.expect(res.body.transaction).to.have.property('type').to.equal(node.TxTypes.SIGNATURE);
                         node.expect(res.body.transaction).to.have.property('senderPublicKey').to.equal(Account1.publicKey);
                         node.expect(res.body.transaction).to.have.property('senderId').to.equal(Account1.address);
