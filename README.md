@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/aschplatform/asch.png?branch=master)](https://travis-ci.org/aschplatform/asch)
+[![Build Status](https://travis-ci.org/AschPlatform/asch.svg?branch=master)](https://travis-ci.org/AschPlatform/asch)
 [![Author](https://img.shields.io/badge/author-@AschPlatform-blue.svg?style=flat)](http://github.com/AschPlatform) 
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg?style=flat)](http://aschplatform.mit-license.org)
 - - -
