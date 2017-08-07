@@ -19,7 +19,7 @@ describe("POST /peer/blocks", function () {
             .end(function (err, res) {
                 // console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.false;
-                node.expect(res.body.expected).to.equal(node.config.magic);
+                // node.expect(res.body.expected).to.equal(node.config.magic);
                 done();
             });
     });
@@ -31,6 +31,7 @@ describe("GET /peer/blocks", function () {
         node.peer.get("/blocks")
             .set("Accept", "application/json")
             .set("version",node.version)
+            .set("magic", node.config.magic)
             .set("port",node.config.port)
             .expect("Content-Type", /json/)
             .expect(200)

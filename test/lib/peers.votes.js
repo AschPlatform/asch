@@ -48,7 +48,8 @@ describe("POST /peer/transactions", function () {
                         node.expect(res.body).to.have.property("success").to.be.true;
                         node.expect(res.body).to.have.property("transactionId");
                         if (res.body.success == true && res.body.transactionId != null) {
-                            node.expect(res.body.transactionId).to.be.above(1);
+                            // node.expect(res.body.transactionId).to.be.above(1);
+                            node.expect(res.body.transactionId).to.be.a('string');
                             voterAccount.amount += node.RANDOM_COIN;
                         } else {
                             // console.log("Transaction failed or transactionId is null");
