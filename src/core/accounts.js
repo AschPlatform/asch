@@ -254,14 +254,15 @@ private.attachApi = function () {
 private.openAccount = function (secret, cb) {
   var hash = crypto.createHash('sha256').update(secret, 'utf8').digest();
   var keypair = ed.MakeKeypair(hash);
-  var address = self.generateAddressByPublicKey2(keypair.publicKey.toString('hex'));
+  publicKey = keypair.publicKey.toString('hex')
+  var address = self.generateAddressByPublicKey2(publicKey);
   self.getAccount({ address: address }, function (err, account) {
     if (err) return cb(err)
     var account = account || {
       address: address,
       unconfirmedBalance: 0,
       balance: 0,
-      // publicKey: account.publicKey,
+      publicKey: publicKey,
       unconfirmedSignature: '',
       secondSignature: '',
       secondPublicKey: '',
@@ -280,7 +281,7 @@ private.openAccount2 = function (publicKey, cb) {
       address: address,
       unconfirmedBalance: 0,
       balance: 0,
-      // publicKey: account.publicKey,
+      publicKey: publicKey,
       unconfirmedSignature: '',
       secondSignature: '',
       secondPublicKey: '',
@@ -323,14 +324,19 @@ Accounts.prototype.getAccount = function (filter, fields, cb) {
     cb = fields
   }
   var publicKey = filter.publicKey
+
+  if (filter.address && !addressHelper.isAddress(filter.address)) {
+      return cb('Invalid address getAccount');
+  }
+
   if (filter.publicKey) {
     filter.address = self.generateAddressByPublicKey2(filter.publicKey);
     delete filter.publicKey;
   }
-  library.logger.debug('Accounts.prototype.getAccount=========', publicKey)
+  library.logger.debug('Accounts.prototype.getAccount=========1', publicKey)
 
   function done(err, account) {
-    library.logger.debug('Accounts.prototype.getAccount=========' + err, account)
+    library.logger.debug('Accounts.prototype.getAccount=========2' + err, account)
     if (!err && account && !account.publicKey) {
       account.publicKey = publicKey
     }
@@ -462,7 +468,7 @@ shared.open2 = function (req, cb) {
           address: account.address,
           unconfirmedBalance: account.u_balance,
           balance: account.balance,
-          // publicKey: account.publicKey,
+          publicKey: account.publicKey,
           unconfirmedSignature: account.u_secondSignature,
           secondSignature: account.secondSignature,
           secondPublicKey: account.secondPublicKey,

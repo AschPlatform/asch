@@ -8,6 +8,7 @@ var DEBUG = require('debug')('accounts')
 var node = require("./../variables.js")
 
 // Account info for password "sebastian"
+// New account does not have publickey in db
 var Saccount = {
     "address": "A3Umvpy4vt8kcbZFUhViFr3RyhZYVLDxhi",
     "publicKey": "fbd20d4975e53916488791477dd38274c1b4ec23ad322a65adb171ec2ab6a0dc",
@@ -15,6 +16,9 @@ var Saccount = {
     "name": "sebastian",
     "balance": 0
 };
+
+var Gaccount = node.Gaccount
+Gaccount.balance=9990881532094328
 
 describe("POST /accounts/open", function () {
 
@@ -91,15 +95,15 @@ describe("GET /accounts/getBalance", function () {
 describe("GET /accounts/getPublicKey", function () {
 
     it("Using valid address. Should be ok", function (done) {
-        node.api.get("/accounts/getPublicKey?address=" + Saccount.address)
+        node.api.get("/accounts/getPublicKey?address=" + Gaccount.address)
             .set("Accept", "application/json")
             .expect("Content-Type", /json/)
             .expect(200)
             .end(function (err, res) {
-                // console.log(JSON.stringify(res.body));
+                console.log(JSON.stringify(res.body));
                 node.expect(res.body).to.have.property("success").to.be.true;
                 node.expect(res.body).to.have.property("publicKey");
-                node.expect(res.body.publicKey).to.equal(Saccount.publicKey);
+                node.expect(res.body.publicKey).to.equal(Gaccount.publicKey);
                 done();
             });
     });
@@ -212,11 +216,13 @@ describe("GET /accounts?address=", function () {
                 node.expect(res.body).to.have.property("success").to.be.true;
                 node.expect(res.body).to.have.property("account").that.is.an("object");
                 node.expect(res.body.account.address).to.equal(Saccount.address);
-                node.expect(res.body.account.publicKey).to.equal(Saccount.publicKey);
+                // node.expect(res.body.account.publicKey).to.equal(Saccount.publicKey);
                 node.expect(res.body.account.balance).to.equal(Saccount.balance);
                 done();
             });
     });
+// TODO new account's publickey not in db,so can not get its publick key until it transfers out xas.
+// anther situation is that old account may have publickey in db
 
     it("Using invalid address. Should fail", function (done) {
         node.api.get("/accounts?address=thisIsNOTAValidAschAddress")

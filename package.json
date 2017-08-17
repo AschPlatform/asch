@@ -52,6 +52,7 @@
     "gulp-replace": "^0.5.4",
     "gulp-shell": "^0.5.2",
     "mocha": "^2.2.5",
+    "mocha-babel": "^3.0.3",
     "moment": "^2.9.0",
     "should": "~4.6.0",
     "supertest": "^1.0.1",
