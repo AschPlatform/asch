@@ -33,6 +33,7 @@
     "lodash": "^3.9.3",
     "mathjs": "3.8.0",
     "method-override": "2.3.6",
+    "node-gyp": "^3.6.2",
     "protocol-buffers": "3.1.6",
     "randomstring": "1.1.5",
     "request": "2.74.0",

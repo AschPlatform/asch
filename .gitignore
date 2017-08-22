@@ -16,3 +16,6 @@ tmp
 build
 *.pid
 public/dist
+package-lock.json
+.vs/
+.vscode

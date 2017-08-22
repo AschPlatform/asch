@@ -366,7 +366,7 @@ Accounts.prototype.setAccountAndGet = function (data, cb) {
       delete data.isGenesis;
     } else {
       library.logger.debug('setAccountAndGet error and data is:',data)
-      return cb("Missing address or public key");
+      return cb("Missing address or public key in setAccountAndGet");
     }
   }
   if (!address) {
@@ -386,7 +386,7 @@ Accounts.prototype.mergeAccountAndGet = function (data, cb) {
     if (data.publicKey) {
       address = self.generateAddressByPublicKey2(data.publicKey);
     } else {
-      return cb("Missing address or public key");
+      return cb("Missing address or public key in mergeAccountAndGet");
     }
   }
   if (!address) {

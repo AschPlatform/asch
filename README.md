@@ -22,23 +22,26 @@ More infomation please visit our [official website](https://www.asch.so)
 
 ```
 # Install dependency package
-sudo apt-get install curl sqlite wget git libssl-dev openssl make gcc g++ autoconf automake -y
-# Install libsodium
-sudo apt-get install libtool-bin -y
+sudo apt-get install curl sqlite wget git libssl-dev openssl make gcc g++ autoconf automake python build-essential -y
+# libsodium for ubuntu 14.04
+sudo apt-get install libtool -y
+# libsodium for ubuntu 16.04
+sudo apt-get install libtool libtool-bin -y
 
 # Install nvm 
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
 # This loads nvm
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # Install node and npm for current user.
-nvm install node8
+nvm install node 8
 # check node version and it should be v8.x.x
 node --version
 
 # git clone sourece code
-git clone https://github.com/AschPlatform/asch && cd asch
+git clone https://github.com/AschPlatform/asch && cd asch && chmod u+x aschd
 
 # Install node packages
 npm install
