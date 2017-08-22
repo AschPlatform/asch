@@ -30,7 +30,7 @@ private.attachApi = function () {
   var router = new Router();
 
   router.use(function (req, res, next) {
-    if (modules && private.loaded) return next();
+    if (modules && private.loaded && !modules.loader.syncing()) return next();
     res.status(500).send({ success: false, error: "Blockchain is loading" });
   });
 

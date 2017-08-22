@@ -366,11 +366,6 @@ function EIFY(fn, receiver) {
   }
 }
 
-(async function () {
-  var res = await PIFY(openAccount)({ secret: Gaccount.password })
-  expect(res.body.success).to.be.true
-})()
-
 // Exports variables and functions for access from other files
 module.exports = {
   api: api,
