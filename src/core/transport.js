@@ -7,6 +7,7 @@ var crypto = require('crypto');
 var bignum = require('bignumber');
 var Router = require('../utils/router.js');
 var sandboxHelper = require('../utils/sandbox.js');
+var LimitCache = require('../utils/limit-cache.js')
 
 // Private fields
 var modules, library, self, private = {}, shared = {};
@@ -14,6 +15,7 @@ var modules, library, self, private = {}, shared = {};
 private.headers = {};
 private.loaded = false;
 private.messages = {};
+private.invalidTrsCache = new LimitCache()
 
 // Constructor
 function Transport(cb, scope) {
@@ -410,6 +412,10 @@ private.attachApi = function () {
       return res.status(200).json({ success: false, error: "Invalid transaction body" });
     }
 
+    if (private.invalidTrsCache.has(transaction.id)) {
+      return res.status(200).json({ success: false, error: "Already processed transaction" });
+    }
+
     library.balancesSequence.add(function (cb) {
       if (modules.transactions.hasUnconfirmedTransaction(transaction)) {
         return cb('Already exists');
@@ -419,6 +425,7 @@ private.attachApi = function () {
     }, function (err, transactions) {
       if (err) {
         library.logger.warn('Receive invalid transaction', err);
+        private.invalidTrsCache.set(transaction.id, true)
         res.status(200).json({ success: false, error: err });
       } else {
         res.status(200).json({ success: true, transactionId: transactions[0].id });
