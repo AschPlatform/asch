@@ -391,6 +391,12 @@ private.attachApi = function () {
   });
 
   router.post("/transactions", function (req, res) {
+    var lastBlock = modules.blocks.getLastBlock();
+    var lastSlot = slots.getSlotNumber(lastBlock.timestamp);
+    if (slots.getNextSlot() - lastSlot >= 3) {
+      return res.status(200).json({ success: false, error: "Blockchain not ready" });
+    }
+
     res.set(private.headers);
 
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -780,7 +786,7 @@ Transport.prototype.onDappReady = function (dappId, broadcast) {
     var data = {
       dappId: dappId
     }
-    self.broadcast({}, { api: '/dappReady', data: data, method: "POST"})
+    self.broadcast({}, { api: '/dappReady', data: data, method: "POST" })
   }
 }
 
