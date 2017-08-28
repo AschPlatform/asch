@@ -280,6 +280,12 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) { //inherit
     return setImmediate(cb, "Invalid sender");
   }
 
+  var lastBlock = modules.blocks.getLastBlock()
+  var isLockedType = [0, 6, 7, 8, 9, 10, 13, 14].indexOf(trs.type)
+  if (sender.lockHeight && lastBlock && lastBlock.height + 1 <= sender.lockHeight && isLockedType) {
+    return cb('Account is locked')
+  }
+
   if (trs.requesterPublicKey) {
     if (sender.multisignatures.indexOf(trs.requesterPublicKey) < 0) {
       return setImmediate(cb, "Failed to verify signature");
@@ -684,7 +690,7 @@ Transaction.prototype.objectNormalize = function (trs) {
   });
 
   if (!report) {
-    library.logger.error('Failed to normalize transaction body: ' +this.scope.scheme.getLastError().details[0].message, trs)
+    library.logger.error('Failed to normalize transaction body: ' + this.scope.scheme.getLastError().details[0].message, trs)
     throw Error(this.scope.scheme.getLastError());
   }
 

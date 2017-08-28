@@ -42,11 +42,6 @@ function Transfer() {
       return cb("Invalid recipientId, cannot be your self");
     }
 
-    var lastBlock = modules.blocks.getLastBlock()
-    if (sender.lockHeight && lastBlock && lastBlock.height + 1 <= sender.lockHeight) {
-      return cb('Account is locked')
-    }
-
     cb(null, trs);
   }
 
