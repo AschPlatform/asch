@@ -6,8 +6,9 @@ var extend = require('extend');
 var crypto = require('crypto');
 var bignum = require('bignumber');
 var Router = require('../utils/router.js');
+var slots = require('../utils/slots.js')
 var sandboxHelper = require('../utils/sandbox.js');
-var LimitCache = require('../utils/limit-cache.js')
+var LimitCache = require('../utils/limit-cache.js');
 
 // Private fields
 var modules, library, self, private = {}, shared = {};
@@ -408,7 +409,11 @@ private.attachApi = function () {
       var transaction = library.base.transaction.objectNormalize(req.body.transaction);
       transaction.asset = transaction.asset || {}
     } catch (e) {
-      library.logger.error("transaction parse error", e.toString());
+      library.logger.error("transaction parse error", {
+        raw: req.body,
+        trs: transaction,
+        error: e.toString()
+      });
       library.logger.log('Received transaction ' + (transaction ? transaction.id : 'null') + ' is not valid, ban 60 min', peerStr);
 
       if (peerIp && req.headers['port'] > 0 && req.headers['port' < 65536]) {

@@ -319,7 +319,7 @@ Accounts.prototype.generateAddressByPublicKey2 = function (publicKey) {
 }
 
 Accounts.prototype.getAccount = function (filter, fields, cb) {
-  library.logger.debug('Accounts.prototype.getAccount ',filter)
+  library.logger.trace('Accounts.prototype.getAccount ',filter)
   if (typeof fields === 'function') {
     cb = fields
   }
@@ -333,10 +333,10 @@ Accounts.prototype.getAccount = function (filter, fields, cb) {
     filter.address = self.generateAddressByPublicKey2(filter.publicKey);
     delete filter.publicKey;
   }
-  library.logger.debug('Accounts.prototype.getAccount=========1', publicKey)
+  library.logger.trace('Accounts.prototype.getAccount=========1', publicKey)
 
   function done(err, account) {
-    library.logger.debug('Accounts.prototype.getAccount=========2' + err, account)
+    library.logger.trace('Accounts.prototype.getAccount=========2' + err, account)
     if (!err && account && !account.publicKey) {
       account.publicKey = publicKey
     }

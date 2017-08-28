@@ -86,6 +86,7 @@ message AssetDApp {
   optional string tags = 6;
   optional string icon = 7;
   repeated string delegates = 8;
+  required int32 unlockDelegates = 9;
 }
 
 message AssetInTransfer {

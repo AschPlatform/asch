@@ -2,6 +2,7 @@ const DEFAULT_LIMIT = 10000
 
 class LimitCache  {
   constructor(options) {
+    if (!options) options = {}
     this.limit = options.limit || DEFAULT_LIMIT
     this.index = []
     this.cache = new Map
