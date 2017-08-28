@@ -35,6 +35,8 @@ private.routes = {};
 private.unconfirmedOutTansfers = {};
 private.defaultRouteId = null;
 
+const WITNESS_CLUB_DAPP_NAME = 'asch-witness-club'
+
 function OutTransfer() {
   this.create = function (data, trs) {
     trs.recipientId = data.recipientId;
@@ -789,7 +791,7 @@ function DApp() {
   }
 
   this.apply = function (trs, block, sender, cb) {
-    if (trs.asset.dapp.name === 'asch-witness-club') {
+    if (trs.asset.dapp.name === WITNESS_CLUB_DAPP_NAME) {
       global.state.clubInfo = trs.asset.dapp
       global.state.clubInfo.transactionId = trs.id
     }
@@ -797,7 +799,7 @@ function DApp() {
   }
 
   this.undo = function (trs, block, sender, cb) {
-    if (trs.asset.dapp.name === 'asch-witness-club') {
+    if (trs.asset.dapp.name === WITNESS_CLUB_DAPP_NAME) {
       global.state.clubInfo = null
     }
     setImmediate(cb);
@@ -2421,9 +2423,9 @@ DApps.prototype.onBlockchainReady = function () {
         next();
       });
     }, function () {
-      library.model.getDAppByName('asch-witness-club', function (err, clubInfo) {
+      library.model.getDAppByName(WITNESS_CLUB_DAPP_NAME, function (err, clubInfo) {
         if (err) {
-          library.logger.error('Failed to query asch-witness-club', err)
+          library.logger.error('Failed to query asch witness club', err)
         } else if (!clubInfo) {
           library.logger.warn('Asch witness club dapp is not found')
         } else {
