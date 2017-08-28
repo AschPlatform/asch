@@ -409,8 +409,8 @@ class Model {
         fields: ['balance', 'currency']
       })
       var fieldConv = {
-        currency: String,
-        balance: String
+        balance: String,
+        currency: String
       }
       this.dbLite.query(sql.query, sql.values, fieldConv, function (err, rows) {
         if (err) return cb('Database error: ' + err)
