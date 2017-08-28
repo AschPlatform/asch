@@ -162,6 +162,7 @@ function main() {
   }
 
   global.featureSwitch = {}
+  global.state = {}
 
   init(options, function (err, scope) {
     if (err) {

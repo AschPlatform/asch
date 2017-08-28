@@ -789,10 +789,16 @@ function DApp() {
   }
 
   this.apply = function (trs, block, sender, cb) {
+    if (trs.asset.dapp.name === 'asch-witness-club') {
+      global.state.clubInfo = trs.asset.dapp
+    }
     setImmediate(cb);
   }
 
   this.undo = function (trs, block, sender, cb) {
+    if (trs.asset.dapp.name === 'asch-witness-club') {
+      global.state.clubInfo = null
+    }
     setImmediate(cb);
   }
 
@@ -1577,7 +1583,8 @@ private.attachApi = function () {
 
   router.map(private, {
     "put /transaction": "addTransactions",
-    "get /balances/:dappId/:currency": "getDAppBalance"
+    "get /balances/:dappId/:currency": "getDAppBalance",
+    "get /balances/:dappId": "getDAppBalances"
   });
 
   library.network.app.use('/api/dapps', router);
@@ -1605,6 +1612,19 @@ private.getDAppBalance = function (req, cb) {
   library.model.getDAppBalance(req.params.dappId, req.params.currency, function (err, balance) {
     if (err) return cb('Failed to get balance: ' + err)
     cb(null, { balance: balance })
+  })
+}
+
+private.getDAppBalances = function (req, cb) {
+  if (!req.params) return cb('Invalid parameters')
+  if (!req.params.dappId || req.params.dappId.length > 64) return cb('Invalid dapp id')
+  let filter = {
+    offset: Number(req.offset) || 0,
+    limit: Number(req.limit) || 100
+  }
+  library.model.getDAppBalances(req.params.dappId, filter, function (err, balances) {
+    if (err) return cb('Failed to get dapp balances: ' + err)
+    cb(null, { balances: balances })
   })
 }
 
@@ -2399,6 +2419,16 @@ DApps.prototype.onBlockchainReady = function () {
         }
         next();
       });
+    }, function () {
+      library.model.getDAppByName('asch-witness-club', function (err, clubInfo) {
+        if (err) {
+          library.logger.error('Failed to query asch-witness-club', err)
+        } else if (!clubInfo) {
+          library.logger.warn('Asch witness club dapp is not found')
+        } else {
+          global.state.clubInfo = clubInfo
+        }
+      })
     });
   });
 }

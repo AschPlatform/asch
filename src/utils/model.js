@@ -395,6 +395,30 @@ class Model {
     })
   }
 
+  getDAppBalances(dappId, filter, cb) {
+    this.getAccountBalances(dappId, filter, function (err, rows) {
+      if (err) return cb('Database error: ' + err)
+      var assetBalances = rows || []
+      var sql = jsonSql.build({
+        type: 'select',
+        table: 'mem_asset_balances',
+        condition: {
+          address: dappId,
+          currency: 'XAS'
+        },
+        fields: ['balance', 'currency']
+      })
+      var fieldConv = {
+        currency: String,
+        balance: String
+      }
+      this.dbLite.query(sql.query, sql.values, fieldConv, function (err, rows) {
+        if (err) return cb('Database error: ' + err)
+        return cb(null, assetBalances.concat(rows || []))
+      })
+    }.bind(this))
+  }
+
   checkAcl(table, currency, senderId, recipientId, cb) {
     var sqls = []
     if (!!senderId) sqls.push('select address from $table where address=$senderId and currency=$currency')
@@ -478,6 +502,15 @@ class Model {
     this.getDApps({ transactionId: { $in: ids } }, function (err, dapps) {
       if (err) return cb(err)
       return cb(null, dapps)
+    })
+  }
+
+  getDAppByName(name, cb) {
+    this.getDApps({ name: name }, function (err, dapps) {
+      if (err) return cb(err)
+      let dapp = null
+      if (dapps && dapps.length) dapp = dapps[0]
+      return cb(null, dapp)
     })
   }
 }

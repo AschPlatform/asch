@@ -15,6 +15,8 @@ private.unFeesByRound = {};
 private.unRewardsByRound = {};
 private.unDelegatesByRound = {};
 
+const CLUB_BONUS_RATIO = 0.2
+
 // Constructor
 function Round(cb, scope) {
   library = scope;
@@ -24,7 +26,7 @@ function Round(cb, scope) {
 }
 
 // Round changes
-function RoundChanges (round, back) {
+function RoundChanges(round, back) {
   if (!back) {
     var roundFees = parseInt(private.feesByRound[round]) || 0;
     var roundRewards = (private.rewardsByRound[round] || []);
@@ -34,16 +36,28 @@ function RoundChanges (round, back) {
   }
 
   this.at = function (index) {
-    var fees = Math.floor(roundFees / slots.delegates),
-        feesRemaining = roundFees - (fees * slots.delegates),
-        rewards = parseInt(roundRewards[index]) || 0;
+    var ratio = global.featureSwitch.enableClubBonus ? (1 - CLUB_BONUS_RATIO) : 1
+    var totalDistributeFees = Math.floor(roundFees * ratio)
+    var fees = Math.floor(totalDistributeFees / slots.delegates)
+    var feesRemaining = totalDistributeFees - (fees * slots.delegates)
+    var rewards = Math.floor(parseInt(roundRewards[index]) * ratio) || 0
 
     return {
-      fees : fees,
-      feesRemaining : feesRemaining,
-      rewards : rewards,
-      balance : fees + rewards
+      fees: fees,
+      feesRemaining: feesRemaining,
+      rewards: rewards,
+      balance: fees + rewards
     };
+  }
+
+  this.getClubBonus = function () {
+    var fees = roundFees - Math.floor(roundFees * (1 - CLUB_BONUS_RATIO))
+    var rewards = 0
+    for (let i = 0; i < roundRewards.length; ++i) {
+      let reward = parseInt(roundRewards[i])
+      rewards += (reward - Math.floor(reward * (1 - CLUB_BONUS_RATIO)))
+    }
+    return fees + rewards
   }
 }
 
@@ -60,13 +74,13 @@ Round.prototype.getVotes = function (round, cb) {
   library.dbLite.query("select delegate, amount from ( " +
     "select m.delegate, sum(m.amount) amount, m.round from mem_round m " +
     "group by m.delegate, m.round " +
-    ") where round = $round", {round: round}, {delegate: String, amount: Number}, function (err, rows) {
-    cb(err, rows)
-  });
+    ") where round = $round", { round: round }, { delegate: String, amount: Number }, function (err, rows) {
+      cb(err, rows)
+    });
 }
 
 Round.prototype.flush = function (round, cb) {
-  library.dbLite.query("delete from mem_round where round = $round", {round: round}, cb);
+  library.dbLite.query("delete from mem_round where round = $round", { round: round }, cb);
 }
 
 Round.prototype.directionSwap = function (direction, lastBlock, cb) {
@@ -111,10 +125,10 @@ Round.prototype.backwardTick = function (block, previousBlock, cb) {
     private.unDelegatesByRound[round] = private.unDelegatesByRound[round] || [];
     private.unDelegatesByRound[round].push(block.generatorPublicKey);
 
-    if (prevRound === round  && previousBlock.height !== 1) {
+    if (prevRound === round && previousBlock.height !== 1) {
       return done();
     }
-    
+
     if (private.unDelegatesByRound[round].length !== slots.delegates && previousBlock.height !== 1) {
       return done();
     }
@@ -176,7 +190,7 @@ Round.prototype.backwardTick = function (block, previousBlock, cb) {
           var changeBalance = changes.balance;
           var changeFees = changes.fees;
           var changeRewards = changes.rewards;
-          
+
           if (index === 0) {
             changeBalance += changes.feesRemaining;
             changeFees += changes.feesRemaining;
@@ -192,6 +206,18 @@ Round.prototype.backwardTick = function (block, previousBlock, cb) {
             rewards: -changeRewards
           }, next);
         }, cb);
+      },
+      function (cb) {
+        // distribute club bonus
+        if (!global.featureSwitch.enableClubBonus) {
+          return cb()
+        }
+        var bonus = '-' + new RoundChanges(round).getClubBonus()
+        var dappId = global.state.clubInfo.transactionId
+        const BONUS_CURRENCY = 'XAS'
+        library.logger.info('Asch witness club get new bonus: ' + bonus)
+        library.balanceCache.addAssetBalance(dappId, BONUS_CURRENCY, bonus)
+        library.model.updateAssetBalance(BONUS_CURRENCY, bonus, dappId, cb)
       },
       function (cb) {
         self.getVotes(round, function (err, votes) {
@@ -230,7 +256,9 @@ Round.prototype.tick = function (block, cb) {
     if (err) {
       library.logger.error("Round tick failed: " + err);
     } else {
-      library.logger.debug("Round tick completed");
+      library.logger.debug("Round tick completed", {
+        block: block
+      });
     }
     cb && setImmediate(cb, err);
   }
@@ -260,11 +288,11 @@ Round.prototype.tick = function (block, cb) {
     if (round === nextRound && block.height !== 1) {
       return done();
     }
-    
+
     if (private.delegatesByRound[round].length !== slots.delegates && block.height !== 1 && block.height !== 101) {
       return done();
     }
-    
+
     var outsiders = [];
 
     async.series([
@@ -341,6 +369,18 @@ Round.prototype.tick = function (block, cb) {
         }, cb);
       },
       function (cb) {
+        // distribute club bonus
+        if (!global.featureSwitch.enableClubBonus) {
+          return cb()
+        }
+        var bonus = new RoundChanges(round).getClubBonus()
+        var dappId = global.state.clubInfo.transactionId
+        const BONUS_CURRENCY = 'XAS'
+        library.logger.info('Asch witness club get new bonus: ' + bonus)
+        library.balanceCache.addAssetBalance(dappId, BONUS_CURRENCY, bonus)
+        library.model.updateAssetBalance(BONUS_CURRENCY, bonus, dappId, cb)
+      },
+      function (cb) {
         self.getVotes(round, function (err, votes) {
           if (err) {
             return cb(err);
@@ -402,7 +442,7 @@ Round.prototype.onBlockchainReady = function () {
 }
 
 Round.prototype.onFinishRound = function (round) {
-  library.network.io.sockets.emit('rounds/change', {number: round});
+  library.network.io.sockets.emit('rounds/change', { number: round });
 }
 
 Round.prototype.cleanup = function (cb) {
