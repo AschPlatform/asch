@@ -791,6 +791,7 @@ function DApp() {
   this.apply = function (trs, block, sender, cb) {
     if (trs.asset.dapp.name === 'asch-witness-club') {
       global.state.clubInfo = trs.asset.dapp
+      global.state.clubInfo.transactionId = trs.id
     }
     setImmediate(cb);
   }
