@@ -539,7 +539,16 @@ Transaction.prototype.applyUnconfirmed = function (trs, sender, requester, cb) {
   library.balanceCache.addNativeBalance(sender.address, -amount)
   this.scope.account.merge(sender.address, { u_balance: -amount }, function (err, sender) {
     if (err) return cb(err);
-    private.types[trs.type].applyUnconfirmed.call(this, trs, sender, cb);
+    private.types[trs.type].applyUnconfirmed.call(this, trs, sender, function (err) {
+      if (err) {
+        library.balanceCache.addNativeBalance(sender.address, amount)
+        this.scope.account.merge(sender.address, { u_balance: amount }, function (err2) {
+          cb(err2 || err)
+        })
+      } else {
+        cb(err)
+      }
+    }.bind(this));
   }.bind(this));
 }
 
