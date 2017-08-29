@@ -280,10 +280,12 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) { //inherit
     return setImmediate(cb, "Invalid sender");
   }
 
-  var lastBlock = modules.blocks.getLastBlock()
-  var isLockedType = [0, 6, 7, 8, 9, 10, 13, 14].indexOf(trs.type)
-  if (sender.lockHeight && lastBlock && lastBlock.height + 1 <= sender.lockHeight && isLockedType) {
-    return cb('Account is locked')
+  if (global.featureSwitch.enableMoreLockTypes) {
+    var lastBlock = modules.blocks.getLastBlock()
+    var isLockedType = ([0, 6, 7, 8, 9, 10, 13, 14].indexOf(trs.type) !== -1)
+    if (sender.lockHeight && lastBlock && lastBlock.height + 1 <= sender.lockHeight && isLockedType) {
+      return cb('Account is locked')
+    }
   }
 
   if (trs.requesterPublicKey) {

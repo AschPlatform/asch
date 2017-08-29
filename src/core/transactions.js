@@ -42,6 +42,13 @@ function Transfer() {
       return cb("Invalid recipientId, cannot be your self");
     }
 
+    if (!global.featureSwitch.enableMoreLockTypes) {
+      var lastBlock = modules.blocks.getLastBlock()
+      if (sender.lockHeight && lastBlock && lastBlock.height + 1 <= sender.lockHeight) {
+        return cb('Account is locked')
+      }
+    }
+
     cb(null, trs);
   }
 
@@ -1014,7 +1021,7 @@ shared.addTransactions = function (req, cb) {
             });
           });
         } else {
-          library.logger.debug('publicKey is: ',keypair.publicKey.toString('hex'))
+          library.logger.debug('publicKey is: ', keypair.publicKey.toString('hex'))
           modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') }, function (err, account) {
             library.logger.debug('after getAccount =============', account)
             if (err) {

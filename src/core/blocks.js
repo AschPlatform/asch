@@ -709,10 +709,12 @@ Blocks.prototype.setLastBlock = function (block) {
     global.featureSwitch.enableLongId = private.lastBlock.height >= 1700000
     global.featureSwitch.enable1_3_0 = private.lastBlock.height >= 2920000
     global.featureSwitch.enableClubBonus = private.lastBlock.height >= 3280000
+    global.featureSwitch.enableMoreLockTypes = global.featureSwitch.enableClubBonus
   } else {
     global.featureSwitch.enableLongId = true
     global.featureSwitch.enable1_3_0 = true
     global.featureSwitch.enableClubBonus = (!!global.state.clubInfo)
+    global.featureSwitch.enableMoreLockTypes = true
   }
   global.featureSwitch.fixVoteNewAddressIssue = true
   if (global.Config.netVersion === 'mainnet' && private.lastBlock.height < 1854000) {
