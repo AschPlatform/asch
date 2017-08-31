@@ -69,11 +69,11 @@ module.exports = function (config) {
       data && (log["data"] = data);
 
       if (config.levels[config.errorLevel] <= config.levels[log.level]) {
-        log_file.write(JSON.stringify(log) + '\n');
+        log_file.write(JSON.stringify(log).replace(/\\n/g, '\n') + '\n');
       }
       if (config.echo && config.levels[config.echo] <= config.levels[log.level]) {
         try {
-          console.log(log.level.bgYellow.black, log.timestamp.grey, __file + ':' + __line, log.message, log.data ? log.data : '');
+          console.log(log.level.bgYellow.black, log.timestamp.grey, __file + ':' + __line, log.message, log.data ? JSON.stringify(log.data).replace(/\\n/g, '\n') : '');
         }catch (e){
           console.log(e)
         }
