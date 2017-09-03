@@ -35,7 +35,7 @@ private.routes = {};
 private.unconfirmedOutTansfers = {};
 private.defaultRouteId = null;
 
-const WITNESS_CLUB_DAPP_NAME = 'asch-witness-club'
+const WITNESS_CLUB_DAPP_NAME = 'asch-community'
 
 function OutTransfer() {
   this.create = function (data, trs) {
