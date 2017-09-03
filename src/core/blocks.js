@@ -708,7 +708,7 @@ Blocks.prototype.setLastBlock = function (block) {
   if (global.Config.netVersion === 'mainnet') {
     global.featureSwitch.enableLongId = private.lastBlock.height >= 1700000
     global.featureSwitch.enable1_3_0 = private.lastBlock.height >= 2920000
-    global.featureSwitch.enableClubBonus = private.lastBlock.height >= 3280000
+    global.featureSwitch.enableClubBonus = private.lastBlock.height >= 3320000
     global.featureSwitch.enableMoreLockTypes = global.featureSwitch.enableClubBonus
   } else {
     global.featureSwitch.enableLongId = true
