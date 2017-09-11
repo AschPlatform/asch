@@ -403,6 +403,19 @@ Round.prototype.tick = function (block, cb) {
             });
           })
         });
+      },
+      function (cb) {
+        // Fix NaN asset balance issue caused by flowed amount validate function
+        // [HARDFORK] Need to be reviewed by asch community
+        if (round === 33348) {
+          library.balanceCache.setAssetBalance('ABrWsCGv25nahd4qqZ7bofj3MuSfpSX1Rg', 'ABSORB.YLB', '32064016000000')
+          library.balanceCache.setAssetBalance('A5Hyw75AHCthHnevjpyP9J4146uXvHTX4P', 'ABSORB.YLB', '15932769000000')
+          var sql = 'update mem_asset_balances set balance = "32064016000000" where currency="ABSORB.YLB" and address="ABrWsCGv25nahd4qqZ7bofj3MuSfpSX1Rg";' +
+                    'update mem_asset_balances set balance = "15932769000000" where currency="ABSORB.YLB" and address="A5Hyw75AHCthHnevjpyP9J4146uXvHTX4P";'
+          library.dbLite.query(sql, cb)
+        } else {
+          cb()
+        }
       }
     ], function (err) {
       delete private.feesByRound[round];
