@@ -93,6 +93,7 @@ private.findUpdate = function (lastBlock, peer, cb) {
     }
 
     var unconfirmedTrs = modules.transactions.getUnconfirmedTransactionList(true);
+    library.logger.info('Undo unconfirmed transactions', unconfirmedTrs)
     modules.transactions.undoUnconfirmedList(function (err) {
       if (err) {
         library.logger.error('Failed to undo uncomfirmed transactions', err);

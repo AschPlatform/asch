@@ -379,6 +379,7 @@ private.popLastBlock = function (oldLastBlock, callback) {
         });
       }
     }
+    library.logger.info('begin to pop block ' + oldLastBlock.height + ' ' + oldLastBlock.id);
 
     library.dbLite.query('SAVEPOINT poplastblock');
     self.loadBlocksPart({ id: oldLastBlock.previousBlock }, function (err, previousBlock) {
@@ -386,14 +387,15 @@ private.popLastBlock = function (oldLastBlock, callback) {
         return done(err || 'previousBlock is null');
       }
       previousBlock = previousBlock[0];
-
-      async.eachSeries(oldLastBlock.transactions.reverse(), function (transaction, nextTr) {
+      var transactions = library.base.block.sortTransactions(oldLastBlock);
+      async.eachSeries(transactions.reverse(), function (transaction, nextTr) {
         async.series([
           function (next) {
             modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, function (err, sender) {
               if (err) {
                 return next(err);
               }
+              library.logger.info('undo transacton', JSON.stringify(transaction));
               modules.transactions.undo(transaction, oldLastBlock, sender, next);
             });
           }, function (next) {
