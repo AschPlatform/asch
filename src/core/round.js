@@ -84,21 +84,30 @@ Round.prototype.flush = function (round, cb) {
 }
 
 Round.prototype.directionSwap = function (direction, lastBlock, cb) {
-  if (direction == 'backward') {
-    private.feesByRound = {};
-    private.rewardsByRound = {};
-    private.delegatesByRound = {};
-    self.flush(self.calc(lastBlock.height), cb);
-  } else {
-    private.unFeesByRound = {};
-    private.unRewardsByRound = {};
-    private.unDelegatesByRound = {};
-    self.flush(self.calc(lastBlock.height), cb);
-  }
+  cb()
+  // if (direction == 'backward') {
+  //   private.feesByRound = {};
+  //   private.rewardsByRound = {};
+  //   private.delegatesByRound = {};
+  //   self.flush(self.calc(lastBlock.height), cb);
+  // } else {
+  //   private.unFeesByRound = {};
+  //   private.unRewardsByRound = {};
+  //   private.unDelegatesByRound = {};
+  //   self.flush(self.calc(lastBlock.height), cb);
+  // }
 }
 
 Round.prototype.backwardTick = function (block, previousBlock, cb) {
   function done(err) {
+    if (err) {
+      library.logger.error("Round backward tick failed: " + err);
+    } else {
+      library.logger.debug("Round backward tick completed", {
+        block: block,
+        previousBlock: previousBlock
+      });
+    }
     cb && cb(err);
   }
 
@@ -116,14 +125,23 @@ Round.prototype.backwardTick = function (block, previousBlock, cb) {
 
     var prevRound = self.calc(previousBlock.height);
 
-    private.unFeesByRound[round] = (private.unFeesByRound[round] || 0);
-    private.unFeesByRound[round] += block.totalFee;
+    // private.unFeesByRound[round] = (private.unFeesByRound[round] || 0);
+    // private.unFeesByRound[round] += block.totalFee;
 
-    private.unRewardsByRound[round] = (private.unRewardsByRound[round] || []);
-    private.unRewardsByRound[round].push(block.reward);
+    // private.unRewardsByRound[round] = (private.unRewardsByRound[round] || []);
+    // private.unRewardsByRound[round].push(block.reward);
 
-    private.unDelegatesByRound[round] = private.unDelegatesByRound[round] || [];
-    private.unDelegatesByRound[round].push(block.generatorPublicKey);
+    // private.unDelegatesByRound[round] = private.unDelegatesByRound[round] || [];
+    // private.unDelegatesByRound[round].push(block.generatorPublicKey);
+
+    private.feesByRound[round] = (private.feesByRound[round] || 0);
+    private.feesByRound[round] -= block.totalFee;
+
+    private.rewardsByRound[round] = (private.rewardsByRound[round] || []);
+    private.rewardsByRound[round].pop()
+
+    private.delegatesByRound[round] = private.delegatesByRound[round] || [];
+    private.delegatesByRound[round].pop()
 
     if (prevRound === round && previousBlock.height !== 1) {
       return done();
@@ -132,6 +150,14 @@ Round.prototype.backwardTick = function (block, previousBlock, cb) {
     if (private.unDelegatesByRound[round].length !== slots.delegates && previousBlock.height !== 1) {
       return done();
     }
+    library.logger.warn('Unexpected roll back cross round', {
+      round: round,
+      prevRound: prevRound,
+      block: block,
+      previousBlock: previousBlock
+    });
+    process.exit(1);
+    // FIXME process the cross round rollback
     var outsiders = [];
     async.series([
       function (cb) {
