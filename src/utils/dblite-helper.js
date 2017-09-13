@@ -71,6 +71,7 @@ module.exports.connect = function (connectString, cb) {
     "drop index if exists blocks_totalAmount",
     "drop index if exists blocks_numberOfTransactions",
     "drop index if exists blocks_timestamp",
+    "create index if not exists mem_accounts_balance on mem_accounts(balance)",
     "CREATE INDEX IF NOT EXISTS trs_block_id ON trs(blockId)",
     "CREATE INDEX IF NOT EXISTS trs_sender_id ON trs(senderId)",
     "CREATE INDEX IF NOT EXISTS trs_recipient_id ON trs(recipientId)",
