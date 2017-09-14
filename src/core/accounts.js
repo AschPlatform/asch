@@ -236,7 +236,12 @@ private.attachApi = function () {
   });
 
   router.get('/count', function (req, res) {
-    return res.json({ success: true, count: Object.keys(private.accounts).length });
+    library.dbLite.query('select count(*) from mem_accounts', { 'count': Number }, function (err, rows) {
+      if (err || !rows) {
+        return res.status(500).send({success: false, error: 'Database error'})
+      }
+      return res.json({ success: true, count: rows[0].count });
+    })
   });
 
   router.use(function (req, res, next) {
