@@ -418,19 +418,22 @@ describe('Test UIA', () => {
       expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '0', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Invalid amount range/)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '-1', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Invalid amount range/)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '1e49', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Invalid amount range/)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
+
+      res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, 'NaN', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '1000000000000000000000000000000000000000000000001', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Invalid amount range/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, 'invalid_number', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Amount should be number/)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
 
       res = await registerAssetAsync(VALID_ASSET_NAME, VALID_DESC, '1000.5', VALID_PRECISION, VALID_STRATEGY, ISSUER_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
@@ -487,10 +490,10 @@ describe('Test UIA', () => {
       expect(res.body).to.have.property('error').to.match(/^Invalid transaction body/)
 
       res = await issueAssetAsync(ASSET_NAME, '0', ISSUE_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Invalid amount range/)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
 
       res = await issueAssetAsync(ASSET_NAME, 'invalid_number', ISSUE_ACCOUNT)
-      expect(res.body).to.have.property('error').to.match(/^Amount should be number/)
+      expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
 
       res = await issueAssetAsync(ASSET_NAME, '1000.5', ISSUE_ACCOUNT)
       expect(res.body).to.have.property('error').to.match(/^Amount should be integer/)
