@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly PROG_DIR=$(readlink -m $(dirname $0))
+readonly PROG_DIR=$(pwd)
 readonly PID_FILE=$PROG_DIR/asch.pid
 
 function read_port() {
