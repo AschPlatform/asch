@@ -524,6 +524,7 @@ Account.prototype.createTables = function (cb) {
   sqles.push("INSERT INTO mem_accounts2u_delegates SELECT * FROM mem_accounts2delegates;");
   // sqles.push("INSERT INTO mem_accounts2u_multisignatures SELECT * FROM mem_accounts2multisignatures;");
 
+  sqles.push("create index if not exists mem_accounts_balance on mem_accounts(balance)");
   async.eachSeries(sqles, function (command, cb) {
     scope.dbLite.query(command, function (err, data) {
       cb(err, data);
