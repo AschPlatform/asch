@@ -829,7 +829,7 @@ shared.request = function (msg, cb) {
   msg.hash = private.hashsum(msg.body, msg.timestamp);
 
   if (msg.body.peer) {
-    self.getFromPeer({ ip: msg.body.peer.ip, port: msg.body.peer.port }, {
+    self.getFromPeer(msg.body.peer, {
       api: '/dapp/request',
       data: msg,
       method: "POST"
