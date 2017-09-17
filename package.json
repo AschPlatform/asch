@@ -10,10 +10,11 @@
   "dependencies": {
     "array.prototype.find": "1.0.0",
     "array.prototype.findindex": "2.0.0",
-    "asch-sandbox": "https://github.com/AschPlatform/asch-sandbox-dist/tarball/master",
     "asch-js": "*",
+    "asch-sandbox": "https://github.com/AschPlatform/asch-sandbox-dist/tarball/master",
     "async": "1.5.2",
     "bignumber": "https://github.com/AschPlatform/bignumber/tarball/master",
+    "bitcore-mnemonic": "^1.2.5",
     "body-parser": "1.15.2",
     "bytebuffer": "5.0.1",
     "change-case": "3.0.0",

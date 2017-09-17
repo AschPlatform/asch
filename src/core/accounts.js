@@ -3,6 +3,7 @@ var util = require('util');
 var extend = require('extend');
 var ed = require('../utils/ed.js');
 var bignum = require('bignumber');
+var Mnemonic = require('bitcore-mnemonic');
 var slots = require('../utils/slots.js');
 var Router = require('../utils/router.js');
 var BlockStatus = require("../utils/block-status.js");
@@ -183,7 +184,8 @@ private.attachApi = function () {
     "get /delegates": "getDelegates",
     "get /delegates/fee": "getDelegatesFee",
     "put /delegates": "addDelegates",
-    "get /": "getAccount"
+    "get /": "getAccount",
+    "get /new": "newAccount"
   });
 
   if (process.env.DEBUG && process.env.DEBUG.toUpperCase() == "TRUE") {
@@ -410,6 +412,23 @@ Accounts.prototype.onBind = function (scope) {
 }
 
 // Shared
+
+shared.newAccount = function (req, cb) {
+  var ent = Number(req.body.ent)
+  if ([128, 256, 384].indexOf(ent) === -1) {
+    ent = 128
+  } 
+  var secret = new Mnemonic(ent).toString();
+  var keypair = ed.MakeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
+  var address = self.generateAddressByPublicKey2(keypair.publicKey)
+  cb(null, {
+    secret: secret,
+    publicKey: keypair.publicKey.toString('hex'),
+    privateKey: keypair.privateKey.toString('hex'),
+    address: address
+  })
+}
+
 shared.open = function (req, cb) {
   var body = req.body;
   library.scheme.validate(body, {
