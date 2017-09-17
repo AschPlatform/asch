@@ -547,6 +547,10 @@ shared.transferAsset = function (req, cb) {
       multisigAccountPublicKey: {
         type: "string",
         format: "publicKey"
+      },
+      message: {
+        type: "string",
+        maxLength: 256
       }
     },
     required: ["secret", "amount", "recipientId", "currency"]
@@ -616,7 +620,8 @@ shared.transferAsset = function (req, cb) {
                 recipientId: body.recipientId,
                 keypair: keypair,
                 requester: keypair,
-                secondKeypair: secondKeypair
+                secondKeypair: secondKeypair,
+                message: body.message
               });
             } catch (e) {
               return cb(e.toString());
@@ -652,7 +657,8 @@ shared.transferAsset = function (req, cb) {
               sender: account,
               recipientId: body.recipientId,
               keypair: keypair,
-              secondKeypair: secondKeypair
+              secondKeypair: secondKeypair,
+              message: body.message
             });
           } catch (e) {
             return cb(e.toString());

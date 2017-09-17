@@ -932,6 +932,10 @@ shared.addTransactions = function (req, cb) {
       multisigAccountPublicKey: {
         type: "string",
         format: "publicKey"
+      },
+      message: {
+        type: "string",
+        maxLength: 256
       }
     },
     required: ["secret", "amount", "recipientId"]
@@ -1012,7 +1016,8 @@ shared.addTransactions = function (req, cb) {
                   recipientId: recipientId,
                   keypair: keypair,
                   requester: keypair,
-                  secondKeypair: secondKeypair
+                  secondKeypair: secondKeypair,
+                  message: body.message
                 });
               } catch (e) {
                 return cb(e.toString());
@@ -1049,7 +1054,8 @@ shared.addTransactions = function (req, cb) {
                 sender: account,
                 recipientId: recipientId,
                 keypair: keypair,
-                secondKeypair: secondKeypair
+                secondKeypair: secondKeypair,
+                message: body.message
               });
             } catch (e) {
               return cb(e.toString());

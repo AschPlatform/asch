@@ -44,7 +44,9 @@ Transaction.prototype.create = function (data) {
     senderPublicKey: data.sender.publicKey,
     requesterPublicKey: data.requester ? data.requester.publicKey.toString('hex') : null,
     timestamp: slots.getTime(),
-    asset: {}
+    asset: {},
+    message: data.message,
+    args: data.args
   };
 
   trs = private.types[trs.type].create.call(this, data, trs);
