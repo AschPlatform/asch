@@ -428,9 +428,12 @@ private.list = function (filter, cb) {
     params.message = filter.message
   }
 
-  if (filter.limit >= 0) {
+  if (filter.limit) {
     params.limit = filter.limit;
+  } else {
+    params.limit = filter.limit = 20;
   }
+
   if (filter.offset >= 0) {
     params.offset = filter.offset;
   }
@@ -449,10 +452,6 @@ private.list = function (filter, cb) {
     if (sortFields.indexOf(sortBy) < 0) {
       return cb("Invalid sort field");
     }
-  }
-
-  if (filter.limit > 100) {
-    return cb("Invalid limit. Maximum is 100");
   }
 
   var uiaCurrencyJoin = ''
