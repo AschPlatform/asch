@@ -97,11 +97,10 @@ function randomCoin() {
   return Math.floor(Math.random() * (10000 * 100000000)) + (1000 * 100000000);
 }
 
-// Returns current block height
-function getHeight(cb) {
+function _getHeight(url, cb) {
   request({
     type: 'GET',
-    url: baseUrl + '/api/blocks/getHeight',
+    url: url + '/api/blocks/getHeight',
     json: true
   }, function (err, resp, body) {
     if (err || resp.statusCode != 200) {
@@ -110,6 +109,11 @@ function getHeight(cb) {
       return cb(null, body.height);
     }
   })
+}
+
+// Returns current block height
+function getHeight(cb) {
+  _getHeight(baseUrl, cb)
 }
 
 function onNewBlock(cb) {
@@ -401,6 +405,7 @@ module.exports = {
   addPeers: addPeers,
   config: config,
   waitForNewBlock: waitForNewBlock,
+  _getheight: _getHeight,
   getHeight: getHeight,
   onNewBlock: onNewBlock,
   submitTransaction: submitTransaction,

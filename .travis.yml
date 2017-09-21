@@ -22,8 +22,7 @@ addons:
     packages:
       - g++-4.8
 before_script:
-     - node app.js --base . --daemon
-     - npm test
+     - pwd
 script:
-     - ps aux | grep app.js | grep -v grep | awk '{print $2}' | xargs kill 
+     - bash ./test/multi-nodes/multiNodes.sh
 
