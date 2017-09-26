@@ -82,7 +82,7 @@ private.attachApi = function () {
   library.network.app.use('/api/uia', router)
   library.network.app.use(function (err, req, res, next) {
     if (!err) return next()
-    library.logger.error(req.url, err.toString())
+    library.logger.error(req.url, err)
     res.status(500).send({ success: false, error: err.toString() })
   })
 }
@@ -95,6 +95,113 @@ UIA.prototype.sandboxApi = function (call, args, cb) {
 // Events
 UIA.prototype.onBind = function (scope) {
   modules = scope
+}
+
+private.queryTransactions = function (query, cb) {
+  var func = 'list'
+  var param = query
+  var list = true
+  if (typeof query.id !== 'undefined') {
+    func = 'getById'
+    param = query.id
+    list = false
+  }
+
+  modules.transactions[func](param, function (err, data) {
+    if (err) return cb('Failed to get transactions: ' + err)
+
+    if (!list) data = { transactions: [data] }
+    var sqls = []
+    var typeToTable = {
+      9: {
+        table: 'issuers',
+        fields: ['transactionId', 'name', 'desc']
+      },
+      10: {
+        table: 'assets',
+        fields: ['transactionId', 'name', 'desc', 'maximum', 'precision', 'strategy']
+      },
+      11: {
+        table: 'flags',
+        fields: ['transactionId', 'currency', 'flagType', 'flag']
+      },
+      12: {
+        table: 'acls',
+        fields: ['transactionId', 'currency', 'operator', 'flag', 'list']
+      },
+      13: {
+        table: 'issues',
+        fields: ['transactionId', 'currency', 'amount']
+      },
+      14: {
+        table: 'transfers',
+        fields: ['transactionId', 'currency', 'amount']
+      }
+    }
+    data.transactions.forEach(function (trs) {
+      if (!typeToTable[trs.type]) {
+        return
+      }
+      trs.t_id = trs.id
+      sqls.push({
+        query: 'select ' + typeToTable[trs.type].fields.join(',') + ' from ' + typeToTable[trs.type].table + ' where transactionId="' + trs.id + '"',
+        fields: typeToTable[trs.type].fields
+      })
+    })
+    async.mapSeries(sqls, function (sql, next) {
+      library.dbLite.query(sql.query, {}, sql.fields, next)
+    }, function (err, rows) {
+      if (err) return cb('Failed to get transaction assets: ' + err)
+
+      for (let i = 0; i < rows.length; ++i) {
+        if (rows[i].length == 0) continue
+        var t = data.transactions[i]
+        var type = t.type
+        var table = typeToTable[type].table
+        var asset = rows[i][0]
+        for (let k in asset) {
+          asset[table + '_' + k] = asset[k]
+        }
+        if (asset.transactionId == t.id) {
+          asset.t_id = asset.transactionId
+          t.asset = library.base.transaction.dbReadAsset(t.type, asset)
+        }
+        delete t.t_id
+      }
+      var assetNames = new Set
+      data.transactions.forEach(function (trs) {
+        if (trs.type === 13) {
+          assetNames.add(trs.asset.uiaIssue.currency)
+        } else if (trs.type === 14) {
+          assetNames.add(trs.asset.uiaTransfer.currency)
+        }
+      })
+      assetNames = Array.from(assetNames)
+      async.mapSeries(assetNames, function (name, next) {
+        library.model.getAssetByName(name, next)
+      }, function (err, assets) {
+        if (err) return cb('Failed to asset info: ' + err)
+        var precisionMap = new Map
+        assets.forEach(function (a) {
+          precisionMap.set(a.name, a.precision)
+        })
+        data.transactions.forEach(function (trs) {
+          var obj = null
+          if (trs.type === 13) {
+            obj = trs.asset.uiaIssue
+          } else if (trs.type === 14) {
+            obj = trs.asset.uiaTransfer
+          }
+          if (obj != null && precisionMap.has(obj.currency)) {
+            var precision = precisionMap.get(obj.currency)
+            obj.amountShow = bignum(obj.amount).div(Math.pow(10, precision)).toString()
+            obj.precision = precision
+          }
+        })
+        cb(null, data)
+      })
+    })
+  })
 }
 
 // Shared
@@ -401,100 +508,7 @@ shared.getMyTransactions = function (req, cb) {
       query.uia = 1
     }
     query.ownerAddress = req.params.address
-    modules.transactions.list(query, function (err, data) {
-      if (err) return cb('Failed to get transactions: ' + err)
-
-      var sqls = []
-      var typeToTable = {
-        9: {
-          table: 'issuers',
-          fields: ['transactionId', 'name', 'desc']
-        },
-        10: {
-          table: 'assets',
-          fields: ['transactionId', 'name', 'desc', 'maximum', 'precision', 'strategy']
-        },
-        11: {
-          table: 'flags',
-          fields: ['transactionId', 'currency', 'flagType', 'flag']
-        },
-        12: {
-          table: 'acls',
-          fields: ['transactionId', 'currency', 'operator', 'flag', 'list']
-        },
-        13: {
-          table: 'issues',
-          fields: ['transactionId', 'currency', 'amount']
-        },
-        14: {
-          table: 'transfers',
-          fields: ['transactionId', 'currency', 'amount']
-        }
-      }
-      data.transactions.forEach(function (trs) {
-        if (!typeToTable[trs.type]) {
-          return
-        }
-        trs.t_id = trs.id
-        sqls.push({
-          query: 'select ' + typeToTable[trs.type].fields.join(',') + ' from ' + typeToTable[trs.type].table + ' where transactionId="' + trs.id + '"',
-          fields: typeToTable[trs.type].fields
-        })
-      })
-      async.mapSeries(sqls, function (sql, next) {
-        library.dbLite.query(sql.query, {}, sql.fields, next)
-      }, function (err, rows) {
-        if (err) return cb('Failed to get transaction assets: ' + err)
-
-        for (let i = 0; i < rows.length; ++i) {
-          if (rows[i].length == 0) continue
-          var t = data.transactions[i]
-          var type = t.type
-          var table = typeToTable[type].table
-          var asset = rows[i][0]
-          for (let k in asset) {
-            asset[table + '_' + k] = asset[k]
-          }
-          if (asset.transactionId == t.id) {
-            asset.t_id = asset.transactionId
-            t.asset = library.base.transaction.dbReadAsset(t.type, asset)
-          }
-          delete t.t_id
-        }
-        var assetNames = new Set
-        data.transactions.forEach(function (trs) {
-          if (trs.type === 13) {
-            assetNames.add(trs.asset.uiaIssue.currency)
-          } else if (trs.type === 14) {
-            assetNames.add(trs.asset.uiaTransfer.currency)
-          }
-        })
-        assetNames = Array.from(assetNames)
-        async.mapSeries(assetNames, function (name, next) {
-          library.model.getAssetByName(name, next)
-        }, function (err, assets) {
-          if (err) return cb('Failed to asset info: ' + err)
-          var precisionMap = new Map
-          assets.forEach(function (a) {
-            precisionMap.set(a.name, a.precision)
-          })
-          data.transactions.forEach(function (trs) {
-            var obj = null
-            if (trs.type === 13) {
-              obj = trs.asset.uiaIssue
-            } else if (trs.type === 14) {
-              obj = trs.asset.uiaTransfer
-            }
-            if (obj != null && precisionMap.has(obj.currency)) {
-              var precision = precisionMap.get(obj.currency)
-              obj.amountShow = bignum(obj.amount).div(Math.pow(10, precision)).toString()
-              obj.precision = precision
-            }
-          })
-          cb(null, data)
-        })
-      })
-    })
+    private.queryTransactions(query, cb)
   })
 }
 
@@ -502,8 +516,14 @@ shared.getTransactions = function (req, cb) {
   if (!req.params || !req.params.currency) {
     return cb('Invalid parameters')
   }
+  var single = false
   var query = req.body
-  query.currency = req.params.currency
+  if (req.params.currency.length === 64) {
+    query.id = req.params.currency
+    single = true
+  } else {
+    query.currency = req.params.currency
+  }
   library.scheme.validate(query, {
     type: 'object',
     properties: {
@@ -519,100 +539,13 @@ shared.getTransactions = function (req, cb) {
     }
   }, function (err) {
     if (err) return cb('Invalid parameters: ' + err[0])
-
-    modules.transactions.list(query, function (err, data) {
-      if (err) return cb('Failed to get transactions: ' + err)
-
-      var sqls = []
-      var typeToTable = {
-        9: {
-          table: 'issuers',
-          fields: ['transactionId', 'name', 'desc']
-        },
-        10: {
-          table: 'assets',
-          fields: ['transactionId', 'name', 'desc', 'maximum', 'precision', 'strategy']
-        },
-        11: {
-          table: 'flags',
-          fields: ['transactionId', 'currency', 'flagType', 'flag']
-        },
-        12: {
-          table: 'acls',
-          fields: ['transactionId', 'currency', 'operator', 'flag', 'list']
-        },
-        13: {
-          table: 'issues',
-          fields: ['transactionId', 'currency', 'amount']
-        },
-        14: {
-          table: 'transfers',
-          fields: ['transactionId', 'currency', 'amount']
-        }
+    private.queryTransactions(query, function (err, data) {
+      if (err) return cb(err)
+      if (single) {
+        return cb(null, { transaction: data.transactions[0] })
+      } else {
+        return cb(null, data)
       }
-      data.transactions.forEach(function (trs) {
-        if (!typeToTable[trs.type]) {
-          return
-        }
-        trs.t_id = trs.id
-        sqls.push({
-          query: 'select ' + typeToTable[trs.type].fields.join(',') + ' from ' + typeToTable[trs.type].table + ' where transactionId="' + trs.id + '"',
-          fields: typeToTable[trs.type].fields
-        })
-      })
-      async.mapSeries(sqls, function (sql, next) {
-        library.dbLite.query(sql.query, {}, sql.fields, next)
-      }, function (err, rows) {
-        if (err) return cb('Failed to get transaction assets: ' + err)
-
-        for (let i = 0; i < rows.length; ++i) {
-          if (rows[i].length == 0) continue
-          var t = data.transactions[i]
-          var type = t.type
-          var table = typeToTable[type].table
-          var asset = rows[i][0]
-          for (let k in asset) {
-            asset[table + '_' + k] = asset[k]
-          }
-          if (asset.transactionId == t.id) {
-            asset.t_id = asset.transactionId
-            t.asset = library.base.transaction.dbReadAsset(t.type, asset)
-          }
-          delete t.t_id
-        }
-        var assetNames = new Set
-        data.transactions.forEach(function (trs) {
-          if (trs.type === 13) {
-            assetNames.add(trs.asset.uiaIssue.currency)
-          } else if (trs.type === 14) {
-            assetNames.add(trs.asset.uiaTransfer.currency)
-          }
-        })
-        assetNames = Array.from(assetNames)
-        async.mapSeries(assetNames, function (name, next) {
-          library.model.getAssetByName(name, next)
-        }, function (err, assets) {
-          if (err) return cb('Failed to asset info: ' + err)
-          var precisionMap = new Map
-          assets.forEach(function (a) {
-            precisionMap.set(a.name, a.precision)
-          })
-          data.transactions.forEach(function (trs) {
-            var obj = null
-            if (trs.type === 13) {
-              obj = trs.asset.uiaIssue
-            } else if (trs.type === 14) {
-              obj = trs.asset.uiaTransfer
-            }
-            if (obj != null && precisionMap.has(obj.currency)) {
-              var precision = precisionMap.get(obj.currency)
-              obj.amountShow = bignum(obj.amount).div(Math.pow(10, precision)).toString()
-              obj.precision = precision
-            }
-          })
-          cb(null, data)
-        })
-      })
     })
   })
 }

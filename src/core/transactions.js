@@ -505,8 +505,8 @@ private.getById = function (id, cb) {
         return cb(err || "Can't find transaction: " + id);
       }
 
-      var transacton = library.base.transaction.dbRead(rows[0]);
-      cb(null, transacton);
+      var transaction = library.base.transaction.dbRead(rows[0]);
+      cb(null, transaction);
     });
 }
 
@@ -725,6 +725,10 @@ Transactions.prototype.sandboxApi = function (call, args, cb) {
 
 Transactions.prototype.list = function (query, cb) {
   private.list(query, cb)
+}
+
+Transactions.prototype.getById = function (id, cb) {
+  private.getById(id, cb)
 }
 
 // Events
