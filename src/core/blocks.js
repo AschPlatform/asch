@@ -1250,9 +1250,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
       function (next) {
         self.verifyBlock(block, null, function (err) {
           if (err) {
-            let stringinfo = "Can't verify generated block: " + err;
-            library.logger.info(stringinfo);
-            next(stringinfo);
+            next("Can't verify generated block: " + err);
           } else {
             next();
           }
@@ -1261,9 +1259,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
       function (next) {
         modules.delegates.getActiveDelegateKeypairs(block.height, function (err, activeKeypairs) {
           if (err) {
-            let stringinfo = "Failed to get active delegate keypairs: " + err;
-            library.logger.info(stringinfo);
-            next(stringinfo);
+            next("Failed to get active delegate keypairs: " + err);
           } else {
             next(null, activeKeypairs);
           }
@@ -1288,20 +1284,15 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
             return next();
           });
         } else {
-          library.logger.info('Failed to get 2/3 votes to forg new block ' + id);
           if (!library.config.publicIp) {
-            let stringinfo = "No public ip";
-            library.logger.info(stringinfo);
-            return next(stringinfo);
+            return next("No public ip");
           }
           var serverAddr = library.config.publicIp + ':' + library.config.port;
           var propose;
           try {
             propose = library.base.consensus.createPropose(keypair, block, serverAddr);
           } catch (e) {
-            let stringinfo = "Failed to create propose: " + e.toString();
-            library.logger.info(stringinfo);
-            return next(stringinfo);
+            return next("Failed to create propose: " + e.toString());
           }
           library.base.consensus.setPendingBlock(block);
           library.base.consensus.addPendingVotes(localVotes);
