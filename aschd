@@ -2,8 +2,7 @@
 
 readonly PROG_DIR=$(pwd)
 readonly PID_FILE=$PROG_DIR/asch.pid
-readonly IP_CHINA="222.161.26.209:999"  # mode6
-readonly IP_OTHER="www.asch.so/downloads"
+readonly IPS=("https://www.asch.so/downloads-Interational " "http://222.161.26.209:999-Chinnese " "http://118.190.156.105-Chinnese")
 
 function read_port() {
   echo `cat $PROG_DIR/config.json |grep '"port"'|head -n 1| awk -F "[:,]" '{print$2}'|tr -d ' '`
@@ -60,41 +59,73 @@ function restart() {
   start
 }
 
-function ischina(){
-	read -p "Is your server in China? Please input Y or N [default Y]:"  isChina
-	isChina=${isChina:-"Y"}
-	case $isChina in
-	Y | y)
-		ip=$IP_CHINA;;
-	*)
-		ip=$IP_OTHER;;
-	esac
+function ismainnet(){
+	magic=$(cat $PROG_DIR/config.json | grep magic | awk -F: '{print $2}' | cut -d \" -f2)
+	if [ i$magic=i"594fe0f3" ];then
+		net="testnet"
+	elif [ i$magic=i"5f5b3cf5" ];then
+		net="mainnet"
+	else
+		echo "Wrong net!"
+		exit 2
+	fi
+	echo "net is $net"
+}
+
+function chosenode(){
+	read -p "Please input your choice [default 0] : "  num
+	num=${num:-0}
+
+	if [ $num -ge $length ];then
+		echo "You chosen wrong number,please run aschd again!"
+		exit 1
+	fi
+
+	if [ i${status[$num]} = i"N" ];then
+		echo "This node has no data,please run aschd again!"
+		exit 2
+	fi
 }
 
 function rebuild() {
-  ischina
-  ismainnet
-	var=$(curl -sL http://$ip/metadata_rebuild_$net.txt)
+	ismainnet
 
-	snapshotName=$(echo $var| awk '{print $1}')
-	snapshotDB=$(echo $var| awk '{print $2}')
-	snapshotMd5=$(echo $var| awk '{print $3}')
-	snapshotDate=$(echo $var| awk '{print $4}')
-	snapshotHeight=$(echo $var| awk '{print $5}')
-	snapshotSize=$(echo $var| awk '{print $6}')
+	echo "Please select one of the following sources to use"
+	length=${#IPS[@]}
+	for i in $(seq 0 $[ $length-1 ])
+	do
+		# echo ${IPS[$i]}
+		ip=$(echo ${IPS[$i]} | awk -F- '{print $1}')
+		country=$(echo ${IPS[$i]} | awk -F- '{print $2}')
+		memo="$country users recommended"
 
-	echo "snapshot info:"
-	echo "snapshotName:"$snapshotName
-	echo "snapshotMd5:"$snapshotMd5
-	echo "snapshotDate:"$snapshotDate
-	echo "snapshotHeight:"$snapshotHeight
-	echo "snapshotSize:"$snapshotSize
+		cnt=1
+		var=$(curl -sL -m 10 $ip/metadata_rebuild_$net.txt)
+		if [ $? -eq 0 ];then
+			cnt=$(echo $var | grep html | wc -l)
+		fi
+		if [ $cnt -eq 0 ];then
+			status[$i]="Y"
+			Name=$(echo $var| awk '{print $1}')
+			DB=$(echo $var| awk '{print $2}')
+			Md5=$(echo $var| awk '{print $3}')
+			Date=$(echo $var| awk '{print $4}')
+			Height=$(echo $var| awk '{print $5}')
+			Size=$(echo $var| awk '{print $6}')
+			echo $i. $ip [$memo]  "Height:"$Height "Date:"$Date "Size:"$Size
+		else
+			status[$i]="N"
+			memo="No data,do not use."
+			echo $i. $ip [$memo]
+		fi
+	done
 
+	chosenode
 
 	echo "Downloading blockchain snapshot..."
-	wget "http://$ip/$snapshotName"
-	newMd5=$(md5sum $snapshotName | awk '{print $1}')
-	if [ i$newMd5 = i$snapshotMd5 ];then
+	wget "$ip/$Name"
+	newMd5=$(md5sum $Name | awk '{print $1}')
+	if [ i$newMd5 = i$Md5 ];then
 		echo "Check md5 passed!"
 	else
 		echo "Check md5 failed,please run again!"
@@ -102,9 +133,9 @@ function rebuild() {
 	fi
 
 	./aschd stop
-	tar zxf $snapshotName
-	rm $snapshotName
-	mv ./$snapshotDB ./blockchain.db
+	tar zxf $Name
+	rm $Name
+	mv ./$DB ./blockchain.db
 	./aschd start
 }
 
@@ -127,26 +158,44 @@ function configure() {
 }
 
 function upgrade() {
-  ischina
-  ismainnet
-	# echo $ip $net
-	var=$(curl -sL http://$ip/metadata_upgrade_$net.txt)
+	ismainnet
 
-	Name=$(echo $var| awk '{print $1}')
-	Md5=$(echo $var| awk '{print $2}')
-	Date=$(echo $var| awk '{print $3}')
-	Version=$(echo $var| awk '{print $4}')
-	Size=$(echo $var| awk '{print $5}')
+	echo "Please select one of the following sources to use"
+	length=${#IPS[@]}
+	for i in $(seq 0 $[ $length-1 ])
+	do
+		# echo ${IPS[$i]}
+		ip=$(echo ${IPS[$i]} | awk -F- '{print $1}')
+		country=$(echo ${IPS[$i]} | awk -F- '{print $2}')
+		memo="$country users recommended"
 
-	echo "Package info:"
-	echo "Name: "$Name
-	echo "Md5: "$Md5
-	echo "Date: "$Date
-	echo "Version: "$Version
-	echo "Size: "$Size
+		#echo $ip $net
+		cnt=1
+		var=$(curl -sL -m 10 "$ip/metadata_upgrade_$net.txt")
+    if [ $? -eq 0 ];then
+			cnt=$(echo $var | grep html | wc -l)
+    fi
+		if [ $cnt -eq 0 ];then
+			status[$i]="Y"
+			Name=$(echo $var| awk '{print $1}')
+			Md5=$(echo $var| awk '{print $2}')
+			Date=$(echo $var| awk '{print $3}')
+			Version=$(echo $var| awk '{print $4}')
+			Size=$(echo $var| awk '{print $5}')
+
+			echo $i. $ip [$memo] "Version:"$Version "Date:"$Date  "Size:"$Size 
+		else
+			status[$i]="N"
+			memo="No data,do not use."
+			echo $i. $ip [$memo]
+		fi
+	done
+	# echo "status",${status[*]}
+
+	chosenode
 
 	mkdir -p tmp
-	wget "http://$ip/$Name" -O tmp/$Name
+	wget "$ip/$Name" -O tmp/$Name
 	newMd5=$(md5sum tmp/$Name | awk '{print $1}')
 	if [ i$newMd5 = i$Md5 ];then
 		echo "Check md5 passed!"
@@ -179,17 +228,6 @@ function enable() {
   local secret="$@"
   local port=`read_port`
   curl -k -H "Content-Type: application/json" -X POST -d '{"secret":"'"$secret"'"}' localhost:$port/api/delegates/forging/enable
-}
-
-function ismainnet(){
-	read -p "Is mainnet? Please input Y or N [default Y]:"  isMainnet
-  isMainnet=${isMainnet:-"Y"}
-	case $isMainnet in
-	Y | y)
-		net="mainnet";;
-	*)
-		net="testnet";;
-	esac
 }
 
 function main() {
