@@ -1210,7 +1210,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
   if (library.base.consensus.hasPendingBlock(timestamp)) {
     return setImmediate(cb);
   }
-  library.logger.debug("generateBlock enter");
+  library.logger.info("generateBlock enter");
   async.eachSeries(transactions, function (transaction, next) {
     modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, function (err, sender) {
       if (err || !sender) {
@@ -1250,7 +1250,9 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
       function (next) {
         self.verifyBlock(block, null, function (err) {
           if (err) {
-            next("Can't verify generated block: " + err);
+            let stringinfo = "Can't verify generated block: " + err;
+            library.logger.info(stringinfo);
+            next(stringinfo);
           } else {
             next();
           }
@@ -1259,7 +1261,9 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
       function (next) {
         modules.delegates.getActiveDelegateKeypairs(block.height, function (err, activeKeypairs) {
           if (err) {
-            next("Failed to get active delegate keypairs: " + err);
+            let stringinfo = "Failed to get active delegate keypairs: " + err;
+            library.logger.info(stringinfo);
+            next(stringinfo);
           } else {
             next(null, activeKeypairs);
           }
@@ -1269,7 +1273,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
         var height = block.height;
         var id = block.id;
         assert(activeKeypairs && activeKeypairs.length > 0, "Active keypairs should not be empty");
-        library.logger.debug("get active delegate keypairs len: " + activeKeypairs.length);
+        library.logger.info("get active delegate keypairs len: " + activeKeypairs.length);
         var localVotes = library.base.consensus.createVotes(activeKeypairs, block);
         if (library.base.consensus.hasEnoughVotes(localVotes)) {
           self.processBlock(block, localVotes, true, true, false, function (err) {
@@ -1284,15 +1288,20 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
             return next();
           });
         } else {
+          library.logger.info('Failed to get 2/3 votes to forg new block ' + id);
           if (!library.config.publicIp) {
-            return next("No public ip");
+            let stringinfo = "No public ip";
+            library.logger.info(stringinfo);
+            return next(stringinfo);
           }
           var serverAddr = library.config.publicIp + ':' + library.config.port;
           var propose;
           try {
             propose = library.base.consensus.createPropose(keypair, block, serverAddr);
           } catch (e) {
-            return next("Failed to create propose: " + e.toString());
+            let stringinfo = "Failed to create propose: " + e.toString();
+            library.logger.info(stringinfo);
+            return next(stringinfo);
           }
           library.base.consensus.setPendingBlock(block);
           library.base.consensus.addPendingVotes(localVotes);
