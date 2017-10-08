@@ -459,11 +459,16 @@ private.list = function (filter, cb) {
     uiaCurrencyJoin = 'inner join transfers ut on ut.transactionId = t.id and ut.currency = "' + filter.currency + '" '
   }
 
+  var connector = "or";
+  if (filter.and) {
+    connector = "and";
+  }
+
   library.dbLite.query("select count(t.id) " +
     "from trs t " +
     "inner join blocks b on t.blockId = b.id " + uiaCurrencyJoin +
     (fields_or.length || owner ? "where " : "") + " " +
-    (fields_or.length ? "(" + fields_or.join(' or ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner), params, { "count": Number }, function (err, rows) {
+    (fields_or.length ? "(" + fields_or.join(' ' + connector + ' ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner), params, { "count": Number }, function (err, rows) {
       if (err) {
         return cb(err);
       }
@@ -475,7 +480,7 @@ private.list = function (filter, cb) {
         "from trs t " +
         "inner join blocks b on t.blockId = b.id " + uiaCurrencyJoin +
         (fields_or.length || owner ? "where " : "") + " " +
-        (fields_or.length ? "(" + fields_or.join(' or ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner) + " " +
+        (fields_or.length ? "(" + fields_or.join(' ' + connector + ' ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner) + " " +
         (filter.orderBy ? 'order by ' + sortBy + ' ' + sortMethod : '') + " " +
         (filter.limit ? 'limit $limit' : '') + " " +
         (filter.offset ? 'offset $offset' : ''), params, ['t_id', 'b_height', 't_blockId', 't_type', 't_timestamp', 't_senderPublicKey', 't_senderId', 't_recipientId', 't_amount', 't_fee', 't_signature', 't_signSignature', 't_signatures', 't_args', 't_message', 'confirmations'], function (err, rows) {
@@ -798,6 +803,11 @@ shared.getTransactions = function (req, cb) {
         type: "string",
         minimum: 1,
         maximum: 22
+      },
+      and:{
+        type:"integer",
+        minimum: 0,
+        maximum: 1
       }
     }
   }, function (err) {
