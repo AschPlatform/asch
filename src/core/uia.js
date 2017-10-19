@@ -13,6 +13,7 @@ var TransactionTypes = require('../utils/transaction-types.js')
 var sandboxHelper = require('../utils/sandbox.js')
 var flagsHelper = require('../uia/flags-helper.js')
 var addressHelper = require('../utils/address.js')
+var amountHelper = require('../utils/amount.js')
 
 // Private fields
 var modules, library, self, private = {}, shared = {}
@@ -194,7 +195,7 @@ private.queryTransactions = function (query, cb) {
           }
           if (obj != null && precisionMap.has(obj.currency)) {
             var precision = precisionMap.get(obj.currency)
-            obj.amountShow = bignum(obj.amount).div(Math.pow(10, precision)).toString()
+            obj.amountShow = amountHelper.calcRealAmount(obj.amount, precision)
             obj.precision = precision
           }
         })
