@@ -2,7 +2,7 @@
 
 readonly PROG_DIR=$(pwd)
 readonly PID_FILE=$PROG_DIR/asch.pid
-readonly IPS=("https://www.asch.so/downloads-Interational " "http://222.161.26.209:999-Chinnese " "http://118.190.156.105-Chinnese")
+readonly IPS=("https://www.asch.so/downloads-Interational" "http://222.161.26.209:999-Chinnese")
 
 function read_port() {
   echo `cat $PROG_DIR/config.json |grep '"port"'|head -n 1| awk -F "[:,]" '{print$2}'|tr -d ' '`
@@ -85,6 +85,11 @@ function chosenode(){
 		echo "This node has no data,please run aschd again!"
 		exit 2
 	fi
+	
+	ip=$(echo ${IPS[$num]} | awk -F- '{print $1}')
+	var=$(curl -sL -m 10 "$ip/metadata_upgrade_$net.txt")
+	Name=$(echo $var| awk '{print $1}')
+	Md5=$(echo $var| awk '{print $2}')
 }
 
 function rebuild() {
@@ -107,11 +112,11 @@ function rebuild() {
 		if [ $cnt -eq 0 ];then
 			status[$i]="Y"
 			Name=$(echo $var| awk '{print $1}')
-			DB=$(echo $var| awk '{print $2}')
-			Md5=$(echo $var| awk '{print $3}')
-			Date=$(echo $var| awk '{print $4}')
-			Height=$(echo $var| awk '{print $5}')
-			Size=$(echo $var| awk '{print $6}')
+			Md5=$(echo $var| awk '{print $2}')
+			Date=$(echo $var| awk '{print $3}')
+			Height=$(echo $var| awk '{print $4}')
+			Size=$(echo $var| awk '{print $5}')
+			DB=$(echo $var| awk '{print $6}')
 			echo $i. $ip [$memo]  "Height:"$Height "Date:"$Date "Size:"$Size
 		else
 			status[$i]="N"
@@ -129,7 +134,7 @@ function rebuild() {
 		echo "Check md5 passed!"
 	else
 		echo "Check md5 failed,please run again!"
-    exit
+    		exit
 	fi
 
 	./aschd stop
@@ -173,7 +178,7 @@ function upgrade() {
 		cnt=1
 		var=$(curl -sL -m 10 "$ip/metadata_upgrade_$net.txt")
     if [ $? -eq 0 ];then
-			cnt=$(echo $var | grep html | wc -l)
+	cnt=$(echo $var | grep html | wc -l)
     fi
 		if [ $cnt -eq 0 ];then
 			status[$i]="Y"
