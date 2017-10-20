@@ -60,88 +60,88 @@ function restart() {
 }
 
 function ismainnet(){
-	magic=$(cat $PROG_DIR/config.json | grep magic | awk -F: '{print $2}' | cut -d \" -f2)
-	if [ i$magic=i"594fe0f3" ];then
-		net="testnet"
-	elif [ i$magic=i"5f5b3cf5" ];then
-		net="mainnet"
-	else
-		echo "Wrong net!"
-		exit 2
-	fi
-	echo "net is $net"
+  magic=$(cat $PROG_DIR/config.json | grep magic | awk -F: '{print $2}' | cut -d \" -f2)
+  if [ i$magic=i"594fe0f3" ];then
+    net="testnet"
+  elif [ i$magic=i"5f5b3cf5" ];then
+    net="mainnet"
+  else
+    echo "Wrong net!"
+    exit 2
+  fi
+  echo "net is $net"
 }
 
 function chosenode(){
-	read -p "Please input your choice [default 0] : "  num
-	num=${num:-0}
+  read -p "Please input your choice [default 0] : "  num
+  num=${num:-0}
 
-	if [ $num -ge $length ];then
-		echo "You chosen wrong number,please run aschd again!"
-		exit 1
-	fi
+  if [ $num -ge $length ];then
+    echo "You chosen wrong number,please run aschd again!"
+    exit 1
+  fi
 
-	if [ i${status[$num]} = i"N" ];then
-		echo "This node has no data,please run aschd again!"
-		exit 2
-	fi
-	
-	ip=$(echo ${IPS[$num]} | awk -F- '{print $1}')
-	var=$(curl -sL -m 10 "$ip/metadata_upgrade_$net.txt")
-	Name=$(echo $var| awk '{print $1}')
-	Md5=$(echo $var| awk '{print $2}')
+  if [ i${status[$num]} = i"N" ];then
+    echo "This node has no data,please run aschd again!"
+    exit 2
+  fi
+  
+  ip=$(echo ${IPS[$num]} | awk -F- '{print $1}')
+  var=$(curl -sL -m 10 "$ip/metadata_upgrade_$net.txt")
+  Name=$(echo $var| awk '{print $1}')
+  Md5=$(echo $var| awk '{print $2}')
 }
 
 function rebuild() {
-	ismainnet
+  ismainnet
 
-	echo "Please select one of the following sources to use"
-	length=${#IPS[@]}
-	for i in $(seq 0 $[ $length-1 ])
-	do
-		# echo ${IPS[$i]}
-		ip=$(echo ${IPS[$i]} | awk -F- '{print $1}')
-		country=$(echo ${IPS[$i]} | awk -F- '{print $2}')
-		memo="$country users recommended"
+  echo "Please select one of the following sources to use"
+  length=${#IPS[@]}
+  for i in $(seq 0 $[ $length-1 ])
+  do
+    # echo ${IPS[$i]}
+    ip=$(echo ${IPS[$i]} | awk -F- '{print $1}')
+    country=$(echo ${IPS[$i]} | awk -F- '{print $2}')
+    memo="$country users recommended"
 
-		cnt=1
-		var=$(curl -sL -m 10 $ip/metadata_rebuild_$net.txt)
-		if [ $? -eq 0 ];then
-			cnt=$(echo $var | grep html | wc -l)
-		fi
-		if [ $cnt -eq 0 ];then
-			status[$i]="Y"
-			Name=$(echo $var| awk '{print $1}')
-			Md5=$(echo $var| awk '{print $2}')
-			Date=$(echo $var| awk '{print $3}')
-			Height=$(echo $var| awk '{print $4}')
-			Size=$(echo $var| awk '{print $5}')
-			DB=$(echo $var| awk '{print $6}')
-			echo $i. $ip [$memo]  "Height:"$Height "Date:"$Date "Size:"$Size
-		else
-			status[$i]="N"
-			memo="No data,do not use."
-			echo $i. $ip [$memo]
-		fi
-	done
+    cnt=1
+    var=$(curl -sL -m 10 $ip/metadata_rebuild_$net.txt)
+    if [ $? -eq 0 ];then
+      cnt=$(echo $var | grep html | wc -l)
+    fi
+    if [ $cnt -eq 0 ];then
+      status[$i]="Y"
+      Name=$(echo $var| awk '{print $1}')
+      Md5=$(echo $var| awk '{print $2}')
+      Date=$(echo $var| awk '{print $3}')
+      Height=$(echo $var| awk '{print $4}')
+      Size=$(echo $var| awk '{print $5}')
+      DB=$(echo $var| awk '{print $6}')
+      echo $i. $ip [$memo]  "Height:"$Height "Date:"$Date "Size:"$Size
+    else
+      status[$i]="N"
+      memo="No data,do not use."
+      echo $i. $ip [$memo]
+    fi
+  done
 
-	chosenode
+  chosenode
 
-	echo "Downloading blockchain snapshot..."
-	wget "$ip/$Name"
-	newMd5=$(md5sum $Name | awk '{print $1}')
-	if [ i$newMd5 = i$Md5 ];then
-		echo "Check md5 passed!"
-	else
-		echo "Check md5 failed,please run again!"
-    		exit
-	fi
+  echo "Downloading blockchain snapshot..."
+  wget "$ip/$Name"
+  newMd5=$(md5sum $Name | awk '{print $1}')
+  if [ i$newMd5 = i$Md5 ];then
+    echo "Check md5 passed!"
+  else
+    echo "Check md5 failed,please run again!"
+        exit
+  fi
 
-	./aschd stop
-	tar zxf $Name
-	rm $Name
-	mv ./$DB ./blockchain.db
-	./aschd start
+  ./aschd stop
+  tar zxf $Name
+  rm $Name
+  mv ./$DB ./blockchain.db
+  ./aschd start
 }
 
 function version() {
@@ -149,10 +149,10 @@ function version() {
 }
 
 function check_os() {
-	os_num=`cat /etc/os-release | grep '\"Ubuntu\"'  | wc -l`
-	if [ $os_num -ne 1 ];then
-		echo "Linux is not Ubuntu, please configure manually!" && exit 1
-	fi
+  os_num=`cat /etc/os-release | grep '\"Ubuntu\"'  | wc -l`
+  if [ $os_num -ne 1 ];then
+    echo "Linux is not Ubuntu, please configure manually!" && exit 1
+  fi
 }
 
 function configure() {
@@ -163,70 +163,70 @@ function configure() {
 }
 
 function upgrade() {
-	ismainnet
+  ismainnet
 
-	echo "Please select one of the following sources to use"
-	length=${#IPS[@]}
-	for i in $(seq 0 $[ $length-1 ])
-	do
-		# echo ${IPS[$i]}
-		ip=$(echo ${IPS[$i]} | awk -F- '{print $1}')
-		country=$(echo ${IPS[$i]} | awk -F- '{print $2}')
-		memo="$country users recommended"
+  echo "Please select one of the following sources to use"
+  length=${#IPS[@]}
+  for i in $(seq 0 $[ $length-1 ])
+  do
+    # echo ${IPS[$i]}
+    ip=$(echo ${IPS[$i]} | awk -F- '{print $1}')
+    country=$(echo ${IPS[$i]} | awk -F- '{print $2}')
+    memo="$country users recommended"
 
-		#echo $ip $net
-		cnt=1
-		var=$(curl -sL -m 10 "$ip/metadata_upgrade_$net.txt")
+    #echo $ip $net
+    cnt=1
+    var=$(curl -sL -m 10 "$ip/metadata_upgrade_$net.txt")
     if [ $? -eq 0 ];then
-	cnt=$(echo $var | grep html | wc -l)
+  cnt=$(echo $var | grep html | wc -l)
     fi
-		if [ $cnt -eq 0 ];then
-			status[$i]="Y"
-			Name=$(echo $var| awk '{print $1}')
-			Md5=$(echo $var| awk '{print $2}')
-			Date=$(echo $var| awk '{print $3}')
-			Version=$(echo $var| awk '{print $4}')
-			Size=$(echo $var| awk '{print $5}')
+    if [ $cnt -eq 0 ];then
+      status[$i]="Y"
+      Name=$(echo $var| awk '{print $1}')
+      Md5=$(echo $var| awk '{print $2}')
+      Date=$(echo $var| awk '{print $3}')
+      Version=$(echo $var| awk '{print $4}')
+      Size=$(echo $var| awk '{print $5}')
 
-			echo $i. $ip [$memo] "Version:"$Version "Date:"$Date  "Size:"$Size 
-		else
-			status[$i]="N"
-			memo="No data,do not use."
-			echo $i. $ip [$memo]
-		fi
-	done
-	# echo "status",${status[*]}
+      echo $i. $ip [$memo] "Version:"$Version "Date:"$Date  "Size:"$Size 
+    else
+      status[$i]="N"
+      memo="No data,do not use."
+      echo $i. $ip [$memo]
+    fi
+  done
+  # echo "status",${status[*]}
 
-	chosenode
+  chosenode
 
-	mkdir -p tmp
-	wget "$ip/$Name" -O tmp/$Name
-	newMd5=$(md5sum tmp/$Name | awk '{print $1}')
-	if [ i$newMd5 = i$Md5 ];then
-		echo "Check md5 passed!"
-	else
-		echo "Check md5 failed,please run again!"
-		exit
-	fi
+  mkdir -p tmp
+  wget "$ip/$Name" -O tmp/$Name
+  newMd5=$(md5sum tmp/$Name | awk '{print $1}')
+  if [ i$newMd5 = i$Md5 ];then
+    echo "Check md5 passed!"
+  else
+    echo "Check md5 failed,please run again!"
+    exit
+  fi
 
-	echo "Extracting new package ..."
-	tar zxf tmp/$Name -C tmp/
-	extractedDir=`find tmp -maxdepth 1 -type d | grep asch |head -n 1`
-	currentVersion=`./aschd version`
-	chmod u+x $extractedDir/aschd
-	newVersion=`$extractedDir/aschd version`
-	./aschd stop
-	echo "Copying new files ..."
-	for file in `ls $extractedDir`
-	do
-	  if [ "$file" != "config.json" -a "$file" != "blockchain.db" ]; then
-		echo "copy $extractedDir/$file ..."
-		cp -r $extractedDir/$file ./
-	  fi
-	done
-	rm -rf $extractedDir tmp/$latestName
-	echo "Upgrade to $newVersion done."
-	./aschd start
+  echo "Extracting new package ..."
+  tar zxf tmp/$Name -C tmp/
+  extractedDir=`find tmp -maxdepth 1 -type d | grep asch |head -n 1`
+  currentVersion=`./aschd version`
+  chmod u+x $extractedDir/aschd
+  newVersion=`$extractedDir/aschd version`
+  ./aschd stop
+  echo "Copying new files ..."
+  for file in `ls $extractedDir`
+  do
+    if [ "$file" != "config.json" -a "$file" != "blockchain.db" ]; then
+    echo "copy $extractedDir/$file ..."
+    cp -r $extractedDir/$file ./
+    fi
+  done
+  rm -rf $extractedDir tmp/$latestName
+  echo "Upgrade to $newVersion done."
+  ./aschd start
 }
 
 function enable() {
