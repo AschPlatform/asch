@@ -39,7 +39,7 @@
     "request": "2.74.0",
     "rimraf": "2.5.4",
     "socket.io": "1.4.8",
-    "sodium": "git+https://github.com/AschPlatform/node-sodium.git",
+    "sodium": "^2.0.1",
     "strftime": "0.9.2",
     "tracer": "^0.8.11",
     "util-extend": "1.0.3",
