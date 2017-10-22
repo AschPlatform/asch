@@ -11,8 +11,8 @@ More infomation please visit our [official website](https://www.asch.so)
 
 ## System Dependency
 
-- nodejs v8.2.1+
-- npm 5.3.0+ (not cnpm)
+- nodejs v6.3+
+- npm 3.10+ (not cnpm)
 - node-gyp v3.6.2+ (suggested)
 - sqlite v3.8.2+
 - g++
@@ -22,13 +22,13 @@ More infomation please visit our [official website](https://www.asch.so)
 
 ```
 # Install dependency package
-sudo apt-get install curl sqlite wget git libssl-dev openssl make gcc g++ autoconf automake python build-essential -y
+sudo apt-get install curl sqlite3 ntp wget git libssl-dev openssl make gcc g++ autoconf automake python build-essential -y
 # libsodium for ubuntu 14.04
 sudo apt-get install libtool -y
 # libsodium for ubuntu 16.04
 sudo apt-get install libtool libtool-bin -y
 
-# Install nvm 
+# Install nvm
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
 # This loads nvm
 export NVM_DIR="$HOME/.nvm"
@@ -49,6 +49,7 @@ npm install
 
 ## Installation for windows docker.
 [Please install Docker for Windows firstly](https://store.docker.com/search?offering=community&type=edition)
+
 ```
 # pull asch code docker image
 docker pull aschplatform/asch:v1.3.0
