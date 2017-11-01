@@ -36,6 +36,14 @@ private.attachApi = function() {
     }
   });
 
+  router.get('/api/blocks/totalsupply', function (req, res) {
+    res.status(200).send('' + modules.blocks.getSupply() / 100000000);
+  });
+
+  router.get('/api/blocks/circulatingsupply', function (req, res) {
+    res.status(200).send('' + modules.blocks.getCirculatingSupply() / 100000000);
+  });
+
   router.get('/dapps/:id', function (req, res) {
     res.render('dapps/' + req.params.id + '/index.html');
   });

@@ -1451,6 +1451,16 @@ Blocks.prototype.onReceiveVotes = function (votes) {
   });
 }
 
+Blocks.prototype.getSupply = function () {
+  let height = private.lastBlock.height
+  return private.blockStatus.calcSupply(height)
+}
+
+Blocks.prototype.getCirculatingSupply = function () {
+  let height = private.lastBlock.height
+  return private.blockStatus.calcSupply(height)
+}
+
 Blocks.prototype.onBind = function (scope) {
   modules = scope;
 
