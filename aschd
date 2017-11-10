@@ -2,7 +2,7 @@
 
 readonly PROG_DIR=$(pwd)
 readonly PID_FILE=$PROG_DIR/asch.pid
-readonly IPS=("https://www.asch.so/downloads-Interational" "http://222.161.26.209:999-Chinnese")
+readonly IPS=("https://www.asch.so/downloads-International" "http://222.161.26.209:999-Chinese")
 
 function read_port() {
   echo `cat $PROG_DIR/config.json |grep '"port"'|head -n 1| awk -F "[:,]" '{print$2}'|tr -d ' '`
@@ -61,9 +61,9 @@ function restart() {
 
 function ismainnet(){
   magic=$(cat $PROG_DIR/config.json | grep magic | awk -F: '{print $2}' | cut -d \" -f2)
-  if [ i$magic=i"594fe0f3" ];then
+  if [ i$magic = i"594fe0f3" ];then
     net="testnet"
-  elif [ i$magic=i"5f5b3cf5" ];then
+  elif [ i$magic = i"5f5b3cf5" ];then
     net="mainnet"
   else
     echo "Wrong net!"
@@ -87,13 +87,14 @@ function chosenode(){
   fi
   
   ip=$(echo ${IPS[$num]} | awk -F- '{print $1}')
-  var=$(curl -sL -m 10 "$ip/metadata_upgrade_$net.txt")
+  var=$(curl -sL -m 10 "$ip/$meta_file")
   Name=$(echo $var| awk '{print $1}')
   Md5=$(echo $var| awk '{print $2}')
 }
 
 function rebuild() {
   ismainnet
+  meta_file=metadata_rebuild_$net.txt
 
   echo "Please select one of the following sources to use"
   length=${#IPS[@]}
@@ -105,7 +106,7 @@ function rebuild() {
     memo="$country users recommended"
 
     cnt=1
-    var=$(curl -sL -m 10 $ip/metadata_rebuild_$net.txt)
+    var=$(curl -sL -m 10 $ip/$meta_file)
     if [ $? -eq 0 ];then
       cnt=$(echo $var | grep html | wc -l)
     fi
@@ -127,7 +128,8 @@ function rebuild() {
 
   chosenode
 
-  echo "Downloading blockchain snapshot..."
+  echo "Downloading blockchain snapshot $Name..."
+  /bin/rm $Name
   wget "$ip/$Name"
   newMd5=$(md5sum $Name | awk '{print $1}')
   if [ i$newMd5 = i$Md5 ];then
@@ -164,6 +166,7 @@ function configure() {
 
 function upgrade() {
   ismainnet
+  meta_file=metadata_upgrade_$net.txt
 
   echo "Please select one of the following sources to use"
   length=${#IPS[@]}
@@ -176,9 +179,9 @@ function upgrade() {
 
     #echo $ip $net
     cnt=1
-    var=$(curl -sL -m 10 "$ip/metadata_upgrade_$net.txt")
+    var=$(curl -sL -m 10 "$ip/$meta_file")
     if [ $? -eq 0 ];then
-  cnt=$(echo $var | grep html | wc -l)
+    cnt=$(echo $var | grep html | wc -l)
     fi
     if [ $cnt -eq 0 ];then
       status[$i]="Y"
