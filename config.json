@@ -2,7 +2,7 @@
   "port": 4096,
   "address": "0.0.0.0",
   "publicIp": "",
-  "logLevel": "log",
+  "logLevel": "debug",
   "magic": "594fe0f3",
   "api": {
     "access": {

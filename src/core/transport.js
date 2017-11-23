@@ -9,6 +9,7 @@ var Router = require('../utils/router.js');
 var slots = require('../utils/slots.js')
 var sandboxHelper = require('../utils/sandbox.js');
 var LimitCache = require('../utils/limit-cache.js');
+var shell = require('../utils/shell.js');
 
 // Private fields
 var modules, library, self, private = {}, shared = {};
@@ -394,12 +395,14 @@ private.attachApi = function () {
   router.post("/transactions", function (req, res) {
     var lastBlock = modules.blocks.getLastBlock();
     var lastSlot = slots.getSlotNumber(lastBlock.timestamp);
-    if (slots.getNextSlot() - lastSlot >= 6) {
-      return res.status(200).json({ success: false, error: "Blockchain not ready" });
+    if (slots.getNextSlot() - lastSlot >= 12) {
+      library.logger.error("OS INFO", shell.getInfo())
+      library.logger.error("Blockchain is not ready", {getNextSlot:slots.getNextSlot(),lastSlot:lastSlot,lastBlockHeight:lastBlock.height})
+      return res.status(200).json({ success: false, error: "Blockchain is not ready" });
     }
 
     res.set(private.headers);
-
+    
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     var peerStr = peerIp ? peerIp + ":" + (isNaN(req.headers['port']) ? 'unknown' : req.headers['port']) : 'unknown';
     if (typeof req.body.transaction == 'string') {
@@ -424,7 +427,7 @@ private.attachApi = function () {
     }
 
     if (private.invalidTrsCache.has(transaction.id)) {
-      return res.status(200).json({ success: false, error: "Already processed transaction" });
+      return res.status(200).json({ success: false, error: "Already processed transaction" + transaction.id });
     }
 
     library.balancesSequence.add(function (cb) {
@@ -435,7 +438,7 @@ private.attachApi = function () {
       modules.transactions.receiveTransactions([transaction], cb);
     }, function (err, transactions) {
       if (err) {
-        library.logger.warn('Receive invalid transaction', err);
+        library.logger.warn('Receive invalid transaction,id is', transaction.id, err);
         private.invalidTrsCache.set(transaction.id, true)
         res.status(200).json({ success: false, error: err });
       } else {

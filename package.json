@@ -44,7 +44,8 @@
     "tracer": "^0.8.11",
     "util-extend": "1.0.3",
     "valid-url": "1.0.9",
-    "z-schema": "https://github.com/AschPlatform/z-schema/tarball/master"
+    "z-schema": "https://github.com/AschPlatform/z-schema/tarball/master",
+    "shelljs":"^0.7.8"
   },
   "devDependencies": {
     "babel": "=5.8.23",
