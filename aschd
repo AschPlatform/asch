@@ -59,7 +59,7 @@ function restart() {
 }
 
 function rebuild() {
-  cd $PROG_DIR && curl -sL http://www.asch.so/downloads/rebuild-testnet.sh | bash
+  cd $PROG_DIR && curl -sL http://www.asch.io/downloads/rebuild-testnet.sh | bash
 }
 
 function version() {
@@ -81,7 +81,7 @@ function configure() {
 }
 
 function upgrade() {
-  cd $PROG_DIR && curl -sL http://www.asch.so/downloads/upgrade-testnet.sh | bash
+  cd $PROG_DIR && curl -sL http://www.asch.io/downloads/upgrade-testnet.sh | bash
 }
 
 function enable() {
