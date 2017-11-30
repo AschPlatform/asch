@@ -679,7 +679,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
           }
         }
       }
-      cb && cb(err || ('request status code' + response.statusCode));
+      cb && cb(err || ('request status code' + response.statusCode), { body: body, peer: peer });
       return;
     }
 
