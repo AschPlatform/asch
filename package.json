@@ -24,7 +24,7 @@
     "cors": "2.7.1",
     "daemon": "1.1.0",
     "decompress-zip": "https://github.com/AschPlatform/decompress-zip/tarball/master",
-    "ejs": "2.5.1",
+    "ejs": "2.5.7",
     "express": "4.14.0",
     "express-domain-middleware": "0.1.0",
     "extend": "2.0.0",
@@ -38,14 +38,14 @@
     "randomstring": "1.1.5",
     "request": "2.74.0",
     "rimraf": "2.5.4",
+    "shelljs": "^0.7.8",
     "socket.io": "1.4.8",
     "sodium": "^2.0.3",
     "strftime": "0.9.2",
     "tracer": "^0.8.11",
     "util-extend": "1.0.3",
     "valid-url": "1.0.9",
-    "z-schema": "https://github.com/AschPlatform/z-schema/tarball/master",
-    "shelljs": "^0.7.8"
+    "z-schema": "https://github.com/AschPlatform/z-schema/tarball/master"
   },
   "devDependencies": {
     "babel": "=5.8.23",
