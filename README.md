@@ -10,6 +10,7 @@ Asch system is a decentralized application platform, which is designed to lower 
 More infomation please visit our [official website](https://www.asch.io)
 
 ## System Dependency
+## 系统依赖
 
 - nodejs v6.3+
 - npm 3.10+ (not cnpm)
@@ -19,6 +20,7 @@ More infomation please visit our [official website](https://www.asch.io)
 - libssl
 
 ## Installation for ubuntu 14.04.x or higher.
+## 在14.04.x或者更高版本的ubuntu上运行asch源码，其它linux需要自行安装sqlite3和配置ntp
 
 ```
 # Install dependency package
@@ -47,7 +49,8 @@ git clone https://github.com/AschPlatform/asch && cd asch && chmod u+x aschd
 npm install
 ```
 
-## Installation for windows docker.
+## Installation docker.
+## docker方式运行asch
 [Please install Docker for Windows firstly](https://store.docker.com/search?offering=community&type=edition)
 
 ```
@@ -60,6 +63,7 @@ Asch server started as daemon ...
 ```
 
 ## Run 
+## 启动asch
 
 ```
 cd asch && node app.js
@@ -68,6 +72,7 @@ cd asch && ./aschd start
 ```
 
 ## Usage
+## app.js一些参数
 
 ```
 node app.js --help
@@ -91,6 +96,7 @@ node app.js --help
 ```
 
 ## Front end (wallet ui)
+## 前端页面构建
 
 ```
 git clone https://github.com/AschPlatform/asch-frontend && cd asch-frontend
@@ -100,6 +106,7 @@ npm install browserify -g
 npm install gulp  -g
 
 npm install
+# angular chose "angular#~1.5.3 which resolved to 1.5.11 and is required by ASCH"
 bower install
 
 npm run build
@@ -112,6 +119,7 @@ cp -r dist <asch dir>/public/
 Then you can open ```localhost:4096``` in you browser
 
 ## Default localnet genesis account
+## locatnet开发网络默认的创世账户，里面有币，可以给其它账号转
 
 ```
 {
