@@ -7,6 +7,7 @@ var async = require('async');
 var z_schema = require('z-schema');
 var ip = require('ip');
 var Sequence = require('./utils/sequence.js');
+var slots = require('./utils/slots.js');
 
 var moduleNames = [
   'server',
@@ -275,6 +276,55 @@ module.exports = function(options, done) {
          */
         res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
 
+
+        // try{
+        //   if ( isApiOrPeer && req.headers["request-node-status"] == "yes"){
+        //     res.setHeader('Access-Control-Expose-Headers',"node-status");
+        //     var nextFunc = next;
+        //     var lastBlock = scope.modules.blocks.getLastBlock();
+        //     next = function(){
+        //       res.setHeader("node-status",JSON.stringify({
+        //         blockHeight: lastBlock.height,
+        //         blockTime: slots.getRealTime(lastBlock.timestamp),
+        //         blocksBehind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1),
+        //         serverTime: new Date().getTime()
+        //       }));
+        //       nextFunc();
+        //     };
+        //   }
+        // }
+        // catch(err){
+        //   scope.logger.error("Fail to get node status, error: " + err );
+        // }
+
+        var isApiOrPeer = parts.length > 1 && (parts[1] == 'api'|| parts[1] == 'peer') ;
+        var whiteList = scope.config.api.access.whiteList;
+        var blackList = scope.config.peers.blackList;
+
+        var forbidden = isApiOrPeer && ( 
+            (whiteList.length > 0 && whiteList.indexOf(ip) < 0) ||
+            (blackList.length > 0 && blackList.indexOf(ip) >= 0) );
+
+        if (isApiOrPeer && forbidden){
+          res.sendStatus(403);
+        }
+        else if ( isApiOrPeer && req.headers["request-node-status"] == "yes"){         
+          //Add server status info to response header
+          var lastBlock = scope.modules.blocks.getLastBlock();
+          res.setHeader('Access-Control-Expose-Headers',"node-status");
+          res.setHeader("node-status",JSON.stringify({
+            blockHeight: lastBlock.height,
+            blockTime: slots.getRealTime(lastBlock.timestamp),
+            blocksBehind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1),
+            serverTime: new Date().getTime()
+          }));
+          next();
+        }
+        else{
+          next();
+        }
+
+        /*
         if (parts.length > 1) {
           if (parts[1] == 'api') {
             if (scope.config.api.access.whiteList.length > 0) {
@@ -302,6 +352,7 @@ module.exports = function(options, done) {
         } else {
           next();
         }
+        */
       });
 
       scope.network.server.listen(scope.config.port, scope.config.address, function (err) {
