@@ -276,27 +276,6 @@ module.exports = function(options, done) {
          */
         res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
 
-
-        // try{
-        //   if ( isApiOrPeer && req.headers["request-node-status"] == "yes"){
-        //     res.setHeader('Access-Control-Expose-Headers',"node-status");
-        //     var nextFunc = next;
-        //     var lastBlock = scope.modules.blocks.getLastBlock();
-        //     next = function(){
-        //       res.setHeader("node-status",JSON.stringify({
-        //         blockHeight: lastBlock.height,
-        //         blockTime: slots.getRealTime(lastBlock.timestamp),
-        //         blocksBehind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1),
-        //         serverTime: new Date().getTime()
-        //       }));
-        //       nextFunc();
-        //     };
-        //   }
-        // }
-        // catch(err){
-        //   scope.logger.error("Fail to get node status, error: " + err );
-        // }
-
         var isApiOrPeer = parts.length > 1 && (parts[1] == 'api'|| parts[1] == 'peer') ;
         var whiteList = scope.config.api.access.whiteList;
         var blackList = scope.config.peers.blackList;
@@ -324,35 +303,6 @@ module.exports = function(options, done) {
           next();
         }
 
-        /*
-        if (parts.length > 1) {
-          if (parts[1] == 'api') {
-            if (scope.config.api.access.whiteList.length > 0) {
-              if (scope.config.api.access.whiteList.indexOf(ip) < 0) {
-                res.sendStatus(403);
-              } else {
-                next();
-              }
-            } else {
-              next();
-            }
-          } else if (parts[1] == 'peer') {
-            if (scope.config.peers.blackList.length > 0) {
-              if (scope.config.peers.blackList.indexOf(ip) >= 0) {
-                res.sendStatus(403);
-              } else {
-                next();
-              }
-            } else {
-              next();
-            }
-          } else {
-            next();
-          }
-        } else {
-          next();
-        }
-        */
       });
 
       scope.network.server.listen(scope.config.port, scope.config.address, function (err) {
