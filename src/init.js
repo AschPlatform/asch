@@ -294,15 +294,13 @@ module.exports = function(options, done) {
           res.setHeader("node-status",JSON.stringify({
             blockHeight: lastBlock.height,
             blockTime: slots.getRealTime(lastBlock.timestamp),
-            blocksBehind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1),
-            serverTime: new Date().getTime()
+            blocksBehind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1)
           }));
           next();
         }
         else{
           next();
         }
-
       });
 
       scope.network.server.listen(scope.config.port, scope.config.address, function (err) {
