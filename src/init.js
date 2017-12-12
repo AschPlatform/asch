@@ -275,6 +275,17 @@ module.exports = function(options, done) {
          * W3C Candidate Recommendation -> https://www.w3.org/TR/CSP/
          */
         res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+        
+        //allow CORS
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Headers", "Origin, Content-Length,  X-Requested-With, Content-Type, Accept, request-node-status");
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD, PUT, DELETE");        
+
+        if (req.method == "OPTIONS"){
+          res.sendStatus(200);
+          scope.logger.debug("Response pre-flight request");
+          return;
+        }
 
         var isApiOrPeer = parts.length > 1 && (parts[1] == 'api'|| parts[1] == 'peer') ;
         var whiteList = scope.config.api.access.whiteList;
@@ -289,7 +300,7 @@ module.exports = function(options, done) {
         }
         else if ( isApiOrPeer && req.headers["request-node-status"] == "yes"){         
           //Add server status info to response header
-          var lastBlock = scope.modules.blocks.getLastBlock();
+          var lastBlock = scope.modules.blocks.getLastBlock();         
           res.setHeader('Access-Control-Expose-Headers',"node-status");
           res.setHeader("node-status",JSON.stringify({
             blockHeight: lastBlock.height,
