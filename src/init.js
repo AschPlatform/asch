@@ -7,6 +7,7 @@ var async = require('async');
 var z_schema = require('z-schema');
 var ip = require('ip');
 var Sequence = require('./utils/sequence.js');
+var slots = require('./utils/slots.js');
 
 var moduleNames = [
   'server',
@@ -274,32 +275,41 @@ module.exports = function(options, done) {
          * W3C Candidate Recommendation -> https://www.w3.org/TR/CSP/
          */
         res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+        
+        //allow CORS
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Headers", "Origin, Content-Length,  X-Requested-With, Content-Type, Accept, request-node-status");
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD, PUT, DELETE");        
 
-        if (parts.length > 1) {
-          if (parts[1] == 'api') {
-            if (scope.config.api.access.whiteList.length > 0) {
-              if (scope.config.api.access.whiteList.indexOf(ip) < 0) {
-                res.sendStatus(403);
-              } else {
-                next();
-              }
-            } else {
-              next();
-            }
-          } else if (parts[1] == 'peer') {
-            if (scope.config.peers.blackList.length > 0) {
-              if (scope.config.peers.blackList.indexOf(ip) >= 0) {
-                res.sendStatus(403);
-              } else {
-                next();
-              }
-            } else {
-              next();
-            }
-          } else {
-            next();
-          }
-        } else {
+        if (req.method == "OPTIONS"){
+          res.sendStatus(200);
+          scope.logger.debug("Response pre-flight request");
+          return;
+        }
+
+        var isApiOrPeer = parts.length > 1 && (parts[1] == 'api'|| parts[1] == 'peer') ;
+        var whiteList = scope.config.api.access.whiteList;
+        var blackList = scope.config.peers.blackList;
+
+        var forbidden = isApiOrPeer && ( 
+            (whiteList.length > 0 && whiteList.indexOf(ip) < 0) ||
+            (blackList.length > 0 && blackList.indexOf(ip) >= 0) );
+
+        if (isApiOrPeer && forbidden){
+          res.sendStatus(403);
+        }
+        else if ( isApiOrPeer && req.headers["request-node-status"] == "yes"){         
+          //Add server status info to response header
+          var lastBlock = scope.modules.blocks.getLastBlock();         
+          res.setHeader('Access-Control-Expose-Headers',"node-status");
+          res.setHeader("node-status",JSON.stringify({
+            blockHeight: lastBlock.height,
+            blockTime: slots.getRealTime(lastBlock.timestamp),
+            blocksBehind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1)
+          }));
+          next();
+        }
+        else{
           next();
         }
       });
