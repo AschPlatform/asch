@@ -48,6 +48,8 @@ module.exports = function (config) {
     "fatal": 6
   }
 
+  if (typeof config.levels[config.errorLevel] === 'undefined') throw new Error('Unsupported error level')
+
   config.filename = config.filename || './debug.log';
 
   config.errorLevel = config.errorLevel || "log";
