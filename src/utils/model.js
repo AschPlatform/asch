@@ -201,7 +201,8 @@ class Model {
         balance = rows[0].balance
         balanceExist = true
       }
-      var newBalance = bignum(balance).plus(amount)
+
+      var newBalance = bignum(balance).plus(amount.toString())
       if (newBalance.lt(0)) {
         return cb('Asset balance not enough')
       }
