@@ -9,21 +9,6 @@
     <meta content="telephone=no" name="format-detection" />
     <link href="favicon.ico" href="favicon.ico" rel="icon" type="image/x-icon" />
     <!-- build:css [cssBuildPath] -->
-    <script>
-      var version = navigator.userAgent.toLowerCase();
-      var reg = /chrome\/[\d.]+/gi;
-      var result;
-      var version;
-      if (version.indexOf("chrome") > 0) {
-        result = version.match(reg);
-        version = (result + "").replace(/[^0-9]/ig, "");
-        if (Number(String(version).slice(0,2)) < 59) {
-            alert("您浏览器版本小于59，请升级到最新版本， /n The version of your browser is lower then requirement, plz update to the latest version")
-        }
-      } else {
-          alert("请使用谷歌浏览器，否则功能将会受限！/n Please be sure using the lastest version of chrome browser");
-      }
-    </script>
     <link rel="stylesheet" href="/app.css">
     <link rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="/ng-table/dist/ng-table.min.css">
@@ -127,6 +112,19 @@
 <!-- endbuild -->
 <script>
     $(document).ready(function(){
+      var version = navigator.userAgent.toLowerCase();
+      var reg = /chrome\/[\d.]+/gi;
+      var result;
+      var version;
+      if (version.indexOf("chrome") > 0) {
+        result = version.match(reg);
+        version = (result + "").replace(/[^0-9]/ig, "");
+        if (Number(String(version).slice(0,2)) < 59) {
+            alert("您浏览器版本小于59，请升级到最新版本， /n The version of your browser is lower then requirement, plz update to the latest version")
+        }
+      } else {
+          alert("请使用谷歌浏览器，否则功能将会受限！/n Please be sure using the lastest version of chrome browser");
+      }
         $.ajax({
             type:'HEAD',
             url:window.location.href,
