@@ -255,7 +255,11 @@ function Lock() {
     var lastBlock = modules.blocks.getLastBlock()
 
     if (isNaN(lockHeight) || lockHeight <= lastBlock.height) return cb('Invalid lock height')
-    if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight && lockHeight <= sender.lockHeight) return cb('Account is locked')
+    if (global.featureSwitch.enableLockReset){
+      if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight && lockHeight < sender.lockHeight) return cb('Account is locked')
+    } else {
+      if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight) return cb('Account is locked')
+    }
 
     cb(null, trs);
   }
