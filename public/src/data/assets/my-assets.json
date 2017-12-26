@@ -3,7 +3,7 @@
   "assets": [
     {
       "name": "eiSHesctQCbXA.RUBY",
-      "desc": "valid desc",
+      "desc": "valid description of an asset",
       "maximum": "10000",
       "precision": 1,
       "strategy": "quantity <= maximum / 10 * (height - genesisHeight)",
