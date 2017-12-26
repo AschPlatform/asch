@@ -1,0 +1,292 @@
+#application{
+  width: 100%;
+  min-height: 508px;
+  border: 1px solid #dddddd;
+  td{
+    text-align: center;
+    /*line-height: 60px;*/
+  }
+  .wop{
+    width: 25%;
+    overflow: auto;
+  }
+  .ico-img{
+    width: 48px;
+    height: 48px;
+  }
+  .deposit-btn {
+    width: 60px;
+    height: 24px;
+    background-color: #3989de;
+    border-color: transparent;
+    /*border:1px solid;*/
+    border-radius: 3px;
+    /*line-height: 20px;*/
+    color: #fff;
+    margin: 0px;
+    padding: 0px;
+  }
+  tr{
+    height: 60px;
+    line-height: 60px;
+  }
+  .appheader{
+    width: 100%;
+    height: 65px;
+    border-bottom: 1px solid #ddd;
+    box-sizing: border-box;
+    background: #efefef;
+    position: relative;
+    .titleitem{
+      width: 162px;
+      height: 65px;
+      float: left;
+      display: inline-block;
+      text-align: center;
+      line-height: 65px;
+      box-sizing: border-box;
+      border-right: 1px solid #ddd;
+      color: #777777;
+      font-size:20px;
+      cursor: pointer;
+      background: #efefef;
+    }
+    .active{
+      color:#3989de;
+      background: #fff;
+      border-bottom: 5px solid #3989de;
+    }
+    .right,.right1{
+      position: absolute;
+      top: 10px;
+      box-sizing: border-box;
+      height: 40px;
+    }
+    .right1{
+      right: 10px;
+      width: 300px;
+      font-size: 20px;
+      border: 1px solid #dddddd;
+      overflow: hidden;
+      .search_icon {
+        width: 32px;
+        height: 29px;
+        position: absolute;
+        left: 83px;
+        top: 5px;
+      }
+      label{
+        height: 42px;
+        width: 78px;
+        line-height: 40px;
+        display: inline-block;
+        text-align: center;
+        color: #aaa;
+        border-right: 1px solid #ddd;
+        background-color: #f5f4f4;
+      }
+      input{
+        background-color: #faf9f9;
+        height: 40px;
+        width: 219px;
+        margin: 0;
+        line-height: 40px;
+        outline: 0;
+        border: 0;
+        display: inline-block;
+        text-indent: 40px;
+        margin-left: -6px;
+      }
+
+    }
+    .right{
+      right: 323px;
+      width: 105px;
+      border: 0;
+      border-radius: 3px;
+      color:#fff;
+      font-size: 20px;
+      background-color: #3989de;
+    }
+  }
+  .content{
+    width: 100%;
+    min-height: 458px;
+    overflow: auto;
+    box-sizing: border-box;
+    padding: 20px;
+    .innerheader{
+      height: 63px;
+      width: 100%;
+      line-height: 63px;
+      box-sizing: border-box;
+      border-bottom: 5px solid #bcbcbc;
+      position: relative;
+      button{
+        width: 100px;
+        height: 40px;
+        line-height: 40px;
+        background-color: #3989de;
+        position: absolute;
+        font-size: 18px;
+        border: 0;
+        color:#fff;
+        right: 332px;
+        top: 12px;
+      }
+      .delete{
+        background: #3989de;
+      }
+    }
+    .tablewrap{
+      td{
+        text-align: center;
+      }
+    }
+
+   /* .id-container {
+      word-wrap: break-word; 
+      word-break: normal;
+    }*/
+    .category {
+      width: 3vw;
+    }
+    .balance {
+      width: 5vw;
+    }
+    .download {
+      width: 5vw;
+    }
+  }
+
+  .balance-dialog {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
+    background-color:rgba(0,0,0,0.5);
+    .balance-detail {
+      width:500px;
+      /*height:400px;*/
+      position: absolute;
+      /*top: calc( 50% - 200px);*/
+      left: calc( 50% - 250px);
+      background-color: #fff;
+      border-radius: 15px;
+      /*z-index: 2;*/
+      .close-btn {
+        width: 100%;
+        text-align: right;
+        height: 30px;
+        line-height: 30px;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+        padding-right: 15px;
+      }
+      /*overflow: hidden;*/
+      
+    }
+    .table {
+      font-size: 16px;
+      font-weight: bold;
+      height:50px;
+      .header{
+        font-size: 1.2em;
+        border-top: none;
+      }
+      tr{
+        font-size: 0.9em;
+      }
+      td {
+        line-height: 50px;  
+      }
+    }
+  }
+
+  .deposit-dialog{
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
+    background-color:rgba(0,0,0,0.8);
+    .deposit-detail {
+      width:480px;
+      /*height:270px;*/
+      position: absolute;
+      /*top: calc( 50% - 135px);*/
+      left: calc( 50% - 240px);
+      background-color: #fff;
+      border-radius: 15px;
+      .close-btn {
+        width: 100%;
+        text-align: right;
+        padding-right: 15px;
+        height: 30px;
+        line-height: 30px;
+      }
+
+      select {
+        width:80%;
+        margin-left: 10%;
+        height: 40px;
+        border-radius: 0px;
+        -webkit-border-radius: 0px;
+        -moz-border-radius: 0px;
+        background-color: #EAEAEA;
+        font-size: 20px;
+        border-radius: 4px;
+      }
+      input {
+        width:80%;
+        margin-left: 10%;
+        height: 40px;
+        border-radius: 0px;
+        background-color: #EAEAEA;
+        margin-top:  12px;
+        border: 1px solid #ddd;
+        background-color: #faf9f9;
+        font-size: 20px;
+        color:#aaa;
+        padding: 6px;
+        border-radius: 4px;
+      }
+      p {
+        font-size: 20px;
+        color:#aaa;
+        padding: 6px;
+        margin-left: 10%;
+      }
+      .buttons {
+        /*width: 50%;
+        margin-left: 25%;*/
+        text-align: center;
+        button {
+          background-color: #2E73D5;
+          color: #fff;
+          width: 110px;
+          height: 40px;
+          border-color: transparent;
+          border-radius: 4px;
+          font-size: 20px
+        }
+        .confirm-btn {
+          margin-right: 200px;
+        }
+      }
+    }
+  }
+  
+  .deposit-dialog-nosecondpassword {
+    height:220px;
+    top: calc( 50% - 110px);
+  }
+  .deposit-dialog-secondpassword {
+      height:270px;
+      top: calc( 50% - 135px);
+  }
+
+}

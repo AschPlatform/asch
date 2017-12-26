@@ -1,0 +1,105 @@
+.assignee {
+  width: 840px;
+  /*height: 590px;*/
+  background-color: #fff;
+  box-sizing: border-box;
+  padding: 0px 46px;
+  border-radius: 15px;
+  .h_header {
+    height: 109px;
+    line-height: 109px;
+    font-size: 24px;
+    text-align: center;
+    color: #aaa;
+    position: relative;
+    span {
+      color: #333;
+      margin-left: 10px;
+    }
+    .close {
+      width: 26px;
+      height: 26px;
+      position: absolute;
+      right: 0;
+      top: 20px;
+      img {
+        width: 100%;
+      }
+    }
+  }
+  .item_detail {
+
+    box-sizing: border-box;
+   // height: 188px;
+    width: 100%;
+    .left{
+      float: left;
+      width: 100px;
+     // height: 188px;
+      color: #777777;
+      font-size: 20px;
+      line-height: 48px;
+      margin-bottom: 20px;
+    }
+    .right{
+      float: right;
+      width: 623px;
+      //height: 189px;
+      margin-bottom: 20px;
+      input{
+        width: 100%;
+        height: 48px;
+        padding: 14px 24px;
+        font-size: 20px;
+        color: #aaaaaa;
+        border-radius: 4px;
+      }
+      .explain{
+        font-size: 20px;
+        color: #aaaaaa;
+        width: 100%;
+        height: 120px;
+        line-height: 44px;
+        margin-top: 20px;
+      }
+    }
+  }
+  .btn_wrap{
+    width: 100%;
+    height: 50px;
+    //margin-top: 45px;
+    a{
+      color: #3276c3;
+      font-size: 20px;
+      width: 90px;
+      line-height: 50px;
+      text-align: center;
+      float: right;
+    }
+    button{
+      width:145px;
+      line-height: 45px;
+      text-align: center;
+      background:#3989de;
+      border: 0;
+      outline: 0;
+      font-size: 28px;
+      color: #ffffff;
+      float: right;
+      border-radius: 4px;
+    }
+
+
+  }
+  .clearfloat{clear:both}
+  p{
+    color: #3989de;
+    font-size: 14px;
+    text-align: right;
+    margin-top: 15px;
+    margin-bottom: 40px;
+    height: 40px;
+    width: 100%;
+  }
+
+}

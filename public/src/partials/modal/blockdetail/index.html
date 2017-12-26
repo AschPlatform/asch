@@ -1,0 +1,20 @@
+<div class="blockdetail" ng-controller="blockdetailCtrl" ng-init="init()">
+    <div class="h_header">{{'BLOCK_DETAIL' | translate}}<a class="close"href="" ng-click="Close()"><img src="/assets/common/close.png" alt=""></a></div>
+
+    <div class="deal_info" >
+
+            <table class="table">
+                <tr><td>ID:</td><td>{{block.id}}</td></tr>
+                <tr><td>{{'VERSION' | translate}}:</td><td>{{block.version}}</td></tr>
+                <tr><td>{{'TIME' | translate}}:</td><td>{{block.timestamp | timestampFilter}}</td></tr>
+                <tr><td>{{'HEIGHT' | translate}}:</td><td>{{block.height}}</td></tr>
+                <tr><td>{{'PREVIOUS_BLOCK' | translate}}:</td><td> <i class="level" ng-click="showdetailInfo(block.previousBlock)">{{block.previousBlock}}</i></td></tr>
+                <tr><td>{{'TRANSACTIONS_COUNT' | translate}}:</td><td>{{block.numberOfTransactions}}</td></tr>
+                <tr><td>{{'TOTAL_AMOUNTS' | translate}}:</td><td>{{block.totalAmount}}</td></tr>
+                <tr><td>{{'REWARDS' | translate}}:</td><td>{{block.reward}}</td></tr>
+                <tr><td>{{'PAYLOAD_HASH' | translate}}:</td><td>{{block.payloadHash}}</td></tr>
+                <tr><td>{{'PRODUCER' | translate}}:</td><td> <i class="level" ng-click="showaccountdetailInfo(block.generatorId)">{{block.generatorId}}</i></td></tr>
+                <tr><td>{{'PRODUCER_PUBKEY' | translate}}:</td><td>{{block.generatorPublicKey}}</td></tr>
+            </table>
+        </div>
+    </div>

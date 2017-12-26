@@ -1,0 +1,38 @@
+#footer {
+    height: 45px;
+    /*background-color: #0c7bf8;*/
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    .footer_center{
+    	height: 30px;
+    	width: 550px;
+    	margin: 0 auto;
+    	margin-top: 15px;
+    	border: 1px solid #ddd;
+    	border-bottom: 0;
+    	line-height: 30px;
+    	 display: box;
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: flex;
+		.footer_left,.footer_right{
+			 webkit-flex: 1;
+            flex: 1;
+            -webkit-box-flex: 1;
+			text-align: center;
+			height: 30px;
+			line-height: 30px;
+		}
+		.footer_left{
+			background: #35271e;
+			font-size: 18px;
+			color:#fff;
+		}
+		.footer_right{
+			background: #f3f3f3;
+			font-size: 18px;
+			color:#aaa;
+		}
+    }
+}

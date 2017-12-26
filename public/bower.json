@@ -1,0 +1,41 @@
+{
+  "name": "asch",
+  "version": "0.0.1",
+  "authors": [
+    "zenking<zhangling@whatsmax.com>"
+  ],
+  "description": "asch",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "ASCH"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": "~1.5.3",
+    "angular-route": "~1.4.8",
+    "bootstrap": "~3.3.6",
+    "angular-ui-grid": "~3.0.7",
+    "angular-bootstrap": "~0.14.3",
+    "angular-cookie": "~4.0.9",
+    "angular-qr": "^0.2.0",
+    "magic-check": "^1.0.3",
+    "ng-table": "0.5.4",
+    "angular-resource": "^1.5.7",
+    "angular-translate": "^2.12.1"
+  },
+  "devDependencies": {
+    "angular-bootstrap": "^1.3.3"
+  },
+  "resolutions": {
+    "angular": "~1.5.3"
+  }
+}

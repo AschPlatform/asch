@@ -1,0 +1,23 @@
+<div  ng-include="'partials/common/crumb/crumb.html'"></div>
+<div id="addacl" ng-controller="addaclCtrl" ng-init="init()">
+    <div class="_item">
+        <label >{{'CURRENT_MODE' | translate}}</label>
+        <input ng-show="addACL.acl == 0" type="text" value="黑名单模式"  disabled>
+        <input ng-show="addACL.acl == 1" type="text" value="白名单模式"  disabled>
+    </div>
+    <div class="_item">
+        <label >{{'ADD_LIST' | translate}}</label>
+        <textarea  ng-model="addList" required  ></textarea>
+
+    </div>
+    <div class="_item" ng-show="secpwd">
+        <label >{{'SECOND_PASSWORD' | translate}}</label>
+        <input type="password" ng-model="secondPassword" >
+    </div>
+    <button class="sent" ng-click="sub()">{{'SUBMIT' | translate}}</button>
+    <div id="comfirmDia" ng-show="comfirmDialog">
+        <p>该操作需要消耗手续费{{ addacltrs.fee | xasFilter}} XAS</p>
+        <button class="sent" ng-click="comfirmDialogClose()">{{'CANCEL' | translate}}</button>
+        <button class="sent" ng-click="comfirmSub()">{{'CONFIRM' | translate}}</button>
+    </div>
+</div>

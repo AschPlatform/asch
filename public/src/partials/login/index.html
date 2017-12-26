@@ -1,0 +1,67 @@
+<div id="login" ng-controller="loginCtrl" ng-init="init()" >
+	<div class="wrap1 " ng-show="register">
+		<div class="header"></div>
+		<div class="content">
+			<div class="content_top">
+				<!--<div class="left">-->
+					<!--<img src="/assets/common/user-anonymous.png" alt="">-->
+				<!--</div>-->
+				<div class="right">
+					<input ng-model="secret" type="password" placeholder="{{'INPUT_PASSWORD' | translate}}">
+					<div class="is-agree">
+						<input class="magic-checkbox" type="checkbox" ng-checked="saveLogin" ng-click="saveLoginChange()" name="layout" id="1">
+						<label  for="1">{{'KEEP_SESSION' | translate}}</label>
+					</div>
+					<div class="language">
+						<img src="{{languageIcon}}" />
+						<select ng-model="selectedLanguage" ng-options="l.value for l in languages" ng-change="changeLanguage()"></select>
+					</div>
+				</div>
+			</div>
+			<button class="register" ng-click="registerin()">{{'LOGIN' | translate}}</button>
+			<button class="newuser" ng-click="newuser()">{{'NEW_ACCOUNT' | translate}}</button>
+		</div>
+	</div>
+	<div class="wrap2 " ng-show="creatpwd">
+		<div class="header">
+			<p>{{'STEP' | translate}} <i>1</i><b>/ 2</b><span>{{'CREATE_MASTER_PASSWORD' | translate}}</span> </p>
+			<!--<img src="/assets/common/close.png" class="close" ng-click="close()" alt="">-->
+		</div>
+		<div class="content">
+			<div class="content_top">
+				<!--<div class="left">-->
+					<!--<img src="/assets/common/user-anonymous.png" alt="">-->
+				<!--</div>-->
+				<div class="right">
+					<label for="textarea">{{'NEW_PASSWORD' | translate}}</label>
+					<textarea type="textarea" id="textarea" ng-model="newsecret" disabled></textarea>
+					<p>{{'NEW_PWD_TIP_1' | translate}}</p>
+				</div>
+
+			</div>
+			<button class="checkstep" ng-click="nextStep()">{{'NEXT_STEP' | translate}}</button>
+			<button class="savepsw"><a ng-click="saveTxt('ASCH-secret')">{{'SAVE_PASSWORD' | translate}}</a></button>
+		</div>
+	</div>
+	<div class="wrap3" ng-show="checkpwd">
+		<div class="header">
+			<p>{{'STEP' | translate}}<i>2</i><b>/ 2</b><span>{{'CONFIRM_PASSWORD' | translate}}</span> </p>
+			<img src="/assets/common/close.png" ng-click="close()" class="close" alt="">
+		</div>
+		<div class="content">
+			<div class="content_top">
+				<!--<div class="left">-->
+					<!--<img src="/assets/common/user-anonymous.png"  alt="">-->
+				<!--</div>-->
+				<div class="right">
+					<label for="textarea1">{{'INPUT_PASSWORD_AGAIN' | translate}}</label>
+					<textarea type="textarea" id="textarea1"  ng-model="lastsecret"></textarea>
+					<p>{{'NEW_PWD_TIP_2' | translate}}</p>
+				</div>
+
+			</div>
+			<button class="lastcheck" ng-click="lastcheck()">{{'CONFIRM' | translate}}</button>
+			<button class="backto" ng-click="backto()">{{'CANCEL' | translate}}</button>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,68 @@
+#pay{
+  ._item{
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    width: 100%;
+    margin-bottom: 52px;
+    label{
+      display: inline-block;
+      width: 100px;
+      height: 50px;
+      line-height: 50px;
+      font-size: 20px;
+      color: #777;
+    }
+    input{
+      //display:inline-block;
+      //-webkit-flex: 880px;
+      //flex: 880px;
+      //-webkit-box-flex: 880px;
+      width: 880px;
+      height: 50px;
+      border: 1px solid #ddd;
+      background-color: #faf9f9;
+      font-size: 20px;
+      color:#aaa;
+      padding: 6px;
+      border-radius: 5px;
+    }
+  }
+  #pay_item4{
+    color: #3989de;
+  }
+  p{
+    line-height: 20px;
+    font-size: 20px;
+    color: #aaa;
+    padding-left: 100px;
+  }
+  .sent{
+    margin-top: 50px;
+    width: 163px;
+    height: 50px;
+    line-height: 50px;
+    text-align: center;
+    background-color: #3989de;
+    color: #fff;
+    margin-left: 100px;
+    outline: 0;
+    border: 0;
+    font-size: 20px;
+    border-radius: 4px;
+  }
+  .cancel{
+    width: 163px;
+    height: 50px;
+    line-height: 50px;
+    border: 0;
+    outline: 0;
+    background-color: #fff;
+    color: #3276c3;
+    font-size:20px;
+  }
+  .invalidBtn{
+    background-color: #398982 !important;
+    cursor: wait;
+  }
+} 

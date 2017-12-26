@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "balances": [
+    {
+      "currency": "issuername.BTC",
+      "balance": "9999999970",
+      "maximum": "10000000000000",
+      "precision": 6,
+      "quantity": "10000000000",
+      "writeoff": 0
+    }
+  ],
+  "count": 1
+}

@@ -1,0 +1,14 @@
+<div class="asch_tip">
+    <p>
+        <a ng-href="#/home"> <img src="/assets/common/min_logo.png" alt="">{{'HOME' | translate}}</a>
+        <span ng-show="$root.active == 'personal'">/ {{'PERSONAL' | translate}}</span>
+        <span ng-show="$root.active == 'application'">/ {{'APPLICATIONS' | translate}}</span>
+        <span ng-show="$root.active == 'blockforging'">/ {{'FORGING' | translate}}</span>
+        <span ng-show="$root.active == 'blockchain'">/ {{'BLOCKS' | translate}}</span>
+        <span ng-show="$root.active == 'vote'">/ {{'VOTE' | translate}}</span>
+        <span ng-show="$root.active == 'pay'">/ {{'TRANSFER' | translate}}</span>
+        <span ng-show="$root.active == 'peer'">/ {{'PEERS' | translate}}</span>
+        <span ng-show="$root.active == 'asset'">/ {{'ASSET' | translate}}</span>
+        <span ng-show="$root.active == 'acl'">/ <a ng-href="#/asset">{{'ASSET' | translate}}</a> / {{'UPDATE_ACL'|translate}}</span>
+    </p>
+</div>

@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "peers": [
+    {
+      "ip": "45.32.19.241",
+      "port": 4096,
+      "state": 2,
+      "os": "linux3.13.0-87-generic",
+      "version": "0.9.1"
+    },
+    {
+      "ip": "45.32.62.184",
+      "port": 4096,
+      "state": 2,
+      "os": "linux3.13.0-87-generic",
+      "version": "0.9.1"
+    }
+  ],
+  "totalCount": 102
+}

@@ -1,0 +1,49 @@
+.blockdetail {
+  width: 840px;
+  background-color: #fff;
+  box-sizing: border-box;
+  padding: 0 46px;
+  padding-bottom: 50px;
+  border-radius: 15px;
+  .h_header {
+    height: 109px;
+    line-height: 109px;
+    font-size: 24px;
+    text-align: left;
+    color: #aaa;
+    position: relative;
+    span {
+      color: #333;
+      margin-left: 10px;
+    }
+    button{
+      width: 110px;
+      height: 50px;
+      background-color: #3989de;
+      text-align: center;
+      line-height: 50px;
+      font-size: 28px;
+      color:#fff;
+      position: absolute;
+      right: 60px;
+      top: 30px;
+      border: 0;
+    }
+    .close {
+      width: 26px;
+      height: 26px;
+      position: absolute;
+      right: 0;
+      top: 20px;
+      img {
+        width: 100%;
+      }
+    }
+  }
+  .deal_info{
+    td:first-child{
+      font-size: 1.1em;
+      font-weight: 600;
+    }
+  }
+}

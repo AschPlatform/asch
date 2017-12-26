@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "account": {
+    "address": "10174159498857769178",
+    "unconfirmedBalance": 10000000000000000,
+    "balance": 10000000000000000,
+    "unconfirmedSignature": false,
+    "secondSignature": false,
+    "secondPublicKey": "",
+    "multisignatures": [],
+    "u_multisignatures": []
+  },
+  "latestBlock": {
+    "height": 171,
+    "timestamp": 804390
+  },
+  "version": {
+    "version": "0.9.0",
+    "build": "development",
+    "net": "localnet"
+  }
+}

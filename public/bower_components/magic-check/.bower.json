@@ -1,0 +1,36 @@
+{
+  "name": "magic-check",
+  "description": "Beautify Radio and Checkbox with pure CSS",
+  "main": "",
+  "authors": [
+    "forsigner"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "beautify",
+    "radio",
+    "checkbox",
+    "css3",
+    "pure",
+    "css"
+  ],
+  "homepage": "https://github.com/forsigner/magic-check",
+  "moduleType": [],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "version": "1.0.3",
+  "_release": "1.0.3",
+  "_resolution": {
+    "type": "version",
+    "tag": "v1.0.3",
+    "commit": "46a50faa98404f24d23a5ee688f4516509a21f8c"
+  },
+  "_source": "https://github.com/forsigner/magic-check.git",
+  "_target": "^1.0.3",
+  "_originalSource": "magic-check"
+}

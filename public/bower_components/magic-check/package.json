@@ -1,0 +1,29 @@
+{
+  "name": "magic-check",
+  "version": "1.0.2",
+  "description": "Beautify Radio and Checkbox with pure CSS",
+  "keywords": [
+    "beautify",
+    "radio",
+    "checkbox",
+    "css3",
+    "pure css"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "gulp": "^3.9.0",
+    "gulp-cssnano": "^2.1.1",
+    "gulp-replace-name": "^1.0.1",
+    "gulp-sass": "^2.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/forsigner/magic-check.git"
+  },
+  "author": "forsigner",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/forsigner/magic-check/issues"
+  },
+  "homepage": "https://github.com/forsigner/magic-check#readme"
+}

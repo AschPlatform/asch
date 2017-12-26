@@ -1,0 +1,15 @@
+#pager{
+  height: 60px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  line-height: 60px;
+}
+.page-list .pagination {float:left;}
+.page-list .pagination span {cursor: pointer;}
+.page-list .pagination .separate span{cursor: default; border-top:none;border-bottom:none;}
+.page-list .pagination .separate span:hover {background: none;}
+.page-list .page-total {float:right; margin: 0px 20px;line-height: 74px}
+.page-list .page-total input, .page-list .page-total select{height: 26px; text-align: center;border: 1px solid #ddd;}
+.page-list .page-total input {width: 40px;line-height: 20px;}
+.page-list .page-total select {width: 50px;}

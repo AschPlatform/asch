@@ -1,0 +1,20 @@
+<ul ng-controller="sideCtrl" ng-init="init()">
+    
+    <li class="item level-one">
+        <a ng-class="{'active':$root.active=='home'}" ng-href="#/home" >首页</a>
+    </li>
+
+    <li class="item level-one cur ui-cs-people">
+        <a ng-class="{'active':$root.active=='application'}" ng-href="#/application" >应用中心</a>
+    </li>
+   
+    <li><a ng-class="{'active':$root.active=='blockforging'}" ng-href="#/blockforging">区块锻造</a></li>
+    
+    <li>
+        <a ng-class="{'active':$root.active=='blockchain'}" ng-href="#/blockchain">区块链</a>
+    </li>
+    <li>
+        <a ng-class="{'active':$root.active=='personal'}" ng-href="#/personal">个人中心</a>
+    </li>
+</ul>
+

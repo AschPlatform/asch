@@ -1,0 +1,130 @@
+#home {
+    /*background: #300;*/
+    .homeinfo{
+        //display: box;
+        //display: flex;
+        //display: -webkit-box;
+        padding: 0 auto;
+    .account {
+        width: 30%;
+        display: inline-block;
+        margin-right: 15px;
+        height: 140px;
+        border-radius: 6px;
+        overflow: hidden;
+
+        position: relative;
+        span {
+            //margin-left: 30px;
+            //margin-right: 30px;
+            font-size: 20px;
+            color: #fff;
+           // line-height: 140px;
+            position: absolute;
+            left: 20px;
+            top: 20px;
+        }
+        i {
+            font-size: 40px;
+            color: #fff;
+            font-style: normal;
+            position: absolute;
+            left: 20px;
+            top: 52px;
+            strong{
+                font-weight: normal;
+                font-size: 20px;
+                margin-left: 5px;
+            }
+        }
+        b {
+            font-style: normal;
+            font-size: 14px;
+            color: #fff;
+            position: absolute;
+            left: 20px;
+            top: 112px;
+        }
+        &:nth-child(1){
+            background: #5e92cc url("/assets/home/account_bg.png") no-repeat;
+            background-size: 100% 100%;
+        }
+        &:nth-child(2){
+            background: #7f9ebf ;
+        }
+        &:nth-child(3){
+            background: #7f9ebf;
+            margin-right:0;
+        }
+    }
+
+    }
+    .latest {
+        border-bottom: 5px solid #bcbcbc;
+        .table_title {
+            margin-top: 46px;
+            font-size: 40px;
+            color: #333;
+        }
+        .table {
+
+        }
+    }
+    .deal_table{
+        width: 100%;
+        min-height: 400px;
+    	.table{
+            width: 100%;
+            height: auto;
+    		td {
+                text-align: center;
+                border: 0;
+                max-width: 200px;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            tr:nth-child(even) {
+                background: #f5f5f5;
+                border: 0;
+            }
+            tr:nth-child(odd) {
+                background: #fff;
+                border: 0;
+            }
+
+            tr:hover{
+            	background: #eff3f9;
+            }
+    	}
+        .deal_table_title{
+            font-size: 20px;
+            color:#333;
+        }
+    }
+}
+#accept{
+    width: 840px;
+    //height: 530px;
+    z-index: 1000;
+    background-color: #fff;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-left: -420px;
+    margin-top: -295px;
+}
+
+#sent{
+    width: 840px;
+    //height: 530px;
+    z-index: 1000;
+    background-color: #fff;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-left: -420px;
+    margin-top: -295px;
+}
+.item_accept{
+    cursor: pointer;
+}

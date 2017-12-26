@@ -1,0 +1,16 @@
+<div class="accountdetail" ng-controller="accountdetailCtrl" ng-init="init()">
+    <div class="h_header">
+        {{'ACCOUNT_DETAIL' | translate}}
+        <a class="close"href="" ng-click="Close()"><img src="/assets/common/close.png" alt=""></a>
+    </div>
+
+    <div class="deal_info" >
+
+        <table class="table">
+            <tr><td>{{'ADDRESS' | translate}}:</td><td>{{account.address}}</td></tr>
+            <tr><td>{{'PUBLIC_KEY' | translate}}:</td><td>{{account.publicKey}}</td></tr>
+            <tr><td>{{'BALANCE' | translate}}:</td><td>{{account.balance  | xasFilter}}</td></tr>
+            <tr ng-show="account.username"><td>{{'DELEGATE_NAME' | translate}}:</td><td>{{account.username}}</td></tr>
+        </table>
+    </div>
+</div>

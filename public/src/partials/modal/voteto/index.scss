@@ -1,0 +1,166 @@
+.voteto,.deletevote {
+  width: 840px;
+  /*height: 590px;*/
+  background-color: #fff;
+  box-sizing: border-box;
+  padding: 0 46px;
+  border-radius: 15px;
+  max-height: 600px;
+  overflow-y: auto;
+  .h_header {
+    //height: 109px;
+    line-height: 109px;
+    font-size: 24px;
+    text-align: center;
+    color: #aaa;
+    position: relative;
+    .tips{
+      text-align: center;
+      color: #aaa;
+      font-size: 20px;
+      margin-top: -30px;
+      line-height: 40px;
+    }
+    span {
+      color: #333;
+      margin-left: 10px;
+      font-size: 30px;
+      /*i{
+        font-style: normal;
+        color: #aaaaaa;
+        font-size: 30px;
+      }*/
+    }
+    .tips{
+      font-size: 20px;
+      color: #aaaaaa;
+    }
+    .close {
+      width: 26px;
+      height: 26px;
+      position: absolute;
+      right: 0;
+      top: 20px;
+      img {
+        width: 100%;
+      }
+    }
+  }
+  .listing{
+    ul{
+      li{
+        line-height: 40px;
+        font-size: 14px;
+        border-top: 1px solid #dddddd;
+        text-indent: 49px;
+        &:nth-child(odd){
+          background: #f5f5f5;
+        }
+        &:nth-child(even){
+          background: #fff;
+        }
+        &:last-child{
+          border-bottom: 1px solid #dddddd;
+        }
+        .left{
+          color: #333333;
+          width: 73px;
+          float: left;
+        }
+        .right{
+          color: #3989de;
+          float: right;
+          padding-right:42px;
+
+        }
+      }
+    }
+
+  }
+  .item_detail {
+    box-sizing: border-box;
+    //height: 188px;
+    width: 100%;
+    margin-top: 43px;
+    font-size: 20px;
+    color:#aaa;
+    input{
+      width: 660px;
+    }
+  }
+  .btn_wrap{
+    width: 100%;
+    height: 50px;
+    margin-top: 45px;
+    margin-bottom: 10px;
+    a{
+      color: #3276c3;
+      font-size: 20px;
+      width: 90px;
+      line-height: 50px;
+      text-align: center;
+      float: right;
+    }
+    button{
+      width: 155px;
+      line-height: 45px;
+      text-align: center;
+      background: #3989de;
+      border: 0;
+      outline: 0;
+      font-size: 19px;
+      color: #ffffff;
+      float: right;
+      border-radius: 5px;
+    }
+
+
+  }
+  p{
+    color: #aaaaaa;
+    font-size: 20px;
+    text-align: center;
+  }
+  .tar{
+    text-align: right;
+    color: #3989de;
+    font-size: 14px;
+
+
+  }
+  .hide{
+    display:none;
+  }
+  .center{
+    text-align: center;
+    font-size: 20px;
+    color:#aaa;
+  }
+  .lh38{
+    line-height: 38px;
+  }
+}
+#voteto{
+  width: 840px;
+  //height: 530px;
+  z-index: 1000;
+  background-color: #fff;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -420px;
+  margin-top: -295px;
+  border-radius: 15px;
+}
+#deletevoteto{
+  width: 840px;
+  //height: 530px;
+  z-index: 1000;
+  background-color: #fff;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -420px;
+  margin-top: -295px;
+  border-radius: 15px;
+}

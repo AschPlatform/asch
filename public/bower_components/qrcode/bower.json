@@ -1,0 +1,33 @@
+{
+  "name": "qrcode.js",
+  "version": "1.0.2",
+  "description": "QR code generator, supports Numeric, Alphanumeric and Binary input mode up to lvl 40.",
+  "author": {
+    "name": "Jan Antala",
+    "url": "http://janantala.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/janantala/qrcode.js.git"
+  },
+  "keywords": [
+    "qr",
+    "qrcode"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/janantala/qrcode.js",
+  "main": "./lib/qrcode.js",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test*",
+    "src*",
+    "Gruntfile.js",
+    "package.json"
+  ],
+  "dependencies": {
+  },
+  "devDependencies": {
+  }
+}

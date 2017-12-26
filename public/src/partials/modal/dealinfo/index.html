@@ -1,0 +1,26 @@
+<div class="dealinfo" ng-controller="dealinfoCtrl" ng-init="init()">
+    <div class="h_header">
+        {{'TRANSACTION_INFO' | translate}}
+        <span>({{transactions.length}})</span>
+        <a class="close"href="" ng-click="CloseDealinfo()"><img src="/assets/common/close.png" alt=""></a>
+    </div>
+    <div class="item_detail">
+        <table class="table">
+            <tr class="title">
+                <td>ID</td>
+                <td>{{'CONFIRMATIONS' | translate}}</td>
+                <td>{{'AMOUNTS' | translate}}</td>
+                <td>{{'FEES' | translate}}</td>
+                <td>{{'DATE' | translate}}</td>
+            </tr>
+            <tr class="table_content" ng-repeat="i in transactions">
+                <td><i class="level">{{i.id}}</i></td>
+                <td>{{i.confirmations}}</td>
+                <td class="orangeFont">{{i.amount | xasFilter}}<i>XAS</i></td>
+                <td class="orangeFont">{{i.fee | xasFilter}}<i>XAS</i></td>
+                <td>{{i.timestamp | timestampFilter}}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+

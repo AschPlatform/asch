@@ -1,0 +1,119 @@
+{
+	"server": {
+		"dev": "http://localhost:4096",
+		"dev2": "http://testnet.asch.cn:4096",
+		"dev3": "http://101.200.123.124:4097",
+		"dev4": "http://192.168.2.179:4096"
+	},
+	//登录接口
+	"loginApi": {
+		"mock": "/data/home/accounts.json",
+		"url": "/api/accounts/open2"
+	},
+	//	余额账单Apiget /api/accounts?address=4205898691220223329L
+	"accountApi": {
+		"mock": "/data/home/accounts.json",
+		"url": "/api/accounts"
+	},
+	//	余额账单Apiget /api/transactions
+	"transactionsApi": {
+		"mock": "/data/home/transactions.json",
+		"url": "/api/transactions"
+	},
+	// 获取受托人接口
+	"delegatesApi": {
+		"mock": "/data/vote/delegates.json",
+		"url": "/api/delegates"
+	},
+	// 获取我的投票列表借口
+	"myvotesApi": {
+		"mock": "/data/vote/delegates.json",
+		"url": "/api/accounts/delegates"
+	},
+	// 获取我的投票列表借口
+	"blocksApi": {
+		"mock": "/data/blockchain/blocks.json",
+		"url": "/api/blocks"
+	},
+	//受托人的基本信息
+	"blockforgingApi": {
+		"mock": "/data/blockforging/delegates.json",
+		"url": "/api/delegates/get"
+	},
+	//详情基本信息
+	"blocksDetailApi": {
+		"mock": "/data/blockDetail/getblocks.json",
+		"url": "/api/blocks/get"
+	},
+	//账户基本信息
+	"accountdetailApi": {
+		"mock": "/data/accountdetail/accounts.json",
+		"url": "/api/accounts"
+	},
+	//谁投我的票接口
+	"votetomeApi": {
+		"mock": "/data/vote/voter.json",
+		"url": "/api/delegates/voters"
+	},
+	//节点列表
+	"peerApi": {
+		"mock": "/data/peer/peers.json",
+		"url": "/api/peers"
+	},
+	"postApi": {
+		"mock": "/data/vote/delegates.json",
+		"url": "/peer/transactions"
+	},
+	"appListApi": {
+		"mock": "/data/application/applist.json",
+		"url": "/api/dapps"
+	},
+	"appInstalledApi": {
+		"mock": "/data/application/applist.json",
+		"url": "/api/dapps/installed"
+	},
+	"forgingStatusApi": {
+		"mock": "/data/blockforging/status.json",
+		"url": "/api/delegates/forging/status"
+	},
+	// 获取我的余额
+	"myBalancesApi": {
+		"mock": "/data/assets/my-balances.json",
+		"url": "/api/uia/balances/:address"
+	},
+	// 查询发行商
+	"issuerApi": {
+		"mock": "/data/assets/issuer.json",
+		"url": "/api/uia/issuers/:address"
+	},
+	// 获取某个发行商的资产
+	"myAssetsApi": {
+		"mock": "/data/assets/my-assets.json",
+		"url": "/api/uia/issuers/:name/assets"
+	},
+	// 获取资产活动记录
+	"myTransactionsApi": {
+		"mock": "/data/assets/my-transactions.json",
+		"url": "/api/uia/transactions/my/:address"
+	},
+	// 获取资产访问控制列表
+	"assetAclApi": {
+		"mock": "/data/assets/acl.json",
+		"url": "/api/uia/assets/:name/acl/:flag"
+	},
+	// 获取应用余额
+	"appBalanceApi": {
+		"mock": "",
+		"url": "/api/dapps/balances/:appId"
+	},
+	// 获取特定资产
+	"uiaAssetApi": {
+		"mock": "",
+		"url": "/api/uia/assets/:name"
+	},
+	// 获取所有资产
+	"uiaAssetListApi": {
+		"mock": "",
+		"url": "/api/uia/assets"
+	}
+}

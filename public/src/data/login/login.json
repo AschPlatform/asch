@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "account": {
+    "address": "8548292762017310875L",
+    "unconfirmedBalance": "0",
+    "balance": "0",
+    "publicKey": "096b2485bd8dd4b6d3d5143feb80e56355e8ab685e95612edde2bbbffb3eac52",
+    "unconfirmedSignature": 0,
+    "secondSignature": 0,
+    "secondPublicKey": "1287461lfadifi672452hkajsgf",
+    "multisignatures": null,
+    "u_multisignatures": null
+  }
+}

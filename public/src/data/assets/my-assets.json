@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "assets": [
+    {
+      "name": "eiSHesctQCbXA.RUBY",
+      "desc": "valid desc",
+      "maximum": "10000",
+      "precision": 1,
+      "strategy": "quantity <= maximum / 10 * (height - genesisHeight)",
+      "quantity": "3000",
+      "height": 25,
+      "issuerId": "2592056580277537382",
+      "acl": 0,
+      "writeoff": 0
+    }
+  ],
+  "count": 1
+}

@@ -1,0 +1,37 @@
+<div>
+    <div class="asch_nav">
+        <div class="logo"></div>
+        <ul ng-controller="headerCtrl" ng-init="init()">
+            <li ng-class="{'active':$root.active=='home'}">
+                <a  ng-href="#/home"><img src="/assets/common/home.png" alt="">{{'HOME' | translate}}</a>
+            </li>
+            <li ng-class="{'active':$root.active=='asset'}">
+                <a  ng-href="#/asset"><img src="/assets/common/asset.png" alt="">{{'ASSET' | translate}}</a>
+            </li>
+            <li ng-class="{'active':$root.active=='personal'}" >
+                <a ng-href="#/personal"><img src="/assets/common/personal.png" alt="">{{'PERSONAL' | translate}}</a>
+            </li>
+            <li ng-class="{'active':$root.active=='application'}" >
+                <a ng-href="#/application"><img src="/assets/common/application.png" alt="">{{'APPLICATIONS' | translate}}</a>
+            </li>
+            <li ng-class="{'active':$root.active=='blockforging'}">
+                <a  ng-href="#/blockforging" ><img src="/assets/common/blockforging.png" alt="">{{'FORGING' | translate}}</a>
+                <!-- 下拉菜单  -->
+            </li>
+            <li ng-class="{'active':$root.active=='blockchain'}">
+                <a  ng-href="#/blockchain"><img src="/assets/common/blockchains.png" alt="">{{'BLOCKS' | translate}}</a>
+            </li>
+            <li ng-class="{'active':$root.active=='vote'}" >
+                <a ng-href="#/vote"><img src="/assets/common/vote.png" alt="">{{'VOTE' | translate}}</a>
+            </li>
+            <li ng-class="{'active':$root.active=='pay'}">
+            <a  ng-click="goPay()"><img src="/assets/common/pay.png" alt="">{{'TRANSFER' | translate}}</a>
+           </li>
+            <li ng-class="{'active':$root.active=='peer'}">
+                <a  ng-href="#/peer"><img src="/assets/common/per.png" alt="">{{'PEERS' | translate}}</a>
+            </li>
+
+        </ul>
+    </div>
+</div>
+

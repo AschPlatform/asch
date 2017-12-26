@@ -1,0 +1,136 @@
+#removeacl{
+  ._item{
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    width: 100%;
+    margin-bottom: 52px;
+    label{
+      display: inline-block;
+      width: 110px;
+      height: 50px;
+      line-height: 50px;
+      font-size: 20px;
+      color: #777;
+      text-align: right;
+      margin-right: 20px;
+    }
+    input{
+      width: 880px;
+      height: 50px;
+      border: 1px solid #ddd;
+      background-color: #faf9f9;
+      font-size: 20px;
+      color:#aaa;
+      padding: 6px;
+    }
+    textarea{
+      width: 880px;
+      height: 150px;
+      border: 1px solid #ddd;
+      background-color: #faf9f9;
+      font-size: 20px;
+      color:#aaa;
+      padding: 6px;
+    }
+  }
+  .sent{
+    margin-top: 50px;
+    width: 163px;
+    height: 50px;
+    line-height: 50px;
+    text-align: center;
+    background-color: #3989de;
+    color: #fff;
+    margin-left: 120px;
+    outline: 0;
+    border: 0;
+    font-size: 20px;
+  }
+  .list{
+    label{
+      display: inline-block;
+      width: 110px;
+      height: 50px;
+      line-height: 50px;
+      font-size: 20px;
+      color: #777;
+      text-align: right;
+      margin-right: 20px;
+    }
+  }
+  .item_input{
+    width: 20px!important;
+  }
+  .tablewrap{
+    width: 50%;
+    input{
+      height: 40px;
+      margin: 0;
+    }
+    tr{
+      height: 40px;
+    }
+    td{
+      vertical-align: middle;
+      box-sizing: border-box;
+      padding: 0;
+      height: 40px;
+    }
+  }
+}
+#comfirmacl{
+  position: absolute;
+  left: 30%;
+  top: 50%;
+  max-width:420px;
+  min-height:200px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  padding: 60px;
+  z-index: 10;
+  p{
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+  ._item{
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    width: 100%;
+    margin-bottom: 22px;
+    label{
+      display: inline-block;
+      width: 110px;
+      height: 50px;
+      line-height: 50px;
+      font-size: 20px;
+      color: #777;
+      text-align: right;
+      margin-right: 20px;
+    }
+    input{
+      width: 400px;
+      height: 50px;
+      border: 1px solid #ddd;
+      background-color: #faf9f9;
+      font-size: 20px;
+      color:#aaa;
+      padding: 6px;
+    }
+  }
+  .sent{
+    width: 120px;
+    margin: 0;
+    height: 40px;
+    border: 0;
+    display: inline-block;
+    background: #3989de;
+    color: #fff;
+    float: right;
+    text-align: center;
+    line-height: 40px;
+    margin-right: 24px;
+    cursor: pointer;
+  }
+}

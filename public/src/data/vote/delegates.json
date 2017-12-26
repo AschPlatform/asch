@@ -1,0 +1,51 @@
+{
+  "success": true,
+  "delegates": [
+    {
+      "username": "genesis_60",
+      "address": "17110047919889272525L",
+      "publicKey": "0186d6cbee0c9b1a9783e7202f57fc234b1d98197ada1cc29cfbdf697a636ef1",
+      "vote": 9999989590000000,
+      "producedblocks": 186,
+      "missedblocks": 0,
+      "rate": 1,
+      "approval": "100.00",
+      "productivity": "100.00",
+      "voted": true
+    },
+    {
+      "username": "genesis_77",
+      "address": "11004588490103196952L",
+      "publicKey": "031e27beab583e2c94cb3167d128fc1a356c1ae88adfcfaa2334abffa3ae0b4c",
+      "vote": 9999989590000000,
+      "producedblocks": 187,
+      "missedblocks": 0,
+      "rate": 2,
+      "approval": "100.00",
+      "productivity": "100.00"
+    },
+    {
+      "username": "genesis_79",
+      "address": "11506830473925742632L",
+      "publicKey": "03e811dda4f51323ac712cd12299410830d655ddffb104f2c9974d90bf8c583a",
+      "vote": 9999989590000000,
+      "producedblocks": 188,
+      "missedblocks": 0,
+      "rate": 3,
+      "approval": "100.00",
+      "productivity": "100.00"
+    },
+    {
+      "username": "genesis_91",
+      "address": "5179180534922237219L",
+      "publicKey": "0779ca873bbda77f2850965c8a3a3d40a6ee4ec56af55f0a3f16c7c34c0f298b",
+      "vote": 9999989590000000,
+      "producedblocks": 184,
+      "missedblocks": 0,
+      "rate": 4,
+      "approval": "100.00",
+      "productivity": "100.00"
+    }
+  ],
+  "totalCount": 4
+}

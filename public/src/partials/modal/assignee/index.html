@@ -1,0 +1,25 @@
+<div class="assignee" ng-controller="assigneeCtrl" ng-init="init()">
+    <div class="h_header" >
+        <span>{{'REGISTER_DELEGATE' | translate}}</span>
+        <a class="close" href="" ng-click="Close()"><img src="/assets/common/close.png" alt=""></a>
+    </div>
+    <!--<div class="h_header" ng-show="checkit"><span>账户确认</span><a class="close"href="" ng-click="Close()"><img src="/assets/common/close.png" alt=""></a></div>-->
+    <div class="item_detail one" >
+        <div class="left">{{'DELEGATE_NAME' | translate}}</div>
+        <div class="right">
+            <input type="text" ng-model="userName" placeholder="{{'INPUT_DELEGATE_NAME' | translate}}">
+        </div>
+        <div class="left" ng-show="userService.secondPublicKey">{{'SECOND_PASSWORD' | translate}}</div>
+        <div class="right">
+            <input placeholder="{{'DELEGATE_NAME_RULE_TIP' | translate}}" maxlength="16" ng-model="secondpassword" type="password" class="tips_voteto" ng-show="userService.secondPublicKey">
+        </div>
+    </div>
+
+    <div class="btn_wrap" >
+        <button ng-click="nextstep()">{{'REGISTER' | translate}}</button>
+        <a href="" ng-click="Close()">{{'CANCEL' | translate}}</a>
+
+    </div>
+    <div class="clearfloat"></div>
+    <p>{{'NEED_PAY' | translate}}100XAS</p>
+</div>

@@ -1,0 +1,322 @@
+#blockforging{
+  #content {
+    position: absolute;
+    top: 1.19rem;
+    left: 0;
+    right: 0;
+    bottom: 0.45rem;
+    overflow: auto;
+    padding: 0.3rem 0.48rem 0.30rem 0.48rem;
+    box-sizing: border-box;
+    font-family: "microsoft yahei";
+    font-size:0.14rem ;
+  }
+
+  .reduceIcon{
+    display: inline-block;
+    width: 0.12rem;
+    height:0.12rem ;
+    margin-right: 0.08rem;
+    background: url(../img/reduceIcon.png) no-repeat center center ;
+    background-size:100% auto;
+  }
+  .addIcon{
+    display: inline-block;
+    width: 0.12rem;
+    height:0.12rem ;
+    margin-right: 0.08rem;
+    background: url(../img/addIcon.png) no-repeat center center ;
+    background-size:100% auto;
+  }
+
+  #personal{
+    width: 100%;
+    border: 0.01rem solid #dddddd;
+  }
+  .clear{
+    clear: both;
+  }
+  .none{
+    display: none;
+  }
+
+  /*.nav 开始*/
+
+  .nav{
+    height: 0.62rem;
+    background: #efefef;
+  }
+  .nav .nav_per{
+    width: 1.85rem;
+    font-size: 0.24rem;
+    border-right: 0.01rem solid #dddddd;
+    line-height: 0.62rem;
+    float: left;
+    text-align:center;
+    color: #777777;
+  }
+  .accountInfo{}
+  .passwordInfo{}
+  .nav_register{
+    margin-top: 0.25rem;
+    width: 2rem;
+    height: 0.40rem;
+    background: #3276c3;
+    color: #fff;
+    float: right;
+    text-align: center;
+    line-height: 0.40rem;
+    margin-right: 0.20rem;
+    font-size: 0.20rem;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .nav .active{
+    background: #ffffff;
+    border-bottom: 0.05rem solid #3989de;
+    color: #3989de;
+    height: 0.57rem;
+  }
+  /*.nav 结束*/
+
+
+  /*.baseInfo 开始*/
+  .baseInfo{
+    position: relative;
+    padding: 0 0.20rem;
+    height: 4.40rem;
+  }
+  ._title{
+    height: 0.89rem;
+    font-size: 0.30rem;
+    line-height: 0.89rem;
+    border-bottom: 0.05rem solid #bcbcbc;
+  }
+
+  .baseInfo .baseInfo_tx{
+    width: 3.18rem;
+    height: 3.52rem;
+    float: left;
+  }
+  .baseInfo .baseInfo_text{
+    width: 8.70rem;
+    height: 3.52rem;
+    float: left;
+
+  }
+
+  .baseInfo .baseInfo_text .text_row{
+    height: 0.60rem;
+    border-bottom: 0.01rem solid #dddddd;
+    line-height:0.60rem;
+    font-size: 0.22rem;
+  }
+
+  .greyFont{
+    font-size: 0.24rem;
+    color: #aaaaaa;
+  }
+
+  .orangeFont{
+    font-size: 0.30rem;
+    color: #3989de;
+  }
+  /*.baseInfo 结束*/
+
+
+  /*.businessInfo 开始*/
+  .businessInfo{
+    padding: 0 0.20rem;
+    /*height: 440rem;*/
+  }
+  .greyFont_size{
+    font-size: 0.20rem;
+    color: #aaaaaa;
+  }
+
+  .more{
+    width: 100%;
+    height: 0.46rem;
+    text-align: center;
+    line-height: 0.46rem;
+    border: 0.01rem solid #dddddd;
+    margin-top:0.4rem ;
+    margin-bottom:0.34rem ;
+    font-size: 0.25rem;
+    color: #777777;
+  }
+
+  /*.businessInfo 结束*/
+
+
+  .passwordInfo_cont{
+
+  }
+
+  .finishSet{
+    width: 100%;
+    height: 4.60rem;
+    text-align: center;
+  }
+  .finishSet .finishSet_icon{
+    width: 1.56rem;
+    height: 1.56rem;
+    margin-top: 1.02rem;
+  }
+  .finishSet .finishSet_text{
+    margin-top: 0.36rem;
+    color: #aaaaaa;
+    font-size: 0.18rem;
+  }
+
+
+  .setPassword{
+    padding: 0 0.30rem;
+  }
+  .setPassword_tip{
+    font-size: 0.20rem;
+    color: #777777;
+    text-align: center;
+    margin-top: 0.40rem;
+
+
+  }
+  .accountInfo_cont{
+    padding: 0 0.20rem;
+  }
+
+  /*4个大的圆圈样式start*/
+  .circlePicInfo{
+    position: relative;
+    width: 100%;
+    height: 3rem;
+    margin-top: 0.55rem;
+    /*margin-bottom: 0.7rem;*/
+    text-align: center;
+    /*padding-left: 0.28rem;*/
+  }
+
+  .circlePicInfo .circle{
+    display: inline-block;
+    width: 2.46rem;
+    height: 2.46rem;
+    border-radius: 2.46rem;
+    margin-right: 0.6rem;
+  }
+
+  .allMoney{
+    position: relative;
+    background: #3989de;
+  }
+  .rank{
+    position: relative;
+    color: #3276c3;
+  }
+  .output{
+    position: relative;
+    color: #31b948;
+  }
+  .depiao{
+    position: relative;
+    color: #644ec3;
+  }
+  .allMoney .text1{
+    position: absolute;
+    top:0 ;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 0.24rem;
+    color: #fff;
+  }
+  .allMoney .text1{
+    position: absolute;
+    top:0 ;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 0.24rem;
+    color: #fff;
+  }
+  .allMoney .text1{
+    position: absolute;
+    top:0.6rem;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 0.24rem;
+    color: #fff;
+  }
+  .allMoney .text2{
+    position: absolute;
+    top:1.05rem;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 20px;
+    color: #fff;
+  }
+  .allMoney .text3{
+    position: absolute;
+    top:1.65rem;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 0.2rem;
+    color: #fff;
+  }
+  .circle .title{
+    position: absolute;
+    top:0.82rem;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 0.24rem;
+    color: #333333;
+  }
+  .circle .num{
+    position: absolute;
+    top:1.28rem;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 0.4rem;
+  }
+  /*4个大的圆圈样式end*/
+
+  .baseInfo_content{
+    .table {
+      th{
+        text-align: center;
+      }
+      td {
+        text-align: center;
+        border: 0;
+      }
+      tr:nth-child(even) {
+        background: #f5f5f5;
+        border: 0;
+      }
+      tr:nth-child(odd) {
+        background: #fff;
+        border: 0;
+      }
+      tr:hover {
+        background: #eff3f9;
+      }
+    }
+  }
+
+}
+#assignee{
+  width: 840px;
+  //height: 530px;
+  z-index: 1000;
+  background-color: #fff;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -420px;
+  margin-top: -295px;
+  border-radius: 15px;
+}

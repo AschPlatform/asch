@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "account": {
+    "address": "5484939806537083989",
+    "unconfirmedBalance": 9203318325461,
+    "balance": 9203318325461,
+    "publicKey": "c716f25ec24710f51884fabefdf3b3227f0a822d5c9804fd7efe98f8ffdf63ca",
+    "unconfirmedSignature": true,
+    "secondSignature": true,
+    "secondPublicKey": "396f6249c6c47a06732056a531d3618dbd6d476c326d017c87ec20d449d9ac97",
+    "multisignatures": [],
+    "u_multisignatures": []
+  },
+  "latestBlock": {
+    "height": 84773,
+    "timestamp": 2027780
+  },
+  "version": {
+    "version": "0.9.2",
+    "build": "13:30:52 18/07/2016",
+    "net": "testnet"
+  }
+}

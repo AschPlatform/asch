@@ -1,0 +1,305 @@
+#personal{
+	width: 100%;
+	border: 1px solid #dddddd;
+}
+.clear{
+	clear: both;
+}
+.none{
+	display: none;
+}
+
+/*.nav 开始*/
+
+.nav{
+	height: 62px;
+	background: #efefef;
+}
+.nav .nav_per{
+	width: 185px;
+	font-size: 24px;
+	border-right: 1px solid #dddddd;
+	line-height: 62px;
+	float: left;
+	text-align:center;
+	color: #777777;
+}
+.accountInfo{
+	cursor: pointer;
+}
+.passwordInfo{
+	cursor: pointer;
+}
+.positionInfo{
+	cursor: pointer;
+}
+.nav .nav_exit{
+	margin-top: 11px;
+	width: 140px;
+	height: 40px;
+	background: #3989de;
+	color: #fff;
+	float: right;
+	text-align: center;
+	line-height: 40px;
+	margin-right: 20px;
+	cursor: pointer;
+	border-radius: 4px;
+}
+.nav .active{
+	background: #ffffff;
+	border-bottom: 5px solid #3989de;
+	color: #3989de;
+	height: 62px;
+}
+/*.nav 结束*/
+
+
+/*.baseInfo 开始*/
+.baseInfo{
+	padding: 0 20px;
+	height: 550px;
+}
+._title{
+	height: 89px;
+	font-size: 30px;
+	line-height: 89px;
+	border-bottom: 5px solid #bcbcbc;
+}
+
+.baseInfo .baseInfo_tx{
+	width: 190px;
+	height: 350px;
+	background: url("/assets/personal/userlogo.png") no-repeat center center;
+	background-size: 60% auto;
+	float: left;
+}
+.baseInfo .baseInfo_text{
+	width: 75%;
+	height: 350px;
+	float: left;
+	margin-top: 40px;
+}
+.baseInfo_text .publickey_text p{
+	display: inline-block;
+	font-size: 16px;
+}
+.baseInfo .baseInfo_text .text_row{
+	height: 60px;
+	border-bottom: 1px solid #dddddd;
+	line-height:60px;
+	font-size: 22px;
+}
+
+.baseInfo .baseInfo_text .text_row_last{
+	height: 60px;
+	line-height:60px;
+	font-size: 22px;
+}
+
+.baseInfo_text button{
+	font-size: 0.6em;
+    height: 40px;
+    line-height: 40px;
+    color: darkslategray;
+}
+
+.greyFont{
+	font-size: 24px;
+	color: #aaaaaa;
+}
+
+.orangeFont{
+	font-size: 30px;
+	color: #3989de;
+}
+/*.baseInfo 结束*/
+
+
+/*.businessInfo 开始*/
+.businessInfo{
+	padding: 0 20px;
+	/*height: 440px;*/
+}
+.greyFont_size{
+	font-size: 20px;
+	color: #aaaaaa;
+}
+
+.more{
+	width: 100%;
+	height: 46px;
+	text-align: center;
+	line-height: 46px;
+	border: 1px solid #dddddd;
+	margin-top:4px ;
+	margin-bottom:34px ;
+}
+
+.qr_contain {
+	text-align: center;
+	width: 400px;
+	height: 400px;
+	z-index: 1000;
+	background-color: transparent;
+	position: absolute;
+	left: 23%;
+	top: 21%;
+	p{
+		text-align: center;
+		display: block !important;
+		font-size: 1.2em !important;
+		color: #000;
+	}
+}
+
+/*.businessInfo 结束*/
+
+
+.passwordInfo_cont{
+	margin-bottom: 110px;
+}
+
+.finishSet{
+	width: 100%;
+	height: 460px;
+	text-align: center;
+}
+.finishSet .finishSet_icon{
+	width: 156px;
+	height: 156px;
+	margin-top: 102px;
+}
+.finishSet .finishSet_text{
+	margin-top: 36px;
+	color: #aaaaaa;
+	font-size: 18px;
+}
+
+
+.setPassword{
+	padding: 0 30px;
+	.pwd_tip{
+		font-size:14px;
+		color:#aaa;
+		text-align: center;
+		margin-top: 26px;
+		margin-bottom: 32px;
+	}
+	.psw{
+		display: inline-block;
+		width: 100%;
+		text-align: center;
+		font-size: 20px;
+		margin-top: 88px;
+		&:last-child{
+			margin-top: 26px;
+		}
+		label{
+			color:#777;
+			margin-right: 20px;
+		}
+		input{
+			height: 50px;
+			width: 60%;
+			line-height: 50px;
+			font-size: 20px;
+			color: #777777;
+			padding: 13px 16px;
+			border: 1px solid #ddd;
+		}
+		span{
+			color:#3276c3;
+			margin-left: 55px;
+			position: relative;
+			&:before{
+				content: '';
+				width: 20px;
+				height: 20px;
+				position: absolute;
+				background: #fff url('/assets/common/rerush.png') center center no-repeat;
+				background-size: 100% auto;
+				left: -35px;
+				top: 0;
+			}
+		}
+	}
+	.pwd_btn{
+		margin: 0 auto;
+		text-align: center;
+		.accept_nxt{
+			display: inline-block;
+			width: 160px;
+			height: 40px;
+			line-height: 40px;
+			font-size:20px;
+			color:#fff;
+			background-color: #3989de;
+			border: 0;
+			outline: 0;
+			border-radius: 4px;
+		}
+	}
+
+}
+.setPassword_tip{
+	font-size: 20px;
+	color: #777777;
+	text-align: center;
+	margin-top: 40px;
+}
+
+// 锁仓页面
+.positionInfo_cont{
+	margin: 0 20px;
+	height: 480px;
+	.position_input_set{
+		width: 100%;
+		height: 550px;
+		text-align: center;
+		padding: 90px 0 0 0;
+		.input_box{
+			height: 120px;
+			width: 100%;
+			/*margin: 30px 0;*/
+			text-align: center;
+			.block_type_in{
+				display: block;
+				width: 60%;
+				margin: auto;
+				height: 50px;
+				font-size: 22px;
+				border: 1px solid #ddd;
+			}
+			p{
+				display: inline-block;
+				margin-top: 20px;
+				margin-left: 15px;
+				font-size: 22px; 
+				color: #aaaaaa;
+			}
+		}
+		span{
+			display: block;
+			font-size: 22px;
+			margin: 60px 0 0 0;
+			color: #aaaaaa;
+		}
+		.pwd_btn{
+			margin: 30px auto;
+			text-align: center;
+			.accept_nxt{
+				display: inline-block;
+				width: 160px;
+				height: 40px;
+				line-height: 40px;
+				font-size:20px;
+				color:#fff;
+				background-color: #3989de;
+				border: 0;
+				outline: 0;
+				border-radius: 4px;
+			}
+		}
+	}
+}

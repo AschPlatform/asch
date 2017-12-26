@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "delegate": {
+    "username": "genesis_5",
+    "address": "15685993315437640088L",
+    "publicKey": "4fe5cd087a319956ddc05725651e56486961b7d5733ecd23e26e463bf9253bb5",
+    "vote": 8949999780000000,
+    "producedblocks": 185,
+    "missedblocks": 0,
+    "rate": 28,
+    "approval": "89.50",
+    "productivity": "100.00",
+    "fees": 10,
+    "rewards": 20,
+    "forged": 30
+  }
+}

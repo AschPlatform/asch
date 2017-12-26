@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "accounts": [
+    {
+      "address": "18221003081100215902",
+      "publicKey": "1418e0fdf902d42dfb40e41948bad2917ecd01f467b3b1cd2729a6ea93dd238e",
+      "balance": 39700000000,
+      "weight":12
+    },
+    {
+      "address": "14333823283272251370",
+      "publicKey": "48452f62ce523bb6c25d2e43f2961da28f0339653a443a155c2d7cf151347cba",
+      "balance": 9988800000000,
+      "weight":12
+    },
+    {
+      "address": "12999975986535915958",
+      "publicKey": "fa1a07d8a7b67f08bb0f6d6f72786f2d48066af896708d9c9d7f105d3bd9006c",
+      "balance": 19585449406073,
+      "weight":12
+    },
+    {
+      "address": "13411347185948980398",
+      "publicKey": "1448c71b7cf9a040edcd4e898bafba6c8e95ac1ad6c6394dde08ead3d305e9ce",
+      "balance": 449998750000000,
+      "weight":12
+    },
+    {
+      "address": "17414118636859014500",
+      "publicKey": "15424fffc29043c810dce1593c1238733bc09979a0a31cd4ec3c33fb9076ca19",
+      "balance": 3981062360111112,
+      "weight":12
+    }
+  ],
+  "totalCount": 102
+}
