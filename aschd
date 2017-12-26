@@ -2,7 +2,7 @@
 
 readonly PROG_DIR=$(pwd)
 readonly PID_FILE=$PROG_DIR/asch.pid
-readonly IPS=("https://www.asch.io/downloads-International" "http://222.161.26.209:999-Chinese")
+readonly IPS=("https://www.asch.io/downloads-International" "http://125.32.110.138:9999/downloads-Chinese" "http://39.107.52.143-Chinese")
 
 function read_port() {
   echo `cat $PROG_DIR/config.json |grep '"port"'|head -n 1| awk -F "[:,]" '{print$2}'|tr -d ' '`
