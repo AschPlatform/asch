@@ -49,9 +49,27 @@ git clone https://github.com/AschPlatform/asch && cd asch && chmod u+x aschd
 npm install
 ```
 
+## Front end (wallet ui)
+## 前端页面构建(钱包页面)
+
+```
+cd public
+
+npm install bower -g
+npm install browserify -g
+npm install gulp  -g
+
+npm install
+# angular chose "angular#~1.5.3 which resolved to 1.5.11 and is required by ASCH"
+bower install
+
+npm run build
+gulp build-test #This make the dist directory.
+```
+
 ## Installation docker.
 ## docker方式运行asch
-[Please install Docker for Windows firstly](https://store.docker.com/search?offering=community&type=edition)
+[Please install Docker firstly](https://store.docker.com/search?offering=community&type=edition)
 
 ```
 # pull asch code docker image
@@ -70,6 +88,7 @@ cd asch && node app.js
 or
 cd asch && ./aschd start
 ```
+Then you can open ```localhost:4096``` in you browser.
 
 ## Usage
 ## app.js一些参数
@@ -95,29 +114,6 @@ node app.js --help
     --base <dir>               Base directory
 ```
 
-## Front end (wallet ui)
-## 前端页面构建
-
-```
-git clone https://github.com/AschPlatform/asch-frontend && cd asch-frontend
-
-npm install bower -g
-npm install browserify -g
-npm install gulp  -g
-
-npm install
-# angular chose "angular#~1.5.3 which resolved to 1.5.11 and is required by ASCH"
-bower install
-
-npm run build
-gulp build-test
-
-# copy static front end files to public directory in asch source code
-cp -r dist <asch dir>/public/
-```
-
-Then you can open ```localhost:4096``` in you browser
-
 ## Default localnet genesis account
 ## locatnet开发网络默认的创世账户，里面有币，可以给其它账号转
 
@@ -134,18 +130,17 @@ Then you can open ```localhost:4096``` in you browser
 
 ## Releated projects
 
-- [asch-docs](https://github.com/AschPlatform/asch-docs)
-- [asch-frontend](https://github.com/AschPlatform/asch-frontend)
+- [asch-docs](https://github.com/AschPlatform/asch/tree/master/docs)
 - [asch-cli](https://github.com/AschPlatform/asch-cli)
 - [asch-js](https://github.com/AschPlatform/asch-js)
-- [asch-sandbox](https://github.com/AschPlatform/asch-sandbox)
-- [asch-explorer] website: [aschd.org](http://aschd.org)
+- [asch-sandbox](https://github.com/AschPlatform/asch-sandbox-dist)
+- [asch-explorer] website: [explorer.asch.io/](https://explorer.asch.io/)
 
 ## License
 
 The MIT License (MIT)
 
-Copyright (c) 2016-2017 Asch</br>
+Copyright (c) 2016-2018 Asch</br>
 Copyright (c) 2015 Crypti
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -154,4 +149,4 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-[asch-explorer]:https://github.com/sportshark/asch-explorer
+[asch-explorer]:https://explorer.asch.io/
