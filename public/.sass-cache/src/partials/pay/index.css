@@ -1,0 +1,56 @@
+#pay ._item {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  width: 100%;
+  margin-bottom: 52px; }
+  #pay ._item label {
+    display: inline-block;
+    width: 100px;
+    height: 50px;
+    line-height: 50px;
+    font-size: 20px;
+    color: #777; }
+  #pay ._item input {
+    width: 880px;
+    height: 50px;
+    border: 1px solid #ddd;
+    background-color: #faf9f9;
+    font-size: 20px;
+    color: #aaa;
+    padding: 6px;
+    border-radius: 5px; }
+#pay #pay_item4 {
+  color: #3989de; }
+#pay p {
+  line-height: 20px;
+  font-size: 20px;
+  color: #aaa;
+  padding-left: 100px; }
+#pay .sent {
+  margin-top: 50px;
+  width: 163px;
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  background-color: #3989de;
+  color: #fff;
+  margin-left: 100px;
+  outline: 0;
+  border: 0;
+  font-size: 20px;
+  border-radius: 4px; }
+#pay .cancel {
+  width: 163px;
+  height: 50px;
+  line-height: 50px;
+  border: 0;
+  outline: 0;
+  background-color: #fff;
+  color: #3276c3;
+  font-size: 20px; }
+#pay .invalidBtn {
+  background-color: #398982 !important;
+  cursor: wait; }
+
+/*# sourceMappingURL=index.css.map */

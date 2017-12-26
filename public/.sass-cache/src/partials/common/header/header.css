@@ -1,0 +1,109 @@
+#header {
+  position: absolute;
+  width: 220px;
+  top: 0;
+  left: 0;
+  min-height: 100%;
+  background: #1a4273;
+  overflow-y: auto; }
+  #header .asch_nav {
+    background: #1a4273;
+    display: block; }
+    #header .asch_nav .logo {
+      height: 60px;
+      width: 200px;
+      background: url("/assets/common/logo.png") center center no-repeat;
+      background-size: 100px auto; }
+    #header .asch_nav ul {
+      /*width: 780px;*/
+      width: 200px;
+      /*overflow: hidden;*/
+      display: block; }
+      #header .asch_nav ul li {
+        display: inline-block;
+        height: 60px;
+        /*width: 105px;*/
+        width: 100%;
+        line-height: 60px;
+        box-sizing: border-box;
+        margin: 0;
+        cursor: pointer; }
+        #header .asch_nav ul li:first-child {
+          border-left: 1px solid #153863; }
+        #header .asch_nav ul li a {
+          padding-left: 50px;
+          display: block;
+          width: 100%;
+          height: 60px;
+          line-height: 60px;
+          font-size: 18px;
+          text-align: left;
+          border-bottom: 1px solid #104e96;
+          /*box-sizing: border-box;*/
+          color: #fff !important;
+          text-decoration: none; }
+          #header .asch_nav ul li a img {
+            width: 24px;
+            margin-right: 12px; }
+      #header .asch_nav ul .blockforging {
+        position: relative; }
+        #header .asch_nav ul .blockforging .dropdown_menu {
+          width: 100%;
+          position: absolute;
+          top: 80px;
+          left: 0;
+          border: 1px solid #ddd;
+          z-index: 100; }
+          #header .asch_nav ul .blockforging .dropdown_menu p {
+            line-height: 43px;
+            border-bottom: 1px solid #ddd;
+            background-color: #fff;
+            font-size: 16px;
+            color: #777;
+            margin: 0;
+            padding-left: 25px;
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            cursor: pointer; }
+            #header .asch_nav ul .blockforging .dropdown_menu p a {
+              color: #777 !important; }
+            #header .asch_nav ul .blockforging .dropdown_menu p:last-child {
+              border-bottom: 0; }
+      #header .asch_nav ul .active {
+        background: #3989de !important; }
+
+.asch_tip {
+  width: 100%; }
+  .asch_tip p {
+    height: 39px;
+    line-height: 39px;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+    position: relative; }
+    .asch_tip p a {
+      font-size: 18px;
+      color: #777;
+      text-decoration: none; }
+      .asch_tip p a img {
+        width: 21px;
+        margin-top: -1px;
+        margin-right: 20px;
+        border: 0; }
+    .asch_tip p span {
+      font-size: 18px;
+      color: #aaa !important; }
+    .asch_tip p .asch_tip_rights {
+      position: absolute;
+      right: 25px;
+      line-height: 39px;
+      font-size: 18px;
+      color: #777777; }
+      .asch_tip p .asch_tip_rights a {
+        margin-left: 24px;
+        text-decoration: none;
+        line-height: 39px;
+        color: #3276c3; }
+
+/*# sourceMappingURL=header.css.map */

@@ -33,7 +33,9 @@
 .positionInfo{
 	cursor: pointer;
 }
-.nav .nav_exit{
+.nav_exit{
+	display: inline-block;
+	float: right;
 	margin-top: 11px;
 	width: 140px;
 	height: 40px;
@@ -60,11 +62,17 @@
 	padding: 0 20px;
 	height: 550px;
 }
+.personal_header{
+	border-bottom: 5px solid #bcbcbc;
+	height: 89px;
+	line-height: 89px;
+}
 ._title{
+	display: inline-block;
 	height: 89px;
 	font-size: 30px;
 	line-height: 89px;
-	border-bottom: 5px solid #bcbcbc;
+	// border-bottom: 5px solid #bcbcbc;
 }
 
 .baseInfo .baseInfo_tx{

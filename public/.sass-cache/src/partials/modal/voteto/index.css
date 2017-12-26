@@ -1,0 +1,131 @@
+.voteto, .deletevote {
+  width: 840px;
+  /*height: 590px;*/
+  background-color: #fff;
+  box-sizing: border-box;
+  padding: 0 46px;
+  border-radius: 15px;
+  max-height: 600px;
+  overflow-y: auto; }
+  .voteto .h_header, .deletevote .h_header {
+    line-height: 109px;
+    font-size: 24px;
+    text-align: center;
+    color: #aaa;
+    position: relative; }
+    .voteto .h_header .tips, .deletevote .h_header .tips {
+      text-align: center;
+      color: #aaa;
+      font-size: 20px;
+      margin-top: -30px;
+      line-height: 40px; }
+    .voteto .h_header span, .deletevote .h_header span {
+      color: #333;
+      margin-left: 10px;
+      font-size: 30px;
+      /*i{
+        font-style: normal;
+        color: #aaaaaa;
+        font-size: 30px;
+      }*/ }
+    .voteto .h_header .tips, .deletevote .h_header .tips {
+      font-size: 20px;
+      color: #aaaaaa; }
+    .voteto .h_header .close, .deletevote .h_header .close {
+      width: 26px;
+      height: 26px;
+      position: absolute;
+      right: 0;
+      top: 20px; }
+      .voteto .h_header .close img, .deletevote .h_header .close img {
+        width: 100%; }
+  .voteto .listing ul li, .deletevote .listing ul li {
+    line-height: 40px;
+    font-size: 14px;
+    border-top: 1px solid #dddddd;
+    text-indent: 49px; }
+    .voteto .listing ul li:nth-child(odd), .deletevote .listing ul li:nth-child(odd) {
+      background: #f5f5f5; }
+    .voteto .listing ul li:nth-child(even), .deletevote .listing ul li:nth-child(even) {
+      background: #fff; }
+    .voteto .listing ul li:last-child, .deletevote .listing ul li:last-child {
+      border-bottom: 1px solid #dddddd; }
+    .voteto .listing ul li .left, .deletevote .listing ul li .left {
+      color: #333333;
+      width: 73px;
+      float: left; }
+    .voteto .listing ul li .right, .deletevote .listing ul li .right {
+      color: #3989de;
+      float: right;
+      padding-right: 42px; }
+  .voteto .item_detail, .deletevote .item_detail {
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: 43px;
+    font-size: 20px;
+    color: #aaa; }
+    .voteto .item_detail input, .deletevote .item_detail input {
+      width: 660px; }
+  .voteto .btn_wrap, .deletevote .btn_wrap {
+    width: 100%;
+    height: 50px;
+    margin-top: 45px;
+    margin-bottom: 10px; }
+    .voteto .btn_wrap a, .deletevote .btn_wrap a {
+      color: #3276c3;
+      font-size: 20px;
+      width: 90px;
+      line-height: 50px;
+      text-align: center;
+      float: right; }
+    .voteto .btn_wrap button, .deletevote .btn_wrap button {
+      width: 155px;
+      line-height: 45px;
+      text-align: center;
+      background: #3989de;
+      border: 0;
+      outline: 0;
+      font-size: 19px;
+      color: #ffffff;
+      float: right;
+      border-radius: 5px; }
+  .voteto p, .deletevote p {
+    color: #aaaaaa;
+    font-size: 20px;
+    text-align: center; }
+  .voteto .tar, .deletevote .tar {
+    text-align: right;
+    color: #3989de;
+    font-size: 14px; }
+  .voteto .hide, .deletevote .hide {
+    display: none; }
+  .voteto .center, .deletevote .center {
+    text-align: center;
+    font-size: 20px;
+    color: #aaa; }
+  .voteto .lh38, .deletevote .lh38 {
+    line-height: 38px; }
+
+#voteto {
+  width: 840px;
+  z-index: 1000;
+  background-color: #fff;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -420px;
+  margin-top: -295px;
+  border-radius: 15px; }
+
+#deletevoteto {
+  width: 840px;
+  z-index: 1000;
+  background-color: #fff;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -420px;
+  margin-top: -295px;
+  border-radius: 15px; }
+
+/*# sourceMappingURL=index.css.map */
