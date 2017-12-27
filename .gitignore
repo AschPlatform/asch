@@ -20,9 +20,10 @@ public/dist
 package-lock.json
 .vs/
 .vscode
-bower_components
-npm-debug.log
-dist
-.sass-cache
-.tmp
-.gulp
+public/bower_components
+public/npm-debug.log
+public/dist
+public/.sass-cache
+public/.tmp
+public/.gulp
+public/*.css
