@@ -34,8 +34,6 @@
 	cursor: pointer;
 }
 .nav_exit{
-	display: inline-block;
-	float: right;
 	margin-top: 11px;
 	width: 140px;
 	height: 40px;
@@ -72,7 +70,7 @@
 	height: 89px;
 	font-size: 30px;
 	line-height: 89px;
-	// border-bottom: 5px solid #bcbcbc;
+	border-bottom: 5px solid #bcbcbc;
 }
 
 .baseInfo .baseInfo_tx{
