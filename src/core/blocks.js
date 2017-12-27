@@ -712,7 +712,7 @@ Blocks.prototype.setLastBlock = function (block) {
     global.featureSwitch.enable1_3_0 = private.lastBlock.height >= 2920000
     global.featureSwitch.enableClubBonus = private.lastBlock.height >= 3320000
     global.featureSwitch.enableMoreLockTypes = global.featureSwitch.enableClubBonus
-    global.featureSwitch.enableLockReset = private.lastBlock.height >= 4280000
+    global.featureSwitch.enableLockReset = private.lastBlock.height >= 4290000
   } else {
     global.featureSwitch.enableLongId = true
     global.featureSwitch.enable1_3_0 = true
