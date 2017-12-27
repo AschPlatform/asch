@@ -1,7 +1,7 @@
 <div  ng-include="'partials/common/crumb/crumb.html'"></div>
 <div id="personal" ng-controller="personalCtrl" ng-init="init()" ng-show="isLogin">
 
-				<!-- <div class="nav">
+				<div class="nav">
 					<div class="nav_per accountInfo " ng-class=" {'active':accountInfo}" ng-click="accountchange()">
 						{{'ACCOUNT_INFO' | translate}}
 					</div>
@@ -15,17 +15,12 @@
 						{{'QUIT' | translate}}
 					</div>
 					<div class="clear"></div>
-				</div> -->
+				</div>
 				<!---账户信息 start-->
 				<div ng-show="accountInfo" class="accountInfo_cont ">
 					<div class="baseInfo">
-						<div class="personal_header">
-							<div class="_title">
-								{{'BASIC_INFO' | translate}}
-							</div>
-							<div class="nav_exit" ng-click="quitout()">
-								{{'QUIT' | translate}}
-							</div>
+						<div class="_title">
+							{{'BASIC_INFO' | translate}}
 						</div>
 						<div class="baseInfo_content">
 							<div class="baseInfo_tx"></div>
@@ -78,7 +73,7 @@
 				</div>
 				<!-- -账户信息 end -->
 				<!-- -支付信息 start -->
-				<!-- <div ng-show="passwordInfo" class="passwordInfo_cont ">
+				<div ng-show="passwordInfo" class="passwordInfo_cont ">
 					<div class="finishSet" ng-show="userService.secondPublicKey||passwordsure">
 						<img src="/assets/personal/tip_passwordNo.png" class="finishSet_icon"/>
 						<div class="finishSet_text">
@@ -103,10 +98,10 @@
 						</div>
 					</div>
 
-				</div> -->
+				</div>
 				<!--支付信息 end-->
 				<!--锁仓信息 start-->
-				<!-- <div ng-show="positionInfo" class="positionInfo_cont">
+				<div ng-show="positionInfo" class="positionInfo_cont">
 					<div class="_title">
 							{{'LOCK_POSITION_TITLE' | translate}}
 					</div>
@@ -120,7 +115,7 @@
 							<button class="accept_nxt" ng-click="setPositionLock()">{{'SUBMIT' | translate}}</button>
 						</div>
 					</div>
-				</div> -->
+				</div>
 				<!--锁仓信息 end-->
 				
 			</div>
