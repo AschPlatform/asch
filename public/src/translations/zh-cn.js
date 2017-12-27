@@ -115,6 +115,7 @@ window.Translations['zh-cn'] = {
 
   // transfer/pay
   SEND: '发送',
+  ALREADY_LOCKED: '您已经锁仓，此行为被拒绝',
   PAY_TIP: '请确保您正在发送XAS给正确的地址，本操作无法撤消',
 
   // peers

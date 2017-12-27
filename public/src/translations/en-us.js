@@ -123,6 +123,7 @@ window.Translations['en-us'] = {
 
   // transfer/pay
   SEND: 'Send',
+  ALREADY_LOCKED: 'The transaction is rejected due to the account lock.',
   PAY_TIP: 'Please make sure you send XAS to the correct address. This operation cannot be cancelled.',
 
   // peers

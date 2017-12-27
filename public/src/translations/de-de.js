@@ -117,6 +117,7 @@ window.Translations['de-de'] = {
 
   // transfer/pay
   SEND: 'Senden',
+  ALREADY_LOCKED: 'die Transaktion wird abgelehnt, da ihr Konto bereits gesperrt ist',
   PAY_TIP: 'Stelle sicher, dass du XAS an die richtige Adresse schickst. Diese Operation kann nicht rückgängig gemacht werden.',
 
   // peers

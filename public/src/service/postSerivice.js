@@ -60,6 +60,7 @@ angular.module('asch').service('postSerivice', function ($http, $translate, apiS
         var retryOrCallbak = function(data){
             if (countDown <= 0){
                 callback(1, data);
+                console.log('retryOrCallbak',data);
                 return;
             }
 
@@ -71,6 +72,7 @@ angular.module('asch').service('postSerivice', function ($http, $translate, apiS
         apiService.broadcastTransaction(trans).success(function(data, status, headers, config){    
             if (data.success){
                 callback(null, data);
+                console.log('broadcastTransaction-success',data);
                 return;
             }
             else if (canRetry(data)){
@@ -78,6 +80,7 @@ angular.module('asch').service('postSerivice', function ($http, $translate, apiS
                 return;
             }            
             //失败返回
+            console.log('broadcastTransaction-fail',data);
             callback(1, data);
 
         }).error(function(data, status, headers, config){
