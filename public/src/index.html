@@ -115,15 +115,14 @@
       var version = navigator.userAgent.toLowerCase();
       var reg = /chrome\/[\d.]+/gi;
       var result;
-      var version;
       if (version.indexOf("chrome") > 0) {
         result = version.match(reg);
         version = (result + "").replace(/[^0-9]/ig, "");
         if (Number(String(version).slice(0,2)) < 59) {
-            alert("您浏览器版本小于59，请升级到最新版本， /n The version of your browser is lower then requirement, plz update to the latest version")
+            alert("您浏览器版本小于59，请升级到最新版本的chrome浏览器， /n The version of your browser is lower then requirement, plz update to the latest version")
         }
       } else {
-          alert("请使用谷歌浏览器，否则功能将会受限！/n Please be sure using the lastest version of chrome browser");
+          alert("请使用谷歌浏览器，否则转账等操作可能会失败！/n Please be sure using the lastest version of chrome browser");
       }
         $.ajax({
             type:'HEAD',
@@ -134,7 +133,7 @@
                 var localTime = new Date().getTime();
                 console.log('serve:',serveTime,'localTime',localTime);
                 if ((localTime - serveTime)>5000 || (serveTime-localTime)>(120 * 1000)) {
-                    alert('本地时间有误！不推荐使用');
+                    alert('本地时间有误,请将本地时间调慢1分钟后再次刷新页面尝试. Your local time is different with server,please set the local time 1 minutes slower than server and refresh the page to try again');
                 }
             }
         });

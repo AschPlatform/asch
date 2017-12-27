@@ -217,7 +217,6 @@ function upgrade() {
   extractedDir=`find tmp -maxdepth 1 -type d | grep asch |head -n 1`
   currentVersion=`./aschd version`
   chmod u+x $extractedDir/aschd
-  newVersion=`$extractedDir/aschd version`
   ./aschd stop
   echo "Copying new files ..."
   for file in `ls $extractedDir`
@@ -228,6 +227,7 @@ function upgrade() {
     fi
   done
   rm -rf $extractedDir tmp/$latestName
+  newVersion=`./aschd version`  
   echo "Upgrade to $newVersion done."
   ./aschd start
 }
