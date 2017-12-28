@@ -55,6 +55,8 @@ window.Translations['de-de'] = {
   DAPP_DEPOSIT: 'Einzahlen',
   DAPP_BANLANCE_DETAIL: 'Saldo Detail',
   DAPP_DETAIL: 'Detail',
+  DAPP_BILLION: ' Milliarde(n)',
+  DAPP_MILLION: ' Million(en)',
   // dapp category filter
   DAPP_CATEGORY_COMMON: 'Allgemein',
   DAPP_CATEGORY_BUSINESS: 'Business',
@@ -147,6 +149,9 @@ window.Translations['de-de'] = {
   ADD_LIST:'Liste hinz.',
   CURRENT_LIST:'Current List',
   UPDATE_ACL:'Update ACL',
+  PUBLISHER_ALREADY_REGISTERED: 'Dieser Herausgeber wurde bereits registriert',
+  NO_ASSET_RELATED_INFORMATION: 'Keine Informationen zu Assets vorhanden',
+  STRATEGY_WARNING: 'Falls du dir nicht sicher bist wie man dieses Feld befüllt, lasse es bitte leer',
   // personal
   ACCOUNT_INFO: 'Konto',
   ACCOUNT_LOCK_TIP: 'Unlock after the blockheight reach this number',
@@ -240,6 +245,13 @@ window.Translations['de-de'] = {
   ERR_INVALID_REMARK: 'Stelle sicher, dass die Bermerkung richtig eingegeben wurde',
   ERR_NO_BALANCE: 'Saldo zu gering, bitte zahle etwas ein',
   ERR_NO_DEPOSIT_COIN: 'Es wurde kein Coin ausgewählt, bitte wähle einen aus',
+  ERR_PUBLISHER_NOT_EMPTY: 'Der Name des Herausgebers sowie die Beschreibung darf nicht leer sein',
+  ERR_NO_PUBLISHER_REGISTERED_YET: 'Es wurde noch kein Herausgeber registriert',
+  ERR_ASSET_NAME_3_TO_6_CAPITAL_LETTERS: 'Der Asset-Name muss aus 3-6 Großbuchstaben bestehen',
+  ERR_MISSING_ASSET_DESCRIPTION: 'Die Asset-Beschreibung darf nicht leer sein',
+  ERR_ASSET_TOPLIMIT_NOT_CORRECT: 'Das eingegebene Top-Limit ist keine gültige Eingabe',
+  ERR_ASSET_PRECISION_NOT_CORRECT: 'Die Eingabe für die Genauigkeit des Assets ist nicht korrekt',
+  ERR_ASSET_PRECISION_MUST_BE_INTEGER_BETWEEN_0_16: 'Die Genauigkeit muss ein Integer zwischen 0 und 16 sein',
 
   // toast info
   INF_REGISTER_SUCCESS: 'Erfolgreich registriert!',
@@ -249,6 +261,9 @@ window.Translations['de-de'] = {
   INF_VOTE_SUCCESS: 'Stimmabgabe erfolgreich!',
   INF_SECND_PASSWORD_SET_SUCCESS: 'Zweites Passwort erfolgreich gesetzt!',
   INF_POSITIONLOCK_SET_SUCCESS: 'Positions-Sperre erfolgreich gesetzt!',
+
+  // dialog
+  OPERATION_REQUIRES_FEE: 'Diese Operation kostet eine Gebühr von',
 
   ALLOW_WWB: 'Writeoff/Whitelist/Blacklist erlauben',
   ALLOW_WRITEOFF: 'Writeoff erlauben',
@@ -275,9 +290,9 @@ window.Translations['de-de'] = {
   DEPOSIT_FEES: 'Einzahlungsgebühren',
   DEPOSIT_SUCCESS: 'Einzahlung erfolgreich',
 
-  DAPP_SUPPORT_COIN: 'Unterstützte Coins',
+  DAPP_SUPPORT_COIN: 'Coins',
   DAPP_COIN_TOTAL_AMOUNT: 'Summe',
-  DAPP_COIN_CURRENT_QUANTITY: 'Derzeitige Anzahl',
+  DAPP_COIN_CURRENT_QUANTITY: 'Anzahl',
   DAPP_COIN_BALANCE: 'DAPP Saldo',
   DAPP_COIN_FEE: 'Gebühr: 0.1 XAS',
 

@@ -37,7 +37,7 @@
 
     </div>
     <div class="content first" ng-show="registerpublish">
-        <p class="title" ng-show="issuerStatus">你已经注册了发行商</p>
+        <p class="title" ng-show="issuerStatus">{{'PUBLISHER_ALREADY_REGISTERED' | translate}}</p>
 
         <div class="_item">
             <label >{{'DAPP_NAME' | translate}}</label>
@@ -74,7 +74,7 @@
         </div>
         <div class="_item">
             <label >{{'STRATEGY' | translate}}</label>
-            <textarea  required  ng-model="strategy" placeholder="如果不懂如何使用，不要随意设置该字段"></textarea>
+            <textarea  required  ng-model="strategy" placeholder="{{'STRATEGY_WARNING' | translate}}"></textarea>
 
         </div>
         <div class="_item">
@@ -96,7 +96,7 @@
         <button class="sent" ng-click="registerAsset()">{{'SUBMIT' | translate}}</button>
     </div>
     <div class="content third myAssets" ng-show="myAssets">
-        <p class="title" ng-show="!issuerStatus">没有资产相关信息</p>
+        <p class="title" ng-show="!issuerStatus">{{'NO_ASSET_RELATED_INFORMATION' | translate}}</p>
         <table ng-show="issuerStatus"class="table" ng-table="myAss" border="0" width="100%" cellpadding="0" cellspacing="0"
                template-pagination="custom/pager" >
             <thread>
@@ -201,8 +201,8 @@
         </ul>
     </script>
     <div id="comfirmDialog" ng-show="comfirmDialog">
-        <p ng-show="dialogNUM == 1">该操作需要消耗手续费{{ publishtrs.fee | xasFilter}} XAS</p>
-        <p ng-show="dialogNUM == 2">该操作需要消耗手续费{{ assetTrs.fee | xasFilter}} XAS</p>
+        <p ng-show="dialogNUM == 1">{{'OPERATION_REQUIRES_FEE' | translate}} {{ publishtrs.fee | xasFilter}} XAS</p>
+        <p ng-show="dialogNUM == 2">{{'OPERATION_REQUIRES_FEE' | translate}} {{ assetTrs.fee | xasFilter}} XAS</p>
         <button class="sent1" ng-click="comfirmDialogClose()">{{'CANCEL' | translate}}</button>
         <button class="sent2" ng-click="comfirmSub()">{{'CONFIRM' | translate}}</button>
     </div>
