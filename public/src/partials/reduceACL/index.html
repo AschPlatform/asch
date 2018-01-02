@@ -25,7 +25,7 @@
 
     <button class="sent" ng-click="updateAcl()">{{'SUBMIT' | translate}}</button>
     <div id="comfirmacl" ng-show="comfirmDialog">
-        <p>该操作需要消耗手续费{{ reduceacltrs.fee | xasFilter}} XAS</p>
+        <p>{{'OPERATION_REQUIRES_FEE' | translate}} {{ reduceacltrs.fee | xasFilter}} XAS</p>
         <button class="sent" ng-click="comfirmDialogClose()">{{'CANCEL' | translate}}</button>
         <button class="sent" ng-click="comfirmSub()">{{'CONFIRM' | translate}}</button>
     </div>
