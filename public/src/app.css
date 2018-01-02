@@ -554,5 +554,16 @@ body {
     background: url('/assets/common/asch_bg.jpg') top center no-repeat #06283c;
     background-size: 100% auto;
 }
+.isLogo{
+    POSITION: ABSOLUTE;
+    background: url(/assets/common/icon.png) no-repeat;
+    WIDTH: 300PX;
+    HEIGHT: 77PX;
+    MARGIN: AUTO;
+    TOP: 10%;
+    LEFT: 50%;
+    MARGIN-TOP: -33PX;
+    MARGIN-LEFT: -150PX;
+}
 
 
