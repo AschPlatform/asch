@@ -10,7 +10,6 @@ Asch system is a decentralized application platform, which is designed to lower 
 More infomation please visit our [official website](https://www.asch.io)
 
 ## System Dependency
-## 系统依赖
 
 - nodejs v6.3+
 - npm 3.10+ (not cnpm)
@@ -20,7 +19,6 @@ More infomation please visit our [official website](https://www.asch.io)
 - libssl
 
 ## Installation for ubuntu 14.04.x or higher.
-## 在14.04.x或者更高版本的ubuntu上运行asch源码，其它linux需要自行安装sqlite3和配置ntp
 
 ```
 # Install dependency package
@@ -49,11 +47,10 @@ git clone https://github.com/AschPlatform/asch && cd asch && chmod u+x aschd
 npm install
 ```
 
-## Front end (wallet ui)
-## 前端页面构建(钱包页面)
+## Front end (web wallet)
 
 ```
-cd public
+cd public/
 
 npm install bower -g
 npm install browserify -g
@@ -67,8 +64,8 @@ npm run build
 gulp build-test #This make the dist directory.
 ```
 
-## Installation docker.
-## docker方式运行asch
+## Installation on docker.
+
 [Please install Docker firstly](https://store.docker.com/search?offering=community&type=edition)
 
 ```
@@ -81,7 +78,6 @@ Asch server started as daemon ...
 ```
 
 ## Run 
-## 启动asch
 
 ```
 cd asch && node app.js
@@ -91,7 +87,6 @@ cd asch && ./aschd start
 Then you can open ```localhost:4096``` in you browser.
 
 ## Usage
-## app.js一些参数
 
 ```
 node app.js --help
@@ -115,7 +110,6 @@ node app.js --help
 ```
 
 ## Default localnet genesis account
-## locatnet开发网络默认的创世账户，里面有币，可以给其它账号转
 
 ```
 {
