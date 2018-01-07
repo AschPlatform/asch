@@ -34,6 +34,25 @@
             color:#aaa;
             padding:10px;
           }
+          .password {
+            position: relative;
+            input {
+              padding-right: 50px;
+            }
+            .pwd_btn {
+              position: absolute;
+              right: 10px;
+              top: 20px;
+              width: 30px;
+              height: 30px;
+              background: url("/assets/common/eye_close.png") center no-repeat;
+              background-size: contain;
+            }
+            .show_pwd {
+              background: url("/assets/common/eye_open.png") center no-repeat;
+              background-size: contain;
+            }
+          }
           .is-agree{
             font-size: 20px;
             color:#333;

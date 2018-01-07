@@ -1,5 +1,6 @@
 angular.module('asch').controller('loginCtrl', function ($scope, $rootScope, apiService, ipCookie, $window, $location, userService, $translate) {
 	$rootScope.userlogin = false;
+	$rootScope.showPassword = false;
 	$rootScope.register = true;
 	$rootScope.creatpwd = false;
 	$rootScope.checkpwd = false;
