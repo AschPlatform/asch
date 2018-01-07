@@ -7,7 +7,10 @@
 					<!--<img src="/assets/common/user-anonymous.png" alt="">-->
 				<!--</div>-->
 				<div class="right">
-					<input ng-model="secret" type="password" placeholder="{{'INPUT_PASSWORD' | translate}}">
+					<div class="password">
+						<input ng-model="secret" type="{{showPassword ? 'text' : 'password'}}" placeholder="{{'INPUT_PASSWORD' | translate}}">
+						<div class="pwd_btn {{showPassword ? 'show_pwd' : '' }}" ng-click="showPassword = !showPassword"></div>
+					</div>
 					<div class="is-agree">
 						<input class="magic-checkbox" type="checkbox" ng-checked="saveLogin" ng-click="saveLoginChange()" name="layout" id="1">
 						<label  for="1">{{'KEEP_SESSION' | translate}}</label>
