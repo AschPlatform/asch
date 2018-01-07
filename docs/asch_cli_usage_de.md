@@ -10,14 +10,14 @@ Inhaltsverzeichnis
   - [3 Asch-CLI Parameter](#3-asch-cli-parameter)
     - [3.1 Zeige die Hilfsinformationen](#31-zeige-die-hilfsinformationen)
     - [3.2 Zeige die Version der Asch-CLI](#32-zeige-die-version-der-asch-cli)
-    - [3.3 Spezifiziere eine IP-Adrese oder einen Hostnamen für den Ziel-Asch-Server](#33-spezifiziere-eine-ip-adrese-oder-einen-hostnamen-f%C3%BCr-den-ziel-asch-server)
-    - [3.4 Spezifiziere eine Port-Nummer auf dem Ziel Asch-Server](#34-spezifiziere-eine-port-nummer-auf-dem-ziel-asch-server)
+    - [3.3 Spezifiziere eine IP-Adresse oder einen Hostnamen für den Asch-Zielserver](#33-spezifiziere-eine-ip-adresse-oder-einen-hostnamen-f%C3%BCr-den-asch-zielserver)
+    - [3.4 Spezifiziere eine Portnummer auf dem Asch-Zielserver](#34-spezifiziere-eine-portnummer-auf-dem-asch-zielserver)
     - [3.5 Verwende die Haupt-Blockchain](#35-verwende-die-haupt-blockchain)
   - [4 Asch-CLI unterstützte Parameter](#4-asch-cli-unterst%C3%BCtzte-parameter)
     - [4.1 Zeige die Höhe der Blockchain](#41-zeige-die-h%C3%B6he-der-blockchain)
     - [4.2 Zeige den Status der Blockchain](#42-zeige-den-status-der-blockchain)
-    - [4.3 Zeige Konto-Informationen mittels Passwort](#43-zeige-konto-informationen-mittels-passwort)
-    - [4.4 Zeige die Kontoinformationen anhand eines öffentlichen Schlüssels](#44-zeige-die-kontoinformationen-anhand-eines-%C3%B6ffentlichen-schl%C3%BCssels)
+    - [4.3 Zeige Kontoinformationen mittels Passwort](#43-zeige-kontoinformationen-mittels-passwort)
+    - [4.4 Zeige Kontoinformationen anhand eines öffentlichen Schlüssels](#44-zeige-kontoinformationen-anhand-eines-%C3%B6ffentlichen-schl%C3%BCssels)
     - [4.5 Zeige ein Kontosaldo anhand einer Kontoadresse](#45-zeige-ein-kontosaldo-anhand-einer-kontoadresse)
     - [4.6 Zeige Kontoinformationen anhand einer Kontoadresse](#46-zeige-kontoinformationen-anhand-einer-kontoadresse)
     - [4.7 Zeige alle Stimmabgaben für Delegate anhand einer öffentlichen Adresse](#47-zeige-alle-stimmabgaben-f%C3%BCr-delegate-anhand-einer-%C3%B6ffentlichen-adresse)
@@ -26,24 +26,24 @@ Inhaltsverzeichnis
     - [4.10 Zeige die Knoten die für ein Delegat gestimmt haben, anhand des öffentlichen Schlüssels des Delegats](#410-zeige-die-knoten-die-f%C3%BCr-ein-delegat-gestimmt-haben-anhand-des-%C3%B6ffentlichen-schl%C3%BCssels-des-delegats)
     - [4.11 Zeige die Informationen zu einem Delegat anhand seines öffentlichen Schlüssels an](#411-zeige-die-informationen-zu-einem-delegat-anhand-seines-%C3%B6ffentlichen-schl%C3%BCssels-an)
     - [4.12 Zeige die Informationen zu einem Delegat anhand seines Namens](#412-zeige-die-informationen-zu-einem-delegat-anhand-seines-namens)
-    - [4.13 Zeige die Information zu einem oder mehrern Blöcken im Netzwerk an](#413-zeige-die-information-zu-einem-oder-mehrern-bl%C3%B6cken-im-netzwerk-an)
+    - [4.13 Zeige die Information zu einem oder mehreren Blöcken im Netzwerk an](#413-zeige-die-information-zu-einem-oder-mehreren-bl%C3%B6cken-im-netzwerk-an)
     - [4.14 Überprüfe Blockinformationen mit einer BlockID](#414-%C3%9Cberpr%C3%BCfe-blockinformationen-mit-einer-blockid)
     - [4.15 Zeige Informationen zu einem Block anhand der Blockhöhe](#415-zeige-informationen-zu-einem-block-anhand-der-blockh%C3%B6he)
-    - [4.16 Zeige den Netzwerkstatus / den Status der Peers an](#416-zeige-den-netzwerkstatus--den-status-der-peers-an)
+    - [4.16 Zeige den Netzwerkstatus / den Status der Peers an](#416-zeige-den-netzwerkstatus-den-status-der-peers-an)
     - [4.17 Zeige unbestätigte Transaktionen anhand einer öffentlichen Adresse](#417-zeige-unbest%C3%A4tigte-transaktionen-anhand-einer-%C3%B6ffentlichen-adresse)
-    - [4.18 Zeige/analysiere Transaktionsinformationen für das ganze Netzwerk](#418-zeigeanalysiere-transaktionsinformationen-f%C3%BCr-das-ganze-netzwerk)
+    - [4.18 Zeige / analysiere Transaktionsinformationen für das gesamte Netzwerk](#418-zeige-analysiere-transaktionsinformationen-f%C3%BCr-das-gesamte-netzwerk)
     - [4.19 Zeige Transaktionsdetails anhand einer Transaktions-ID](#419-zeige-transaktionsdetails-anhand-einer-transaktions-id)
     - [4.20 Geld überweisen](#420-geld-%C3%BCberweisen)
     - [4.21 Ein Delegat registrieren](#421-ein-delegat-registrieren)
     - [4.22 Für ein Delegat abstimmen](#422-f%C3%BCr-ein-delegat-abstimmen)
     - [4.23 Die Stimmabgabe für ein Delegat zurückziehen](#423-die-stimmabgabe-f%C3%BCr-ein-delegat-zur%C3%BCckziehen)
-    - [4.24 Ein zweiten Passwort setzen](#424-ein-zweiten-passwort-setzen)
+    - [4.24 Ein zweites Passwort setzen](#424-ein-zweites-passwort-setzen)
     - [4.25 Eine Dapp registrieren (dezentrale Applikation)](#425-eine-dapp-registrieren-dezentrale-applikation)
     - [4.26 Verträge](#426-vertr%C3%A4ge)
     - [4.27 Verschlüsselung](#427-verschl%C3%BCsselung)
-    - [4.28 Dapp Kommandos](#428-dapp-kommandos)
+    - [4.28 Dapp Befehle](#428-dapp-befehle)
     - [4.29 Erstelle den ersten Block der Blockchain (Genesisblock)](#429-erstelle-den-ersten-block-der-blockchain-genesisblock)
-    - [4.30 Überprüfe den Status aller Knoten/Peers im Netzwerk](#430-%C3%9Cberpr%C3%BCfe-den-status-aller-knotenpeers-im-netzwerk)
+    - [4.30 Überprüfe den Status aller Knoten / Peers im Netzwerk](#430-%C3%9Cberpr%C3%BCfe-den-status-aller-knoten-peers-im-netzwerk)
     - [4.31 Überprüfe den Status aller Delegate](#431-%C3%9Cberpr%C3%BCfe-den-status-aller-delegate)
     - [4.32 Zeige das Land aus dem ursprünglich die IP-Adresse des Knotens registriert wurde](#432-zeige-das-land-aus-dem-urspr%C3%BCnglich-die-ip-adresse-des-knotens-registriert-wurde)
 
@@ -51,12 +51,11 @@ Inhaltsverzeichnis mittels [markdown-toc](https://github.com/AlanWalk/markdown-t
 ---
 
 ## 0 Asch-CLI Übersicht
-From [Asch Whitepaper](/asch_whitepaper_de.md)
-> Asch-CLI ist eine Asch Kommandozeile (CLI steht für command-line interface). Mit Hilfe der Asch-CLI können Entwickler ohne große Mühe eine Sidechain erstellen und auf dieser entwickeln. Das System bietet eine Vielzahl an APIs welche die Erstellen von intelligenten Verträgen ermöglicht. Diese APIs umfassen die Möglichkeit für Konsens, Zufallszahlen, Datenbank-Zugriff, Kryptographie und vieles mehr.
+Aus dem [Asch Whitepaper](/asch_whitepaper_de.md)
+> Asch-CLI ist eine Asch Kommandozeile (CLI steht für command-line interface). Mit Hilfe der Asch-CLI können Entwickler ohne große Mühe eine Sidechain erstellen und auf dieser entwickeln. Das System bietet eine Vielzahl an APIs welche das Erstellen von intelligenten Verträgen (Smart Contracts) ermöglicht. Diese APIs umfassen die Möglichkeit für Konsens, Zufallszahlen, Datenbank-Zugriff, Kryptographie und vieles mehr.
 
 ## 1 Asch-CLI Installation
-- Installiere den node Paket-Manager **npm**
-`sudo apt-get install npm`
+- Installiere den node Paket-Manager **npm** `sudo apt-get install npm`
 
 - Installiere die Asch-CLI `npm install -g asch-cli` Hinweis: Wenn dein Standort China ist, versuche den folgenden Parameter um die Installation zu beschleunigen. `--registry=http://registry.npm.taobao.org`
  
@@ -67,15 +66,15 @@ From [Asch Whitepaper](/asch_whitepaper_de.md)
 ## 3 Asch-CLI Parameter
 ### 3.1 Zeige die Hilfsinformationen
 **Parameter:** 	-h, --help  
-**Rückgabe**     Eine Übersicht über alle Parameter und Subparameter  
+**Rückgabe:**     Eine Übersicht über alle Parameter und Subparameter  
 **Verwendung:**  	
- - asch-cli -h #zeige Asch-CLI Hilfsinformationen 
- - asch-cli [commands] -h #zeige Hilfsinformationen zu einem bestimmten Parameter
+ - ```asch-cli -h``` #zeige Asch-CLI Hilfsinformationen 
+ - ```asch-cli [commands] -h``` #zeige Hilfsinformationen zu einem bestimmten Parameter
 
-**Beispiels:**
+**Beispiel:**
 ```
 root@asch:~# asch-cli -h #zeige die Hilfe an
-  Verwendung: asch-cli [options] [command]
+  Usage: asch-cli [options] [command]
   Commands:
 
     getheight                              get block height
@@ -113,25 +112,25 @@ root@asch:~# asch-cli -h #zeige die Hilfe an
 
   Options:
 
-    -h, --help         output Verwendung information
+    -h, --help         output usage information
     -V, --version      output the version number
     -H, --host <host>  Specify the hostname or ip of the node, default: 127.0.0.1
     -P, --port <port>  Specify the port of the node, default: 4096
     -M, --main         Specify the mainnet, default: false
 
 root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getvoteddelegates -h #print Asch-CLI command help information
-  Verwendung: getvoteddelegates [options] [address]
+  Usage: getvoteddelegates [options] [address]
   get delegates voted by address
   Options:
 
-    -h, --help        output Verwendung information
+    -h, --help        output usage information
     -o, --offset <n>  
     -l, --limit <n>   
 ```
 
 ### 3.2 Zeige die Version der Asch-CLI 
 **Parameter:** 	-V, --version  
-**Rückgabe**  Die verwendete Version
+**Rückgabe:**  Die verwendete Version
 **Verwendung:**  `asch-cli -V`	
 
 **Beispiel:**
@@ -141,10 +140,10 @@ root@asch:~# asch-cli -V
 1.0.0
 ```
 
-### 3.3 Spezifiziere eine IP-Adrese oder einen Hostnamen für den Ziel-Asch-Server
-**Parameter:** -H, --host &lt;host&gt; [command] *(Default-Wert: 127.0.0.1)* 
+### 3.3 Spezifiziere eine IP-Adresse oder einen Hostnamen für den Asch-Zielserver
+**Parameter:** -H, --host &lt;host&gt; [command] *(Default: 127.0.0.1)* 
 
-**Rückgabe** keine
+**Rückgabe:** keine
 
 **Verwendung:** `asch-cli -H 45.32.248.33 [command]`
 
@@ -154,12 +153,12 @@ root@asch:~# asch-cli -H 45.32.248.33 getheight     #zeige die Blockhöhe des As
 101236
 ```
 
-### 3.4 Spezifiziere eine Port-Nummer auf dem Ziel Asch-Server
+### 3.4 Spezifiziere eine Portnummer auf dem Asch-Zielserver
 **Parameter:** -P, --port &lt;port&gt; [command] *(Default: 4096)*
 
-**Rückgabe** keine
+**Rückgabe:** keine
 
-**Verwendung:** asch-cli -P 4096
+**Verwendung:** ```asch-cli -P 4096```
 
 **Beispiel:**
 
@@ -169,11 +168,11 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getheight
 ```
 
 ### 3.5 Verwende die Haupt-Blockchain
-**Parameter:** -M, --main     *(Default-Wert: test chain)*
+**Parameter:** -M, --main     *(Default: testchain)*
 
-**Rückgabe** keine
+**Rückgabe:** keine
 
-**Verwendung:** asch-cli -M 
+**Verwendung:** ```asch-cli -M``` 
 
 **Beispiel:**
 
@@ -183,11 +182,11 @@ root@asch:~# asch-cli -M -H *.*.*.105 -P 8192 getheight  #zeige die Blockhöhe d
 
 ## 4 Asch-CLI unterstützte Parameter 
 ### 4.1 Zeige die Höhe der Blockchain
-**Command:** getheight
+**Befehl:** getheight
 
-**Rückgabe** Die Höhe (der Anzahl der Block seit dem Ursprungsblock) der Blockchain
+**Rückgabe:** Die Höhe der Blockchain (die Anzahl der Blöcke seit dem Ursprungsblock)
 
-**Verwendung:** asch-cli getheight
+**Verwendung:** ```asch-cli getheight```
 
 **Beispiel:**
 
@@ -197,11 +196,11 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getheight
 ```
 
 ### 4.2 Zeige den Status der Blockchain
-**Command:** getblockstatus
+**Befehl:** getblockstatus
 
-**Rückgabe** Ein JSON formattierter String der folgende Informationen beinhaltet: Blockchain-Höhe, die Transaktionsgebühr, der Milestone, die Belohnung für jedes Delegat und das gesamte Volumen 
+**Rückgabe:** Ein JSON formattierter String der folgende Informationen beinhaltet: Blockchain-Höhe, die Transaktionsgebühr, den Milestone, die Belohnung für jedes Delegat und das gesamte Volumen 
 
-**Verwendung:** asch-cli getblockstatus
+**Verwendung:** ```asch-cli getblockstatus```
 
 **Beispiel:**
 
@@ -217,12 +216,12 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getblockstatus
 }
 ```
 
-### 4.3 Zeige Konto-Informationen mittels Passwort
-**Kommando:**  openaccount [secret]
+### 4.3 Zeige Kontoinformationen mittels Passwort
+**Befehl:**  openaccount [secret]
 
-**Rückgabe** Ein JSON-String mit folgenden Konto-Informationen: Adresse, Saldo, öffentlicher Schlüssel, zweiter öffentlicher Schlüssel etc.
+**Rückgabe:** Ein JSON-String mit folgenden Konto-Informationen: Adresse, Saldo, öffentlicher Schlüssel, zweiter öffentlicher Schlüssel etc.
 
-**Verwendung:** asch-cli openaccount "password"
+**Verwendung:** ```asch-cli openaccount "password"```
 
 **Beispiel:**
 
@@ -241,12 +240,12 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 openaccount "fault still attack al
 }
 ```
 
-### 4.4 Zeige die Kontoinformationen anhand eines öffentlichen Schlüssels
-**Command:**openaccountbypublickey [publickey]
+### 4.4 Zeige Kontoinformationen anhand eines öffentlichen Schlüssels
+**Befehl:** openaccountbypublickey [publickey]
 
-**Rückgabe** Ein JSON-String mit folgenden Informationen: Adresse, Saldo, öffentlicher Schlüssel, zweiter öffentlicher Schlüssel etc.
+**Rückgabe:** Ein JSON-String mit folgenden Informationen: Adresse, Saldo, öffentlicher Schlüssel, zweiter öffentlicher Schlüssel etc.
 
-**Verwendung:** asch-cli openaccountbypublickey "public key"
+**Verwendung:** ```asch-cli openaccountbypublickey "public key"```
 
 **Beispiel:**
 
@@ -265,11 +264,11 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 openaccountbypublickey "bd1e78c5a1
 ```
 
 ### 4.5 Zeige ein Kontosaldo anhand einer Kontoadresse
-**Command:** getbalance [address]
+**Befehl:** getbalance [address]
 
-**Rückgabe** Eine Ganzzahl welche durch das Dividieren von 100000000 zustande kommt.
+**Rückgabe:** Eine Ganzzahl welche durch das Dividieren von 100000000 zustande kommt.
 
-**Verwendung:** asch-cli getbalance [account address]
+**Verwendung:** ```asch-cli getbalance [account address]```
 
 **Beispiel:**
 
@@ -279,11 +278,11 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getbalance 16723473400748954103
 ```
 
 ### 4.6 Zeige Kontoinformationen anhand einer Kontoadresse 
-**Command:** getaccount [address]
+**Befehl:** getaccount [address]
 
-**Rückgabe** Ein JSON-String mit folgenden Informationen: Addresse, Saldo, öffentlicher Schlüssel, zweiter öffentlicher Schlüssel etc.
+**Rückgabe:** Ein JSON-String mit folgenden Informationen: Addresse, Saldo, öffentlicher Schlüssel, zweiter öffentlicher Schlüssel etc.
 
-**Verwendung:** asch-cli getaccount [account address]
+**Verwendung:** ```asch-cli getaccount [account address]```
 
 **Beispiel:**
 
@@ -303,11 +302,11 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getaccount 16723473400748954103
 ```
 
 ### 4.7 Zeige alle Stimmabgaben für Delegate anhand einer öffentlichen Adresse
-**Command:** getvoteddelegates [options] [address]
+**Befehl:** getvoteddelegates [options] [address]
 
-**Rückgabe** Eine Liste von allen Stimmabgaben die eine Adresse abgegeben hat
+**Rückgabe:** Eine Liste von allen Stimmabgaben die eine Adresse abgegeben hat
 
-**Verwendung:** asch-cli getvoteddelegates [account address] -o offset -l [a number indicates maximum delegates that can be printed]
+**Verwendung:** ```asch-cli getvoteddelegates [account address] -o offset -l [an integer that indicates the maximum delegates that can be printed]```
 
 **Beispiel:**
 
@@ -336,11 +335,11 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getvoteddelegates 1574554029389021
 ```
 
 ### 4.8 Zeige die Anzahl aller Delegate
-**Command:** getdelegatescount
+**Befehl:** getdelegatescount
 
-**Rückgabe** Eine Ganzzahl mit der Anzahl aller Delegate im System
+**Rückgabe:** Eine Ganzzahl mit der Anzahl aller Delegate im System
 
-**Verwendung:** asch-cli getdelegatescount
+**Verwendung:** ```asch-cli getdelegatescount```
 
 **Beispiel:**
 
@@ -350,13 +349,13 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getdelegatescount
 ```
 
 ### 4.9 Zeige Informationen zu Delegaten und sortiere nach bestimmten Feldern
-**Command:**getdelegates [options]
+**Befehl:** getdelegates [options]
 
-**Rückgabe** Eine Liste mit Informationen zu Delegaten
+**Rückgabe:** Eine Liste mit Informationen zu Delegaten
 
-**Verwendung:** asch-cli getdelegates -o [offset number] -l [a number indicates maximum delegates that can be printed] -s rate:asc 
+**Verwendung:** ```asch-cli getdelegates -o [offset number] -l [an integer that indicates the maximum delegates that can be printed] -s rate:asc```
 
-**HINWEIS:** rate:asc bedeutet, dass man aufsteigend (asc=aufsteigend, desc=absteigend) nach Stimmabgaben sortieren kann. Um alle Sortieroptionen zu sehen tippe `asch-cli getdelegates -h`
+**HINWEIS:** ```rate:asc``` bedeutet, dass man aufsteigend (asc=aufsteigend, desc=absteigend) nach Stimmabgaben sortieren kann. Um alle Sortieroptionen zu sehen tippe `asch-cli getdelegates -h`
 
 **Beispiel:**
 
@@ -381,11 +380,11 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getdelegates -o 1 -l 1 -s rate:asc
 ```
 
 ### 4.10 Zeige die Knoten die für ein Delegat gestimmt haben, anhand des öffentlichen Schlüssels des Delegats
-**Command:** getvoters [publicKey]
+**Befehl:** getvoters [publicKey]
 
-**Rückgabe** Eine Liste mit allen Wählern
+**Rückgabe:** Eine Liste mit allen Wählern
 
-**Verwendung:** asch-cli getvoters "delegate's public key"
+**Verwendung:** ```asch-cli getvoters "delegate's public key"```
 
 **Beispiel:**
 
@@ -407,9 +406,9 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getvoters "ae256559d06409435c04
 ```
   
 ### 4.11 Zeige die Informationen zu einem Delegat anhand seines öffentlichen Schlüssels an
-**Command:** getdelegatebypublickey [publicKey]
+**Befehl:** getdelegatebypublickey [publicKey]
 
-**Rückgabe** Ein JSON-String mit folgenden Informationen zu einem Delegat: Name, Adresse, Wahlstimmen, produzierter Blöcke, Schmiedebelohnungen (Mining) etc.
+**Rückgabe:** Ein JSON-String mit folgenden Informationen zu einem Delegat: Name, Adresse, Wahlstimmen, produzierter Blöcke, forging reward etc.
 
 **Verwendung:** asch-cli getdelegatebypublickey "delegate's public key"
 
@@ -433,11 +432,11 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getdelegatebypublickey "ae25655
 }
 ```
 ### 4.12 Zeige die Informationen zu einem Delegat anhand seines Namens
-**Command:** getdelegatebyusername [username]
+**Befehl:** getdelegatebyusername [username]
 
-**Rückgabe** Ein JSON-String mit allen Details zu einem Delegat
+**Rückgabe:** Ein JSON-String mit allen Details zu einem Delegat
 
-**Verwendung:** asch-cli getdelegatebyusername "delegate's name"
+**Verwendung:** ```asch-cli getdelegatebyusername "delegate's name"```
 
 **Beispiel:**
 
@@ -459,12 +458,12 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getdelegatebyusername "wgl_002"
 }
 ```
 
-### 4.13 Zeige die Information zu einem oder mehrern Blöcken im Netzwerk an
-**Command:** getblocks [options]
+### 4.13 Zeige die Information zu einem oder mehreren Blöcken im Netzwerk an
+**Befehl:** getblocks [options]
 
-**Rückgabe** Ein JSON-String mit den gewünschten Blöcken
+**Rückgabe:** Ein JSON-String mit den gewünschten Blöcken
 
-**Verwendung:** asch-cli getblocks -o [offset number] -l [an integer that indicate maximum return data] -r [reward amount] -f [fee] -a [total amount] -g [public key that generates blocks] -s [sort rule]
+**Verwendung:** ```asch-cli getblocks -o [offset number] -l [an integer that indicates the maximum return data] -r [reward amount] -f [fee] -a [total amount] -g [public key that generates blocks] -s [sort rule]```
 
 **Beispiel:**
 
@@ -496,11 +495,11 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getblocks -o 1 -l 1 -r 35000000
 }
 ```
 ### 4.14 Überprüfe Blockinformationen mit einer BlockID
-**Command:** getblockbyid [id]
+**Befehl:** getblockbyid [id]
 
-**Rückgabe** Ein JSON-String mit folgendne Informationen: BlockID, Blockhöhe, BlockID des vorgehenden Blocks, Gesamtbetrag, Transaktionsgebühr, Belohnungen, Hash, der öffentliche Schlüssel des Blockgenerators und dessen ID, Blocksignatur, Anzahl der Bestätigung etc.
+**Rückgabe:** Ein JSON-String mit folgenden Feldern: BlockID, Blockhöhe, BlockID des vorhergehenden Blocks, Anzahl der Transaktionen, Gesamtbetrag, Transaktionsgebühr, Belohnungen, Hash, der öffentliche Schlüssel des Blockgenerators und dessen ID, Blocksignatur, Anzahl der Bestätigungen etc.
 
-**Verwendung:** asch-cli getblockbyid [block ID]
+**Verwendung:** ```asch-cli getblockbyid [block ID]```
 
 **Beispiel:**
 
@@ -527,11 +526,11 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getblockbyid 142594212804090687
 ```
 
 ### 4.15 Zeige Informationen zu einem Block anhand der Blockhöhe
-**Command:** getblockbyheight [height]
+**Befehl:** getblockbyheight [height]
 
-**Rückgabe** Ein JSON string mit folgenden Feldern: BlockID, Blockhöhe, BlockID des vorgehenden Blocks, Anzahl der total Transaktionen, Summe, Transaktionsgebühren, Belohnungen, der öffentliche Schlüssel des block generators und dessen ID, Blocksignatur, Anzahl der Bestätigung etc.
+**Rückgabe:** Ein JSON-String mit folgenden Feldern: BlockID, Blockhöhe, BlockID des vorhergehenden Blocks, Anzahl der Transaktionen, Gesamtbetrag, Transaktionsgebühren, Belohnungen, der öffentliche Schlüssel des Blockgenerators und dessen ID, Blocksignatur, Anzahl der Bestätigungen etc.
 
-**Verwendung:** asch-cli getblockbyheight [block height]
+**Verwendung:** ```asch-cli getblockbyheight [block height]```
 
 **Beispiel:**
 
@@ -558,11 +557,11 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getblockbyheight 1
 ```
 
 ### 4.16 Zeige den Netzwerkstatus / den Status der Peers an
-**Command:** getpeers [options] 
+**Befehl:** getpeers [options] 
 
-**Rückgabe** Eine Liste inklusive der IP-Adresse des Peer-Computers, das verwendete Betriebsystem, die Asch-Version etc...
+**Rückgabe:** Ein JSON-String mit folgenden Feldern: IP-Adresse des Peer-Computers, das verwendete Betriebssystem, die Asch-Version etc.
 
-**Verwendung:** asch-cli getpeers -o [offset] -l [an integer that indicate maximum return data] -t [status value] -s [sort type] -v [version] -p [port number] --os [OS version] 
+**Verwendung:** ```asch-cli getpeers -o [offset] -l [an integer that indicates the maximum return data] -t [status value] -s [sort type] -v [version] -p [port number] --os [OS version]```
 
 **HINWEIS:** Für weitere Informationen, tippe `asch-cli getpeers -h`
 
@@ -589,11 +588,11 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getpeers -o 1 -l 2
 ```
 
 ### 4.17 Zeige unbestätigte Transaktionen anhand einer öffentlichen Adresse
-**Command:** getunconfirmedtransactions [options]
+**Befehl:** getunconfirmedtransactions [options]
 
-**Rückgabe** Eine List inklusiver aller Details zu allen noch unbestätigten Transaktionen
+**Rückgabe:** Eine Liste mit sämtlichen Details zu allen noch unbestätigten Transaktionen
 
-**Verwendung:** asch-cli getunconfirmedtransactions -p "sender's public key" -a [recipient's address]
+**Verwendung:** ```asch-cli getunconfirmedtransactions -p "sender's public key" -a [recipient's address]```
 
 **Beispiel:**
 
@@ -617,12 +616,12 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getunconfirmedtransactions -k "
 ]
 ```
 
-### 4.18 Zeige/analysiere Transaktionsinformationen für das ganze Netzwerk
-**Command:** gettransactions [options]
+### 4.18 Zeige / analysiere Transaktionsinformationen für das gesamte Netzwerk
+**Befehl:** gettransactions [options]
 
-**Rückgabe** Eine Liste Transaktionsdetails
+**Rückgabe:** Eine Liste mit allen Transaktionsdetails
 
-**Verwendung:** asch-cli gettransactions -b [block ID] -o [offset] -l [an integer that indicate maximum return data]
+**Verwendung:** ```asch-cli gettransactions -b [block ID] -o [offset] -l [an integer that indicates the maximum return data]```
 
 **HINWEIS:** Versuche `asch-cli gettransactions -h` um Informationen zu anderen Parameteroptionen anzuzeigen.
 
@@ -669,11 +668,11 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 gettransactions -o 1 -l 2 #zeig
 ```
 
 ### 4.19 Zeige Transaktionsdetails anhand einer Transaktions-ID
-**Command:** gettransaction [id]
+**Befehl:** gettransaction [id]
 
-**Rückgabe** Ein JSON-String mit folgenden Werten: Transaktions-ID, Blockhöhe, BlockID, Zeitstempel, Öffentliche Adresse des Versenders, Empfangsadresse, Gesamtbetrag, Signatur, Anzahl der Bestätigungen, Assets etc.
+**Rückgabe:** Ein JSON-String mit folgenden Feldern: Transaktions-ID, Blockhöhe, BlockID, Zeitstempel, Öffentliche Adresse des Versenders, Empfangsadresse, Gesamtbetrag, Signatur, Anzahl der Bestätigungen, Assets etc.
 
-**Verwendung:** asch-cli gettransaction [transactionID]
+**Verwendung:** ```asch-cli gettransaction [transactionID]```
 
 **Beispiel:**
 
@@ -699,11 +698,11 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 gettransaction 1719258193633915
 ```
 
 ### 4.20 Geld überweisen
-**Command:** sendmoney [option]
+**Befehl:** sendmoney [option]
 
-**Rückgabe** Bei erfolgreicher Ausführung wird "True" zurückgegeben, ansonsten kommt eine Fehlermeldung.
+**Rückgabe:** Bei erfolgreicher Ausführung wird "True" zurückgegeben, ansonsten kommt eine Fehlermeldung.
 
-**Verwendung:** asch-cli sendmoney -e "[sender's password]" -t [recipient's address] -a [transfer amount] [-s "second password"]
+**Verwendung:** ```asch-cli sendmoney -e "[sender's password]" -t [recipient's address] -a [transfer amount] -s "[second password]"```
 
 **Beispiel:**
 
@@ -713,11 +712,11 @@ true
 ```
 
 ### 4.21 Ein Delegat registrieren
-**Command:** registerdelegate [options]
+**Befehl:** registerdelegate [options]
 
-**Rückgabe** Bei erfolgreicher Ausführung wird "True" zurückgegeben, ansonsten kommt eine Fehlermeldung.
+**Rückgabe:** Bei erfolgreicher Ausführung wird "True" zurückgegeben, ansonsten kommt eine Fehlermeldung
 
-**Verwendung:** asch-cli registerdelegate -e "[password]" -s "[second password]" -u "[delegate's name]"
+**Verwendung:** ```asch-cli registerdelegate -e "[password]" -s "[second password]" -u "[delegate's name]"```
 
 **Beispiel:**
 
@@ -727,11 +726,11 @@ true
 ```
 
 ### 4.22 Für ein Delegat abstimmen 
-**Command:** upvote [options] 
+**Befehl:** upvote [options] 
 
-**Rückgabe** Für ein Delegat abstimmen. Bei erfolgreicher Ausführung wird "True" zurückgegeben, ansonsten kommt eine Fehlermeldung.
+**Rückgabe:** Für ein Delegat abstimmen. Bei erfolgreicher Ausführung wird "True" zurückgegeben, ansonsten kommt eine Fehlermeldung
 
-**Verwendung:** asch-cli upvote -e "[password]" -s "[second password]" -p "delegate's public key"
+**Verwendung:** ```asch-cli upvote -e "[password]" -s "[second password]" -p "delegate's public key"```
 
 **Beispiel:**
 
@@ -741,11 +740,11 @@ true
 ```
 
 ### 4.23 Die Stimmabgabe für ein Delegat zurückziehen
-**Command:**downvote [options]
+**Befehl:** downvote [options]
 
-**Rückgabe** Die Stimmabg10abe für ein Delegat zurückziehen. Bei einer erfolgrechen Ausführung wird "True" zurückgegeben, sonst eine Fehlermeldung.
+**Rückgabe:** Die Stimmabgabe für ein Delegat zurückziehen. Bei einer erfolgrechen Ausführung wird "True" zurückgegeben, ansonsten kommt eine Fehlermeldung
 
-**Verwendung:** asch-cli downvote -e "[password]" -s "[second password]" -p "delegate's public key"
+**Verwendung:** ```asch-cli downvote -e "[password]" -s "[second password]" -p "delegate's public key"```
 
 **Beispiel:**
 
@@ -754,12 +753,12 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 downvote -e "fault still attack
 true
 ```
 
-### 4.24 Ein zweiten Passwort setzen
-**Command:** setsecondsecret [options]
+### 4.24 Ein zweites Passwort setzen
+**Befehl:** setsecondsecret [options]
 
-**Rückgabe**  Bei einem positen Ausgang kommt eine Bestätigung, sonst eine Fehlermeldung
+**Rückgabe:**  Wenn erfolgreich ein zweites Passwort gesetz wurde kommt eine Bestätigung. Ansonsten kommt eine Fehlermeldung
 
-**Verwendung:** asch-cli setsecondsecret -e "[password]" -s "[second password]"
+**Verwendung:** ```asch-cli setsecondsecret -e "[password]" -s "[second password]"```
 
 **Beispiel:**
 
@@ -769,36 +768,36 @@ true
 ```
 
 ### 4.25 Eine Dapp registrieren (dezentrale Applikation)
-**Command:** registerdapp [options]
+**Befehl:** registerdapp [options]
 
-**Rückgabe**
+**Rückgabe:** keine
 
-**Verwendung:** asch-cli registerdapp -e "[password]" -s "[second password]" -f [Dapp meta file]
+**Verwendung:** ```asch-cli registerdapp -e "[password]" -s "[second password]" -f [Dapp meta file]```
 
 **Beispiel:**
 
 
 
 ### 4.26 Verträge
-**Command:** contract [options]
+**Befehl:** contract [options]
 
-**Rückgabe** 
+**Rückgabe:** keine
 
 **Verwendung:** 
- - asch-cli contract -a 	# einen Vertrag erstellen
- - asch-cli contract -d 	# einen Vertrag löschen
+ - ```asch-cli contract -a``` 	# einen Vertrag erstellen
+ - ```asch-cli contract -d``` 	# einen Vertrag löschen
 
 **Beispiel:**
 
 
 ### 4.27 Verschlüsselung
-**Command:** crypto [option]
+**Befehl:** crypto [option]
 
-**Rückgabe** Eine Liste
+**Rückgabe:** Eine Liste
 
 **Verwendung:**
-- asch-cli -p # Erzeuge einen öffentlichen Schlüssel anhand eines Passworts
-- asch-cli -g # Erstelle einen oder mehrere Kontos
+- ```asch-cli -p``` # Erzeuge einen öffentlichen Schlüssel anhand eines Passworts
+- ```asch-cli -g``` # Erstelle ein oder mehrere Konten
 
 **Beispiel:**
 
@@ -811,21 +810,21 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 crypto -g
 Done
 ```
 
-### 4.28 Dapp Kommandos
-**Command:** dapps [options]
+### 4.28 Dapp Befehle
+**Befehl:** dapps [options]
 
-**Rückgabe**
+**Rückgabe:** keine
 
-**Verwendung:** asch-cli dapps -a 
+**Verwendung:** ```asch-cli dapps -a```
 
 **Beispiel:**
 
 ### 4.29 Erstelle den ersten Block der Blockchain (Genesisblock)
-**Command:** creategenesis [options]
+**Befehl:** creategenesis [options]
 
-**Rückgabe** Dieses Kommando erzeugt eine Genesisblock-Datei (genesisBlock.json) und die zugehörige Logdatei (genGenesisBlock.log) im aktuellen Verzeichnis
+**Rückgabe:** Dieser Befehl erzeugt eine Genesisblock-Datei (genesisBlock.json) und die zugehörige Logdatei (genGenesisBlock.log) im aktuellen Verzeichnis
 
-**Verwendung:** asch-cli creategenesis
+**Verwendung:** ```asch-cli creategenesis```
 
 **Beispiel:**
 
@@ -844,12 +843,12 @@ root@asch:~# more genesisBlock.json
 }
 ```
 
-### 4.30 Überprüfe den Status aller Knoten/Peers im Netzwerk
-**Command:** peerstat
+### 4.30 Überprüfe den Status aller Knoten / Peers im Netzwerk
+**Befehl:** peerstat
 
-**Rückgabe** Folgende Informationen zu den einzelnen Peers wie: Die IP-Adresse, Port, Version die Block-Höhe etc.
+**Rückgabe:** Informationen zu den einzelnen Peers wie: Die IP-Adresse, Port, Asch-Version, die Block-Höhe etc.
 
-**Verwendung:** asch-cli peerstat
+**Verwendung:** ```asch-cli peerstat```
 
 **Beispiel:**
 
@@ -861,11 +860,11 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 peerstat
 ```
 
 ### 4.31 Überprüfe den Status aller Delegate
-**Command:** delegatestat
+**Befehl:** delegatestat
 
-**Rückgabe** Delegates' information, containing delegates' name, address, approval votes, productivity, the amount of generated blocks, block height, ID, and the time of last block generated and so on.
+**Rückgabe:** Eine Tabelle mit folgenden Informationen über alle Delegate: Name, Adresse, Zustimmung, Produktivität, Anzahl der generierten Blöcke, Blockhöhe, BlockID, Datum des zuletzt generierten Blocks, etc.
 
-**Verwendung:** asch-cli delegatestat
+**Verwendung:** ```asch-cli delegatestat```
 
 **Beispiel:**
 
@@ -884,11 +883,11 @@ mode_6	9248745407080572308	8	88.48%	100%	1060	105873	3777454410915098884	2016/08
 ```
 
 ### 4.32 Zeige das Land aus dem ursprünglich die IP-Adresse des Knotens registriert wurde
-**Command:** ipstat
+**Befehl:** ipstat
 
-**Rückgabewert:** Das ursprüngliche Land aus dem die IP-Adresse stammte
+**Rückgabe:** Das ursprüngliche Land aus dem die IP-Adresse stammte
 
-**Verwendung:** asch-cli ipstat
+**Verwendung:** ```asch-cli ipstat```
 
 **Beispiel:**
 
