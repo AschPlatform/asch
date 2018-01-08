@@ -166,14 +166,8 @@ angular.module('asch').controller('personalCtrl', function ($scope, $rootScope, 
 					toast($translate.instant('INF_POSITIONLOCK_SET_SUCCESS'));
 					$scope.positionLockStatus();
 					$scope.isLocksure = true;
-				} else {
-					toastError(res.error);
 				}
-			} else if(err === 'adjust'){
-                toastError($translate.instant('ADJUST_TIME_YOURSELF'));
-            } else {
-                toastError($translate.instant('ERR_SERVER_ERROR'));
-            }
+			}
 		})
 	}
 

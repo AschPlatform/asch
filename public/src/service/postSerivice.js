@@ -1,4 +1,4 @@
-angular.module('asch').service('postSerivice', function ($http, $translate, apiService, nodeService) {
+angular.module('asch').service('postSerivice', function ($http, $translate, $rootScope, apiService, nodeService) {
     /*
     var that = this;
     this.post = function (data) {
@@ -81,6 +81,8 @@ angular.module('asch').service('postSerivice', function ($http, $translate, apiS
             }            
             //失败返回
             console.log('broadcastTransaction-fail',data);
+            // 统一管理错误信息
+            translateErrMsg($rootScope.languageSelected,data.error);
             callback(1, data);
 
         }).error(function(data, status, headers, config){

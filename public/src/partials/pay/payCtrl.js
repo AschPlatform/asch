@@ -7,6 +7,7 @@ angular.module('asch').controller('payCtrl', function ($scope, $rootScope, $filt
     $scope.userService = userService;
     $scope.sent = userService.address;
     $scope.fee = '0.1';
+    console.log(userService.secondPublicKey, 'MIGNET!!!!!!!!')
     // $scope.amount=;
     $scope.calculateFee = function () {
         if ($scope.amount && Number($scope.amount) > 0) {

@@ -250,7 +250,13 @@ window.Translations['zh-cn'] = {
   ERR_ASSET_TOPLIMIT_NOT_CORRECT: '您输入的发行上限不正确',
   ERR_ASSET_PRECISION_NOT_CORRECT: '您输入的资产精度不正确',
   ERR_ASSET_PRECISION_MUST_BE_INTEGER_BETWEEN_0_16: '精度必须为0-16的整数',
-
+  // toast error was bound here
+  ERR_TOAST_SECONDKEY_WRONG: '您输入的二级密码有误',
+  ERR_TOAST_TRANSACTION_AMOUNT_WRONG: '交易数额有误',
+  ERR_TOAST_ASSET_NOTEXIST: '资产不存在',
+  ERR_TOAST_ASSET_INSUFFICIENT: '资产余额不足',
+  ERR_TOAST_VOTE_LIMIT: '只能选择小于或等于33人',
+  ERR_TOAST_ACCOUNT_ALREADY_LOCKED: '已经锁仓',
   // toast info
   INF_REGISTER_SUCCESS: '注册成功',
   INF_DELETE_SUCCESS: '删除成功',

@@ -258,6 +258,8 @@ window.Translations['en-us'] = {
   ERR_ASSET_TOPLIMIT_NOT_CORRECT: 'The top limit you entered is not correct',
   ERR_ASSET_PRECISION_NOT_CORRECT: 'The precision for the asset you entered is not correct',
   ERR_ASSET_PRECISION_MUST_BE_INTEGER_BETWEEN_0_16: 'The asset precision must be an integer between 0 and 16',
+  // toast error was bound here
+  ERR_TOAST_SECONDKEY_WRONG: 'Your second password is wrong',
 
   // toast info
   INF_REGISTER_SUCCESS: 'Register success !',
