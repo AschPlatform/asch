@@ -72,7 +72,7 @@ Inhaltsverzeichnis erstellt mittels [markdown-toc](https://github.com/AlanWalk/m
 ---
 ## 1 Verwendung der API
 ### 1.1 Übersicht über Netzwerkrequests
-- **Erstelle die Daten zum verschicken:** Laut der Asch-Interface Dokumentation müssen die Daten als JSON-Objekt versedet werden. (Um eine sichere Peer2Peer Verbindung herzustellen kann es hilfreich sein eine Signatur mittels asch-js zu erstellen. Siehe mehr in Abschnitt [2.9 Peer2Peer Transport](#29-Peer2Peer-Transport%5Bsichere-API%5D).
+- **Erstelle die Daten zum verschicken:** Laut der Asch-Interface Dokumentation müssen die Daten als JSON-Objekt versedet werden. (Um eine sichere Peer-to-Peer Verbindung herzustellen kann es hilfreich sein eine Signatur mittels asch-js zu erstellen. Siehe mehr in Abschnitt [2.9 Peer-to-Peer Transport](#29-Peer2Peer-Transport%5Bsichere-API%5D).
 - **Sende Daten:** Sende das erstellte Objekt zur Asch-Plattform mittels HTTP POST/GET
 - **Das Asch System überprüft die gesendeten Daten:** Nachdem der Asch-Server die Daten empfangen hat, wird er diese validieren und dann weiter verarbeiten.
 - **Daten werden zurückgesandt:** Das Asch-System retouniert die Daten als JSON-Objekt. Weiterführende API-Informationen findest du weiter unten.
@@ -98,8 +98,10 @@ Beschreibung der Antwort-Parameter:
 
 |Name	|Datentyp   |Beschreibung              |   
 |------ |-----  |----              |   
-|success|bool  |Whether login is successful      |    
+|success|bool  |Ob der Login erfolreich war      |    
 |account|json   |Kontoinformationen|    
+|latestBlock|json  |Informationen zum letzten Block|    
+|version|json  |Asch-Versionsnummer|
 Beispiel:   
   
 ```js
@@ -107,7 +109,7 @@ var AschJS = require('asch-js');  //Mehr Informationen zu asch-js findest du im 
 var publicKey = AschJS.crypto.getKeys(secret).publicKey;  //zeige die Adresse anhand des Geheimnisses 
 // var address = AschJS.crypto.getAddress(publicKey);   //zeige die Adresse anhand des öffentlichen Schlüssels
 
-// Schicke die gerade gesammelten Daten an den Asch-Server mit Hilfe der HTTP Post Methode   
+// Schicke die gerade gesammelten Daten an den Asch-Server mit Hilfe der HTTP POST Methode   
 curl -X POST -H "Content-Datentyp: application/json" -k -d '{"publicKey":"bd1e78c5a10fbf1eca36b28bbb8ea85f320967659cbf1f7ff1603d0a368867b9"}' http://45.32.248.33:4096/api/accounts/open2/   
 ```   
    
@@ -136,7 +138,7 @@ Mögliche JSON Antwort:
 	}   
 ```   
    
-##### 2.1.1.2 Einloggen ohne vorheriges lokales Verschlüssel (wird ausdrücklich nicht empfohlen)
+##### 2.1.1.2 Einloggen ohne vorheriges lokales Verschlüsseln (wird ausdrücklich nicht empfohlen)
 API Endpunkt: /api/accounts/open/   
 HTTP Verb: POST   
 Unterstützes Datenformat: JSON
@@ -150,7 +152,7 @@ Beschreibung der Antwort-Parameter:
 
 |Name	|Datentyp   |Beschreibung              |   
 |------ |-----  |----              |   
-|success|bool  |War Login erfolgreich|    
+|success|bool  |Ob der Login erfolgreich war|    
 |account|json   |Kontoinformationen |    
    
 Beispiel:   
@@ -189,7 +191,7 @@ Beschreibung der Antwort-Parameter:
 
 |Name	|Datentyp   |Beschreibung              |   
 |------ |-----  |----              |   
-|success|bool  |Können Daten retouniert werden|    
+|success|bool  |Die Daten wurden erfolgreich retouniert|    
 |account|json  |Kontoinformationen|
 |latestBlock|json  |Informationen zum letzten Block|    
 |version|json  |Asch-Versionsnummer|    
@@ -239,7 +241,7 @@ Beschreibung der Antwort-Parameter:
 
 |Name	|Datentyp   |Beschreibung              |   
 |------ |-----  |----              |   
-|success|bool  |Die Daten wurden erfolgreich retouniert    |
+|success|bool  |Die Daten wurden erfolgreich retouniert   |
 |balance|integer  |Saldo      |    
 |unconfirmedBalance|integer|Die Summe des unbestätigten und des bereits bestätigten Saldos. Dieses sollte größer als das Saldo sein.|   
    
@@ -258,7 +260,7 @@ Mögliche JSON Antwort:
 }   
 ```   
    
-#### 2.1.4 Zeigen öffentlichen Schlüssel eines Kontos 
+#### 2.1.4 Zeige öffentlichen Schlüssel eines Kontos 
 API Endpunkt: /api/accounts/getPublickey   
 HTTP Verb: GET   
 Unterstütztes Format: urlencoded   
@@ -272,7 +274,7 @@ Beschreibung der Antwort-Parameter:
 
 |Name	|Datentyp   |Beschreibung              |   
 |------ |-----  |----              |   
-|success|bool  |Die Daten wurden erfolgreich retouniert    
+|success|bool  |Die Daten wurden erfolgreich retouniert   
 |publicKey|string  |Öffentlicher Schlüssel|    
    
 Beispiel:   
@@ -333,7 +335,7 @@ Beschreibung der Antwort-Parameter:
 |Name	|Datentyp   |Beschreibung              |   
 |------ |-----  |----              |   
 |success|bool  |Die Daten wurden erfolgreich retouniert    
-|delegates|Array  |Eine Liste mit von Kontos für welche diese Adresse bereits gestimmt hat|    
+|delegates|Array  |Eine Liste mit Kontos für welche diese Adresse bereits gestimmt hat|    
    
    
 Beispiel:   
@@ -420,7 +422,7 @@ Beschreibung der Parameter:
 |secret |string |Ja|Passwort des Asch-Kontos|   
 |publicKey|string  |Nein|Öffentlicher Schlüssel|    
 |secondSecret|string|Nein|Zweites Asch-Konto Passwort. Länge zwischen 1 und 100|   
-|delegates|Array|Eine Liste der öffentlichen Schlüssel von Delegaten. Setze ein Plus (+) oder ein Minus (-) vor den öffentlichen Schlüssel um zu signalisieren, dass es sich um eine Stimmabgabe bzw. um die Rückziehung einer Stimme handelt.|   
+|delegates|Array||Eine Liste mit öffentlichen Schlüssel von Delegaten. Setze ein Plus (+) oder ein Minus (-) vor den öffentlichen Schlüssel um zu signalisieren, dass es sich um eine Stimmabgabe bzw. um die Rückziehung einer Stimme handelt.   
    
 Beschreibung der Antwort-Parameter:   
 
@@ -470,9 +472,9 @@ Beschreibung der Parameter:
 
 |Name	|Datentyp   |Obligatorisch |Beschreibung              |   
 |------ |-----  |---  |----              |   
-|blockId |string |Nein|BlockId|   
+|blockId |string |Nein|BlockID|   
 |limit |integer |Nein|Rückgabe der Datensätze limitieren，Minimum：0, Maximum：100   |   
-|Datentyp|integer  |Nein|Die Transaktions-Datentype: 0:Normaler Transfer，1:Setzen eines zweiten Passworts，2:Delegat registrieren，3:Stimmabgabe，4:Multi-Signatur，5:DAPP，6:IN_TRANSFER，7:OUT_TRANSFER|   
+|type|integer  |Nein|Die Transaktions-Datentypen: 0:Normaler Transfer，1:Setzen eines zweiten Passworts，2:Delegat registrieren，3:Stimmabgabe，4:Multi-Signatur，5:DAPP，6:IN_TRANSFER，7:OUT_TRANSFER|   
 |orderBy|string  |Nein|Sortiere nach einem Feld in der Tabelle，senderPublicKey:desc (asc=aufsteigend, desc=absteigend)|   
 |offset|integer  |Nein|Paging-Abstand, Minimum 0|   
 |senderPublicKey|string|Nein|Öffentlicher Schlüssel des Senders|   
@@ -487,9 +489,9 @@ Beschreibung der Antwort-Parameter:
 
 |Name	|Datentyp   |Beschreibung              |   
 |------ |-----  |----              |   
-|success|bool  |Die Daten wurden erfolgreich retouniert    
+|success|bool  |Die Daten wurden erfolgreich retouniert  
 |transactions|Array  |Eine Liste mit Transaktionsdetails|
-|count|int|Die Summe der zurückgegebenen Transaktionen|   
+|count|int|Anzahl der aufgelisteten Transaktionen|   
    
 Beispiel:   
 ```bash   
@@ -654,7 +656,7 @@ Mögliche JSON Antwort:
 ```   
    
    
-#### 2.2.4 Zeige unbestätigte Transaktionen [im ganzen Netzwerk]
+#### 2.2.4 Zeige unbestätigte Transaktionen (im ganzen Netzwerk)
 API Endpunkt: /api/transactions/unconfirmed   
 HTTP Verb: GET   
 Unterstütztes Format: urlencoded   
@@ -698,9 +700,9 @@ Beschreibung der Parameter:
 |Name	|Datentyp   |Obligatorisch |Beschreibung              |   
 |------ |-----  |---  |----              |   
 |secret |string |Ja|Passwort des Asch-Kontos|   
-|amount|integer|Ja|Betrag，muss zwischen 1 und 10000000000000000 sein|   
+|amount|integer|Ja|Betrag，muss zwischen 1 und 10000000000000000 (10^16^) sein|   
 |recipientId|string|Ja|Addresse des Empfängers, Minimum:1|   
-|publicKey|string|Nein|Öffentlicher Schlüssel der Senders|
+|publicKey|string|Nein|Öffentlicher Schlüssel des Senders|
 |secondSecret|string|Nein|Zweites Passwort des Sender (dieses muss dem [BIP39 Standard](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) entsprechen), die Länge muss zwischen 1 und 100 sein|   
 |multisigAccountPublicKey|string|Nein|Der öffentliche Schlüssel eines Multi-Signatur-Kontos|   
    
@@ -709,7 +711,7 @@ Beschreibung der Antwort-Parameter:
 |Name	|Datentyp   |Beschreibung              |   
 |------ |-----  |----              |   
 |success|bool  |Die Daten wurden erfolgreich retouniert    
-|transactionId|string  |Transaktions-Id|    
+|transactionId|string  |Transaktions-ID|    
    
    
 Beispiel:   
@@ -734,7 +736,7 @@ Beschreibung der Parameter:
 
 |Name	|Datentyp   |Obligatorisch |Beschreibung|
 |------ |-----  |---  |----              |   
-|id |string |only choose one of these three parameters    |Block-ID|   
+|id |string |only choose one of these three parameters    |BlockID|   
 |height|string|ditto|Blockhöhe|   
 |hash|string|ditto|Der Hash des blocks|   
    
@@ -760,11 +762,11 @@ Mögliche JSON Antwort:
 		"version": 0,   
 		"timestamp": 4734070,   
 		"height": 140538,   
-		"previousBlock": "16033230167082515105",    //previous block ID   
-		"numberOfTransactions": 0,  //The number of transactions   
-		"totalAmount": 0,   //the total transactions' amount   
+		"previousBlock": "16033230167082515105",    //vorherige block ID   
+		"numberOfTransactions": 0,  //Anzahl der Transaktionen   
+		"totalAmount": 0,   //Summe der Transaktionen   
 		"totalFee": 0,   
-		"reward": 350000000,    //reward   
+		"reward": 350000000,    //Belohnung   
 		"payloadLength": 0,   
 		"payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",   
 		"generatorPublicKey": "1d352950c8141e1b35daba4a974a604519d7a2ef3a1ec0a503ce2653646aa052",   
@@ -789,8 +791,8 @@ Beschreibung der Parameter:
 |orderBy|string  |Nein|Sortiere anhand eines Feldes in der Tabelle z.B.: height:desc (asc=aufsteigend, desc=absteigend) |   
 |offset|integer  |Nein|Paging-Abstand, minimum 0  |   
 |generatorPublicKey|string  |Nein|Öffentlicher Schlüssels des Blockgenerators|   
-|totalAmount|integer  |Nein|Anzahl aller Transaktionen, muss zwischen 0 und 10000000000000000 sein |   
-|totalFee|integer  |Nein|Summe der Transaktionsgebühr, muss zwischen 0 und 10000000000000000 sein|
+|totalAmount|integer  |Nein|Anzahl aller Transaktionen, muss zwischen 0 und 10000000000000000 (10^16^) sein |   
+|totalFee|integer  |Nein|Summe der Transaktionsgebühr, muss zwischen 0 und 10000000000000000 (10^16^) sein|
 |reward|integer  |Nein|Belohnung, Minimum: 0  |   
 |previousBlock|string  |Nein|Vorhergehender Block  |   
 |height|integer  |Nein|Blockhöhe|   
@@ -858,7 +860,6 @@ API Endpunkt: /api/blocks/getHeight
 HTTP Verb: GET   
 Unterstütztes Format: keine   
 Beschreibung der Parameter: keine   
-   
 Beschreibung der Antwort-Parameter:   
 
 |Name	|Datentyp   |Beschreibung              |   
@@ -881,7 +882,6 @@ API Endpunkt: /api/blocks/getFee
 HTTP Verb: GET   
 Unterstütztes Format: keine   
 Beschreibung der Parameter: keine   
-   
 Beschreibung der Antwort-Parameter:   
 
 |Name	|Datentyp   |Beschreibung              |   
@@ -897,8 +897,7 @@ curl -k -X GET 'http://45.32.248.33:4096/api/blocks/getfee'
    
 Mögliche JSON Antwort:   
 ```js   
-{"success":true,"fee":10000000}     //die Transaktionsgebühr ist 
-0.1 XAS   
+{"success":true,"fee":10000000}     //die Transaktionsgebühr ist 0.1 XAS   
 ```   
    
 #### 2.3.5 Zeige den Milestone  
@@ -928,8 +927,7 @@ Mögliche JSON Antwort:
 API Endpunkt: /api/blocks/getReward
 HTTP Verb: GET
 Unterstütztes Format: keine
-Beschreibung der Parameter: keine
-   
+Beschreibung der Parameter: keine 
 Beschreibung der Antwort-Parameter:
 
 |Name	|Datentyp   |Beschreibung              |   
@@ -953,7 +951,6 @@ API Endpunkt: /api/blocks/getSupply
 HTTP Verb: GET   
 Unterstütztes Format: keine   
 Beschreibung der Parameter: keine   
-   
 Beschreibung der Antwort-Parameter:   
 
 |Name	|Datentyp   |Beschreibung              |   
@@ -977,7 +974,6 @@ API Endpunkt: /api/blocks/getStatus
 HTTP Verb: GET   
 Unterstütztes Format: keine   
 Beschreibung der Parameter: keine   
-   
 Beschreibung der Antwort-Parameter:   
 
 |Name	|Datentyp   |Beschreibung              |   
