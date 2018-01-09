@@ -184,13 +184,7 @@ angular.module('asch').controller('applicationCtrl', function ($scope, $rootScop
           toast($translate.instant('DEPOSIT_SUCCESS'));
         } else if(res.error.indexOf('Old address') != -1 || res.error.indexOf('old address') != -1 || res.error.indexOf('老地址') != -1 || res.error.indexOf('数字地址') != -1) {
           toastError('dapp不支持老地址（数字地址），请用最新的字母地址（base58格式）');
-        } else {
-          toastError(res.error);
         }
-      } else if(err === 'adjust'){
-        toastError($translate.instant('ADJUST_TIME_YOURSELF'));
-      } else {
-        toastError($translate.instant('ERR_SERVER_ERROR'));
       }
     })
    }

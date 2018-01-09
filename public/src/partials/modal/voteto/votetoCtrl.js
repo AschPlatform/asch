@@ -25,13 +25,7 @@ angular.module('asch').controller('votetoCtrl', function ($scope, $rootScope, ap
                     $scope.Close();
                     $rootScope.$emit('upvoteSuccess');
                     toast($translate.instant('INF_VOTE_SUCCESS'));
-                } else {
-                    toastError(res.error)
                 }
-            } else if(err === 'adjust'){
-                toastError($translate.instant('ADJUST_TIME_YOURSELF'));
-            } else {
-                toastError($translate.instant('ERR_SERVER_ERROR'));
             }
         })
     };

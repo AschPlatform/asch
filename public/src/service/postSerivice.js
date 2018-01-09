@@ -83,7 +83,7 @@ angular.module('asch').service('postSerivice', function ($http, $translate, $roo
             console.log('broadcastTransaction-fail',data);
             // 统一管理错误信息
             translateErrMsg($rootScope.languageSelected,data.error);
-            callback(1, data);
+            callback(null, data);
 
         }).error(function(data, status, headers, config){
             retryOrCallbak(data);

@@ -25,13 +25,7 @@ angular.module('asch').controller('deletevoteCtrl', function ($scope, $rootScope
                     $scope.Close();
                     $rootScope.$emit('downvoteSuccess');
                     toast($translate.instant('INF_DELETE_SUCCESS'));
-                } else {
-                    toastError(res.error);
                 }
-            } else if(err === 'adjust'){
-                toastError($translate.instant('ADJUST_TIME_YOURSELF'));
-            } else {;
-                toastError($translate.instant('ERR_SERVER_ERROR'));
             }
         })
     };

@@ -39,13 +39,7 @@ angular.module('asch').controller('assigneeCtrl', function ($scope, $rootScope, 
                     $scope.Close();
                     toast($translate.instant('INF_REGISTER_SUCCESS'));
                     $scope.userName = '';
-                } else {
-                    toastError(res.error);
                 }
-            } else if(err === 'adjust'){
-                toastError($translate.instant('ADJUST_TIME_YOURSELF'));
-            } else {;
-                toastError($translate.instant('ERR_SERVER_ERROR'));
             }
         })
     };

@@ -42,13 +42,7 @@ angular.module('asch').controller('reduceaclCtrl', function ($scope, $rootScope,
                     $scope.secondPassword = ''
                     toast($translate.instant('INF_OPERATION_SUCCEEDED'));
                     $scope.comfirmDialogClose();
-                } else {
-                    toastError(res.error)
                 }
-            } else if(err === 'adjust'){
-                toastError($translate.instant('ADJUST_TIME_YOURSELF'));
-            } else {;
-                toastError($translate.instant('ERR_SERVER_ERROR'));
             }
         })
     }

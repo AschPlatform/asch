@@ -130,10 +130,6 @@ angular.module('asch').controller('personalCtrl', function ($scope, $rootScope, 
 					} else {
 						toastError(res.error);
 					}
-				} else if(err === 'adjust'){
-					toastError($translate.instant('ADJUST_TIME_YOURSELF'));
-				} else {
-					toastError($translate.instant('ERR_SERVER_ERROR'));
 				}
 			})
 		}

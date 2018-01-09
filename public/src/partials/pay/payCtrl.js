@@ -81,15 +81,11 @@ angular.module('asch').controller('payCtrl', function ($scope, $rootScope, $filt
                     $scope.secondPassword = '';
                     toast($translate.instant('INF_TRANSFER_SUCCESS'));
                 } else {
-                    toastError(res.error);
-                }
-            } else {
-                if (res.error.indexOf('Insufficient') > -1) {
-                    toastError($translate.instant('ERR_BALANCE_NOT_ENOUGH'));
-                } else if(res.error.indexOf('locked') > -1) {
-                    toastError($translate.instant('ALREADY_LOCKED'));
-                } else {
-                    toastError($translate.instant('ERR_SERVER_ERROR'));
+                    if (res.error.indexOf('Insufficient') > -1) {
+                        toastError($translate.instant('ERR_BALANCE_NOT_ENOUGH'));
+                    } else if(res.error.indexOf('locked') > -1) {
+                        toastError($translate.instant('ALREADY_LOCKED'));
+                    }
                 }
             }
         })
