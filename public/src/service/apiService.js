@@ -13,17 +13,20 @@ angular.module('asch').service('apiService', function ($http, $rootScope, $locat
 	function fetch(url, data, method, postHeaders) {
 		for (var k in data) {
 			if (url.indexOf(':' + k) != -1) {
-				url = url.replace(':' + k, data[k])
-				delete data[k]
+				url = url.replace(':' + k, data[k]);
+				delete data[k];
 			}
 		}
 
 		var server = nodeService.getCurrentServer();
-		var retryTimes = 0;
-		while ((!server.isServerAvalible(true)) && (retryTimes ++ < 10)){
-			console.log("current server unavalible");
-			nodeService.changeServer(true);
-			server = nodeService.getCurrentServer();
+
+		if (!nodeService.isStaticServer()){
+			var retryTimes = 0;
+			while ((!server.isServerAvalible(true)) && (retryTimes ++ < 10)){
+				console.log("current server unavalible");
+				nodeService.changeServer(true);
+				server = nodeService.getCurrentServer();
+			}
 		}		
 
 		var realUrl = server.serverUrl + url;		

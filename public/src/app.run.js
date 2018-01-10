@@ -10,5 +10,11 @@ angular.module('asch').run(function ($rootScope, $location, ipCookie, apiService
         }
     });
 
-    nodeService.findServers($location.protocol() +"://"+$location.host()+":"+$location.port()||80);
+    var serverUrl = $location.protocol() +"://"+$location.host()+":"+$location.port()||80;
+    if ($location.protocol().toLower == "https"){
+        nodeService.staticServer(serverUrl);
+    }
+    else{
+        nodeService.dynamicServers($location.protocol() +"://"+$location.host()+":"+$location.port()||80);
+    }
 });

@@ -35,7 +35,7 @@ angular.module('asch').service('nodeService', function ($http) {
             server.state= "failed";
             server.version = "unknown";
             server.responseTime = Date.now() - server.requestTimestamp;
-        };
+        }
 
         function checkSuccess(server, systemInfo){
             server.failedCount = 0;
@@ -47,13 +47,13 @@ angular.module('asch').service('nodeService', function ($http) {
             server.lastBlock = systemInfo.lastBlock;
             server.systemLoad = systemInfo.systemLoad;
              //忽略处理时间
-             server.clientTimeDrift = server.serverTimestamp - Date.now();            
+             server.clientTimeDrift = Date.now() - server.serverTimestamp;            
         }
 
         this.versionNotLessThan = function(ver){
             //TODO: 
             return true; //this.version >= ver;
-        }
+        };
 
         this.checkServerStatus = function(){
             var server = this;
@@ -81,12 +81,12 @@ angular.module('asch').service('nodeService', function ($http) {
                     height: lastBlock.blockHeight,
                     timestamp : lastBlock.blockTime,
                     behind: lastBlock.blocksBehind
-                }
+                };
 
                 return true;
             }
             return false;
-        }
+        };
 
         this.isHealthy = function(){
             //响应时间小于XX秒，且区块落后不超过XX块，最近一分钟负载不高于XX
@@ -94,25 +94,25 @@ angular.module('asch').service('nodeService', function ($http) {
                 this.responseTime <= MAX_RESPONSE_TIME && 
                 this.lastBlock.behind <= MAX_BLOCK_BEHINDS && 
                 this.systemLoad.loadAverage[0] / this.systemLoad.cores <= MAX_SERVER_LOAD ;
-        }
+        };
     
         this.isServerAvalible = function(ignorePending){
             //版本不低于1.3.4,且是健康的节点
             return ( this.state=="success" || (ignorePending && this.state == "pending") ) && 
                 this.versionNotLessThan("1.3.4") && this.isHealthy();
-        }
+        };
 
         this.startCheckStatus = function(){
             setTimeout(this.checkServerStatus.bind(this), 10);
             this.timer = setInterval(this.checkServerStatus.bind(this), CHECK_STATUS_INTERVAL);
-        }
+        };
 
         this.stopCheckStatus = function(){
             if (this.timer != null){
                 clearInterval(this.timer);
                 this.timer = null;
             }
-        }
+        };
     }
 
     AschServer.compareServer = function(server1, server2){
@@ -137,9 +137,9 @@ angular.module('asch').service('nodeService', function ($http) {
         }
 
         return 0;
-    }
+    };
     
-    var servers = new Array();
+    var servers = [];
     var originalServer = null;
     var currentServer = null;
     var seedServers = "{{seedServers}}".split(",");
@@ -187,7 +187,7 @@ angular.module('asch').service('nodeService', function ($http) {
     }
 
     function selectServerNodes(allNodes){
-        var okServers = new Array();
+        var okServers = [];
         for(var i = 0; i < allNodes.length; i++){
             var node = allNodes[i];
             if (node.state != SERVER_STATE_OK) continue;
@@ -199,8 +199,8 @@ angular.module('asch').service('nodeService', function ($http) {
             return okServers;
         }
 
-        var selectedServers = new Array();
-        for(var i = 0; i < MAX_CANDIDATE_SERVERS; i++ ){
+        var selectedServers = [];
+        for(var idx = 0; idx < MAX_CANDIDATE_SERVERS; idx++ ){
             var selectedIndex = parseInt( Math.random() * okServers.length, 10 );
             selectedServers.push(okServers[selectedIndex]);
             okServers.slice(selectedIndex, 1);
@@ -210,6 +210,7 @@ angular.module('asch').service('nodeService', function ($http) {
     }
 
     function getPeers(seedServerUrl, onSuccess, onFailed){
+        log("find servers from seed server " + seedServerUrl);
         $http.get(seedServerUrl+"/api/peers?limit=100").success(function(data, status, headers){
             if (!data.success){
                 onFailed();
@@ -240,36 +241,51 @@ angular.module('asch').service('nodeService', function ($http) {
         }
     }
 
-    function findServerFromPeers(serverUrl, depth){
+    function findServersFromSeeds(depth){
         depth = depth || 1;
         if (depth > MAX_FIND_DEPTH) return;
-        //加入当前服务器
-        if (depth == 1 && serverUrl != null){
-            var server = registerServer(serverUrl);
-            originalServer = originalServer || server;
-        }
 
         var idx = parseInt( Math.random() * getSeeds().length, 10 );
         getPeers(getSeeds()[idx], function(){
             log("find servers success " + servers.length);
         },function(){ 
-            findServerFromPeers(null, depth +1); 
+            findServersFromSeeds(depth +1); 
         });     
     }
 
     function adjustClientDriftSeconds(server){
-        var timeAdjust =  Math.floor(server.clientTimeDrift / 1000);
+        var timeAdjust =  Math.trunc(server.clientTimeDrift / 1000);
         log("adjust client time drift " + timeAdjust +"s");
         AschJS.options.set('clientDriftSeconds', timeAdjust);
     }
     
-    this.findServers = function (serverUrl){
-        log("find server from " +serverUrl);
-        findServerFromPeers(serverUrl);
+    this._isStaticServer = false;
+    this.staticServer = function(serverUrl){
+        this._isStaticServer = true;
+
+        log("static server " +serverUrl);
+        originalServer = registerServer(serverUrl);
+    };
+
+    this.dynamicServers = function(originalServerUrl){
+        this._isStaticServer = false;
+
+        log("dynamic server, original server " + originalServerUrl);
+        originalServer = registerServer(originalServerUrl);
+        this.findServers();
+    }
+
+    this.isStaticServer = function(){
+        return this._isStaticServer;
+    };
+
+    this.findServers = function (){      
+        this._isStaticServer = false;
+        findServersFromSeeds();
     };
 
     this.getSortedAvalibleServers = function(){
-        var result = new Array();
+        var result = [];
         for( var i=0; i<servers.length; i++){
             var server = servers[i];
             if (server.state =="success" && server.isServerAvalible()){
@@ -277,30 +293,30 @@ angular.module('asch').service('nodeService', function ($http) {
             }
         }
         return sortServers(result);
-    }
+    };
 
     this.getBestServer = function(){
         var avalibleServers = this.getSortedAvalibleServers();
         var best = avalibleServers.length == 0 ? originalServer : avalibleServers[0];
 
         return best;
-    } 
+    };
     
     this.getCurrentServer = function(){
         if (currentServer == null){
-            currentServer = this.getBestServer();
+            this.doChangeServer(this.getBestServer());
         }
         return currentServer;
-    }
+    };
 
-    this.doChangedServer = function(newServer){
+    this.doChangeServer = function(newServer){
         log("server changed:" + 
             (!currentServer ? "null" : currentServer.serverUrl) + "->" + 
             (!newServer ? "null" : newServer.serverUrl));
 
         currentServer = newServer; 
         adjustClientDriftSeconds(newServer);
-    }
+    };
 
     this.changeServer = function(randomSelect){
         if (currentServer != null){
@@ -316,28 +332,28 @@ angular.module('asch').service('nodeService', function ($http) {
                 while(selectedIndex == index){
                     selectedIndex = parseInt( Math.random() * avalibleServers.length, 10 );
                 }
-                this.doChangedServer(avalibleServers[selectedIndex]);
+                this.doChangeServer(avalibleServers[selectedIndex]);
                 return true;
             }
 
             //当前不是第一个
             if (index != 0 && avalibleServers.length >0){
-                this.doChangedServer(avalibleServers[0])
+                this.doChangeServer(avalibleServers[0]);
                 return true ;
             }
 
             if (index == 0 && avalibleServers.length > 1){
-                this.doChangedServer(avalibleServers[1])
+                this.doChangeServer(avalibleServers[1]);
                 return true;
             }
             
             return false;
         }
-    }
+    };
 
     this.getNetStatus = function(){
         return  (navigator.onLine) ? (navigator.onLine ? "online" : "offline") : "unknown";
-    }
+    };
     
 });
 

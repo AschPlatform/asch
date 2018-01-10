@@ -51,7 +51,8 @@ angular.module('asch').service('postSerivice', function ($http, $translate, $roo
     */
 
     function canRetry(ret){
-        return ret.error && /blockchain/.test(ret.error.toLowerCase()) ;        
+        return ret.error && /blockchain/.test(ret.error.toLowerCase()) && 
+               (!nodeService.isStaticServer()) ;        
     }
 
     var postService = this;
