@@ -23,6 +23,7 @@ private.lastBlock = {};
 private.blockStatus = new BlockStatus();
 // @formatter:off
 private.blocksDataFields = {
+  "a_address":String,
   'b_id': String,
   'b_version': String,
   'b_timestamp': Number,
@@ -104,6 +105,7 @@ private.proposeCache = {};
 private.lastPropose = null;
 
 const FULL_BLOCK_QUERY = "SELECT " +
+  "a.address"+
   "b.id, b.version, b.timestamp, b.height, b.previousBlock, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength, lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), " +
   "t.id, t.type, t.timestamp, lower(hex(t.senderPublicKey)), t.senderId, t.recipientId, t.amount, t.fee, lower(hex(t.signature)), lower(hex(t.signSignature)), t.args, t.message, " +
   "lower(hex(s.publicKey)), " +
@@ -122,6 +124,7 @@ const FULL_BLOCK_QUERY = "SELECT " +
   "transfers.currency, transfers.amount, " +
   "acls.currency, acls.flag, acls.operator, acls.list " +
   "FROM blocks b " +
+  "left outer join mem_accounts as a on a.publicKey=b.generatorPublicKey"
   "left outer join trs as t on t.blockId=b.id " +
   "left outer join delegates as d on d.transactionId=t.id " +
   "left outer join votes as v on v.transactionId=t.id " +
@@ -305,10 +308,10 @@ private.list = function (filter, cb) {
 
       var count = rows[0].count;
 
-      library.dbLite.query("select b.id, b.version, b.timestamp, b.height, b.previousBlock, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength, lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), (select max(height) + 1 from blocks) - b.height " +
-        "from blocks b " +
+      library.dbLite.query("select a.address,b.id, b.version, b.timestamp, b.height, b.previousBlock, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength, lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), (select max(height) + 1 from blocks) - b.height " +
+        "from blocks b  left outer join mem_accounts as a on a.publicKey=b.generatorPublicKey " +
         (fields.length ? "where " + fields.join(' and ') : '') + " " +
-        (filter.orderBy ? 'order by ' + sortBy + ' ' + sortMethod : '') + " limit $limit offset $offset ", params, ['b_id', 'b_version', 'b_timestamp', 'b_height', 'b_previousBlock', 'b_numberOfTransactions', 'b_totalAmount', 'b_totalFee', 'b_reward', 'b_payloadLength', 'b_payloadHash', 'b_generatorPublicKey', 'b_blockSignature', 'b_confirmations'], function (err, rows) {
+        (filter.orderBy ? 'order by ' + sortBy + ' ' + sortMethod : '') + " limit $limit offset $offset ", params, ['a_address','b_id', 'b_version', 'b_timestamp', 'b_height', 'b_previousBlock', 'b_numberOfTransactions', 'b_totalAmount', 'b_totalFee', 'b_reward', 'b_payloadLength', 'b_payloadHash', 'b_generatorPublicKey', 'b_blockSignature', 'b_confirmations'], function (err, rows) {
           if (err) {
             library.logger.error(err);
             return cb(err);
@@ -333,9 +336,9 @@ private.getByField = function (field, cb) {
   var condition = "b." + field.key + " = $" + field.key;
   var values = {};
   values[field.key] = field.value;
-  library.dbLite.query("select b.id, b.version, b.timestamp, b.height, b.previousBlock, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength,  lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), (select max(height) + 1 from blocks) - b.height " +
-    "from blocks b " +
-    "where " + condition, values, ['b_id', 'b_version', 'b_timestamp', 'b_height', 'b_previousBlock', 'b_numberOfTransactions', 'b_totalAmount', 'b_totalFee', 'b_reward', 'b_payloadLength', 'b_payloadHash', 'b_generatorPublicKey', 'b_blockSignature', 'b_confirmations'], function (err, rows) {
+  library.dbLite.query("select a.address,b.id, b.version, b.timestamp, b.height, b.previousBlock, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength,  lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), (select max(height) + 1 from blocks) - b.height " +
+    "from blocks b left outer join mem_accounts as a on a.publicKey=b.generatorPublicKey " +
+    "where " + condition, values, ["a_address",'b_id', 'b_version', 'b_timestamp', 'b_height', 'b_previousBlock', 'b_numberOfTransactions', 'b_totalAmount', 'b_totalFee', 'b_reward', 'b_payloadLength', 'b_payloadHash', 'b_generatorPublicKey', 'b_blockSignature', 'b_confirmations'], function (err, rows) {
       if (err || !rows.length) {
         return cb(err || "Block not found");
       }
