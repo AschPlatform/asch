@@ -260,6 +260,13 @@ window.Translations['en-us'] = {
   ERR_ASSET_PRECISION_MUST_BE_INTEGER_BETWEEN_0_16: 'The asset precision must be an integer between 0 and 16',
   // toast error was bound here
   ERR_TOAST_SECONDKEY_WRONG: 'Your second password is wrong',
+  ERR_TOAST_TRANSACTION_AMOUNT_WRONG: 'Transaction amount wrong',
+  ERR_TOAST_ASSET_NOTEXIST: 'Asset not exist',
+  ERR_TOAST_ASSET_INSUFFICIENT: 'Asset amount not enought',
+  ERR_TOAST_VOTE_LIMIT: 'Only less then 33 calenders are required',
+  ERR_TOAST_ACCOUNT_ALREADY_LOCKED: 'Already locked',
+  ERR_TOAST_ACCOUNT_INVALID_RECIPIENT: 'Wrong recipent address',
+  ERR_TOAST_ACCOUNT_INVALID_TIMESTAMP: 'There is something wrong with your local time',
 
   // toast info
   INF_REGISTER_SUCCESS: 'Register success !',

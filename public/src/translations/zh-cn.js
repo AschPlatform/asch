@@ -257,6 +257,8 @@ window.Translations['zh-cn'] = {
   ERR_TOAST_ASSET_INSUFFICIENT: '资产余额不足',
   ERR_TOAST_VOTE_LIMIT: '只能选择小于或等于33人',
   ERR_TOAST_ACCOUNT_ALREADY_LOCKED: '已经锁仓',
+  ERR_TOAST_ACCOUNT_INVALID_RECIPIENT: '接受地址错误',
+  ERR_TOAST_ACCOUNT_INVALID_TIMESTAMP: '时间戳错误',
   // toast info
   INF_REGISTER_SUCCESS: '注册成功',
   INF_DELETE_SUCCESS: '删除成功',

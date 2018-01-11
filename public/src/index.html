@@ -134,8 +134,8 @@
                 var serveTime = new Date(row).getTime();
                 var localTime = new Date().getTime();
                 console.log('serve:',serveTime,'localTime',localTime);
-                if ((localTime - serveTime)>5000 || (serveTime-localTime)>(120 * 1000)) {
-                    alert('本地时间有误,请将本地时间调慢1分钟后再次刷新页面尝试. Your local time is different with server,please set the local time 1 minutes slower than server and refresh the page to try again');
+                if (Math.abs(localTime - serveTime) > 30 * 60 * 1000) {
+                    alert('电脑时间有误，请您调校您的计算机时间. Your local time is different with server，plz adjust your computer');
                 }
             }
         });
