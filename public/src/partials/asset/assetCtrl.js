@@ -170,7 +170,7 @@ angular.module('asch').controller('assetCtrl', function ($scope, $rootScope, api
         if (!userService.secondPublicKey) {
             $scope.rasecondPassword = '';
         };
-        var realMaximum = parseInt(maximum) * Math.pow(10, precision)
+        var realMaximum = $scope.dealBigNumber(parseInt(maximum) * Math.pow(10, precision))
         var allowWriteoff = $scope.selectedAllowWriteoff ? Number($scope.selectedAllowWriteoff.key) : 0
         var allowWhitelist = $scope.selectedAllowWhitelist ? Number($scope.selectedAllowWhitelist.key) : 0
         var allowBlacklist = $scope.selectedAllowBlacklist ? Number($scope.selectedAllowBlacklist.key) : 0
@@ -251,6 +251,13 @@ angular.module('asch').controller('assetCtrl', function ($scope, $rootScope, api
         });
         }
     };
+    // Bignumber transfer
+    // untest
+    $scope.dealBigNumber(num) {
+        var dealNumB = new BigNumber(num);
+        var dealNum = (dealNumB.toFormat(0)).toString();
+        return dealNum.replace(/,/g, '');
+    }
     //myWriteOff
     $scope.myWriteOff = function (i) {
         $scope.moneyName = i.name
@@ -301,7 +308,7 @@ angular.module('asch').controller('assetCtrl', function ($scope, $rootScope, api
         if (!parseInt($scope.amount)) {
             return toastError('您输入的发行数额不正确');
         }
-        var realAmount = parseInt($scope.amount) * Math.pow(10, $scope.currentAsset.precision);
+        var realAmount = $scope.dealBigNumber(parseInt($scope.amount) * Math.pow(10, $scope.currentAsset.precision));
         var trs = AschJS.uia.createIssue($scope.myPublishmoneyName, String(realAmount), userService.secret, $scope.pbsecondPassword);
         postSerivice.writeoff(trs).success(function (res) {
             if (res.success == true) {
