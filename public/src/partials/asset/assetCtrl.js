@@ -253,7 +253,7 @@ angular.module('asch').controller('assetCtrl', function ($scope, $rootScope, api
     };
     // Bignumber transfer
     // untest
-    $scope.dealBigNumber(num) {
+    $scope.dealBigNumber = function(num) {
         var dealNumB = new BigNumber(num);
         var dealNum = (dealNumB.toFormat(0)).toString();
         return dealNum.replace(/,/g, '');
