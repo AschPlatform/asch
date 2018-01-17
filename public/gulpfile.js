@@ -56,9 +56,9 @@ var scssOptions = {
 var timestamp = dateFormat('yyyyMMddhhmmss', new Date());
 
 var netSeedServers = {
-	dev: "http://testnet.asch.io:4096",
+	dev: "http://testnet.asch.io",
 	// dev:  "http://127.0.0.1:4096",
-	test: "http://testnet.asch.io:4096",
+	test: "http://testnet.asch.io",
 	main: "http://mainnet.asch.cn, http://mainnet.asch.io, http://mainnet.asch.so"
 };
 var SEED_SERVERS = netSeedServers.dev;
