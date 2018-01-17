@@ -24,4 +24,4 @@
             toastError(input);
         }
     }
-})()
+})();
