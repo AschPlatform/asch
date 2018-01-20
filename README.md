@@ -47,22 +47,9 @@ git clone https://github.com/AschPlatform/asch && cd asch && chmod u+x aschd
 npm install
 ```
 
-## Front end (web wallet)
+## Web Wallet
 
-```
-cd public/
-
-npm install bower -g
-npm install browserify -g
-npm install gulp  -g
-
-npm install
-# angular chose "angular#~1.5.3 which resolved to 1.5.11 and is required by ASCH"
-bower install
-
-npm run build
-gulp build-test #This make the dist directory.
-```
+See details in ./public/README.md
 
 ## Installation on docker.
 
