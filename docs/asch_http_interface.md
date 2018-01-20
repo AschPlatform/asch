@@ -864,7 +864,7 @@ JSON返回示例：
 接口地址：/api/transactions   
 请求方式：PUT   
 支持格式：json   
-接口备注：接收者账户需在web端钱包登陆过   
+ 
 请求参数说明：   
 
 |名称	|类型   |必填 |说明              |   
@@ -2432,21 +2432,28 @@ JSON返回示例：
 请求示例：   
 ```js   
 // 资产名称，发行商名.资产名，唯一标识
-var name = 'IssuerName.CNY'
-var desc = '资产描述'
+var name = 'IssuerName.CNY';
+var desc = '资产描述';
 // 上限
-var maximum = '1000000'
+var maximum = '1000000';
 // 精度，小数点的位数，这里上限是1000000，精度为3，代表资产IssuerName.CNY的最大发行量为1000.000
-var precision = 3
+var precision = 3;
 // 策略
-var strategy = ''
+var strategy = '';
+// 是否允许注销，默认不允许。0：不允许，1：允许
+var allowWriteoff = 0;
+// 是否允许白名单，默认不允许。0：不允许，1：允许
+var allowWhitelist = 0;
+// 是否允许黑名单，默认不允许。0：不允许，1：允许
+var allowBlacklist = 0;
 // 构造交易数据
-var trs = AschJS.uia.createAsset(name, desc, maximum  , precision, strategy, secret, secondSecret)
+var trs = AschJS.uia.createAsset(name, desc, maximum  , precision, strategy, allowWriteoff, allowWhitelist, allowBlacklist, secret, secondSecret)
 console.log(JSON.stringify(trs))
-{"type":10,"amount":0,"fee":10000000,"recipientId":null,"senderPublicKey":"fafcd01f6b813fdeb3c086e60bc7fa9bfc8ef70ae7be47ce0ac5d06e7b1a8575","timestamp":19397444,"asset":{"uiaAsset":{"name":"IssuerName.CNY","desc":"资产描述","maximum":"1000000","precision":3,"strategy":""}},"signature":"c755587d331dd2eb62ef91dce1511d83a3e603c7cdc7548a16052519c21ea89c78364e35e5d46da0e2103fa2fb7f037eec55a5deba18826fa13e4252422d750e","signSignature":"1b7ed4c21c477b8ff3d2acfdfd7ff85617093f4c21de70938c46b61c9704b037dbcf7f9e5f5dd1a5dc8f22cf473aaa459e6e5b15ced388b8a1da1e307987a509"}
+// 返回的结果如下
+{"type":10,"amount":0,"fee":50000000000,"recipientId":null,"senderPublicKey":"fafcd01f6b813fdeb3c086e60bc7fa9bfc8ef70ae7be47ce0ac5d06e7b1a8575","timestamp":48697173,"message":null,"asset":{"uiaAsset":{"name":"IssuerName.CNY","desc":"资产描述","maximum":"1000000","precision":3,"strategy":"","allowBlacklist":0,"allowWhitelist":0,"allowWriteoff":0}},"signature":"17e12a741375bd0420b9e88a5be5b8563c12d90961914477116eb95ca5df119ca73c8edbcefef071a69bf5bf8a2b9829ed0e0d6fc3efedaaa16b528aa6239f04","signSignature":"a325267c0fc9cfcbed848494b7577dfe85f2ca751dcb02336ff84153cf46e79e99dc87a377f56ce2e500331f04df952415e38b7e3e8cbdb90192c99a0787120b","id":"8ef0982580b58094cb87f1f81c0cf3fa5588ec86681895b44b946ebbf05951d4"}
 
 // 将生成的交易数据通过post发送给server，注册资产IssuerName.CNY
-curl -H "Content-Type: application/json" -H "magic:594fe0f3" -H "version:''" -k -X POST -d '{"transaction":{"type":10,"amount":0,"fee":10000000,"recipientId":null,"senderPublicKey":"fafcd01f6b813fdeb3c086e60bc7fa9bfc8ef70ae7be47ce0ac5d06e7b1a8575","timestamp":19397444,"asset":{"uiaAsset":{"name":"IssuerName.CNY","desc":"资产描述","maximum":"1000000","precision":3,"strategy":""}},"signature":"c755587d331dd2eb62ef91dce1511d83a3e603c7cdc7548a16052519c21ea89c78364e35e5d46da0e2103fa2fb7f037eec55a5deba18826fa13e4252422d750e","signSignature":"1b7ed4c21c477b8ff3d2acfdfd7ff85617093f4c21de70938c46b61c9704b037dbcf7f9e5f5dd1a5dc8f22cf473aaa459e6e5b15ced388b8a1da1e307987a509"}}' 'http://localhost:4096/peer/transactions' && echo
+curl -H "Content-Type: application/json" -H "magic:594fe0f3" -H "version:''" -k -X POST -d '{"transaction":{{"type":10,"amount":0,"fee":50000000000,"recipientId":null,"senderPublicKey":"fafcd01f6b813fdeb3c086e60bc7fa9bfc8ef70ae7be47ce0ac5d06e7b1a8575","timestamp":48697173,"message":null,"asset":{"uiaAsset":{"name":"IssuerName.CNY","desc":"资产描述","maximum":"1000000","precision":3,"strategy":"","allowBlacklist":0,"allowWhitelist":0,"allowWriteoff":0}},"signature":"17e12a741375bd0420b9e88a5be5b8563c12d90961914477116eb95ca5df119ca73c8edbcefef071a69bf5bf8a2b9829ed0e0d6fc3efedaaa16b528aa6239f04","signSignature":"a325267c0fc9cfcbed848494b7577dfe85f2ca751dcb02336ff84153cf46e79e99dc87a377f56ce2e500331f04df952415e38b7e3e8cbdb90192c99a0787120b","id":"8ef0982580b58094cb87f1f81c0cf3fa5588ec86681895b44b946ebbf05951d4"}}' 'http://localhost:4096/peer/transactions' && echo
 ```   
    
 JSON返回示例：   
