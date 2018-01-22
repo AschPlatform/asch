@@ -49,7 +49,20 @@ npm install
 
 ## Web Wallet
 
-[Installation for web wallet](./public/README.md)
+```
+cd public/
+
+npm install bower -g
+npm install browserify -g
+npm install gulp  -g
+
+npm install
+# angular chose "angular#~1.5.3 which resolved to 1.5.11 and is required by ASCH"
+bower install
+
+npm run build
+gulp build-test #This make the front-end files in public dir.
+```
 
 ## Installation on docker.
 
