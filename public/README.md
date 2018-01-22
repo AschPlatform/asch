@@ -16,7 +16,7 @@
 
 ```
 npm install
-gulp build-main
+npm run build  // (just in case)
 ```
 
 ### Realtime build for local dev
