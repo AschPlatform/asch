@@ -49,7 +49,7 @@ npm install
 
 ## Web Wallet
 
-See details in ./public/README.md
+[Installation for web wallet](./public/README.md)
 
 ## Installation on docker.
 
@@ -71,7 +71,7 @@ cd asch && node app.js
 or
 cd asch && ./aschd start
 ```
-Then you can open ```localhost:4096``` in you browser.
+Then you can open ```http://localhost:4096``` in you browser.
 
 ## Usage
 
@@ -99,13 +99,14 @@ node app.js --help
 ## Default localnet genesis account
 
 ```
+// This is the genesis account of localnet and one hundred million XAS in it.
 {
   "keypair": {
     "publicKey": "8065a105c785a08757727fded3a06f8f312e73ad40f1f3502e0232ea42e67efd",
     "privateKey": "a64af28537545301f66579604628b55c7a7a102752bbd8f0b0d152f9754e78d58065a105c785a08757727fded3a06f8f312e73ad40f1f3502e0232ea42e67efd"
   },
   "address": "14762548536863074694",
-  "secret": "someone manual strong movie roof episode eight spatial brown soldier soup motor"
+  "secret": "someone manual strong movie roof episode eight spatial brown soldier soup motor" // password
 }
 ```
 
