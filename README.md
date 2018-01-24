@@ -36,7 +36,7 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # Install node and npm for current user.
-nvm install node 8
+nvm install v8
 # check node version and it should be v8.x.x
 node --version
 
