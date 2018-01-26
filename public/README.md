@@ -1,29 +1,22 @@
-# Asch frontend
+# Asch Wallet
 
-## Development dependency
+## Development Dependencies
 
 - nodejs
 - npm
-- bower
-- gulp
+- bower (npm install bower -g)
+- gulp (npm install gulp  -g)
+- browserify (npm install browserify -g)
 
-## Environment Needed
+## Environment
 
 - Linux
 
-## Install dependency
-
-```
-bower install
-npm install
-```
-
 ## Build
 
-### Browserify
-
 ```
-npm run build
+npm install
+npm run build  // (just in case)
 ```
 
 ### Realtime build for local dev
@@ -31,11 +24,9 @@ npm run build
 ```
 sudo apt install ruby-sass
 gulp serve
-# or
-npm start serve
 ```
 
-Then access localhost:8080 to debug the ui with statc mock http interface
+Then access localhost:8080 to debug the ui with static mock http interface
 
 ### Build for testnet
 
@@ -47,16 +38,17 @@ gulp build-test
 
 ```
 gulp build-main
-# or
-npm start build-main
 ```
+
 ## Notice (THIS BLOCK KEEP UPDATING)
+
 TIME: Pull form this category before 1/17 may need delete node_modules and reinstall to make it function well
 
 ```bash
 rm -rf node_modules/
 npm install
 ```
+
 ####or
 ```bash
 npm install bignumber.js

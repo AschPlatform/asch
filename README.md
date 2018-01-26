@@ -7,7 +7,11 @@
 
 Asch system is a decentralized application platform, which is designed to lower the threshold for developers, such as using JavaScript as develop language, supporting relational database to save transaction data, and making DAPP development be similar with traditional Web application. It is sure that these characteristics are very attractive to developers and SMEs. The ecosystem of the whole platform cannot be improved until developers make a huge progress on productivity. Also, Asch platform is designed to be open for various fields, not limited to some particular parts such as finance, file storage, or copyright proof. It provides underlying and abstract API which can be combined freely to create different types of applications. In consensus mechanism, Asch inherits and enhances DPOS algorithm, by which the possibility of forks and risk of duplicate payments would be significantly reduced. Furthermore, Asch sidechain mode not only can mitigate the pressure of blockchain expansion, but also make DAPP more flexible and personal. Asch system, as a proactive, low-cost and full stack solution, will surely be a next generation incubator of decentralized applications.
 
-More infomation please visit our [official website](https://www.asch.io)
+More infomation please visit
+
+
++ [official website](https://www.asch.io)
++ online wallet: [wallet.asch.io](https://wallet.asch.io/), [wallet.asch.cn](https://wallet.asch.cn/)
 
 ## System Dependency
 
@@ -36,7 +40,7 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # Install node and npm for current user.
-nvm install node 8
+nvm install v8
 # check node version and it should be v8.x.x
 node --version
 
@@ -47,7 +51,7 @@ git clone https://github.com/AschPlatform/asch && cd asch && chmod u+x aschd
 npm install
 ```
 
-## Front end (web wallet)
+## Web Wallet
 
 ```
 cd public/
@@ -61,7 +65,7 @@ npm install
 bower install
 
 npm run build
-gulp build-test #This make the dist directory.
+gulp build-test #This make the front-end files in public dir.
 ```
 
 ## Installation on docker.
@@ -84,7 +88,7 @@ cd asch && node app.js
 or
 cd asch && ./aschd start
 ```
-Then you can open ```localhost:4096``` in you browser.
+Then you can open ```http://localhost:4096``` in you browser.
 
 ## Usage
 
@@ -112,13 +116,14 @@ node app.js --help
 ## Default localnet genesis account
 
 ```
+// This is the genesis account of localnet and one hundred million XAS in it.
 {
   "keypair": {
     "publicKey": "8065a105c785a08757727fded3a06f8f312e73ad40f1f3502e0232ea42e67efd",
     "privateKey": "a64af28537545301f66579604628b55c7a7a102752bbd8f0b0d152f9754e78d58065a105c785a08757727fded3a06f8f312e73ad40f1f3502e0232ea42e67efd"
   },
   "address": "14762548536863074694",
-  "secret": "someone manual strong movie roof episode eight spatial brown soldier soup motor"
+  "secret": "someone manual strong movie roof episode eight spatial brown soldier soup motor" // password
 }
 ```
 
