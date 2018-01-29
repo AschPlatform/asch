@@ -11,7 +11,7 @@ angular.module('asch').run(function ($rootScope, $location, ipCookie, apiService
     });
 
     var serverUrl = $location.protocol() +"://"+$location.host()+":"+$location.port()||80;
-    if ($location.protocol().toLower == "https"){
+    if ($location.protocol().toLower == "https" || true){
         nodeService.staticServer(serverUrl);
     }
     else{
