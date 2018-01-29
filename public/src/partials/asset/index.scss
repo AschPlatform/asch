@@ -148,6 +148,7 @@
     overflow-y: auto;
     box-sizing: border-box;
     padding: 20px;
+    min-height: 480px;
     ._item{
       display: -webkit-box;
       display: -webkit-flex;
@@ -219,7 +220,7 @@
     }
     #writeoff,#publish,#settings{
       position: absolute;
-      min-height: 250px;
+      // min-height: 250px;
       text-align: center;
       width: 550px;
       left: 30%;

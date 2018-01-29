@@ -4,9 +4,11 @@
 
 Asch有三种网络类型，分别是localnet，testnet，mainnet，后两种是发布到线上的，可通过公网访问。下面对这三种网络做一个介绍：    
 
-- localnet：运行在本地的、只有一个节点（101个受托人都配置在本地的config.json文件中）的私链，主要是为了方便本地测试和开发。    
-- testnet：Asch链公网测试环境，由多个服务器组成，具备完整的p2p广播、分布式存储等，在功能上跟mainnet一致，和mainnet的区别在于magic不同（可以理解为用于区分不同链的id）    
+- localnet：运行在本地的、只有一个节点（101个受托人都配置在本地的config.json文件中）的私链，主要是为了方便本地测试和开发。locanet就是私有链。    
+- testnet：Asch链公网测试环境，由多个服务器组成，具备完整的p2p广播、分布式存储等，在功能上跟mainnet一致，和mainnet的区别在于magic不同（可以理解为用于区分不同链的id，目前Asch testnet的magic为594fe0f3，mainnet的magic为：5f5b3cf5）    
 - mainnet：Asch主网正式环境，这上面的XAS Token会在各大交易平台进行交易。    
+
+
 
 Dapp的开发同样要涉及到这三种网络，即
 

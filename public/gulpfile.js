@@ -57,7 +57,7 @@ var timestamp = dateFormat('yyyyMMddhhmmss', new Date());
 
 var netSeedServers = {
 	dev: "http://testnet.asch.io",
-	// dev:  "http://127.0.0.1:4096",
+	local:  "http://127.0.0.1:4096",
 	test: "http://testnet.asch.io",
 	main: "http://mainnet.asch.cn, http://mainnet.asch.io, http://mainnet.asch.so"
 };
@@ -375,6 +375,12 @@ gulp.task('replace:main', function() {
 	SEED_SERVERS = netSeedServers.main;
 });
 
+gulp.task('replace:local', function() {
+	cmd = 'local';
+	magic = TEST_MAGIC;
+	SEED_SERVERS = netSeedServers.local;
+});
+
 gulp.task('handle', function() {
 	runSequence('partials', 'htmls', 'images', 'favicon');
 });
@@ -390,4 +396,8 @@ gulp.task('build-test', function() {
 // 线上环境
 gulp.task('build-main', function() {
 	runSequence('clean', 'replace:main', ['handle']);
+});
+
+gulp.task('build-local', function() {
+	runSequence('clean', 'replace:local', ['handle'])
 });

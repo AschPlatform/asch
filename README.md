@@ -1,13 +1,18 @@
 [![Build Status](https://travis-ci.org/AschPlatform/asch.svg?branch=master)](https://travis-ci.org/AschPlatform/asch)
 [![Author](https://img.shields.io/badge/author-@AschPlatform-blue.svg?style=flat)](http://github.com/AschPlatform) 
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg?style=flat)](http://aschplatform.mit-license.org)
+[![Platform](https://img.shields.io/badge/platform-Linux-green.svg?style=flat)](https://github.com/AschPlatform/asch)
 - - -
 
 # Asch
 
 Asch system is a decentralized application platform, which is designed to lower the threshold for developers, such as using JavaScript as develop language, supporting relational database to save transaction data, and making DAPP development be similar with traditional Web application. It is sure that these characteristics are very attractive to developers and SMEs. The ecosystem of the whole platform cannot be improved until developers make a huge progress on productivity. Also, Asch platform is designed to be open for various fields, not limited to some particular parts such as finance, file storage, or copyright proof. It provides underlying and abstract API which can be combined freely to create different types of applications. In consensus mechanism, Asch inherits and enhances DPOS algorithm, by which the possibility of forks and risk of duplicate payments would be significantly reduced. Furthermore, Asch sidechain mode not only can mitigate the pressure of blockchain expansion, but also make DAPP more flexible and personal. Asch system, as a proactive, low-cost and full stack solution, will surely be a next generation incubator of decentralized applications.
 
-More infomation please visit our [official website](https://www.asch.io)
+More infomation please visit
+
+
++ [official website](https://www.asch.io)
++ online wallet: [wallet.asch.io](https://wallet.asch.io/), [wallet.asch.cn](https://wallet.asch.cn/)
 
 ## System Dependency
 
@@ -36,7 +41,7 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # Install node and npm for current user.
-nvm install node 8
+nvm install v8
 # check node version and it should be v8.x.x
 node --version
 
@@ -49,7 +54,20 @@ npm install
 
 ## Web Wallet
 
-[Installation for web wallet](./public/README.md)
+```
+cd public/
+
+npm install bower -g
+npm install browserify -g
+npm install gulp  -g
+
+npm install
+# angular chose "angular#~1.5.3 which resolved to 1.5.11 and is required by ASCH"
+bower install
+
+npm run build
+gulp build-test #This make the front-end files in public dir.
+```
 
 ## Installation on docker.
 

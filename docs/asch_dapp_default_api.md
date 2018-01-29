@@ -491,6 +491,8 @@ JSON返回示例：
   
 |名称	|类型   |必填 |说明              |   
 |------ |-----  |---  |----              |   
+|senderId |string |N |发送者地址 |  
+|type |interger |N |合约编号 |  
 |limit |interger |N    |限制返回的条数,默认值是100    |   
 |offset |interger |N |偏移量 |  
 
@@ -505,48 +507,26 @@ JSON返回示例：
   
 请求示例：   
 ```bash   
-curl -k -X GET http://localhost:4096/api/dapps/bebe3c57d76a5bbe3954bd7cb4b9e381e8a1ba3c78e183478b4f98b9d532f024/transactions && echo  
+curl -k -X GET http://localhost:4096/api/dapps/bebe3c57d76a5bbe3954bd7cb4b9e381e8a1ba3c78e183478b4f98b9d532f024/transactions?senderId=AJTGR8EGsprrF7r63D2XLDftGAKUu1Ucjn && echo   
 ```   
 
 JSON返回示例：   
 ```js   
 {
-	"transactions": [{
-		"id": "b12b144b3dbb76b70cd62f97e3d3b0606d97c0f402bba1fb973dd2d3ab604a16",
-		"timestamp": 0,
-		"senderId": "AJTGR8EGsprrF7r63D2XLDftGAKUu1Ucjn",
-		"senderPublicKey": "27823f51a3dddd475943fb8142380d2f8722b0f6c651f6ac37930b63666c7803",
-		"fee": "0",
-		"signature": "22739bb762ff0135a0c4199507e3c45a8615c467bfeb4efa5110802033959698588e39b76d037445e02959ee67b483ac4d24f12304181f4955871cdcd28e3001",
-		"type": 3,
-		"args": "[\"CNY\",\"100000000000000\",\"A8QCwz5Vs77UGX9YqBg9kJ6AZmsXQBC8vj\"]",
-		"height": 1
-	},
-	{
-		"id": "7088c67edd43326276453b833727677df6f312271b824564a6a934371265f0dc",
-		"timestamp": 39709980,
-		"senderId": "ADYGpYHmgkbukqByZ2JzwFXZM6wYfMXCaR",
-		"senderPublicKey": "55ad778a8ff0ce4c25cb7a45735c9e55cf1daca110cfddee30e789cb07c8c9f3",
-		"fee": "0",
-		"signature": "bd51295c3373da2a92c77b6a96a0edbda75cdcde5fd7824ff326c366ed0ec5778e1d02e7d9c280a219d6c815d9bfdbc2d03bb960a0f5d8d35458e4bda87d6104",
-		"type": 1,
-		"args": "[\"XAS\",\"10000000000\",\"2f1db0014483ffef85289e086af321e374944668dd7fb4f156c70609276ed903\",\"ANH2RUADqXs6HPbPEZXv4qM8DZfoj4Ry3M\"]",
-		"height": 637
-	},
-	{
-		"id": "200c18fe8e39032baea92f07f34c64f3dba2f0258a47009f1ef0415092254e7c",
-		"timestamp": 39721600,
-		"senderId": "AMZCU6NmCU3vQfADPdNvNNu9ZDBy4xkt1Z",
-		"senderPublicKey": "aa7dcc3afd151a549e826753b0547c90e61b022adb26938177904a73fc4fee36",
-		"fee": "0",
-		"signature": "5f1cc39f4e5610156671683b18d96ac601e805b0761fcc7e2269aadc85f4ebabcabe8bbb437ddeec12c9bdbfb17ade8ffd28369123c3b467ecb924e42a56e90e",
-		"type": 1,
-		"args": "[\"XAS\",\"1000000000\",\"4b580f8f61f4586920a4c0d37b6fad21daf3453fe9ccc5426c2cae7a263c160c\",\"ANH2RUADqXs6HPbPEZXv4qM8DZfoj4Ry3M\"]",
-		"height": 1799
-	}],
-	"count": 3,
-	"success": true
-}  
+    "transactions": [{
+        "id": "b12b144b3dbb76b70cd62f97e3d3b0606d97c0f402bba1fb973dd2d3ab604a16",
+        "timestamp": 0,
+        "senderId": "AJTGR8EGsprrF7r63D2XLDftGAKUu1Ucjn",
+        "senderPublicKey": "27823f51a3dddd475943fb8142380d2f8722b0f6c651f6ac37930b63666c7803",
+        "fee": "0",
+        "signature": "22739bb762ff0135a0c4199507e3c45a8615c467bfeb4efa5110802033959698588e39b76d037445e02959ee67b483ac4d24f12304181f4955871cdcd28e3001",
+        "type": 3,
+        "args": "[\"CNY\",\"100000000000000\",\"A8QCwz5Vs77UGX9YqBg9kJ6AZmsXQBC8vj\"]",
+        "height": 1
+    }],
+    "count": 1,
+    "success": true
+}   
 ```
 
 ### **3.4 根据交易id获取交易详情** 
@@ -590,7 +570,7 @@ JSON返回示例：
 }
 ```
 
-### **3.5 根据查询条件获取交易** 
+### **3.5 根据查询条件获取dapp转帐记录**
 接口地址：/api/dapps/dappID/transfers   
 请求方式：GET   
 支持格式：urlencode   
