@@ -61,7 +61,7 @@ angular.module('asch').service('postSerivice', function ($http, $translate, $roo
         var retryOrCallbak = function(data){
             if (countDown <= 0){
                 callback(1, data);
-                console.log('retryOrCallbak',data);
+                // console.log('retryOrCallbak',data);
                 return;
             }
 
@@ -73,7 +73,7 @@ angular.module('asch').service('postSerivice', function ($http, $translate, $roo
         apiService.broadcastTransaction(trans).success(function(data, status, headers, config){    
             if (data.success){
                 callback(null, data);
-                console.log('broadcastTransaction-success',data);
+                // console.log('broadcastTransaction-success',data);
                 return;
             }
             else if (canRetry(data)){
@@ -81,7 +81,7 @@ angular.module('asch').service('postSerivice', function ($http, $translate, $roo
                 return;
             }            
             //失败返回
-            console.log('broadcastTransaction-fail',data);
+            // console.log('broadcastTransaction-fail',data);
             // 统一管理错误信息
             translateErrMsg($rootScope.languageSelected,data.error);
             callback(null, data);

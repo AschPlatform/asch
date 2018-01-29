@@ -118,14 +118,29 @@
       var version = navigator.userAgent.toLowerCase();
       var reg = /chrome\/[\d.]+/gi;
       var result;
+      var isChinese = true;
+      console.log(window);
+      if (window.navigator.language.indexOf('zh') > -1) {
+        isChinese = true;
+      } else {
+        isChinese = false;
+      }
       if (version.indexOf("chrome") > 0) {
         result = version.match(reg);
         version = (result + "").replace(/[^0-9]/ig, "");
         if (Number(String(version).slice(0,2)) < 59) {
-            alert("您浏览器版本小于59，请升级到最新版本的chrome浏览器， /n The version of your browser is lower then requirement, plz update to the latest version")
+            if (isChinese) {
+                alert("您浏览器版本小于59，请升级到最新版本的chrome浏览器");
+            } else {
+                alert("The version of your browser is lower then requirement, plz update to the latest version");
+            }
         }
       } else {
-          alert("请使用谷歌浏览器，否则转账等操作可能会失败！/n Please be sure using the lastest version of chrome browser");
+          if (isChinese) {
+              alert("请使用谷歌浏览器，否则转账等操作可能会失败！");
+            } else {
+              alert("Please be sure using the lastest version of chrome browser");
+            }
       }
         $.ajax({
             type:'HEAD',
@@ -136,7 +151,11 @@
                 var localTime = new Date().getTime();
                 console.log('serve:',serveTime,'localTime',localTime);
                 if (Math.abs(localTime - serveTime) > 30 * 60 * 1000) {
-                    alert('电脑时间有误，请您调校您的计算机时间. Your local time is different with server，plz adjust your computer');
+                    if (isChinese) {
+                        alert('电脑时间有误，请您调校您的计算机时间.');
+                    } else {
+                        alert('Your local time is different with server, plz adjust your computert your computer');
+                    }
                 }
             }
         });

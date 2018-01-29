@@ -26,7 +26,7 @@ angular.module('asch').controller('loginCtrl', function ($scope, $rootScope, api
 		}
 		$translate.use($scope.selectedLanguage.key);
 		$rootScope.languageSelected = $scope.selectedLanguage.key;
-		console.log($translate);
+		// console.log($translate);
 		$scope.languageIcon = '/assets/common/' + $scope.selectedLanguage.key + '.png';
 	}
 	$scope.changeLanguage();

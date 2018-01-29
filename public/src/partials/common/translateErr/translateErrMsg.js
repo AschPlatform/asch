@@ -1,7 +1,7 @@
 ; (function () {
     window.translateErrMsg = function (language, input) {
-        console.log('translateErrInner',language,input);
-        console.log(this)
+        // console.log('translateErrInner',language,input);
+        // console.log(this)
         if (typeof input == 'string') {
             var translateMap = [
                 {error:"Failed to verify second signature", chinese: this.Translations[language].ERR_TOAST_SECONDKEY_WRONG},
@@ -17,7 +17,7 @@
             for(var idx =0 ; idx< translateMap.length; idx++ ){
                 if (input.indexOf(translateMap[idx].error)> -1){
                     toastError(translateMap[idx].chinese);
-                    console.log(translateMap[idx].chinese);
+                    // console.log(translateMap[idx].chinese);
                     return;
                 }
             }

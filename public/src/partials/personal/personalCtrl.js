@@ -90,7 +90,7 @@ angular.module('asch').controller('personalCtrl', function ($scope, $rootScope, 
 	
 	// 解锁 / 上锁判断
 	$scope.isLock = function () {
-		console.log(userService.lockHeight, userService.latestBlockHeight);
+		// console.log(userService.lockHeight, userService.latestBlockHeight);
 		if (Number(userService.lockHeight) > Number(userService.latestBlockHeight)) {
 			return true;
 		} else {
@@ -142,7 +142,7 @@ angular.module('asch').controller('personalCtrl', function ($scope, $rootScope, 
 		}
 		var lockHeight = Number($scope.block_number)
 		var diffHeight = lockHeight - userService.latestBlockHeight
-		console.log(lockHeight, diffHeight, userService.latestBlockHeight)
+		// console.log(lockHeight, diffHeight, userService.latestBlockHeight)
 		if (diffHeight <= 0 || diffHeight >= 10000000) {
 			return toastError('Invalid lock height')
 		}
