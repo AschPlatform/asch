@@ -2,8 +2,8 @@
 <div id="addacl" ng-controller="addaclCtrl" ng-init="init()">
     <div class="_item">
         <label >{{'CURRENT_MODE' | translate}}</label>
-        <input ng-show="addACL.acl == 0" type="text" value="黑名单模式"  disabled>
-        <input ng-show="addACL.acl == 1" type="text" value="白名单模式"  disabled>
+        <input ng-show="addACL.acl == 0" type="text" value="黑名单模式"  autocomplete="off"  disabled>
+        <input ng-show="addACL.acl == 1" type="text" value="白名单模式"  autocomplete="off"  disabled>
     </div>
     <div class="_item">
         <label >{{'ADD_LIST' | translate}}</label>
@@ -11,8 +11,10 @@
 
     </div>
     <div class="_item" ng-show="secpwd">
-        <label >{{'SECOND_PASSWORD' | translate}}</label>
-        <input type="password" ng-model="secondPassword" >
+        <form action="">
+            <label >{{'SECOND_PASSWORD' | translate}}</label>
+            <input type="password" ng-model="secondPassword"  autocomplete="off">
+        </form>
     </div>
     <button class="sent" ng-click="sub()">{{'SUBMIT' | translate}}</button>
     <div id="comfirmDia" ng-show="comfirmDialog">

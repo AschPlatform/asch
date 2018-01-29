@@ -18,8 +18,10 @@
         <input type="text" ng-model="currencyName" id="pay_item6">
     </div>
     <div class="_item" ng-show="userService.secondPublicKey">
-        <label >{{'SECOND_PASSWORD' | translate}}</label>
-        <input type="password" ng-model="secondPassword" id="pay_item5" ng-change="resetSent()">
+        <form action="">
+            <label >{{'SECOND_PASSWORD' | translate}}</label>
+            <input type="password" ng-model="secondPassword" id="pay_item5" ng-change="resetSent()" autocomplete="off">
+        </form>
     </div>
     <div class="_item">
         <label >{{'FEES' | translate}}</label>
@@ -27,7 +29,7 @@
     </div>
     <div class="_item">
         <label >{{'REMARK' | translate}}</label>
-        <input type="text" ng-model="message" id="pay_item4" placeholder="{{'REMARK_TIP' | translate}} 0~255">
+        <input type="text" ng-model="message" id="pay_item7" placeholder="{{'REMARK_TIP' | translate}} 0~255">
     </div>
     <p>{{'PAY_TIP' | translate}}</p>
     <button class="sent" ng-click="sentMsg()" ng-disabled="!isSendSuccess" ng-class="{'invalidBtn':!isSendSuccess}">{{'SEND' | translate}}</button>

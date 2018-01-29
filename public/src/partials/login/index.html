@@ -8,8 +8,10 @@
 				<!--</div>-->
 				<div class="right">
 					<div class="password">
-						<input ng-model="secret" type="{{showPassword ? 'text' : 'password'}}" placeholder="{{'INPUT_PASSWORD' | translate}}">
-						<div class="pwd_btn {{showPassword ? 'show_pwd' : '' }}" ng-click="showPassword = !showPassword"></div>
+						<form action="">
+							<input ng-model="secret" type="{{showPassword ? 'text' : 'password'}}" placeholder="{{'INPUT_PASSWORD' | translate}}" autocomplete="off">
+							<div class="pwd_btn {{showPassword ? 'show_pwd' : '' }}" ng-click="showPassword = !showPassword"></div>
+						</form>
 					</div>
 					<div class="is-agree">
 						<input class="magic-checkbox" type="checkbox" ng-checked="saveLogin" ng-click="saveLoginChange()" name="layout" id="1">

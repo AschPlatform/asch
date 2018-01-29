@@ -13,7 +13,9 @@
     <div class="item_detail" ng-show="userService.secondPublicKey">
         <form action="">
             <label for="ercemima">{{'SECOND_PASSWORD' | translate}}</label>
-            <input maxlength="16" ng-model="secondpassword" id= "ercemima" type="password" class="tips_voteto">
+            <form action="">
+                <input maxlength="16" ng-model="secondpassword" id= "ercemima" type="password" class="tips_voteto" autocomplete="off">
+            </form>
         </form>
     </div>
     <div class="btn_wrap">

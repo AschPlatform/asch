@@ -101,7 +101,9 @@
 					<input type="number" required ng-model="amount" ng-trim="true" placeholder="{{'DEPOSIT_AMOUNT' | translate}}" id="deposit_item3">
 				</div>
 				<div class="" ng-show="userService.secondPublicKey">
-					<input type="password" ng-model="secondPassword" id="deposit_item4" placeholder="{{'TRS_TYPE_SECOND_PASSWORD' | translate}}">
+					<form action="">
+						<input type="password" ng-model="secondPassword" id="deposit_item4" placeholder="{{'TRS_TYPE_SECOND_PASSWORD' | translate}}"  autocomplete="off">
+					</form>
 				</div>
 				<p style = "font-size:15px">{{'DAPP_COIN_FEE' | translate}}</p>
 				<div class="buttons">

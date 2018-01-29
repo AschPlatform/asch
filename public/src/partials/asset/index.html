@@ -49,8 +49,10 @@
 
         </div>
         <div class="_item" ng-show="secpwd">
-            <label >{{'SECOND_PASSWORD' | translate}}</label>
-            <input type="password"  ng-model="rpsecondPassword" >
+            <form action="">
+                <label >{{'SECOND_PASSWORD' | translate}}</label>
+                <input type="password"  ng-model="rpsecondPassword"  autocomplete="off">
+            </form>
         </div>
         <button class="sent" ng-show="!issuerStatus" ng-click="registerPublish()">{{'SUBMIT' | translate}}</button>
     </div>
@@ -90,8 +92,10 @@
             <select ng-init="selectedAllowBlacklist = allowValueRange[0]" ng-model="selectedAllowBlacklist" ng-options="i.value for i in allowValueRange"></select>
         </div>
         <div class="_item" ng-show="secpwd">
-            <label >{{'SECOND_PASSWORD' | translate}}</label>
-            <input type="password"  ng-model="rasecondPassword" >
+            <form action="">
+                <label >{{'SECOND_PASSWORD' | translate}}</label>
+                <input type="password"  ng-model="rasecondPassword"  autocomplete="off">
+            </form>
         </div>
         <button class="sent" ng-click="registerAsset()">{{'SUBMIT' | translate}}</button>
     </div>
@@ -131,8 +135,10 @@
             <a class="close" href="" ng-click="writeoffClose()"><img src="/assets/common/close.png" alt=""></a>
             <p>您正在注销{{moneyName}}资产，该操作不可逆，需要消耗手续费0.1 XAS</p>
             <div class="_item" ng-show="secpwd">
-                <label >{{'SECOND_PASSWORD' | translate}}</label>
-                <input type="password" ng-model="wosecondPassword" >
+                <form action="">
+                    <label >{{'SECOND_PASSWORD' | translate}}</label>
+                    <input type="password" ng-model="wosecondPassword" autocomplete="off">
+                </form>
             </div>
             <button class="sent" ng-click="writeoff_submit()">{{'SUBMIT' | translate}}</button>
         </div>
@@ -144,8 +150,10 @@
                 <input type="text" ng-model="amount" >
             </div>
             <div class="_item" ng-show="secpwd">
-                <label >{{'SECOND_PASSWORD' | translate}}</label>
-                <input type="password"  ng-model="pbsecondPassword" >
+                <form action="">
+                    <label >{{'SECOND_PASSWORD' | translate}}</label>
+                    <input type="password"  ng-model="pbsecondPassword" autocomplete="off">
+                </form>
             </div>
             <button class="sent" ng-click="publish_submit()">{{'SUBMIT' | translate}}</button>
         </div>
@@ -162,8 +170,10 @@
                 <input ng-show="acl == 1" type="text" value="白名单模式"  disabled>
             </div>
             <div class="_item" ng-show="secpwd">
-                <label >{{'SECOND_PASSWORD' | translate}}</label>
-                <input type="password"  ng-model="setsecondPassword">
+                <form action="">
+                    <label >{{'SECOND_PASSWORD' | translate}}</label>
+                    <input type="password"  ng-model="setsecondPassword" autocomplete="off">
+                </form>
             </div>
             <button class="sent" ng-click="settings_submit()">{{'SUBMIT' | translate}}</button>
         </div>

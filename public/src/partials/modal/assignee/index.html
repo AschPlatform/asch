@@ -11,7 +11,9 @@
         </div>
         <div class="left" ng-show="userService.secondPublicKey">{{'SECOND_PASSWORD' | translate}}</div>
         <div class="right">
-            <input placeholder="{{'DELEGATE_NAME_RULE_TIP' | translate}}" maxlength="16" ng-model="secondpassword" type="password" class="tips_voteto" ng-show="userService.secondPublicKey">
+            <form action="">
+                <input placeholder="{{'DELEGATE_NAME_RULE_TIP' | translate}}" maxlength="16" ng-model="secondpassword" type="password" class="tips_voteto" ng-show="userService.secondPublicKey" autocomplete="off">
+            </form>
         </div>
     </div>
 

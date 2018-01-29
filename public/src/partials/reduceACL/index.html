@@ -6,8 +6,10 @@
         <input ng-show="reduceACL.acl == 1" type="text" value="白名单模式"  disabled>
     </div>
     <div class="_item" ng-show="secpwd">
-        <label >{{'SECOND_PASSWORD' | translate}}</label>
-        <input type="password" ng-model="secondPassword" >
+        <form action="">
+            <label >{{'SECOND_PASSWORD' | translate}}</label>
+            <input type="password" ng-model="secondPassword" autocomplete="off">
+        </form>
     </div>
     <div class="_item">
         <label >{{'CURRENT_LIST' | translate}}</label>

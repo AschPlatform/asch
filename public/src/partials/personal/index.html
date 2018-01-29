@@ -85,12 +85,16 @@
 							{{'SET_SECOND_PASSWORD' | translate}}
 						</div>
 						<div class="psw">
-							<label>{{'PASSWORD' | translate}}</label>
-							<input type="password" ng-trim="true" ng-model="secondpassword" placeholder="{{'PASSWORD_RULE_TIP' | translate}}">
+							<form action="">
+								<label>{{'PASSWORD' | translate}}</label>
+								<input type="password" ng-trim="true" ng-model="secondpassword" placeholder="{{'PASSWORD_RULE_TIP' | translate}}" autocomplete="off">
+							</form>
 						</div>
 						<div class="psw">
-							<label>{{'CONFIRM' | translate}}</label>
-							<input type="password" ng-trim="true" ng-model="confirmPassword" placeholder="{{'INPUT_AGAIN' | translate}}">
+							<form action="">
+								<label>{{'CONFIRM' | translate}}</label>
+								<input type="password" ng-trim="true" ng-model="confirmPassword" placeholder="{{'INPUT_AGAIN' | translate}}" autocomplete="off">
+							</form>
 						</div>
 						<p class="pwd_tip">{{'SUBMIT_SECOND_PASSWORD_TIP' | translate}}</p>
 						<div class="pwd_btn">
@@ -107,8 +111,10 @@
 					</div>
 					<div class="position_input_set">
 						<div class="input_box">
-							<input type="number" class="block_type_in orangeFont" ng-keyup="calTimeLeft()" ng-model="block_number" placeholder="{{'ACCOUNT_TYPE_HINT' | translate}}"><p>{{'ACCOUNT_LOCK_TIP' | translate}}</p>
-							<input type="password" class="block_type_in orangeFont" ng-model="secondpassword" placeholder="{{'ACCOUNT_TYPE2_HINT' | translate}}" ng-hide="!userService.secondPublicKey">
+							<form action="">
+								<input type="number" class="block_type_in orangeFont" ng-keyup="calTimeLeft()" ng-model="block_number" placeholder="{{'ACCOUNT_TYPE_HINT' | translate}}"><p>{{'ACCOUNT_LOCK_TIP' | translate}}</p>
+								<input type="password" class="block_type_in orangeFont" ng-model="secondpassword" placeholder="{{'ACCOUNT_TYPE2_HINT' | translate}}" ng-hide="!userService.secondPublicKey" autocomplete="off">
+							</form>
 						</div>
 						<span>{{timeLeft}}</span>
 						<div class="pwd_btn">
