@@ -57,7 +57,7 @@ Run your own local asch node.
 cd asch
 
 # start the localnet (default on localhost:4096)
-node asch
+node app.js
 ```
 
 
@@ -127,7 +127,45 @@ asch-cli/bin/asch-cli -H 127.0.0.1 -P 4096 openaccount "sentence weasel match we
 
 ## 5 Create A Dapp Metadata File
 
-First enter your Asch source code folder and make sure the localnet is running.
+First we have to create 5 delegate accounts:
+
+```
+# execute in root (you don't have to point to the localhost, this command is execute only in asch-cli)
+asch-cli/bin/asch-cli crypto --generate
+? Enter number of accounts to generate
+5
+
+[ 
+  { 
+    address: 'AN1yKK47P3MtD5ZgHYoncGQ1gCn4p2vGAC',
+    secret: 'flame bottom dragon rely endorse garage supply urge turtle team demand put',
+    publicKey: 'db18d5799944030f76b6ce0879b1ca4b0c2c1cee51f53ce9b43f78259950c2fd' 
+  },
+  { 
+    address: 'AGeeCmSVLDNbtMqqpJchQZakchwzpuje1P',
+    secret: 'thrive veteran child enforce puzzle buzz valley crew genuine basket start top',
+    publicKey: '590e28d2964b0aa4d7c7b98faee4676d467606c6761f7f41f99c52bb4813b5e4' 
+  },
+  { 
+    address: 'A7NWaYUkpa543hdTsfw57AoZAgCBr2NFY6',
+    secret: 'black tool gift useless bring nothing huge vendor asset mix chimney weird',
+    publicKey: 'bfe511158d674c3a1e21111223a49770bee93611d998e88a5d2ea3145de2b68b'
+  },
+  { 
+    address: 'ABU1G2pQFMGa7c1GiAPYCQuUhiPHdvCSB2',
+    secret: 'ribbon crumble loud chief turn maid neglect move day churn share fabric',
+    publicKey: '7bbf62931cf3c596591a580212631aff51d6bc0577c54769953caadb23f6ab00' 
+  },
+  { 
+    address: 'AG1A3ojeLAMZySaZWTkg49jcoVCV7FCKXF',
+    secret: 'scan prevent agent close human pair aerobic sad forest wave toe dust',
+    publicKey: '452df9213aedb3b9fed6db3e2ea9f49d3db226e2dac01828bc3dcd73b7a953b4' 
+  } 
+]
+```
+
+
+After that enter your Asch source code folder and make sure the localnet is running.
 
 ```
 # this must be executed in a new console
@@ -151,13 +189,13 @@ hello
 1
 
 # enter dapp link
-https://github.com/sqfasd/asch-hello-dapp/archive/master.zip
+https://github.com/AschPlatform/asch-dapp-helloworld/archive/master.zip
 
 # enter dapp icon url
 http://o7dyh3w0x.bkt.clouddn.com/hello.png
 
 # enter public keys of dapp delegates  - hex array, use ',' for separator (at least 5 delegates, max 101):
-8c117a74efe93e64287ee54c4d424f4b61c3bf22dc6b6fcbe84c0a7f03c9da96,10e30ac04d83562727a686719227baff3265c5bb36d16da0edc0bb4c335776fc,0b543d3cbd6355b26251ad66abe531eac1e620a2751945ee2ddbd80402a0d1cc,0556397b30fda6b229b2c47448a5f7325ddfe146d4008f7ffef07414b0549b11,93d9104c5d8a2c1a2593d241fab7e42e9df6da3e0ededf3078a1b080d86a38ad
+db18d5799944030f76b6ce0879b1ca4b0c2c1cee51f53ce9b43f78259950c2fd,590e28d2964b0aa4d7c7b98faee4676d467606c6761f7f41f99c52bb4813b5e4,bfe511158d674c3a1e21111223a49770bee93611d998e88a5d2ea3145de2b68b,7bbf62931cf3c596591a580212631aff51d6bc0577c54769953caadb23f6ab00,452df9213aedb3b9fed6db3e2ea9f49d3db226e2dac01828bc3dcd73b7a953b4
 
 # how many delegates are needed to unlock asset of a dapp?
 3
@@ -173,11 +211,11 @@ This step created the `asch/dapps/dapp.json` file.
   "tags": "",
   "icon": "http://o7dyh3w0x.bkt.clouddn.com/hello.png",
   "delegates": [
-    "8c117a74efe93e64287ee54c4d424f4b61c3bf22dc6b6fcbe84c0a7f03c9da96",
-    "10e30ac04d83562727a686719227baff3265c5bb36d16da0edc0bb4c335776fc",
-    "0b543d3cbd6355b26251ad66abe531eac1e620a2751945ee2ddbd80402a0d1cc",
-    "0556397b30fda6b229b2c47448a5f7325ddfe146d4008f7ffef07414b0549b11",
-    "93d9104c5d8a2c1a2593d241fab7e42e9df6da3e0ededf3078a1b080d86a38ad"
+      "db18d5799944030f76b6ce0879b1ca4b0c2c1cee51f53ce9b43f78259950c2fd",
+      "590e28d2964b0aa4d7c7b98faee4676d467606c6761f7f41f99c52bb4813b5e4",
+      "bfe511158d674c3a1e21111223a49770bee93611d998e88a5d2ea3145de2b68b",
+      "7bbf62931cf3c596591a580212631aff51d6bc0577c54769953caadb23f6ab00",
+      "452df9213aedb3b9fed6db3e2ea9f49d3db226e2dac01828bc3dcd73b7a953b4"
   ],
   "unlockDelegates": 3,
   "type": 0
@@ -216,6 +254,9 @@ nvm use 8.0.0
 # ? Enter dapp id
 # <dapp id>    (input your dapp Id)
 
+# ? Host and port (localhost:4096)
+# [Enter]
+
 # ? What is your dapp master password
 # <dapp master password> 
 ```
@@ -227,6 +268,21 @@ The dapp masterpassword is located in `asch/config.json`.
       "": [
       ]
     }
+```
+
+Then write the passwords of the 5 delegates into the dapp configuration file `asch/dapps/<dapp Id>/config.json`.
+
+```
+# config.json
+{
+  "secrets": [
+    "flame bottom dragon rely endorse garage supply urge turtle team demand put",
+    "thrive veteran child enforce puzzle buzz valley crew genuine basket start top",
+    "black tool gift useless bring nothing huge vendor asset mix chimney weird",
+    "ribbon crumble loud chief turn maid neglect move day churn share fabric",
+    "scan prevent agent close human pair aerobic sad forest wave toe dust"
+  ]
+}
 ```
 
 **After the installation restart the node**
@@ -268,8 +324,7 @@ Under `asch/config.json` set the genesis password for your dapp. Input your `<da
 In the future when the DApp is published in testnet or mainnet, it still needs a machine that configures the primary password. NOTE: Only one machine is required.
 
 
-
-## 9 The folder structure
+## 10 The folder structure
 
 Now we can see that there is a new folder added under `asch/dapps`, named as the DApp ID just created.
 
@@ -317,7 +372,7 @@ Developers need to create a new contact to run business logic. That's all.
 
 
 
-## 10 Dapp Deposit
+## 11 Dapp Deposit
 
 In this project, we are able to conduct multiple tasks such as deposit, in-chain transfer, and withdraw.
 
