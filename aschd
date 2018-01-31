@@ -61,14 +61,7 @@ function restart() {
 
 function ismainnet(){
   magic=$(cat $PROG_DIR/config.json | grep magic | awk -F: '{print $2}' | cut -d \" -f2)
-  if [ i$magic = i"594fe0f3" ];then
-    net="testnet"
-  elif [ i$magic = i"5f5b3cf5" ];then
-    net="mainnet"
-  else
-    echo "Wrong net!"
-    exit 2
-  fi
+  net="testnet"
   echo "net is $net"
 }
 
@@ -77,12 +70,12 @@ function chosenode(){
   num=${num:-0}
 
   if [ $num -ge $length ];then
-    echo "You chosen wrong number,please run aschd again!"
+    echo "You chosen wrong number,please run aschd again and chose the other node!"
     exit 1
   fi
 
   if [ i${status[$num]} = i"N" ];then
-    echo "This node has no data,please run aschd again!"
+    echo "This node has no data,please run aschd again and chose the other node!"
     exit 2
   fi
   
