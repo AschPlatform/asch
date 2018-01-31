@@ -256,9 +256,9 @@ function Lock() {
 
     if (isNaN(lockHeight) || lockHeight <= lastBlock.height) return cb('Invalid lock height')
     if (global.featureSwitch.enableLockReset){
-      if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight && lockHeight < sender.lockHeight) return cb('Account is locked')
+      if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight && lockHeight <= sender.lockHeight) return cb('Account is already locked at height ' + sender.lockHeight)
     } else {
-      if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight) return cb('Account is locked')
+      if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight) return cb('Account is already locked at height ' + sender.lockHeight)
     }
 
     cb(null, trs);
