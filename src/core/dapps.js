@@ -208,6 +208,7 @@ function OutTransfer() {
   }
 
   this.undo = function (trs, block, sender, cb) {
+    var transfer = trs.asset.outTransfer
     private.unconfirmedOutTansfers[transfer.transactionId] = true;
 
     if (transfer.currency !== 'XAS') {
