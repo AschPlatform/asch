@@ -124,7 +124,7 @@ angular.module('asch').controller('loginCtrl', function ($scope, $rootScope, api
 	// 	//console.log(ipCookie('userSecret'));
 	//}
 	//登录
-	$scope.secret = $scope.secret.trim();
+	// $scope.secret = $scope.secret.trim();
 	$scope.registerin = function () {
 		if (!$scope.secret) {
 			toastError($translate.instant('ERR_INPUT_PASSWORD'));
