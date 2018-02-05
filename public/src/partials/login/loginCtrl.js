@@ -124,6 +124,7 @@ angular.module('asch').controller('loginCtrl', function ($scope, $rootScope, api
 	// 	//console.log(ipCookie('userSecret'));
 	//}
 	//登录
+	$scope.secret = $scope.secret.trim();
 	$scope.registerin = function () {
 		if (!$scope.secret) {
 			toastError($translate.instant('ERR_INPUT_PASSWORD'));
@@ -135,7 +136,7 @@ angular.module('asch').controller('loginCtrl', function ($scope, $rootScope, api
 			return toastError($translate.instant('ERR_VIOLATE_BIP39'));
 		}
 		var publicKey = AschJS.crypto.getKeys($scope.secret).publicKey;
-		// 增加root qrstr属性
+		// 增加root qrstr属性git
 		$rootScope.qrstr = $scope.secret;
 		$rootScope.publickey = publicKey;
 		apiService.login({
