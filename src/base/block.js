@@ -337,14 +337,9 @@ Block.prototype.dbRead = function (raw) {
       payloadLength: parseInt(raw.b_payloadLength),
       payloadHash: raw.b_payloadHash,
       generatorPublicKey: raw.b_generatorPublicKey,
-      //generatorId: raw.a_address,//private.getAddressByPublicKey(raw.b_generatorPublicKey),
+      generatorId: private.getAddressByPublicKey(raw.b_generatorPublicKey),
       blockSignature: raw.b_blockSignature,
       confirmations: raw.b_confirmations
-    }
-    if(raw.a_address){
-      block.generatorId=raw.a_address;
-    }else{
-      block.generatorId=private.getAddressByPublicKey(raw.b_generatorPublicKey);
     }
     block.totalForged = (block.totalFee + block.reward);
     return block;
