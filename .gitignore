@@ -27,3 +27,4 @@ public/.sass-cache
 public/.tmp
 public/.gulp
 public/*.css
+*.save
