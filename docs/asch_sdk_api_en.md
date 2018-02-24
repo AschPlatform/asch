@@ -34,7 +34,7 @@
     - [6. Icrement ID](#6-icrement-id)
         - [6.1 app.autoID.get(name)](#61-appautoidgetname)
         - [6.2 app.autoID.increment(name)](#62-appautoidincrementname)
-    - [7. 日志](#7-日志)
+    - [7. Logging](#7-Logging)
         - [7.1 app.logger.setLevel(level)](#71-apploggersetlevellevel)
         - [7.2 app.logger.log()](#72-apploggerlog)
         - [7.3 app.logger.trace()](#73-apploggertrace)
@@ -68,8 +68,8 @@ Table created with [Markdown-TOC](https://github.com/AlanWalk/Markdown-TOC).
 - `indices` Array of indexes, it can be a single field index or a multi field index (provide an string array)
 
 > The operation has no return value, it throws an Exception when an error occurs
-> 将指定模型的数据加载到内存并建立索引, 这样可以提高查询和更新一个状态的效率
-> 当一个数据模型需要频繁更新和查询时, 建议使用这个接口, 比如系统内置的账户余额、自增ID都使用了这个功能
+> Load the data for the specified model into memory and index the table which can further improve the efficiency of the query
+> When a data model needs frequent updates and inquiries, it is recommended to use this interface, such as the system's built-in account balance, the increment ID uses this operation 
 
 Example:
 
@@ -482,7 +482,7 @@ app.autoID.increment(AID) === '1'
 app.autoID.get(AID) === '1'
 ```
 
-## 7. 日志
+## 7. Logging
 
 ### 7.1 app.logger.setLevel(level)
 ### 7.2 app.logger.log()
@@ -530,7 +530,8 @@ app.validate('amount', '1e10') // throws
 - `name` The name of contract
 
 > No return value
-> 为合约注册一个数字类型, 未注册的合约无法被外部调用
+> To register a number type for a contract, an unregistered contract can not be called externally
+
 
 Example:
 
@@ -615,8 +616,3 @@ app.getRealTime(4353634)
 ### 8.9 app.custom[]
 
 > The application's namespace can be used to save some of the application's own custom global variables, mainly to isolate system-wide global variables
-
-
-
-
-
