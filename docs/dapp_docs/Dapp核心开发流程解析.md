@@ -8,10 +8,15 @@
 
 
 `基础知识`：明白什么是区块链？什么是侧链？怎么用linux？怎么用nodejs？bitcoin的基本运行原理？什么是共识？什么是dpos？什么是受托人？什么是主密码？什么是私钥、公钥、地址？什么是创世块？什么是资产？这些弄明白了（最起码得大体了解）再往下看，否则就是事倍功半，真没必要往下看了。
+
 `概念理解`：Asch的DAPP是运行在侧链上的，每个DAPP也可以简单理解为一条侧链，具有区块链的基本属性，比如共识机制（默认是dpos，高端玩家可以定制自己的共识算法）、区块信息、转账交易记录、P2P广播通讯、数据库文件等，跟Asch主链有相同的加密算法、地址生成算法，也就是说同一个账户在主链和DAPP中是通用的（通用指的是同一个密码登陆进去后地址相同）。
+
 `OS`：Ubuntu 14.04.x 或者 16.04.x(物理机、虚拟机或者Bash on Ubuntu on Windows都可以)
+
 `IDE`：vscode
+
 `nodejs`： 8.4.0 
+
 `npm`：5.3.0
 
 如下链接为 `DAPP开发前必读文章` （包含里面的那些链接文章也要读）
@@ -27,7 +32,9 @@ https://github.com/AschPlatform/asch/blob/master/docs/asch_http_interface.md
 `友情提示`：区块链是块大蛋糕，但吃之前先给自己做个评估，看是否有能力吃的下、能吃多少、是否能吃的顺心。
 
 ## 2.搭建本地localnet
+
 localnet简单理解就是Asch私有链，这里是为了方便DAPP开发而搭建的。localnet上的DAPP如果开发、测试顺利通过，相当于整个DAPP已完成90%的工作。
+
 ```
 # Install dependency package
 sudo apt-get install curl sqlite3 ntp wget git libssl-dev openssl make gcc g++ autoconf automake python build-essential -y
@@ -149,21 +156,25 @@ config.json  contract  dapp.json  genesis.json  init.js  interface  model  publi
 ```
 
 #### 3.2.2 注册DAPP到localnet上
+
 ```
 zhenxi@MiAir:~/Codes/github/AschPlatform/asch/dapps/cctime$ asch-cli registerdapp -f dapp.json -e "almost journey future similar begin type write celery girl month forget breeze"
 // 返回结果为dappId
 75d084dc91221b380e7a3c6b3b7467935572b4ebaa1e9a3db91e1239377c1fed
 ```
+
 此时钱包的“应用列表”就可以看到该应用了。
 ![](http://asch-public.oss-cn-beijing.aliyuncs.com/pics/dapp%E6%A0%B8%E5%BF%83%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90/2.png)
 
 将cctime目录改名为75d084dc91221b380e7a3c6b3b7467935572b4ebaa1e9a3db91e1239377c1fed,这样就完成了dappp在本地节点的安装（整个过程是手工安装，以后正式上线后，其他节点安装时无须这么麻烦，只需要在页面点击就可以安装）。
+
 ```
 cd ..
 mv cctime 75d084dc91221b380e7a3c6b3b7467935572b4ebaa1e9a3db91e1239377c1fed
 ```
 
 #### 3.2.3 启动DAPP
+
 重启asch服务，默认会加载dapps目录下的所有的dapp。此时dapp中只有模板预置的信息，虽然此时没有自定义的数据、合约、接口等信息，但dapp已经是一条具备最小功能的侧链了，只需要配置好受托人就可以产块和转账。
 此时钱包的“已安装应用列表”就可以看到该应用了。
 ![](http://asch-public.oss-cn-beijing.aliyuncs.com/pics/dapp%E6%A0%B8%E5%BF%83%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90/3.png)
@@ -171,14 +182,23 @@ mv cctime 75d084dc91221b380e7a3c6b3b7467935572b4ebaa1e9a3db91e1239377c1fed
 启动后，dapps/75d084dc91221b380e7a3c6b3b7467935572b4ebaa1e9a3db91e1239377c1fed下会多出一个blockchain.db文件。dapp第一次启动时会创建2种表，1：用户自定义表，由model下的数据模型文件决定，2：asch_sandbox预置表，这些都是区块链的系统表。
 
 目前我们这个DAPP的blockchain.db包含如下表：
+
 `accounts` dapp内账户信息，asch_sandbox预置
+
 `blocks`  dapp区块表，asch_sandbox预置
+
 `domains` 域名表，非asch_sandbox预置表，而是根据model下的domain.js定义生成的表，可以删除
+
 `transactions` dapp交易表，asch_sandbox预置
+
 `variables` dapp变量表，asch_sandbox预置
+
 `balances` dapp余额表，asch_sandbox预置
+
 `deposits` 主链往dapp上充值记录表，asch_sandbox预置
+
 `round_fees` dapp的dpos共识下，每轮的手续费详情表，asch_sandbox预置
+
 `transfers` dapp内部转账表，asch_sandbox预置
 
 浏览器打开 `http://localhost:4096/dapps/75d084dc91221b380e7a3c6b3b7467935572b4ebaa1e9a3db91e1239377c1fed/` 如果能看到“Asch DApp Example 1 - hello world”页面说明dapp启动成功。
@@ -203,7 +223,9 @@ mv cctime 75d084dc91221b380e7a3c6b3b7467935572b4ebaa1e9a3db91e1239377c1fed
 然后重启asch，此时dapp已经可以产块了。具体可以看dapp的日志输出 dapps/75d084dc91221b380e7a3c6b3b7467935572b4ebaa1e9a3db91e1239377c1fed/logs/debug.20180125.log
 
 #### 3.2.5 DAPP基本操作
+
 ##### 3.2.5.1 往DAPP中进行充值
+
 用密码“almost journey future similar begin type write celery girl month forget breeze”登陆Asch钱包，往DAPP中充值100 XAS（这个充值动作实质就是跨链操作），消耗0.1XAS手续费。
 ![](http://asch-public.oss-cn-beijing.aliyuncs.com/pics/dapp%E6%A0%B8%E5%BF%83%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90/4.png)
 
@@ -248,12 +270,17 @@ OK，上面BB了那么多，其实就干了一件事：没有写一行代码只�
 下面这些操作都是在dapps/75d084dc91221b380e7a3c6b3b7467935572b4ebaa1e9a3db91e1239377c1fed/目录下进行的。
 
 ### 4.1 自定义用户数据模型（RDBMS表）
+
 注意事项：
 
 - `表结构定义需要放到model目录下`
+
 - `字段属性都是RDBMS通用的，比如类型有string、nmber等，not_null，defaut值，length长度、主外键约束、唯一约束等`
+
 - `如果字段是String类型，则必须加上length属性`
+
 - `DAPP启动时会检查这些表是否存在，如果不存在则会自动创建，保存到blockchain.db文件中`
+
 
 在model目下创建article.js文件，该文件定义了articles表，内容如下
 ```
@@ -340,8 +367,10 @@ module.exports = {
 ```
 
 ### 4.2 自定义用户合约
+
 这一步里面主要用到的文档是：https://github.com/AschPlatform/asch/blob/master/docs/asch_sdk_api.md
 app.xxx这种接口都来自asch_sandbox。
+
 合约就是业务逻辑处理。
 
 ```
@@ -416,6 +445,7 @@ module.exports = async function () {
 ```
 
 ### 4.3 自定义查询接口
+
 // interface目录下新增index.js，内容如下
 
 ```
