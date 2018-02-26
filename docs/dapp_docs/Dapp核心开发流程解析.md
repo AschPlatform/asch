@@ -27,7 +27,7 @@ https://github.com/AschPlatform/asch/blob/master/docs/asch_dapp_default_api.md
 https://github.com/AschPlatform/asch/blob/master/docs/asch_cli_usage.md
 https://github.com/AschPlatform/asch/blob/master/docs/asch_http_interface.md
 
-在开发期间遇到的任何的技术问题都可以去https://github.com/AschPlatform/asch/issues查找或者创建新的issue。
+在开发期间遇到的任何的技术问题都可以去https://github.com/AschPlatform/asch/issues  查找或者创建新的issue。
 
 `友情提示`：区块链是块大蛋糕，但吃之前先给自己做个评估，看是否有能力吃的下、能吃多少、是否能吃的顺心。
 
