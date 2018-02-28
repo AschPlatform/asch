@@ -94,7 +94,7 @@ cd asch && ./aschd start // 守护进程方式启动，日志记录到logs/debug
 ## 3.注册并启动第一个DAPP
 
 ### 3.1 发行资产（UIA）
-发行自己的资产，请参考这个链接http://docs.asch.mobi/docs/asch_issue_assets.html。
+发行自己的资产，请参考这个链接http://docs.asch.mobi/docs/asch_issue_assets.html
 这里我们在钱包页面生成一个新账户A，主密码为“almost journey future similar begin type write celery girl month forget breeze”，对应的地址是AAjoobuMcmkQ1gS8vTfBy3dQavBiH7sBCF，该账户将作为下面的cctime.XCT资产发行者、cctime DAPP的注册者以及给其它账户转账的发送者，创世账户给该地址转1000个xas。
 
 A账户去注册发行商cctime，然后注册一个资产XCT（上限100亿，精度8，描述为：cctime.org的token时讯币，其它用默认的），最后发行10亿的cctime.XCT。
