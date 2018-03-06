@@ -23,6 +23,8 @@
 ## 5 安装 VC++ Build Tools Technical Preview
 [下载](http://go.microsoft.com/fwlink/?LinkId=691126)并安装VC++ Build Tools Technical Preview，全部选择默认安装就行了，安装时间可能有点久(10分钟左右)
 
+[参考](https://stackoverflow.com/questions/21069699/node-packages-not-building-on-windows-8-1-missing-microsoft-cpp-default-props)
+
 ## 6 安装git
 [下载](https://git-scm.com/)并安装git，应为asch使用gulp构建工具，其中包含一部分linux命令(如 cp、mv等)，所以后面执行命令的时候需要用到git bash
 
