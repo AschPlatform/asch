@@ -98,7 +98,7 @@ package.js:
 
 ed.js:
 ```
-## 将文件所有内容换成一下代码
+## 将文件所有内容换成如下代码
 const ed = require('ed25519');
 module.exports = {
     MakeKeypair: ed.MakeKeypair,
@@ -132,7 +132,7 @@ gulp build-test
 ```
 
 ## 13 软件下载
-考虑到部分软件可能因为网络原因无法下载，在这里提供一个所有依赖的软件 [下载地址](https://pan.baidu.com/s/1WLSH9M0Hwp16CPYOgZ_6GQ)
+考虑到部分软件可能因为网络原因无法下载，在这里提供一个所有依赖的软件的 [下载地址](https://pan.baidu.com/s/1WLSH9M0Hwp16CPYOgZ_6GQ)
 
 
 
