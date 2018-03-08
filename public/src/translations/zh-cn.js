@@ -193,7 +193,7 @@ window.Translations['zh-cn'] = {
   REGISTER_DELEGATE: '注册为受托人',
   DELEGATE_NAME: '受托人名称',
   INPUT_DELEGATE_NAME: '请输入受托人名称',
-  DELEGATE_NAME_RULE_TIP: '至少8为数字和字母组合',
+  DELEGATE_NAME_RULE_TIP: '至少8位数字和字母组合',
   REGISTER: '注册',
   NEED_PAY: '需要支付',
 
