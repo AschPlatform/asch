@@ -260,7 +260,7 @@ module.exports = function(options, done) {
         var parts = req.url.split('/');
         var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
-        scope.logger.debug(req.method + " " + req.url + " from " + ip);
+        scope.logger.debug(req.method + " " + req.url + " from " + ip + ':' + req.headers['port']);
 
         /* Instruct browser to deny display of <frame>, <iframe> regardless of origin.
          *
@@ -355,8 +355,12 @@ module.exports = function(options, done) {
     },
 
     dbLite: function (cb) {
-      var dbLite = require('./utils/dblite-helper.js');
-      dbLite.connect(dbFile, cb);
+      // var dbLite = require('./utils/dblite-helper.js');
+      // dbLite.connect(dbFile, cb);
+      
+      // raw dblite should be deprecated because of smartdb
+      // for compatibility cause, use fake object
+      cb(null, {})
     },
 
     oneoff: function (cb) {
@@ -369,8 +373,8 @@ module.exports = function(options, done) {
     },
 
     model: ['dbLite', function (cb, scope) {
-      var Model = require('./utils/model.js')
-      cb(null, new Model(scope.dbLite))
+      // var Model = require('./utils/model.js')
+      cb(null, {})
     }],
 
     base: ['dbLite', 'bus', 'scheme', 'genesisblock', function (cb, scope) {

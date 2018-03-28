@@ -4,27 +4,26 @@ var program = require('commander');
 var path = require('path');
 var fs = require('fs');
 var async = require('async');
+var tracer = require('tracer');
 var Logger = require('./src/logger');
 var init = require('./src/init');
+var initRuntime = require('./src/runtime')
 
 function verifyGenesisBlock(scope, block) {
   try {
     var payloadHash = crypto.createHash('sha256');
-    var payloadLength = 0;
 
     for (var i = 0; i < block.transactions.length; ++i) {
       var trs = block.transactions[i];
       var bytes = scope.base.transaction.getBytes(trs);
-      payloadLength += bytes.length;
       payloadHash.update(bytes);
     }
     var id = scope.base.block.getId(block);
-    assert.equal(payloadLength, block.payloadLength, 'Unexpected payloadLength');
     assert.equal(payloadHash.digest().toString('hex'), block.payloadHash, 'Unexpected payloadHash');
     assert.equal(id, block.id, 'Unexpected block id');
     // assert.equal(id, '11839820784468442760', 'Block id is incorrect');
   } catch (e) {
-    assert(false, 'Failed to verify genesis block: ' + e);
+    throw(e)
   }
 }
 
@@ -139,7 +138,7 @@ function main() {
 
   if (program.daemon) {
     console.log('Asch server started as daemon ...');
-    require('daemon')({cwd: process.cwd()});
+    require('daemon')({ cwd: process.cwd() });
     fs.writeFileSync(pidFile, process.pid, 'utf8');
   }
 
@@ -148,6 +147,8 @@ function main() {
     echo: program.deamon ? null : appConfig.logLevel,
     errorLevel: appConfig.logLevel
   });
+  //var logger = tracer.dailyfile({ root: path.join(baseDir, 'logs'), maxLogFiles: 10, allLogsFileName: 'debug'})
+  //logger.setLevel = tracer.setLevel
 
   var options = {
     dbFile: program.blockchain || path.join(baseDir, 'blockchain.db'),
@@ -162,78 +163,92 @@ function main() {
   }
 
   global.featureSwitch = {}
-  global.state = {}
+  global.state = {};
 
-  init(options, function (err, scope) {
-    if (err) {
-      scope.logger.fatal(err);
-      if (fs.existsSync(pidFile)) {
-        fs.unlinkSync(pidFile);
-      }
-      process.exit(1);
-      return;
+  (async function () {
+    try {
+      await initRuntime(options)
+    } catch (e) {
+      logger.error('init runtime error: ', e)
+      process.exit(1)
+      return
     }
-    verifyGenesisBlock(scope, scope.genesisblock.block);
-
-    if (program.execute) {
-      // only for debug use
-      // require(path.resolve(program.execute))(scope);
-    }
-
-    scope.bus.message('bind', scope.modules);
-    global.modules = scope.modules
-
-    scope.logger.info('Modules ready and launched');
-    if (!scope.config.publicIp) {
-      scope.logger.warn('Failed to get public ip, block forging MAY not work!');
-    }
-
-    process.once('cleanup', function () {
-      scope.logger.info('Cleaning up...');
-      async.eachSeries(scope.modules, function (module, cb) {
-        if (typeof (module.cleanup) == 'function') {
-          module.cleanup(cb);
-        } else {
-          setImmediate(cb);
-        }
-      }, function (err) {
-        if (err) {
-          scope.logger.error('Error while cleaning up', err);
-        } else {
-          scope.logger.info('Cleaned up successfully');
-        }
-        scope.dbLite.close();
+    init(options, function (err, scope) {
+      if (err) {
+        scope.logger.fatal(err);
         if (fs.existsSync(pidFile)) {
           fs.unlinkSync(pidFile);
         }
         process.exit(1);
+        return;
+      }
+      verifyGenesisBlock(scope, scope.genesisblock.block);
+
+      if (program.execute) {
+        // only for debug use
+        // require(path.resolve(program.execute))(scope);
+      }
+
+      scope.bus.message('bind', scope.modules);
+      global.modules = scope.modules
+
+      scope.logger.info('Modules ready and launched');
+      if (!scope.config.publicIp) {
+        scope.logger.warn('Failed to get public ip, block forging MAY not work!');
+      }
+
+      process.once('cleanup', function () {
+        scope.logger.info('Cleaning up...');
+        async.eachSeries(scope.modules, function (module, cb) {
+          if (typeof (module.cleanup) == 'function') {
+            module.cleanup(cb);
+          } else {
+            setImmediate(cb);
+          }
+        }, function (err) {
+          if (err) {
+            scope.logger.error('Error while cleaning up', err);
+          } else {
+            scope.logger.info('Cleaned up successfully');
+          }
+          app.db.close()
+          if (fs.existsSync(pidFile)) {
+            fs.unlinkSync(pidFile);
+          }
+          process.exit(1);
+        });
       });
+
+      process.once('SIGTERM', function () {
+        process.emit('cleanup');
+      })
+
+      process.once('exit', function () {
+        scope.logger.info('process exited');
+      });
+
+      process.once('SIGINT', function () {
+        process.emit('cleanup');
+      });
+
+      process.on('uncaughtException', function (err) {
+        // handle the error safely
+        scope.logger.fatal('uncaughtException', { message: err.message, stack: err.stack });
+        process.emit('cleanup');
+      });
+      process.on('unhandledRejection', function (err) {
+        // handle the error safely
+        scope.logger.error('unhandledRejection', err);
+        process.emit('cleanup');
+      });
+
+      if (typeof gc !== 'undefined') {
+        setInterval(function () {
+          gc();
+        }, 60000);
+      }
     });
-
-    process.once('SIGTERM', function () {
-      process.emit('cleanup');
-    })
-
-    process.once('exit', function () {
-      scope.logger.info('process exited');
-    });
-
-    process.once('SIGINT', function () {
-      process.emit('cleanup');
-    });
-
-    process.on('uncaughtException', function (err) {
-      // handle the error safely
-      scope.logger.fatal('uncaughtException', { message: err.message, stack: err.stack });
-      process.emit('cleanup');
-    });
-
-    if (typeof gc !== 'undefined') {
-      setInterval(function () {
-        gc();
-      }, 60000);
-    }
-  });
+  })()
 }
 
 main();

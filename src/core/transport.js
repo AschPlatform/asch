@@ -143,54 +143,30 @@ private.attachApi = function () {
       var max = query.max;
       var min = query.min;
       var ids = query.ids.split(",");
-      var escapedIds = ids.map(function (id) {
-        return "'" + id + "'";
-      });
-
-      if (!escapedIds.length) {
-        report = library.scheme.validate(req.headers, {
-          type: "object",
-          properties: {
-            port: {
-              type: "integer",
-              minimum: 1,
-              maximum: 65535
+      (async () => {
+        let query = req.query
+        try {
+          let blocks = await app.model.Block.findAll({
+            condition: {
+              id: {
+                $in: ids
+              },
+              height: { $between: [query.min, query.max] }
             },
-            magic: {
-              type: "string",
-              maxLength: 8
-            }
-          },
-          required: ['port', 'magic']
-        });
-
-        var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-        var peerStr = peerIp ? peerIp + ":" + (isNaN(parseInt(req.headers['port'])) ? 'unkwnown' : parseInt(req.headers['port'])) : 'unknown';
-        library.logger.log('Invalid common block request, ban 60 min', peerStr);
-
-        if (report) {
-          modules.peer.state(ip.toLong(peerIp), parseInt(req.headers['port']), 0, 3600);
-        }
-
-        return res.json({ success: false, error: "Invalid block id sequence" });
-      }
-
-      library.dbLite.query("select max(height), id, previousBlock, timestamp from blocks where id in (" + escapedIds.join(',') + ") and height >= $min and height <= $max", {
-        "max": max,
-        "min": min
-      }, {
-          "height": Number,
-          "id": String,
-          "previousBlock": String,
-          "timestamp": Number
-        }, function (err, rows) {
-          if (err) {
-            return res.json({ success: false, error: "Database error" });
+            sort: {
+              height: 1
+            },
+          })
+          app.logger.debug('find common blocks in database', blocks)
+          if (!blocks || !blocks.length) {
+            return res.json({ success: false, error: 'Common block not found' })
           }
-
-          var commonBlock = rows.length ? rows[0] : null;
-          return res.json({ success: true, common: commonBlock });
-        });
+          return res.json({ success: true, common: blocks[blocks.length - 1] });
+        } catch (e) {
+          app.logger.error('Failed to find common block: ' + e)
+          return res.json({ success: false, error: 'Failed to find common block' })
+        }
+      })()
     });
   });
 
@@ -204,24 +180,52 @@ private.attachApi = function () {
       if (err) return next(err);
       if (!report.isValid) return res.json({ success: false, error: report.issues });
 
-      // Get 1400+ blocks with all data (joins) from provided block id
       var blocksLimit = 200;
       if (query.limit) {
         blocksLimit = Math.min(blocksLimit, Number(query.limit))
       }
 
-      modules.blocks.loadBlocksData({
-        limit: blocksLimit,
-        lastId: query.lastBlockId
-      }, { plain: true }, function (err, data) {
+      (async function () {
+        let lastBlockId = req.query.lastBlockId
         res.status(200);
-        if (err) {
+        try {
+          let lastBlock = await app.model.Block.findOne({ condition: { id: lastBlockId } })
+          if (!lastBlock) throw new Error('Last block not found: ' + lastBlockId)
+
+          let blocks = await app.model.Block.findAll({
+            condition: {
+              height: { $gt: lastBlock.height }
+            },
+            limit: blocksLimit,
+            sort: { height: 1 }
+          })
+          if (!blocks || !blocks.length) return res.json({ blocks: [] })
+
+          let maxHeight = blocks[blocks.length - 1].height
+          let transactions = await app.model.Transaction.findAll({
+            condition: {
+              height: { $gt: lastBlock.height, $lte: maxHeight }
+            }
+          })
+          app.logger.debug('Transport get blocks transactions', transactions)
+          let firstHeight = blocks[0].height
+          for (let i in transactions) {
+            let t = transactions[i]
+            let h = t.height
+            let b = blocks[h - firstHeight]
+            if (!!b) {
+              if (!b.transactions) {
+                b.transactions = []
+              }
+              b.transactions.push(t)
+            }
+          }
+          res.json({ blocks: blocks });
+        } catch (e) {
+          app.logger.error('Failed to get blocks or transactions', e)
           return res.json({ blocks: "" });
         }
-
-        res.json({ blocks: data });
-
-      });
+      })()
     });
   });
 
@@ -251,7 +255,6 @@ private.attachApi = function () {
     }
 
     library.bus.message('receiveBlock', block, votes);
-
     res.sendStatus(200);
   });
 
@@ -397,12 +400,12 @@ private.attachApi = function () {
     var lastSlot = slots.getSlotNumber(lastBlock.timestamp);
     if (slots.getNextSlot() - lastSlot >= 12) {
       library.logger.error("OS INFO", shell.getInfo())
-      library.logger.error("Blockchain is not ready", {getNextSlot:slots.getNextSlot(),lastSlot:lastSlot,lastBlockHeight:lastBlock.height})
+      library.logger.error("Blockchain is not ready", { getNextSlot: slots.getNextSlot(), lastSlot: lastSlot, lastBlockHeight: lastBlock.height })
       return res.status(200).json({ success: false, error: "Blockchain is not ready" });
     }
 
     res.set(private.headers);
-    
+
     var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     var peerStr = peerIp ? peerIp + ":" + (isNaN(req.headers['port']) ? 'unknown' : req.headers['port']) : 'unknown';
     if (typeof req.body.transaction == 'string') {
@@ -410,7 +413,7 @@ private.attachApi = function () {
     }
     try {
       var transaction = library.base.transaction.objectNormalize(req.body.transaction);
-      transaction.asset = transaction.asset || {}
+      // transaction.asset = transaction.asset || {}
     } catch (e) {
       library.logger.error("transaction parse error", {
         raw: req.body,
@@ -430,8 +433,8 @@ private.attachApi = function () {
       return res.status(200).json({ success: false, error: "Already processed transaction" + transaction.id });
     }
 
-    library.balancesSequence.add(function (cb) {
-      if (modules.transactions.hasUnconfirmedTransaction(transaction)) {
+    library.sequence.add(function (cb) {
+      if (modules.transactions.hasUnconfirmed(transaction)) {
         return cb('Already exists');
       }
       library.logger.log('Received transaction ' + transaction.id + ' from peer ' + peerStr);
@@ -762,7 +765,8 @@ Transport.prototype.onSignature = function (signature, broadcast) {
 Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast) {
   if (broadcast) {
     var data = {
-      transaction: library.protobuf.encodeTransaction(transaction).toString('base64')
+      // transaction: library.protobuf.encodeTransaction(transaction).toString('base64')
+      transaction: transaction
     };
     self.broadcast({}, { api: '/transactions', data: data, method: "POST" });
     library.network.io.sockets.emit('transactions/change', {});
@@ -771,10 +775,11 @@ Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast)
 
 Transport.prototype.onNewBlock = function (block, votes, broadcast) {
   if (broadcast) {
-    var data = {
-      block: library.protobuf.encodeBlock(block).toString('base64'),
-      votes: library.protobuf.encodeBlockVotes(votes).toString('base64'),
-    };
+    // var data = {
+    //   block: library.protobuf.encodeBlock(block).toString('base64'),
+    //   votes: library.protobuf.encodeBlockVotes(votes).toString('base64'),
+    // };
+    let data = { block: block, votes: votes }
     self.broadcast({}, { api: '/blocks', data: data, method: "POST" });
     library.network.io.sockets.emit('blocks/change', {});
   }

@@ -79,7 +79,7 @@ private.findUpdate = function (lastBlock, peer, cb) {
 
   modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {
     if (err || !commonBlock) {
-      library.logger.error("Failed to get common block", err);
+      library.logger.error("Failed to get common block:", err);
       return cb();
     }
 
@@ -92,84 +92,30 @@ private.findUpdate = function (lastBlock, peer, cb) {
       return cb();
     }
 
-    var unconfirmedTrs = modules.transactions.getUnconfirmedTransactionList(true);
-    library.logger.info('Undo unconfirmed transactions', unconfirmedTrs)
-    modules.transactions.undoUnconfirmedList(function (err) {
-      if (err) {
-        library.logger.error('Failed to undo uncomfirmed transactions', err);
-        return process.exit(0);
-      }
+    app.sdb.rollbackBlock()
+    modules.transactions.clearUnconfirmed();
 
-      function rollbackBlocks(cb) {
-        if (commonBlock.id == lastBlock.id) {
-          return cb();
-        }
-
-        async.series([
-          function (next) {
-            var currentRound = modules.round.calc(lastBlock.height);
-            var backRound = modules.round.calc(commonBlock.height);
-            var backHeight = commonBlock.height;
-            if (currentRound != backRound || lastBlock.height % 101 === 0) {
-              if (backRound == 1) {
-                backHeight = 1;
-              } else {
-                backHeight = backHeight - backHeight % 101;
-              }
-              modules.blocks.getBlock({ height: backHeight }, function (err, result) {
-                if (result && result.block) {
-                  commonBlock = result.block;
-                }
-                next(err);
-              })
-            } else {
-              next();
-            }
-          },
-          function (next) {
-            library.logger.info('start to roll back blocks before ' + commonBlock.height);
-            modules.round.directionSwap('backward', lastBlock, next);
-          },
-          function (next) {
-            library.bus.message('deleteBlocksBefore', commonBlock);
-            modules.blocks.deleteBlocksBefore(commonBlock, next);
-          },
-          function (next) {
-            modules.round.directionSwap('forward', lastBlock, next);
+    (async function () {
+      try {
+        if (toRemove > 0) {
+          for (let h = lastBlock.height; h > commonBlock.height; h--) {
+            library.logger.info('rollback block height: ' + h)
+            await app.sdb.rollbackBlock(h)
           }
-        ], function (err) {
-          if (err) {
-            library.logger.error("Failed to rollback blocks before " + commonBlock.height, err);
-            process.exit(1);
-            return;
-          }
-          cb();
-        });
-      }
-
-      async.series([
-        async.apply(rollbackBlocks),
-        function (next) {
-          library.logger.debug("Loading blocks from peer " + peerStr);
-
-          modules.blocks.loadBlocksFromPeer(peer, commonBlock.id, function (err, lastValidBlock) {
-            if (err) {
-              library.logger.error("Failed to load blocks, ban 60 min: " + peerStr, err);
-              modules.peer.state(peer.ip, peer.port, 0, 3600);
-            }
-            next();
-          });
-        },
-        function (next) {
-          modules.transactions.receiveTransactions(unconfirmedTrs, function (err) {
-            if (err) {
-              library.logger.error('Failed to redo unconfirmed transactions', err);
-            }
-            next();
-          });
         }
-      ], cb)
-    });
+      } catch (e) {
+        library.logger.error('Failed to rollback block', e)
+        return cb()
+      }
+      library.logger.debug("Loading blocks from peer " + peerStr);
+      modules.blocks.loadBlocksFromPeer(peer, commonBlock.id, function (err, lastValidBlock) {
+        if (err) {
+          library.logger.error("Failed to load blocks, ban 60 min: " + peerStr, err);
+          modules.peer.state(peer.ip, peer.port, 0, 3600);
+        }
+        cb();
+      });
+    })()
   });
 }
 
@@ -203,12 +149,12 @@ private.loadBlocks = function (lastBlock, cb) {
       return cb();
     }
 
-    if (bignum(modules.blocks.getLastBlock().height).lt(data.body.height)) { // Diff in chainbases
+    if (bignum(modules.blocks.getLastBlock().height).lt(data.body.height)) {
       private.blocksToSync = data.body.height;
 
-      if (lastBlock.id != private.genesisBlock.block.id) { // Have to find common block
+      if (lastBlock.id != private.genesisBlock.block.id) {
         private.findUpdate(lastBlock, data.peer, cb);
-      } else { // Have to load full db
+      } else {
         private.loadFullDb(data.peer, cb);
       }
     } else {
@@ -490,7 +436,7 @@ Loader.prototype.onPeerReady = function () {
     if (!private.loaded || self.syncing()) return;
     private.loadUnconfirmedTransactions(function (err) {
       err && library.logger.error('loadUnconfirmedTransactions timer:', err);
-      setTimeout(nextLoadUnconfirmedTransactions, 14 * 1000)
+      //setTimeout(nextLoadUnconfirmedTransactions, 14 * 1000)
     });
 
   });
@@ -500,7 +446,7 @@ Loader.prototype.onPeerReady = function () {
     private.loadSignatures(function (err) {
       err && library.logger.error('loadSignatures timer:', err);
 
-      setTimeout(nextLoadSignatures, 14 * 1000)
+      //setTimeout(nextLoadSignatures, 14 * 1000)
     });
   });
 }
@@ -508,13 +454,13 @@ Loader.prototype.onPeerReady = function () {
 Loader.prototype.onBind = function (scope) {
   modules = scope;
 
-  private.loadBlockChain(function (err) {
-    if (err) {
-      library.logger.error('Failed to load blockchain', err)
-      return process.exit(1)
-    }
-    library.bus.message('blockchainReady');
-  });
+  // private.loadBlockChain(function (err) {
+  //   if (err) {
+  //     library.logger.error('Failed to load blockchain', err)
+  //     return process.exit(1)
+  //   }
+  //   library.bus.message('blockchainReady');
+  // });
 }
 
 Loader.prototype.onBlockchainReady = function () {

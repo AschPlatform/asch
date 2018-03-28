@@ -2407,6 +2407,7 @@ DApps.prototype.cleanup = function (cb) {
 }
 
 DApps.prototype.onBlockchainReady = function () {
+  return
   private.getInstalledIds(function (err, dappIds) {
     if (err) {
       library.logger.error("Failed to get installed ids", err);

@@ -28,7 +28,7 @@ private.attachApi = function () {
 
   router.use(function (req, res, next) {
     if (modules) return next();
-    res.status(500).send({success: false, error: "Blockchain is loading"});
+    res.status(500).send({ success: false, error: "Blockchain is loading" });
   });
 
   router.map(shared, {
@@ -38,14 +38,14 @@ private.attachApi = function () {
   });
 
   router.use(function (req, res) {
-    res.status(500).send({success: false, error: "API endpoint not found"});
+    res.status(500).send({ success: false, error: "API endpoint not found" });
   });
 
   library.network.app.use('/api/peers', router);
   library.network.app.use(function (err, req, res, next) {
     if (!err) return next();
     library.logger.error(req.url, err.toString());
-    res.status(500).send({success: false, error: err.toString()});
+    res.status(500).send({ success: false, error: err.toString() });
   });
 }
 
@@ -58,7 +58,7 @@ private.updatePeerList = function (cb) {
       return cb();
     }
 
-    var report = library.scheme.validate(data.body.peers, {type: "array", required: true, uniqueItems: true});
+    var report = library.scheme.validate(data.body.peers, { type: "array", required: true, uniqueItems: true });
     library.scheme.validate(data.body, {
       type: "object",
       properties: {
@@ -132,7 +132,7 @@ private.updatePeerList = function (cb) {
 }
 
 private.count = function (cb) {
-  library.dbLite.query("select count(*) from peers", {"count": Number}, function (err, rows) {
+  app.db.rawQuery("select count(*) from peers", { "count": Number }, function (err, rows) {
     if (err) {
       library.logger.error('Peer#count', err);
       return cb(err);
@@ -143,7 +143,7 @@ private.count = function (cb) {
 }
 
 private.banManager = function (cb) {
-  library.dbLite.query("UPDATE peers SET state = 1, clock = null where (state = 0 and clock - $now < 0)", {now: Date.now()}, cb);
+  app.db.rawQuery("UPDATE peers SET state = 1, clock = null where (state = 0 and clock - $now < 0)", { now: Date.now() }, cb);
 }
 
 private.getByFilter = function (filter, cb) {
@@ -209,7 +209,7 @@ private.getByFilter = function (filter, cb) {
     params['offset'] = offset;
   }
 
-  library.dbLite.query("select ip, port, state, os, version from peers" +
+  app.db.rawQuery("select ip, port, state, os, version from peers" +
     (where.length ? (' where ' + where.join(' and ')) : '') +
     (sortBy ? ' order by ' + sortBy + ' ' + sortMethod : '') + " " +
     (limit ? ' limit $limit' : '') +
@@ -229,7 +229,7 @@ private.getByFilter = function (filter, cb) {
 Peer.prototype.list = function (options, cb) {
   options.limit = options.limit || 100;
 
-  library.dbLite.query("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.dappId ? " inner join peers_dapp pd on p.id = pd.peerId and pd.dappId = $dappId " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
+  app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.dappId ? " inner join peers_dapp pd on p.id = pd.peerId and pd.dappId = $dappId " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
     "ip": String,
     "port": Number,
     "state": Number,
@@ -243,7 +243,7 @@ Peer.prototype.list = function (options, cb) {
 Peer.prototype.listWithDApp = function (options, cb) {
   options.limit = options.limit || 100;
 
-  library.dbLite.query("select p.ip, p.port, p.state, p.os, p.version, pd.dappId from peers p inner join peers_dapp pd on p.id = pd.peerId  where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
+  app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version, pd.dappId from peers p inner join peers_dapp pd on p.id = pd.peerId  where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
     "ip": String,
     "port": Number,
     "state": Number,
@@ -255,7 +255,7 @@ Peer.prototype.listWithDApp = function (options, cb) {
 }
 
 Peer.prototype.reset = function (cb) {
-  library.dbLite.query('update peers set state = 2', function (err) {
+  app.db.rawQuery('update peers set state = 2', function (err) {
     if (cb) return cb(err)
     if (err) {
       library.logger.error('Failed to reset peers: ' + e)
@@ -274,7 +274,7 @@ Peer.prototype.state = function (pip, port, state, timeoutSeconds, cb) {
   } else {
     clock = null;
   }
-  library.dbLite.query("UPDATE peers SET state = $state, clock = $clock WHERE ip = $ip and port = $port;", {
+  app.db.rawQuery("UPDATE peers SET state = $state, clock = $clock WHERE ip = $ip and port = $port;", {
     state: state,
     clock: clock,
     ip: pip,
@@ -291,7 +291,7 @@ Peer.prototype.remove = function (pip, port, cb) {
     return peer.ip == ip.fromLong(pip) && peer.port == port;
   });
   if (isFrozenList !== undefined) return cb && cb("Peer in white list");
-  library.dbLite.query("DELETE FROM peers WHERE ip = $ip and port = $port;", {
+  app.db.rawQuery("DELETE FROM peers WHERE ip = $ip and port = $port;", {
     ip: pip,
     port: port
   }, function (err) {
@@ -302,7 +302,7 @@ Peer.prototype.remove = function (pip, port, cb) {
 }
 
 Peer.prototype.addDapp = function (config, cb) {
-  library.dbLite.query("SELECT id from peers where ip = $ip and port = $port", {
+  app.db.rawQuery("SELECT id from peers where ip = $ip and port = $port", {
     ip: config.ip,
     port: config.port
   }, ["id"], function (err, data) {
@@ -314,7 +314,7 @@ Peer.prototype.addDapp = function (config, cb) {
     }
     var peerId = data[0].id;
 
-    library.dbLite.query("INSERT OR IGNORE INTO peers_dapp (peerId, dappId) VALUES ($peerId, $dappId);", {
+    app.db.rawQuery("INSERT OR IGNORE INTO peers_dapp (peerId, dappId) VALUES ($peerId, $dappId);", {
       dappId: config.dappId,
       peerId: peerId
     }, cb);
@@ -335,17 +335,17 @@ Peer.prototype.update = function (peer, cb) {
   }
   async.series([
     function (cb) {
-      library.dbLite.query("INSERT OR IGNORE INTO peers (ip, port, state, os, version) VALUES ($ip, $port, $state, $os, $version);", extend({}, params, {state: 1}), cb);
+      app.db.rawQuery("INSERT OR IGNORE INTO peers (ip, port, state, os, version) VALUES ($ip, $port, $state, $os, $version);", extend({}, params, { state: 1 }), cb);
     },
     function (cb) {
       if (peer.state !== undefined) {
         params.state = peer.state;
       }
-      library.dbLite.query("UPDATE peers SET os = $os, version = $version" + (peer.state !== undefined ? ", state = CASE WHEN state = 0 THEN state ELSE $state END " : "") + " WHERE ip = $ip and port = $port;", params, cb);
+      app.db.rawQuery("UPDATE peers SET os = $os, version = $version" + (peer.state !== undefined ? ", state = CASE WHEN state = 0 THEN state ELSE $state END " : "") + " WHERE ip = $ip and port = $port;", params, cb);
     },
     function (cb) {
       if (dappId) {
-        self.addDapp({dappId: dappId, ip: peer.ip, port: peer.port}, cb);
+        self.addDapp({ dappId: dappId, ip: peer.ip, port: peer.port }, cb);
       } else {
         setImmediate(cb);
       }
@@ -397,29 +397,35 @@ Peer.prototype.onBind = function (scope) {
 }
 
 Peer.prototype.onBlockchainReady = function () {
-  async.eachSeries(library.config.peers.list, function (peer, cb) {
-    library.dbLite.query("INSERT OR IGNORE INTO peers(ip, port, state) VALUES($ip, $port, $state)", {
-      ip: ip.toLong(peer.ip),
-      port: peer.port,
-      state: 2
-    }, cb);
-  }, function (err) {
-    if (err) {
-      library.logger.error('onBlockchainReady', err);
-    }
-
-    private.count(function (err, count) {
-      if (count) {
-        private.updatePeerList(function (err) {
-          err && library.logger.error('updatePeerList', err);
-          library.bus.message('peerReady');
-        })
-        library.logger.info('Peers ready, stored ' + count);
-      } else {
-        library.logger.warn('Peers list is empty');
+  let initSqls = [
+    'CREATE UNIQUE INDEX IF NOT EXISTS peers_unique ON peers(ip, port)',
+    'update peers set state = 1, clock = null where state != 0;'
+  ]
+  app.db.rawQuery(initSqls.join(';'), function () {
+    async.eachSeries(library.config.peers.list, function (peer, cb) {
+      app.db.rawQuery("INSERT OR IGNORE INTO peers(ip, port, state) VALUES($ip, $port, $state)", {
+        ip: ip.toLong(peer.ip),
+        port: Number(peer.port),
+        state: 2
+      }, cb);
+    }, function (err) {
+      if (err) {
+        library.logger.error('onBlockchainReady', err);
       }
+
+      private.count(function (err, count) {
+        if (count) {
+          private.updatePeerList(function (err) {
+            err && library.logger.error('updatePeerList', err);
+            library.bus.message('peerReady');
+          })
+          library.logger.info('Peers ready, stored ' + count);
+        } else {
+          library.logger.warn('Peers list is empty');
+        }
+      });
     });
-  });
+  })
 }
 
 Peer.prototype.onPeerReady = function () {
@@ -490,11 +496,11 @@ shared.getPeers = function (req, cb) {
       for (var i = 0; i < peers.length; i++) {
         peers[i].ip = ip.fromLong(peers[i].ip);
       }
-      library.dbLite.query("select count(1) from peers", function (err, count) {
+      app.db.rawQuery("select count(1) from peers", function (err, count) {
         if (err) {
           return cb("Can not get peers count");
         }
-        cb(null, {peers: peers, totalCount: count[0]});
+        cb(null, { peers: peers, totalCount: count[0] });
       });
     });
   });
@@ -535,7 +541,7 @@ shared.getPeer = function (req, cb) {
         peer.ip = ip.fromLong(peer.ip);
       }
 
-      cb(null, {peer: peer || {}});
+      cb(null, { peer: peer || {} });
     });
   });
 }

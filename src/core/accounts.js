@@ -240,7 +240,7 @@ private.attachApi = function () {
   router.get('/count', function (req, res) {
     library.dbLite.query('select count(*) from mem_accounts', { 'count': Number }, function (err, rows) {
       if (err || !rows) {
-        return res.status(500).send({success: false, error: 'Database error'})
+        return res.status(500).send({ success: false, error: 'Database error' })
       }
       return res.json({ success: true, count: rows[0].count });
     })
@@ -301,17 +301,7 @@ private.openAccount2 = function (publicKey, cb) {
 
 // Public methods
 Accounts.prototype.generateAddressByPublicKey = function (publicKey) {
-  var publicKeyHash = crypto.createHash('sha256').update(publicKey, 'hex').digest();
-  var temp = new Buffer(8);
-  for (var i = 0; i < 8; i++) {
-    temp[i] = publicKeyHash[7 - i];
-  }
-
-  var address = bignum.fromBuffer(temp).toString();
-  if (!address) {
-    throw Error("wrong publicKey " + publicKey);
-  }
-  return address;
+  return addressHelper.generateBase58CheckAddress(publicKey)
 }
 
 Accounts.prototype.generateAddressByPublicKey2 = function (publicKey) {
@@ -326,14 +316,14 @@ Accounts.prototype.generateAddressByPublicKey2 = function (publicKey) {
 }
 
 Accounts.prototype.getAccount = function (filter, fields, cb) {
-  library.logger.trace('Accounts.prototype.getAccount ',filter)
+  library.logger.trace('Accounts.prototype.getAccount ', filter)
   if (typeof fields === 'function') {
     cb = fields
   }
   var publicKey = filter.publicKey
 
   if (filter.address && !addressHelper.isAddress(filter.address)) {
-      return cb('Invalid address getAccount');
+    return cb('Invalid address getAccount');
   }
 
   if (filter.publicKey) {
@@ -362,7 +352,7 @@ Accounts.prototype.getAccounts = function (filter, fields, cb) {
 }
 
 Accounts.prototype.setAccountAndGet = function (data, cb) {
-  library.logger.debug('setAccountAndGet data is:',data)
+  library.logger.debug('setAccountAndGet data is:', data)
   var address = data.address || null;
   if (address === null) {
     if (data.publicKey) {
@@ -372,7 +362,7 @@ Accounts.prototype.setAccountAndGet = function (data, cb) {
       }
       delete data.isGenesis;
     } else {
-      library.logger.debug('setAccountAndGet error and data is:',data)
+      library.logger.debug('setAccountAndGet error and data is:', data)
       return cb("Missing address or public key in setAccountAndGet");
     }
   }
@@ -417,7 +407,7 @@ shared.newAccount = function (req, cb) {
   var ent = Number(req.body.ent)
   if ([128, 256, 384].indexOf(ent) === -1) {
     ent = 128
-  } 
+  }
   var secret = new Mnemonic(ent).toString();
   var keypair = ed.MakeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
   var address = self.generateAddressByPublicKey2(keypair.publicKey)
@@ -823,7 +813,8 @@ shared.getAccount = function (req, cb) {
     properties: {
       address: {
         type: "string",
-        minLength: 1
+        minLength: 1,
+        mexLength: 50
       }
     },
     required: ["address"]
@@ -832,46 +823,24 @@ shared.getAccount = function (req, cb) {
       return cb(err[0].message);
     }
 
-    self.getAccount({ address: query.address }, function (err, account) {
-      if (err) {
-        return cb(err.toString());
+    (async function () {
+      try {
+        let account = await app.model.Account.findOne({ condition: { address: query.address } })
+        let unconfirmedAccount = app.sdb.get('Account', { address: query.address })
+        let latestBlock = modules.blocks.getLastBlock();
+        cb(null, {
+          account: account,
+          unconfirmedAccount: unconfirmedAccount,
+          latestBlock: {
+            height: latestBlock.height,
+            timestamp: latestBlock.timestamp
+          },
+          version: modules.peer.getVersion()
+        });
+      } catch (e) {
+        cb('Database error: ' + e)
       }
-      if (!account) {
-        account = {
-          address: query.address,
-          unconfirmedBalance: 0,
-          balance: 0,
-          publicKey: '',
-          unconfirmedSignature: '',
-          secondSignature: '',
-          secondPublicKey: '',
-          multisignatures: '',
-          u_multisignatures: '',
-          lockHeight: 0
-        }
-      }
-
-      var latestBlock = modules.blocks.getLastBlock();
-      cb(null, {
-        account: {
-          address: account.address,
-          unconfirmedBalance: account.u_balance,
-          balance: account.balance,
-          publicKey: account.publicKey,
-          unconfirmedSignature: account.u_secondSignature,
-          secondSignature: account.secondSignature,
-          secondPublicKey: account.secondPublicKey,
-          multisignatures: account.multisignatures,
-          u_multisignatures: account.u_multisignatures,
-          lockHeight: account.lockHeight
-        },
-        latestBlock: {
-          height: latestBlock.height,
-          timestamp: latestBlock.timestamp
-        },
-        version: modules.peer.getVersion()
-      });
-    });
+    })()
   });
 }
 

@@ -25,22 +25,23 @@ function UIA(cb, scope) {
   self.__private = private
   private.attachApi()
 
-  library.base.transaction.attachAssetType(TransactionTypes.UIA_ISSUER, require('../uia/issuer.js'))
-  library.base.transaction.attachAssetType(TransactionTypes.UIA_ASSET, require('../uia/asset.js'))
-  library.base.transaction.attachAssetType(TransactionTypes.UIA_FLAGS, require('../uia/flags.js'))
-  library.base.transaction.attachAssetType(TransactionTypes.UIA_ACL, require('../uia/acl.js'))
-  library.base.transaction.attachAssetType(TransactionTypes.UIA_ISSUE, require('../uia/issue.js'))
-  library.base.transaction.attachAssetType(TransactionTypes.UIA_TRANSFER, require('../uia/transfer.js'))
+  // library.base.transaction.attachAssetType(TransactionTypes.UIA_ISSUER, require('../uia/issuer.js'))
+  // library.base.transaction.attachAssetType(TransactionTypes.UIA_ASSET, require('../uia/asset.js'))
+  // library.base.transaction.attachAssetType(TransactionTypes.UIA_FLAGS, require('../uia/flags.js'))
+  // library.base.transaction.attachAssetType(TransactionTypes.UIA_ACL, require('../uia/acl.js'))
+  // library.base.transaction.attachAssetType(TransactionTypes.UIA_ISSUE, require('../uia/issue.js'))
+  // library.base.transaction.attachAssetType(TransactionTypes.UIA_TRANSFER, require('../uia/transfer.js'))
 
-  library.model.getAllAssetBalances((err, results) => {
-    if (err) return cb('Failed to load asset balances: ' + err)
-    for (let i = 0; i < results.length; ++i) {
-      let {currency, address, balance} = results[i]
-      library.balanceCache.setAssetBalance(address, currency, balance)
-    }
-    library.balanceCache.commit()
-    cb(null, self)
-  })
+  // library.model.getAllAssetBalances((err, results) => {
+  //   if (err) return cb('Failed to load asset balances: ' + err)
+  //   for (let i = 0; i < results.length; ++i) {
+  //     let {currency, address, balance} = results[i]
+  //     library.balanceCache.setAssetBalance(address, currency, balance)
+  //   }
+  //   library.balanceCache.commit()
+  //   cb(null, self)
+  // })
+  cb(null, self)
 }
 
 // Private methods

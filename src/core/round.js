@@ -463,21 +463,22 @@ Round.prototype.onBind = function (scope) {
 }
 
 Round.prototype.onBlockchainReady = function () {
-  var round = self.calc(modules.blocks.getLastBlock().height);
-  library.dbLite.query("select sum(b.totalFee), GROUP_CONCAT(b.reward), GROUP_CONCAT(lower(hex(b.generatorPublicKey))) from blocks b where (select (cast(b.height / 101 as integer) + (case when b.height % 101 > 0 then 1 else 0 end))) = $round",
-    {
-      round: round
-    },
-    {
-      fees: Number,
-      rewards: Array,
-      delegates: Array
-    }, function (err, rows) {
-      private.feesByRound[round] = rows[0].fees;
-      private.rewardsByRound[round] = rows[0].rewards;
-      private.delegatesByRound[round] = rows[0].delegates;
-      private.loaded = true;
-    });
+  // var round = self.calc(modules.blocks.getLastBlock().height);
+  // library.dbLite.query("select sum(b.totalFee), GROUP_CONCAT(b.reward), GROUP_CONCAT(lower(hex(b.generatorPublicKey))) from blocks b where (select (cast(b.height / 101 as integer) + (case when b.height % 101 > 0 then 1 else 0 end))) = $round",
+  //   {
+  //     round: round
+  //   },
+  //   {
+  //     fees: Number,
+  //     rewards: Array,
+  //     delegates: Array
+  //   }, function (err, rows) {
+  //     private.feesByRound[round] = rows[0].fees;
+  //     private.rewardsByRound[round] = rows[0].rewards;
+  //     private.delegatesByRound[round] = rows[0].delegates;
+  //     private.loaded = true;
+  //   });
+  private.loaded = true;
 }
 
 Round.prototype.onFinishRound = function (round) {

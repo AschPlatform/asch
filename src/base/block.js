@@ -105,7 +105,41 @@ Block.prototype.sign = function (block, keypair) {
   return ed.Sign(hash, keypair).toString('hex');
 }
 
-Block.prototype.getBytes = function (block) {
+Block.prototype.getBytes = function (block, skipSignature) {
+  var size = 4 + 4 + 8 + 4 + 8 + 8 + 8 + 4 + 32 + 32 + 64;
+
+  var bb = new ByteBuffer(size, true);
+  bb.writeInt(block.version);
+  bb.writeInt(block.timestamp);
+  bb.writeLong(block.height);
+  bb.writeString(block.delegate)
+
+  if (block.previousBlock) {
+    bb.writeString(block.previousBlock)
+  } else {
+    bb.writeString('0')
+  }
+
+  var payloadHashBuffer = new Buffer(block.payloadHash, 'hex');
+  for (var i = 0; i < payloadHashBuffer.length; i++) {
+    bb.writeByte(payloadHashBuffer[i]);
+  }
+
+
+  if (!skipSignature && block.signature) {
+    var signatureBuffer = new Buffer(block.signature, 'hex');
+    for (var i = 0; i < signatureBuffer.length; i++) {
+      bb.writeByte(signatureBuffer[i]);
+    }
+  }
+
+  bb.flip();
+  var b = bb.toBuffer();
+
+  return b;
+}
+
+Block.prototype.getBytes_ = function (block) {
   var size = 4 + 4 + 64 + 4 + 8 + 8 + 8 + 4 + 32 + 32 + 64;
 
   try {
@@ -177,8 +211,8 @@ Block.prototype.verifySignature = function (block) {
       data2[i] = data[i];
     }
     var hash = crypto.createHash('sha256').update(data2).digest();
-    var blockSignatureBuffer = new Buffer(block.blockSignature, 'hex');
-    var generatorPublicKeyBuffer = new Buffer(block.generatorPublicKey, 'hex');
+    var blockSignatureBuffer = new Buffer(block.signature, 'hex');
+    var generatorPublicKeyBuffer = new Buffer(block.delegate, 'hex');
     var res = ed.Verify(hash, blockSignatureBuffer || ' ', generatorPublicKeyBuffer || ' ');
   } catch (e) {
     throw Error(e.toString());
@@ -229,16 +263,13 @@ Block.prototype.objectNormalize = function (block) {
       height: {
         type: "integer"
       },
-      blockSignature: {
+      signature: {
         type: "string",
         format: "signature"
       },
-      generatorPublicKey: {
+      delegate: {
         type: "string",
         format: "publicKey"
-      },
-      numberOfTransactions: {
-        type: "integer"
       },
       payloadHash: {
         type: "string",
@@ -253,18 +284,6 @@ Block.prototype.objectNormalize = function (block) {
       timestamp: {
         type: "integer"
       },
-      totalAmount: {
-        type: "integer",
-        minimum: 0
-      },
-      totalFee: {
-        type: "integer",
-        minimum: 0
-      },
-      reward: {
-        type: "integer",
-        minimum: 0
-      },
       transactions: {
         type: "array",
         uniqueItems: true
@@ -274,7 +293,7 @@ Block.prototype.objectNormalize = function (block) {
         minimum: 0
       }
     },
-    required: ['blockSignature', 'generatorPublicKey', 'numberOfTransactions', 'payloadHash', 'payloadLength', 'timestamp', 'totalAmount', 'totalFee', 'reward', 'transactions', 'version']
+    required: ['signature', 'delegate', 'payloadHash', 'timestamp', 'transactions', 'version']
   });
 
   if (!report) {
@@ -293,6 +312,10 @@ Block.prototype.objectNormalize = function (block) {
 }
 
 Block.prototype.getId = function (block) {
+  return this.getId2(block)
+}
+
+Block.prototype.getId_ = function (block) {
   if (global.featureSwitch.enableLongId) {
     return this.getId2(block)
   }
@@ -323,7 +346,7 @@ Block.prototype.dbRead = function (raw) {
   if (!raw.b_id) {
     return null
   } else {
-    
+
     var block = {
       id: raw.b_id,
       version: parseInt(raw.b_version),

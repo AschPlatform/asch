@@ -25,40 +25,21 @@ function calc(height) {
 
 // Public methods
 Transaction.prototype.create = function (data) {
-  if (!private.types[data.type]) {
-    throw Error('Unknown transaction type ' + data.type);
-  }
-
-  if (!data.sender) {
-    throw Error("Can't find sender");
-  }
-
-  if (!data.keypair) {
-    throw Error("Can't find keypair");
-  }
-
-  library.logger.debug('=============transaction.create', data.sender)
   var trs = {
     type: data.type,
-    amount: 0,
-    senderPublicKey: data.sender.publicKey,
-    requesterPublicKey: data.requester ? data.requester.publicKey.toString('hex') : null,
+    senderPublicKey: keypair.publicKey.toString('hex'),
     timestamp: slots.getTime(),
-    asset: {},
     message: data.message,
-    args: data.args
+    args: data.args,
   };
 
-  trs = private.types[trs.type].create.call(this, data, trs);
-  trs.signature = this.sign(data.keypair, trs);
+  trs.signatures = [this.sign(data.keypair, trs)];
 
-  if (data.sender.secondSignature && data.secondKeypair) {
-    trs.signSignature = this.sign(data.secondKeypair, trs);
+  if (data.secondKeypair) {
+    trs.secondSignature = this.sign(data.secondKeypair, trs);
   }
 
   trs.id = this.getId(trs);
-
-  trs.fee = private.types[trs.type].calculateFee.call(this, trs, data.sender) || false;
 
   return trs;
 }
@@ -89,17 +70,7 @@ Transaction.prototype.multisign = function (keypair, trs) {
 }
 
 Transaction.prototype.getId = function (trs) {
-  if (global.featureSwitch.enableLongId) {
-    return this.getId2(trs);
-  }
-  var hash = this.getHash(trs);
-  var temp = new Buffer(8);
-  for (var i = 0; i < 8; i++) {
-    temp[i] = hash[7 - i];
-  }
-
-  var id = bignum.fromBuffer(temp).toString();
-  return id;
+  return this.getId2(trs);
 }
 
 Transaction.prototype.getId2 = function (trs) {
@@ -111,78 +82,47 @@ Transaction.prototype.getHash = function (trs) {
 }
 
 Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignature) {
-  if (!private.types[trs.type]) {
-    throw Error('Unknown transaction type ' + trs.type);
+  var bb = new ByteBuffer(1, true);
+  bb.writeInt(trs.type);
+  bb.writeInt(trs.timestamp);
+  bb.writeLong(trs.fee);
+
+  var senderPublicKeyBuffer = new Buffer(trs.senderPublicKey, 'hex');
+  for (var i = 0; i < senderPublicKeyBuffer.length; i++) {
+    bb.writeByte(senderPublicKeyBuffer[i]);
   }
 
-  try {
-    var assetBytes = private.types[trs.type].getBytes.call(this, trs, skipSignature, skipSecondSignature);
-    var assetSize = assetBytes ? assetBytes.length : 0;
-
-    var bb = new ByteBuffer(1 + 4 + 32 + 32 + 8 + 8 + 64 + 64 + assetSize, true);
-    bb.writeByte(trs.type);
-    bb.writeInt(trs.timestamp);
-
-    var senderPublicKeyBuffer = new Buffer(trs.senderPublicKey, 'hex');
-    for (var i = 0; i < senderPublicKeyBuffer.length; i++) {
-      bb.writeByte(senderPublicKeyBuffer[i]);
-    }
-
-    if (trs.requesterPublicKey) {
-      var requesterPublicKey = new Buffer(trs.requesterPublicKey, 'hex');
-      for (var i = 0; i < requesterPublicKey.length; i++) {
-        bb.writeByte(requesterPublicKey[i]);
-      }
-    }
-
-    if (trs.recipientId) {
-      if (/^[0-9]{1,20}$/g.test(trs.recipientId)) {
-        var recipient = bignum(trs.recipientId).toBuffer({ size: 8 });
-        for (var i = 0; i < 8; i++) {
-          bb.writeByte(recipient[i] || 0);
-        }
-      } else {
-        bb.writeString(trs.recipientId);
-      }
+  if (trs.message) bb.writeString(trs.message);
+  if (trs.args) {
+    let args
+		if (typeof trs.args === 'string') {
+			args = JSON.parse(trs.args)	
     } else {
-      for (var i = 0; i < 8; i++) {
-        bb.writeByte(0);
-      }
+      args = trs.args
     }
+		for (var i = 0; i < args.length; ++i) {
+			bb.writeString(args[i])
+		}
+  }
 
-    bb.writeLong(trs.amount);
-
-    if (trs.message) bb.writeString(trs.message);
-    if (trs.args) {
-      for (var i = 0; i < trs.args.length; ++i) {
-        bb.writeString(trs.args[i])
-      }
-    }
-
-    if (assetSize > 0) {
-      for (var i = 0; i < assetSize; i++) {
-        bb.writeByte(assetBytes[i]);
-      }
-    }
-
-    if (!skipSignature && trs.signature) {
-      var signatureBuffer = new Buffer(trs.signature, 'hex');
+  if (!skipSignature && trs.signatures) {
+    for (let signature of trs.signatures) {
+      var signatureBuffer = new Buffer(signature, 'hex');
       for (var i = 0; i < signatureBuffer.length; i++) {
         bb.writeByte(signatureBuffer[i]);
       }
     }
-
-    if (!skipSecondSignature && trs.signSignature) {
-      var signSignatureBuffer = new Buffer(trs.signSignature, 'hex');
-      for (var i = 0; i < signSignatureBuffer.length; i++) {
-        bb.writeByte(signSignatureBuffer[i]);
-      }
-    }
-
-    bb.flip();
-  } catch (e) {
-    throw Error(e.toString());
   }
+
+  if (!skipSecondSignature && trs.signSignature) {
+    var signSignatureBuffer = new Buffer(trs.signSignature, 'hex');
+    for (var i = 0; i < signSignatureBuffer.length; i++) {
+      bb.writeByte(signSignatureBuffer[i]);
+    }
+  }
+
+  bb.flip();
+
   return bb.toBuffer();
 }
 
@@ -268,7 +208,7 @@ Transaction.prototype.process = function (trs, sender, requester, cb) {
   }.bind(this));
 }
 
-Transaction.prototype.verify = function (trs, sender, requester, cb) { //inheritance
+Transaction.prototype.verify_ = function (trs, sender, requester, cb) { //inheritance
   if (typeof requester === 'function') {
     cb = requester;
   }
@@ -414,6 +354,31 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) { //inherit
 
 }
 
+Transaction.prototype.verify = function (trs, sender) {
+  if (slots.getSlotNumber(trs.timestamp) > slots.getSlotNumber()) {
+    return setImmediate(cb, "Invalid transaction timestamp");
+  }
+
+  if (!trs.type) {
+    throw new Error("Invalid function")
+  }
+
+  let id = this.getId(trs)
+  if (trs.id !== id) {
+    throw new Error('Invalid transaction id')
+  }
+
+  try {
+    var valid = this.verifySignature(trs, trs.senderPublicKey, trs.signatures[0])
+    if (valid && trs.secondSignature) {
+      valid = this.verifySignature(trs, sender.secondPublicKey, trs.secondPublicKey)
+    }
+  } catch (e) {
+    throw new Error('verify signature exception: ' + e)
+  }
+  return valid
+}
+
 Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
   if (!private.types[trs.type]) {
     throw Error('Unknown transaction type ' + trs.type);
@@ -467,7 +432,7 @@ Transaction.prototype.verifyBytes = function (bytes, publicKey, signature) {
   return res;
 }
 
-Transaction.prototype.apply = function (trs, block, sender, cb) {
+Transaction.prototype.apply0 = function (trs, block, sender, cb) {
   if (!private.types[trs.type]) {
     return setImmediate(cb, "Unknown transaction type " + trs.type);
   }
@@ -492,6 +457,40 @@ Transaction.prototype.apply = function (trs, block, sender, cb) {
     if (err) return cb(err);
     private.types[trs.type].apply.call(this, trs, block, sender, cb);
   }.bind(this));
+}
+
+Transaction.prototype.apply = async function (transaction, block) {
+  if (block.height !== 0) {
+    let sender = app.sdb.get('Account', { address: transaction.senderId })
+    if ((!sender || !sender.xas || sender.xas < transaction.fee) && this.block.height > 0) throw new Error('Insufficient balance')
+
+    app.sdb.increment('Account', { xas: -1 * transaction.fee }, { address: transaction.senderId })
+  }
+
+  let name = app.getContractName(transaction.type)
+  if (!name) {
+    throw new Error('Unsupported transaction type: ' + transaction.type)
+  }
+  let [mod, func] = name.split('.')
+  if (!mod || !func) {
+    throw new Error('Invalid transaction function')
+  }
+  let fn = app.contract[mod][func]
+  if (!fn) {
+    throw new Error('Contract not found')
+  }
+  let bind = {
+    trs: transaction,
+    block: block
+  }
+
+  app.sdb.beginTransaction()
+  let error = await fn.apply(bind, transaction.args)
+  if (error) {
+    throw new Error(error)
+  }
+
+  app.sdb.commitTransaction()
 }
 
 Transaction.prototype.undo = function (trs, block, sender, cb) {
@@ -619,89 +618,48 @@ Transaction.prototype.dbSave = function (trs, cb) {
 }
 
 Transaction.prototype.objectNormalize = function (trs) {
-  if (!private.types[trs.type]) {
-    throw Error('Unknown transaction type ' + trs.type);
-  }
-
   for (var i in trs) {
     if (trs[i] === null || typeof trs[i] === 'undefined') {
       delete trs[i];
     }
   }
 
+  if (trs.args && typeof trs.args === 'string') {
+    try {
+      trs.args = JSON.parse(trs.args)
+    } catch (e) {
+      throw new Error('Failed to parse args: ' + e)
+    }
+  }
+
+  if (trs.signatures && typeof trs.signatures === 'string') {
+    try {
+      trs.signatures = JSON.parse(trs.signatures)
+    } catch (e) {
+      throw new Error('Failed to parse signatures: ' + e)
+    }
+  }
+
   var report = this.scope.scheme.validate(trs, {
     type: "object",
     properties: {
-      id: {
-        type: "string"
-      },
-      height: {
-        type: "integer"
-      },
-      blockId: {
-        type: "string"
-      },
-      type: {
-        type: "integer"
-      },
-      timestamp: {
-        type: "integer"
-      },
-      senderPublicKey: {
-        type: "string",
-        format: "publicKey"
-      },
-      requesterPublicKey: {
-        type: "string",
-        format: "publicKey"
-      },
-      senderId: {
-        type: "string"
-      },
-      recipientId: {
-        type: "string"
-      },
-      amount: {
-        type: "integer",
-        minimum: 0,
-        maximum: constants.totalAmount
-      },
-      fee: {
-        type: "integer",
-        minimum: 0,
-        maximum: constants.totalAmount
-      },
-      signature: {
-        type: "string",
-        format: "signature"
-      },
-      signSignature: {
-        type: "string",
-        format: "signature"
-      },
-      asset: {
-        type: "object"
-      },
-      args: {
-        type: "array"
-      },
-      message: {
-        type: "string",
-        maxLength: 256
-      }
+      id: { type: "string" },
+      height: { type: "integer" },
+      type: { type: "integer" },
+      timestamp: { type: "integer" },
+      senderPublicKey: { type: "string", format: "publicKey" },
+      fee: { type: "integer", minimum: 0, maximum: constants.totalAmount },
+      secondSignature: { type: "string", format: "signature" },
+      signatures: { type: "array" },
+      args: { type: "array" },
+      message: { type: "string", maxLength: 256 }
     },
-    required: ['type', 'timestamp', 'senderPublicKey', 'signature']
+    required: ['type', 'timestamp', 'senderPublicKey', 'signatures']
   });
 
   if (!report) {
     library.logger.error('Failed to normalize transaction body: ' + this.scope.scheme.getLastError().details[0].message, trs)
     throw Error(this.scope.scheme.getLastError());
-  }
-
-  try {
-    trs = private.types[trs.type].objectNormalize.call(this, trs);
-  } catch (e) {
-    throw Error(e.toString());
   }
 
   return trs;
