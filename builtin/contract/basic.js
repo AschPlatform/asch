@@ -8,9 +8,20 @@ async function doCancelVote(account) {
 }
 
 async function doCancelAgent(account) {
+  app.sdb.increment('Account', { weight: -1 * account.weight }, { address: account.agent })
   app.sdb.update('Account', { agent: '' }, { address: account.address })
-  app.sdb.increment('Account', { agentWeight: -1 * account.weight }, { address: account.address })
   doCancelVote(account)
+}
+
+function isUniq(arr) {
+  let s = new Set
+  for (let i of arr) {
+    if (s.has(i)) {
+      return false
+    }
+    s.add(i)
+  }
+  return true
 }
 
 module.exports = {
@@ -83,21 +94,40 @@ module.exports = {
     app.sdb.update('Account', { secondPublicKey: publicKey }, { address: senderId })
   },
 
-  lock: async function (height) {
+  lock: async function (height, amount) {
+    height = Number(height)
+    amount = Number(amount)
     let senderId = this.trs.senderId
+    app.sdb.lock('basic.lock@' + senderId)
 
-    if (height <= this.block.height) return 'Invalid lock height'
-
+    const MIN_LOCK_HEIGHT = 8640 * 30
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
+    if (sender.xas - 100000000 < amount) return 'Insufficient balance'
+    if (sender.isLocked) {
+      if (height !== 0 && height < (Math.max(this.block.height, sender.lockHeight) + MIN_LOCK_HEIGHT)) {
+        return 'Invalid lock height'
+      }
+    } else {
+      if (height < this.block.height + MIN_LOCK_HEIGHT) {
+        return 'Invalid lock height'
+      }
+    }
 
-    app.sdb.update('Account', { isLocked: 1 }, { address: senderId })
-    app.sdb.update('Account', { lockHeight: height }, { address: senderId })
-    app.sdb.update('Account', { weight: sender.xas }, { address: senderId })
+    if (!sender.isLocked) {
+      app.sdb.update('Account', { isLocked: 1 }, { address: senderId })
+    }
+    if (height !== 0) {
+      app.sdb.update('Account', { lockHeight: height }, { address: senderId })
+    }
+    if (amount !== 0) {
+      app.sdb.update('Account', { weight: amount }, { address: senderId })
+      app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
+    }
 
     let voteList = await app.model.Vote.findAll({ condition: { address: senderId } })
-    if (voteList && voteList.length > 0 && account.weight > 0) {
+    if (voteList && voteList.length > 0 && amount > 0) {
       for (let voteItem of voteList) {
-        app.sdb.increment('Delegate', { votes: -1 * account.weight }, { name: voteItem.delegate })
+        app.sdb.increment('Delegate', { votes: amount }, { name: voteItem.delegate })
       }
     }
   },
@@ -110,14 +140,19 @@ module.exports = {
     let senderId = this.trs.senderId
     app.sdb.lock('basic.unlock@' + senderId)
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
+    if (!sender) return 'Account not found'
     if (!sender.isLocked) return 'Account is not locked'
+    if (this.block.height <= sender.lockHeight) return 'Account cannot unlock'
 
-    app.sdb.update('Account', { isLocked: 0 }, { address: senderId })
     if (sender.agent) {
       await doCancelAgent(sender)
     } else {
       await doCancelVote(sender)
     }
+    app.sdb.update('Account', { isLocked: 0 }, { address: senderId })
+    app.sdb.update('Account', { lockHeight: 0 }, { address: senderId })
+    app.sdb.increment('Account', { xas: account.weight }, { address: senderId })
+    app.sdb.update('Account', { weight: 0 }, { address: senderId })
   },
 
   setMultisignature: async function () {
@@ -130,13 +165,19 @@ module.exports = {
     let account = await app.model.Account.findOne({ condition: { address: senderId } })
     if (account.isAgent) return 'Agent already registered'
 
+    let voteExist = await app.model.Vote.exists({ address: senderId })
+    if (voteExist) return 'Account already voted'
+
+    let isDelegate = await app.model.Delegate.exists({ address: senderId })
+    if (isDelegate) return 'Delegate cannot be agent'
+
     app.sdb.update('Account', { isAgent: 1 }, { address: senderId })
   },
 
   setAgent: async function (agent) {
     // agent不能將票權委託給其他agent
     // 有投票記錄的無法設置agent
-    // 將自身權重增加到agent的agentWeight，給agent所投人增加權重
+    // 將自身權重增加到agent的weight，給agent所投人增加權重
     let senderId = this.trs.senderId
     app.sdb.lock('basic.setAgent@' + senderId)
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
@@ -144,11 +185,14 @@ module.exports = {
     if (sender.agent) return 'Agent already set'
     if (!sender.isLocked) return 'Account is not locked'
 
+    let agentExists = await app.model.Account.exists({ address: agent })
+    if (!agentExists) return 'Agent account not found'
+
     let voteExist = await app.model.Vote.exists({ address: senderId })
     if (voteExist) return 'Account already voted'
 
     app.sdb.update('Account', { agent: agent }, { address: senderId })
-    app.sdb.increment('Account', { agentWeight: sender.weight }, { address: agent })
+    app.sdb.increment('Account', { weight: sender.weight }, { address: agent })
 
     let agentVoteList = await app.model.Vote.findAll({ condition: { address: senderId } })
     if (agentVoteList && agentVoteList.length > 0 && sender.weight > 0) {
@@ -159,7 +203,7 @@ module.exports = {
   },
 
   cancelAgent: async function () {
-    // 減去agent的agentWeight
+    // 減去agent的weight
     // 獲得agent所投的受託人列表，減去相應權重
     let senderId = this.trs.senderId
     app.sdb.lock('basic.cancelAgent@' + senderId)
@@ -174,6 +218,7 @@ module.exports = {
     app.sdb.lock('account@' + senderId)
     let sender = app.sdb.get('Account', { address: senderId })
     if (!sender || !sender.name) return 'Account has not a name'
+    if (sender.isAgent) return 'Agent cannot be delegate'
     app.sdb.create('Delegate', {
       address: senderId,
       name: sender.name,
@@ -189,13 +234,28 @@ module.exports = {
 
   vote: async function (delegates) {
     let senderId = this.trs.senderId
-    app.sdb.lock('account@' + senderId)
+    app.sdb.lock('basic.account@' + senderId)
 
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
-    if (!sender.isLocked) return 'Account is not locked'
+    if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
 
     delegates = delegates.split(',')
-    if (!delegates || !delegate.length) return 'Invalid delegates'
+    if (!delegates || !delegates.length) return 'Invalid delegates'
+    if (!isUniq(delegates)) return 'Duplicated vote item'
+
+    let currentVotes = await app.model.Vote.findAll({ condition: { address: senderId } })
+    if (currentVotes) {
+      let currentVotedDelegates = new Set
+      for (let v of currentVotes) {
+        currentVotedDelegates.add(v.delegate)
+      }
+      for (let name of delegates) {
+        if (currentVotedDelegates.has(name)) {
+          return 'Delegate already voted: ' + name
+        }
+      }
+    }
+
     for (let name of delegates) {
       if (!app.sdb.get('Delegate', { name: name })) return 'Voted delegate not exists: ' + name
     }
@@ -214,10 +274,25 @@ module.exports = {
     app.sdb.lock('account@' + senderId)
 
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
-    if (!sender.isLocked) return 'Account is not locked'
+    if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
 
     delegates = delegates.split(',')
-    if (!delegates || !delegate.length) return 'Invalid delegates'
+    if (!delegates || !delegates.length) return 'Invalid delegates'
+    if (!isUniq(delegates)) return 'Duplicated vote item'
+
+    let currentVotes = await app.model.Vote.findAll({ condition: { address: senderId } })
+    if (currentVotes) {
+      let currentVotedDelegates = new Set
+      for (let v of currentVotes) {
+        currentVotedDelegates.add(v.delegate)
+      }
+      for (let name of delegates) {
+        if (!currentVotedDelegates.has(name)) {
+          return 'Delegate not voted yet: ' + name
+        }
+      }
+    }
+
     for (let name of delegates) {
       if (!app.sdb.get('Delegate', { name: name })) return 'Voted delegate not exists: ' + name
     }

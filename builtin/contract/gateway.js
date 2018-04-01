@@ -38,10 +38,10 @@ module.exports = {
   },
 
   withdrawal: async function (address, currency, amount) {
-    let balance = app.balances.get(address, currency)
+    let balance = app.balances.get(this.trs.senderId, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
 
-    app.balances.decrease(address, currency, amount)
+    app.balances.decrease(this.trs.senderId, currency, amount)
     app.sdb.create('GatewayWithdrawal', {
       tid: this.trs.id,
       currency: currency,

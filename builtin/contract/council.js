@@ -6,13 +6,10 @@ async function doRegisterCouncil(params) {
   let members = params.members
   delete params.members
   app.sdb.create('Council', {
-    tid: this.trs.id,
     name: params.name,
     desc: params.desc,
-    rewardRatio: params.rewardRatio,
     updateInterval: params.updateInterval,
     lastUpdateHeight: this.block.height,
-    actived: 0,
     revoked: 0
   })
   for (let m of members) {
@@ -31,12 +28,10 @@ async function doUpdateCouncil(params) {
   if (this.block.height - council.lastUpdateHeight < council.updateInterval) {
     throw new Error('Time not arrived')
   }
-  if (params.field === 'rewardRatio') {
-    app.sdb.update('Council', { rewardRatio: params.to }, { name: params.name })
-  } else if (params.field === 'updateInterval') {
+  if (params.field === 'updateInterval') {
     app.sdb.update('Council', { updateInterval: params.to }, { name: params.name })
   } else if (params.field === 'member') {
-    app.sdb.update('CouncilMember', { member: params.to }, { name: params.name, member: params.from })
+    app.sdb.update('CouncilMember', { member: params.to }, { council: params.name, member: params.from })
   }
 }
 
@@ -50,15 +45,21 @@ async function doRevoteCouncil(params) {
 
 module.exports = {
   propose: async function (topic, content) {
-    app.sdb.create('CouncilPropose', {
+    app.sdb.create('Proposal', {
       tid: this.trs.id,
       topic: topic,
       content: JSON.stringify(content),
-      activated: 0
+      activated: 0,
+      height: this.block.height
     })
   },
 
   vote: async function (pid) {
+    let proposal = await app.model.Proposal.findOne({ condition: { tid: pid } })
+    if (!proposal) return 'Proposal not found'
+    if (this.block.height - proposal.height > 8640 * 30) return 'Proposal expired'
+    let exists = await app.model.CouncilPropose.exists({voter: this.senderId})
+    if (exists) return 'Already voted'
     app.sdb.create('CouncilVote', {
       tid: this.trs.id,
       pid: pid,
@@ -67,12 +68,12 @@ module.exports = {
   },
 
   activate: async function (pid) {
-    let proposal = await app.model.CouncilProposal.findOne({ condition: { tid: pid } })
+    let proposal = await app.model.Proposal.findOne({ condition: { tid: pid } })
     if (!proposal) return 'Proposal not found'
 
     if (proposal.activated) return 'Already activated'
 
-    let votes = await app.model.CouncilVote.findAll({ condition: { pid: pid } })
+    let votes = await app.model.ProposalVote.findAll({ condition: { pid: pid } })
     let validVoteCount = 0
     for (let v of votes) {
       if (app.isCurrentBookkeeper(v.voter)) {
@@ -97,7 +98,7 @@ module.exports = {
     if (unknownTopic) {
       return 'Unknown propose topic'
     } else {
-      app.sdb.update('CouncilPropose', { activated: true }, { tid: pid })
+      app.sdb.update('Propose', { activated: true }, { tid: pid })
     }
   }
 }

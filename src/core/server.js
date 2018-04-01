@@ -29,11 +29,7 @@ private.attachApi = function() {
   });
 
   router.get('/', function (req, res) {
-    if (private.loaded) {
-      res.render('wallet.html', {layout: false});
-    } else {
-      res.render('index.html');
-    }
+    res.render('index.html');
   });
 
   router.get('/api/blocks/totalsupply', function (req, res) {

@@ -1,7 +1,3 @@
-function updateXAS(recipient, amount) {
-  amount = Number(amount)
-}
-
 module.exports = {
   register: async function (name, desc, tags, link, icon, category, delegates, unlockNumber) {
     let exists = await app.model.DApp.exists({ name: name })

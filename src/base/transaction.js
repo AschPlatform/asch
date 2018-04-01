@@ -380,10 +380,6 @@ Transaction.prototype.verify = function (trs, sender) {
 }
 
 Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
-  if (!private.types[trs.type]) {
-    throw Error('Unknown transaction type ' + trs.type);
-  }
-
   if (!signature) return false;
 
   try {

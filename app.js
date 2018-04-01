@@ -23,7 +23,7 @@ function verifyGenesisBlock(scope, block) {
     assert.equal(id, block.id, 'Unexpected block id');
     // assert.equal(id, '11839820784468442760', 'Block id is incorrect');
   } catch (e) {
-    throw(e)
+    throw (e)
   }
 }
 
@@ -165,25 +165,76 @@ function main() {
   global.featureSwitch = {}
   global.state = {};
 
-  (async function () {
-    try {
-      await initRuntime(options)
-    } catch (e) {
-      logger.error('init runtime error: ', e)
-      process.exit(1)
-      return
+  init(options, function (err, scope) {
+    if (err) {
+      scope.logger.fatal(err);
+      if (fs.existsSync(pidFile)) {
+        fs.unlinkSync(pidFile);
+      }
+      process.exit(1);
+      return;
     }
-    init(options, function (err, scope) {
-      if (err) {
-        scope.logger.fatal(err);
+    process.once('cleanup', function () {
+      scope.logger.info('Cleaning up...');
+      async.eachSeries(scope.modules, function (module, cb) {
+        if (typeof (module.cleanup) == 'function') {
+          module.cleanup(cb);
+        } else {
+          setImmediate(cb);
+        }
+      }, function (err) {
+        if (err) {
+          scope.logger.error('Error while cleaning up', err);
+        } else {
+          scope.logger.info('Cleaned up successfully');
+        }
+        app.db.close()
         if (fs.existsSync(pidFile)) {
           fs.unlinkSync(pidFile);
         }
         process.exit(1);
-        return;
-      }
-      verifyGenesisBlock(scope, scope.genesisblock.block);
+      });
+    });
 
+    process.once('SIGTERM', function () {
+      process.emit('cleanup');
+    })
+
+    process.once('exit', function () {
+      scope.logger.info('process exited');
+    });
+
+    process.once('SIGINT', function () {
+      process.emit('cleanup');
+    });
+
+    process.on('uncaughtException', function (err) {
+      // handle the error safely
+      scope.logger.fatal('uncaughtException', { message: err.message, stack: err.stack });
+      process.emit('cleanup');
+    });
+    process.on('unhandledRejection', function (err) {
+      // handle the error safely
+      scope.logger.error('unhandledRejection', err);
+      process.emit('cleanup');
+    });
+
+    if (typeof gc !== 'undefined') {
+      setInterval(function () {
+        gc();
+      }, 60000);
+    }
+    verifyGenesisBlock(scope, scope.genesisblock.block);
+
+    options.library = scope;
+    (async function () {
+      try {
+        await initRuntime(options)
+      } catch (e) {
+        logger.error('init runtime error: ', e)
+        process.exit(1)
+        return
+      }
       if (program.execute) {
         // only for debug use
         // require(path.resolve(program.execute))(scope);
@@ -196,59 +247,8 @@ function main() {
       if (!scope.config.publicIp) {
         scope.logger.warn('Failed to get public ip, block forging MAY not work!');
       }
-
-      process.once('cleanup', function () {
-        scope.logger.info('Cleaning up...');
-        async.eachSeries(scope.modules, function (module, cb) {
-          if (typeof (module.cleanup) == 'function') {
-            module.cleanup(cb);
-          } else {
-            setImmediate(cb);
-          }
-        }, function (err) {
-          if (err) {
-            scope.logger.error('Error while cleaning up', err);
-          } else {
-            scope.logger.info('Cleaned up successfully');
-          }
-          app.db.close()
-          if (fs.existsSync(pidFile)) {
-            fs.unlinkSync(pidFile);
-          }
-          process.exit(1);
-        });
-      });
-
-      process.once('SIGTERM', function () {
-        process.emit('cleanup');
-      })
-
-      process.once('exit', function () {
-        scope.logger.info('process exited');
-      });
-
-      process.once('SIGINT', function () {
-        process.emit('cleanup');
-      });
-
-      process.on('uncaughtException', function (err) {
-        // handle the error safely
-        scope.logger.fatal('uncaughtException', { message: err.message, stack: err.stack });
-        process.emit('cleanup');
-      });
-      process.on('unhandledRejection', function (err) {
-        // handle the error safely
-        scope.logger.error('unhandledRejection', err);
-        process.emit('cleanup');
-      });
-
-      if (typeof gc !== 'undefined') {
-        setInterval(function () {
-          gc();
-        }, 60000);
-      }
-    });
-  })()
+    })()
+  });
 }
 
 main();

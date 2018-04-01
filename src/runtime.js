@@ -1,36 +1,46 @@
 var fs = require('fs')
 var path = require('path')
+var util = require('util')
 var EventEmitter = require('events').EventEmitter
 var changeCase = require('change-case')
 var tracer = require('tracer')
 var validate = require('validate.js')
+var extend = require('extend')
 
 var PIFY = require('./utils/pify')
 var slots = require('./utils/slots')
 var amountHelper = require('./utils/amount')
+var Router = require('./utils/router.js');
 var ORM = require('./smartdb/orm')
 var SmartDB = require('./smartdb/smartdb')
 var BalanceManager = require('./smartdb/balance-manager')
 var AutoIncrement = require('./smartdb/auto-increment')
 var FeePool = require('./smartdb/fee-pool')
 
-class Route {
+class RouteWrapper {
   constructor() {
-    this.routes = []
+    this.handlers_ = []
+    this.path_ = null
   }
   get(path, handler) {
-    this.routes.push({ path: path, method: 'get', handler: handler })
+    this.handlers_.push({ path: path, method: 'get', handler: handler })
   }
 
   put(path, handler) {
-    this.routes.push({ path: path, method: 'put', handler: handler })
+    this.handlers_.push({ path: path, method: 'put', handler: handler })
   }
 
   post(path, handler) {
-    this.routes.push({ path: path, method: 'post', handler: handler })
+    this.handlers_.push({ path: path, method: 'post', handler: handler })
   }
-  getRoutes() {
-    return this.routes
+  set path(val) {
+    this.path_ = val
+  }
+  get path() {
+    return this.path_
+  }
+  get handlers() {
+    return this.handlers_
   }
 }
 
@@ -76,7 +86,7 @@ async function loadContracts(dir) {
   }
 }
 
-async function loadInterfaces(dir) {
+async function loadInterfaces(dir, routes) {
   let interfaceFiles
   try {
     interfaceFiles = await PIFY(fs.readdir)(dir)
@@ -86,7 +96,32 @@ async function loadInterfaces(dir) {
   }
   for (let f of interfaceFiles) {
     app.logger.info('loading interface', f)
-    require(path.join('../', dir, f))
+    let basename = path.basename(f, '.js')
+    let rw = new RouteWrapper()
+    require(path.join('../', dir, f))(rw)
+    let router = new Router()
+    for (let h of rw.handlers) {
+      router[h.method](h.path, function (req, res) {
+        (async function () {
+          try {
+            let result = await h.handler(req)
+            let response = { success: true }
+            if (util.isObject(result) && !Array.isArray(result)) {
+              response = extend(response, result)
+            } else if (!util.isNullOrUndefined(result)) {
+              response.data = result
+            }
+            res.send(response)
+          } catch (e) {
+            res.status(500).send({ success: false, error: e.message })
+          }
+        })()
+      })
+    }
+    if (!rw.path) {
+      rw.path = '/api/v2/' + basename
+    }
+    routes.use(rw.path, router)
   }
 }
 
@@ -171,7 +206,7 @@ module.exports = async function (options) {
     return app.api.crypto.verify(publicKey, signature, bytes)
   }
 
-  app.checkMultiSignature = function (bytes, publicKeys, signatures, m) {
+  app.checkMultiSignature = function (bytes, allowedKeys, signatures, m) {
     let keysigs = signatures.split(',')
     let publicKeys = []
     let sigs = []
@@ -190,7 +225,7 @@ module.exports = async function (options) {
     for (let i = 0; i < publicKeys.length; ++i) {
       let pk = publicKeys[i]
       let sig = sigs[i]
-      if (publicKeys.indexOf(pk) !== -1 && app.verifyBytes(bytes, pk, sig)) {
+      if (allowedKeys.indexOf(pk) !== -1 && app.verifyBytes(bytes, pk, sig)) {
         sigCount++
       }
     }
@@ -201,18 +236,17 @@ module.exports = async function (options) {
   app.balances = new BalanceManager(app.sdb)
   app.autoID = new AutoIncrement(app.sdb)
   app.feePool = new FeePool(app.sdb)
-  app.route = new Route()
   app.events = new EventEmitter()
 
   let builtinModelDir = path.join(rootDir, 'builtin')
   await loadModels(path.join(builtinModelDir, 'model'))
   await loadContracts(path.join(builtinModelDir, 'contract'))
-  await loadInterfaces(path.join(builtinModelDir, 'interface'))
+  await loadInterfaces(path.join(builtinModelDir, 'interface'), options.library.network.app)
 
   await app.sdb.load('Account', ['xas', 'name', 'address'], ['address'])
   await app.sdb.load('Balance', app.model.Balance.fields(), [['address', 'currency']])
   await app.sdb.load('Delegate', app.model.Delegate.fields(), [['name'], ['publicKey']])
-  // await app.sdb.load('Variable', ['key', 'value'], ['key'])
+  await app.sdb.load('Variable', ['key', 'value'], ['key'])
   await app.sdb.load('Round', app.model.Round.fields(), [['round']])
 
   app.contractTypeMapping[1] = 'basic.transfer'
@@ -226,6 +260,7 @@ module.exports = async function (options) {
   app.contractTypeMapping[9] = 'basic.cancelAgent'
   app.contractTypeMapping[10] = 'basic.registerDelegate'
   app.contractTypeMapping[11] = 'basic.vote'
+  app.contractTypeMapping[12] = 'basic.unvote'
 
   app.contractTypeMapping[100] = 'uia.register'
   app.contractTypeMapping[101] = 'uia.issue'

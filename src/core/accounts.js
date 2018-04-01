@@ -181,9 +181,7 @@ private.attachApi = function () {
     "get /getBalance": "getBalance",
     "get /getPublicKey": "getPublickey",
     "post /generatePublicKey": "generatePublickey",
-    "get /delegates": "getDelegates",
-    "get /delegates/fee": "getDelegatesFee",
-    "put /delegates": "addDelegates",
+    "get /delegates": "myVotedDelegates",
     "get /": "getAccount",
     "get /new": "newAccount"
   });
@@ -261,41 +259,23 @@ private.attachApi = function () {
 private.openAccount = function (secret, cb) {
   var hash = crypto.createHash('sha256').update(secret, 'utf8').digest();
   var keypair = ed.MakeKeypair(hash);
-  publicKey = keypair.publicKey.toString('hex')
+  let publicKey = keypair.publicKey.toString('hex')
   var address = self.generateAddressByPublicKey2(publicKey);
-  self.getAccount({ address: address }, function (err, account) {
-    if (err) return cb(err)
-    var account = account || {
-      address: address,
-      unconfirmedBalance: 0,
-      balance: 0,
-      publicKey: publicKey,
-      unconfirmedSignature: '',
-      secondSignature: '',
-      secondPublicKey: '',
-      multisignatures: '',
-      u_multisignatures: ''
+  shared.getAccount({ body: { address: address } }, function (err, ret) {
+    if (ret && ret.account && !ret.account.publicKey) {
+      ret.account.publicKey = publicKey
     }
-    return cb(null, account)
+    cb(err, ret)
   });
 }
 
 private.openAccount2 = function (publicKey, cb) {
   var address = self.generateAddressByPublicKey2(publicKey);
-  self.getAccount({ address: address }, function (err, account) {
-    if (err) return cb(err)
-    var account = account || {
-      address: address,
-      unconfirmedBalance: 0,
-      balance: 0,
-      publicKey: publicKey,
-      unconfirmedSignature: '',
-      secondSignature: '',
-      secondPublicKey: '',
-      multisignatures: '',
-      u_multisignatures: ''
+  shared.getAccount({ body: { address: address } }, function (err, ret) {
+    if (ret && ret.account && !ret.account.publicKey) {
+      ret.account.publicKey = publicKey
     }
-    return cb(null, account)
+    cb(err, ret)
   });
 }
 
@@ -436,27 +416,7 @@ shared.open = function (req, cb) {
       return cb(err[0].message);
     }
 
-    private.openAccount(body.secret, function (err, account) {
-      var accountData = null;
-      if (!err) {
-        accountData = {
-          address: account.address,
-          unconfirmedBalance: account.u_balance,
-          balance: account.balance,
-          publicKey: account.publicKey,
-          unconfirmedSignature: account.u_secondSignature,
-          secondSignature: account.secondSignature,
-          secondPublicKey: account.secondPublicKey,
-          multisignatures: account.multisignatures,
-          u_multisignatures: account.u_multisignatures,
-          lockHeight: account.lockHeight || 0
-        };
-
-        return cb(null, { account: accountData });
-      } else {
-        return cb(err);
-      }
-    });
+    private.openAccount(body.secret, cb);
   });
 }
 
@@ -475,35 +435,7 @@ shared.open2 = function (req, cb) {
     if (err) {
       return cb(err[0].message);
     }
-    private.openAccount2(body.publicKey, function (err, account) {
-      var accountData = null;
-      if (!err) {
-        accountData = {
-          address: account.address,
-          unconfirmedBalance: account.u_balance,
-          balance: account.balance,
-          publicKey: account.publicKey,
-          unconfirmedSignature: account.u_secondSignature,
-          secondSignature: account.secondSignature,
-          secondPublicKey: account.secondPublicKey,
-          multisignatures: account.multisignatures,
-          u_multisignatures: account.u_multisignatures,
-          lockHeight: account.lockHeight || 0
-        };
-        var latestBlock = modules.blocks.getLastBlock();
-        var ret = {
-          account: accountData,
-          latestBlock: {
-            height: latestBlock.height,
-            timestamp: latestBlock.timestamp
-          },
-          version: modules.peer.getVersion()
-        }
-        return cb(null, ret);
-      } else {
-        return cb(err);
-      }
-    });
+    private.openAccount2(body.publicKey, cb);
   });
 }
 
@@ -528,12 +460,12 @@ shared.getBalance = function (req, cb) {
       return cb('Invalid address');
     }
 
-    self.getAccount({ address: query.address }, function (err, account) {
+    shared.getAccount({ body: { address: query.address } }, function (err, ret) {
       if (err) {
         return cb(err.toString());
       }
-      var balance = account ? account.balance : 0;
-      var unconfirmedBalance = account ? account.u_balance : 0;
+      var balance = ret && ret.account ? ret.account.balance : 0;
+      var unconfirmedBalance = ret && ret.account ? ret.account.unconfirmedBalance : 0;
 
       cb(null, { balance: balance, unconfirmedBalance: unconfirmedBalance });
     });
@@ -584,10 +516,10 @@ shared.generatePublickey = function (req, cb) {
       return cb(err[0].message);
     }
 
-    private.openAccount(body.secret, function (err, account) {
+    private.openAccount(body.secret, function (err, ret) {
       var publicKey = null;
-      if (!err && account) {
-        publicKey = account.publicKey;
+      if (!err && ret && ret.account) {
+        publicKey = ret.account.publicKey;
       }
       cb(err, {
         publicKey: publicKey
@@ -596,7 +528,7 @@ shared.generatePublickey = function (req, cb) {
   });
 }
 
-shared.getDelegates = function (req, cb) {
+shared.myVotedDelegates = function (req, cb) {
   var query = req.body;
   library.scheme.validate(query, {
     type: "object",
@@ -612,197 +544,50 @@ shared.getDelegates = function (req, cb) {
       return cb(err[0].message);
     }
 
-    self.getAccount({ address: query.address }, function (err, account) {
-      if (err) {
-        return cb(err.toString());
+    (async function () {
+      try {
+        let votes = await app.model.Vote.findAll({
+          condition: {
+            address: query.address
+          },
+        })
+        if (!votes || !votes.length) {
+          return cb(null, { delegates: [] })
+        }
+        let delegateNames = new Set()
+        for (let v of votes) {
+          delegateNames.add(v.delegate)
+        }
+        let delegates = await app.model.Delegate.findAll()
+        if (!delegates || !delegates.length) {
+          return cb(null, { delegates: [] })
+        }
+        delegates.sort(function (l, r) {
+          if (l.votes !== r.votes)  return r.votes - l.votes
+          return r.publicKey < l.publicKey
+        })
+
+        let lastBlock = modules.blocks.getLastBlock();
+        let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
+        let votedDelegates = []
+        for (let i = 0; i < delegates.length; ++i) {
+          let d = delegates[i]
+          d.rate = i + 1
+          delegates[i].approval = ((d.votes / totalSupply) * 100).toFixed(2);
+
+          var percent = 100 - (d.missedblocks / (d.producedblocks + d.missedblocks) / 100);
+          percent = percent || 0;
+          delegates[i].productivity = parseFloat(Math.floor(percent * 100) / 100).toFixed(2);
+          if (delegateNames.has(d.name)) {
+            votedDelegates.push(d)
+          }
+        }
+        cb(null, { delegates: votedDelegates })
+      } catch (e) {
+        library.logger.error('get voted delegates error', e)
+        return cb('Server error')
       }
-      if (!account) {
-        return cb("Account not found");
-      }
-      if (account.delegates) {
-        self.getAccounts({
-          isDelegate: 1,
-          sort: { "vote": -1, "publicKey": 1 }
-        }, ["username", "address", "publicKey", "vote", "missedblocks", "producedblocks"], function (err, delegates) {
-          if (err) {
-            return cb(err.toString());
-          }
-
-          var limit = query.limit || 101;
-          var offset = query.offset || 0;
-          var orderField = query.orderBy;
-
-          orderField = orderField ? orderField.split(':') : null;
-          limit = limit > 101 ? 101 : limit;
-
-          var orderBy = orderField ? orderField[0] : null;
-          var sortMode = orderField && orderField.length == 2 ? orderField[1] : 'asc';
-          var count = delegates.length;
-          var length = Math.min(limit, count);
-          var realLimit = Math.min(offset + limit, count);
-
-          var lastBlock = modules.blocks.getLastBlock();
-          var totalSupply = private.blockStatus.calcSupply(lastBlock.height);
-
-          for (var i = 0; i < delegates.length; i++) {
-            delegates[i].rate = i + 1;
-            delegates[i].approval = ((delegates[i].vote / totalSupply) * 100).toFixed(2);
-
-            var percent = 100 - (delegates[i].missedblocks / ((delegates[i].producedblocks + delegates[i].missedblocks) / 100));
-            percent = percent || 0;
-            var outsider = i + 1 > slots.delegates;
-            delegates[i].productivity = (!outsider) ? parseFloat(Math.floor(percent * 100) / 100).toFixed(2) : 0;
-          }
-
-          var result = delegates.filter(function (delegate) {
-            return account.delegates.indexOf(delegate.publicKey) != -1;
-          });
-
-          cb(null, { delegates: result });
-        });
-      } else {
-        cb(null, { delegates: [] });
-      }
-    });
-  });
-}
-
-shared.getDelegatesFee = function (req, cb) {
-  var query = req.body;
-  cb(null, { fee: 1 * constants.fixedPoint });
-}
-
-shared.addDelegates = function (req, cb) {
-  var body = req.body;
-  library.scheme.validate(body, {
-    type: "object",
-    properties: {
-      secret: {
-        type: 'string',
-        minLength: 1
-      },
-      publicKey: {
-        type: 'string',
-        format: 'publicKey'
-      },
-      secondSecret: {
-        type: 'string',
-        minLength: 1
-      }
-    }
-  }, function (err) {
-    if (err) {
-      return cb(err[0].message);
-    }
-
-    var hash = crypto.createHash('sha256').update(body.secret, 'utf8').digest();
-    var keypair = ed.MakeKeypair(hash);
-
-    if (body.publicKey) {
-      if (keypair.publicKey.toString('hex') != body.publicKey) {
-        return cb("Invalid passphrase");
-      }
-    }
-
-    library.balancesSequence.add(function (cb) {
-      if (body.multisigAccountPublicKey && body.multisigAccountPublicKey != keypair.publicKey.toString('hex')) {
-        modules.accounts.getAccount({ publicKey: body.multisigAccountPublicKey }, function (err, account) {
-          if (err) {
-            return cb(err.toString());
-          }
-
-          if (!account) {
-            return cb("Multisignature account not found");
-          }
-
-          if (!account.multisignatures || !account.multisignatures) {
-            return cb("Account does not have multisignatures enabled");
-          }
-
-          if (account.multisignatures.indexOf(keypair.publicKey.toString('hex')) < 0) {
-            return cb("Account does not belong to multisignature group");
-          }
-
-          modules.accounts.getAccount({ publicKey: keypair.publicKey }, function (err, requester) {
-            if (err) {
-              return cb(err.toString());
-            }
-
-            if (!requester || !requester.publicKey) {
-              return cb("Invalid requester");
-            }
-
-            if (requester.secondSignature && !body.secondSecret) {
-              return cb("Invalid second passphrase");
-            }
-
-            if (requester.publicKey == account.publicKey) {
-              return cb("Invalid requester");
-            }
-
-            var secondKeypair = null;
-
-            if (requester.secondSignature) {
-              var secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest();
-              secondKeypair = ed.MakeKeypair(secondHash);
-            }
-
-            try {
-              var transaction = library.base.transaction.create({
-                type: TransactionTypes.VOTE,
-                votes: body.delegates,
-                sender: account,
-                keypair: keypair,
-                secondKeypair: secondKeypair,
-                requester: keypair
-              });
-            } catch (e) {
-              return cb(e.toString());
-            }
-            modules.transactions.receiveTransactions([transaction], cb);
-          });
-        });
-      } else {
-        self.getAccount({ publicKey: keypair.publicKey.toString('hex') }, function (err, account) {
-          if (err) {
-            return cb(err.toString());
-          }
-          if (!account) {
-            return cb("Account not found");
-          }
-
-          if (account.secondSignature && !body.secondSecret) {
-            return cb("Invalid second passphrase");
-          }
-
-          var secondKeypair = null;
-
-          if (account.secondSignature) {
-            var secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest();
-            secondKeypair = ed.MakeKeypair(secondHash);
-          }
-
-          try {
-            var transaction = library.base.transaction.create({
-              type: TransactionTypes.VOTE,
-              votes: body.delegates,
-              sender: account,
-              keypair: keypair,
-              secondKeypair: secondKeypair
-            });
-          } catch (e) {
-            return cb(e.toString());
-          }
-          modules.transactions.receiveTransactions([transaction], cb);
-        });
-      }
-    }, function (err, transaction) {
-      if (err) {
-        return cb(err.toString());
-      }
-
-      cb(null, { transaction: transaction[0] });
-    });
+    })()
   });
 }
 
@@ -826,19 +611,38 @@ shared.getAccount = function (req, cb) {
     (async function () {
       try {
         let account = await app.model.Account.findOne({ condition: { address: query.address } })
-        let unconfirmedAccount = app.sdb.get('Account', { address: query.address })
+        let accountData
+        if (!account) {
+          accountData = {
+            address: query.address,
+            unconfirmedBalance: 0,
+            balance: 0,
+            secondPublicKey: '',
+            lockHeight: 0
+          }
+        } else {
+          let unconfirmedAccount = app.sdb.get('Account', { address: query.address })
+          accountData = {
+            address: account.address,
+            unconfirmedBalance: unconfirmedAccount.xas,
+            balance: account.xas,
+            secondPublicKey: account.secondPublicKey,
+            lockHeight: account.lockHeight || 0
+          };
+        }
         let latestBlock = modules.blocks.getLastBlock();
-        cb(null, {
-          account: account,
-          unconfirmedAccount: unconfirmedAccount,
+        var ret = {
+          account: accountData,
           latestBlock: {
             height: latestBlock.height,
             timestamp: latestBlock.timestamp
           },
           version: modules.peer.getVersion()
-        });
+        }
+        cb(null, ret);
       } catch (e) {
-        cb('Database error: ' + e)
+        library.logger.error('Failed to get account', e)
+        cb('Server error')
       }
     })()
   });
