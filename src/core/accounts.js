@@ -562,7 +562,7 @@ shared.myVotedDelegates = function (req, cb) {
         if (!delegates || !delegates.length) {
           return cb(null, { delegates: [] })
         }
-        delegates.sort(function (l, r) {
+        delegates = delegates.sort(function (l, r) {
           if (l.votes !== r.votes)  return r.votes - l.votes
           return r.publicKey < l.publicKey
         })
@@ -575,7 +575,7 @@ shared.myVotedDelegates = function (req, cb) {
           d.rate = i + 1
           delegates[i].approval = ((d.votes / totalSupply) * 100).toFixed(2);
 
-          var percent = 100 - (d.missedblocks / (d.producedblocks + d.missedblocks) / 100);
+          var percent = 100 - (d.missedBlocks / (d.producedBlocks + d.missedBlocks) / 100);
           percent = percent || 0;
           delegates[i].productivity = parseFloat(Math.floor(percent * 100) / 100).toFixed(2);
           if (delegateNames.has(d.name)) {

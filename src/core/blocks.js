@@ -168,7 +168,6 @@ private.attachApi = function () {
     "get /full": "getFullBlock",
     "get /": "getBlocks",
     "get /getHeight": "getHeight",
-    "get /getFee": "getFee",
     "get /getMilestone": "getMilestone",
     "get /getReward": "getReward",
     "get /getSupply": "getSupply",
@@ -1323,16 +1322,16 @@ Blocks.prototype.onReceiveBlock = function (block, votes) {
     if (block.prevBlockId == private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
       library.logger.info('Received new block id: ' + block.id + ' height: ' + block.height + ' round: ' + modules.round.calc(modules.blocks.getLastBlock().height) + ' slot: ' + slots.getSlotNumber(block.timestamp));
 
-        (async function () {
-          try {
-            app.sdb.rollbackBlock()
-            await self.processBlock(block, { votes: votes, broadcast: true })
-            cb()
-          } catch (e) {
-            library.logger.error('Failed to process received block', e)
-            cb(e)
-          }
-        })()
+      (async function () {
+        try {
+          app.sdb.rollbackBlock()
+          await self.processBlock(block, { votes: votes, broadcast: true })
+          cb()
+        } catch (e) {
+          library.logger.error('Failed to process received block', e)
+          cb(e)
+        }
+      })()
     } else if (block.prevBlockId != private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
       // Fork: Same height but different previous block id
       modules.delegates.fork(block, 1);
@@ -1529,10 +1528,6 @@ shared.getBlock = function (req, cb) {
       height: {
         type: 'integer',
         minimum: 1
-      },
-      hash: {
-        type: 'string',
-        minLength: 1
       }
     }
   }, function (err) {
@@ -1540,26 +1535,24 @@ shared.getBlock = function (req, cb) {
       return cb(err[0].message);
     }
 
-    library.dbSequence.add(function (cb) {
-      var field;
-      var keys = ['id', 'height', 'hash'];
-      for (var i in keys) {
-        var key = keys[i];
-        if (query[key]) {
-          field = { key: key, value: query[key] };
-          break;
+    (async function () {
+      try {
+        let condition
+        if (query.id) {
+          condition = { id: query.id }
+        } else if (query.height) {
+          condition = { height: query.height }
         }
-      }
-      if (!field) {
-        return cb("Invalid params");
-      }
-      private.getByField(field, function (err, block) {
-        if (!block || err) {
-          return cb("Block not found");
+        let block = await app.model.Block.findOne({ condition })
+        if (!block) {
+          return cb('Block not found')
         }
-        cb(null, { block: block });
-      });
-    }, cb);
+        block.reward = private.blockStatus.calcReward(block.height)
+        return cb(null, { block })
+      } catch (e) {
+
+      }
+    })()
   });
 }
 
@@ -1671,14 +1664,6 @@ shared.getHeight = function (req, cb) {
   }
   var query = req.body;
   cb(null, { height: private.lastBlock.height });
-}
-
-shared.getFee = function (req, cb) {
-  if (!private.loaded) {
-    return cb("Blockchain is loading")
-  }
-  var query = req.body;
-  cb(null, { fee: library.base.block.calculateFee() });
 }
 
 shared.getMilestone = function (req, cb) {
