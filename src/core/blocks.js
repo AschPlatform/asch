@@ -771,12 +771,17 @@ Blocks.prototype.verifyBlock = async function (block, options) {
   if (block.transactions.length > constants.maxTxsPerBlock) {
     throw new Error("Invalid amount of block assets: " + block.id);
   }
+  if (block.transactions.length !== block.count) {
+    throw new Error('Invalid transaction count')
+  }
 
   var payloadHash = crypto.createHash('sha256')
   var appliedTransactions = {}
 
+  let totalFee = 0
   for (var i in block.transactions) {
     var transaction = block.transactions[i];
+    totalFee += transaction.fee
 
     try {
       var bytes = library.base.transaction.getBytes(transaction);
@@ -790,6 +795,10 @@ Blocks.prototype.verifyBlock = async function (block, options) {
 
     appliedTransactions[transaction.id] = transaction;
     payloadHash.update(bytes);
+  }
+
+  if (totalFee !== block.fees) {
+    throw new Error('Invalid total fees')
   }
 
   if (payloadHash.digest().toString('hex') !== block.payloadHash) {
@@ -1243,8 +1252,10 @@ Blocks.prototype.generateBlock = async function (keypair, timestamp) {
   let unconfirmedList = modules.transactions.getUnconfirmedTransactionList()
   let payloadHash = crypto.createHash('sha256')
   let payloadLength = 0
+  let fees = 0
   for (let i in unconfirmedList) {
     let transaction = unconfirmedList[i]
+    fees += transaction.fee
     let bytes = library.base.transaction.getBytes(transaction)
     // TODO check payload length when process remote block
     if ((payloadLength + bytes.length) > 8 * 1024 * 1024) {
@@ -1260,6 +1271,8 @@ Blocks.prototype.generateBlock = async function (keypair, timestamp) {
     prevBlockId: private.lastBlock.id,
     timestamp: timestamp,
     transactions: unconfirmedList,
+    count: unconfirmedList.length,
+    fees: fees,
     payloadHash: payloadHash.digest().toString("hex")
   }
 
@@ -1284,7 +1297,7 @@ Blocks.prototype.generateBlock = async function (keypair, timestamp) {
       ' height: ' + height +
       ' round: ' + modules.round.calc(height) +
       ' slot: ' + slots.getSlotNumber(block.timestamp) +
-      ' reward: ' + block.reward);
+      ' reward: ' + private.blockStatus.calcReward(block.height));
   } else {
     if (!library.config.publicIp) {
       return next("No public ip");
@@ -1447,7 +1460,8 @@ Blocks.prototype.onReceiveVotes = function (votes) {
           library.logger.log('Forged new block id: ' + id +
             ' height: ' + height +
             ' round: ' + modules.round.calc(height) +
-            ' slot: ' + slots.getSlotNumber(block.timestamp));
+            ' slot: ' + slots.getSlotNumber(block.timestamp) + 
+            ' reward: ' + private.blockStatus.calcReward(block.height));
         } catch (e) {
           library.logger.error("Failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
         }
@@ -1578,22 +1592,25 @@ shared.getFullBlock = function (req, cb) {
       return cb(err[0].message);
     }
 
-    library.dbSequence.add(function (cb) {
-      var condition = ''
-      if (query.id) {
-        condition = 'where b.id = "' + query.id + '"'
-      } else if (query.height) {
-        condition = 'where b.height = ' + query.height
-      } else {
-        return cb('Invalid params')
+    (async function () {
+      try {
+        let condition
+        if (query.id) {
+          condition = { id: query.id }
+        } else if (query.height) {
+          condition = { height: query.height }
+        }
+        let block = await app.model.Block.findOne({ condition })
+        if (!block) return cb('Block not found')
+        let transactions = await app.model.Transaction.findAll({ condition: { height: block.height } })
+        block.transactions = transactions
+        return cb(null, { block: block })
+      } catch (e) {
+        library.logger.error('Failed to find block', e)
+        return cb('Server error')
       }
-      library.dbLite.query(FULL_BLOCK_QUERY + condition, {}, private.blocksDataFields, function (err, rows) {
-        if (err) return cb('Database error: ' + err)
-        if (!rows || !rows.length) return cb('Block not found')
-        var blocks = private.readDbRows(rows)
-        return cb(null, { block: blocks[0] })
-      })
-    }, cb);
+    })()
+
   });
 }
 
@@ -1610,9 +1627,6 @@ shared.getBlocks = function (req, cb) {
         minimum: 0,
         maximum: 100
       },
-      orderBy: {
-        type: "string"
-      },
       offset: {
         type: "integer",
         minimum: 0
@@ -1620,26 +1634,6 @@ shared.getBlocks = function (req, cb) {
       generatorPublicKey: {
         type: "string",
         format: "publicKey"
-      },
-      totalAmount: {
-        type: "integer",
-        minimum: 0,
-        maximum: constants.totalAmount
-      },
-      totalFee: {
-        type: "integer",
-        minimum: 0,
-        maximum: constants.totalAmount
-      },
-      reward: {
-        type: "integer",
-        minimum: 0
-      },
-      prevBlockId: {
-        type: "string"
-      },
-      height: {
-        type: "integer"
       }
     }
   }, function (err) {
@@ -1647,14 +1641,27 @@ shared.getBlocks = function (req, cb) {
       return cb(err[0].message);
     }
 
-    library.dbSequence.add(function (cb) {
-      private.list(query, function (err, data) {
-        if (err) {
-          return cb("Database error");
-        }
-        cb(null, { blocks: data.blocks, count: data.count });
-      });
-    }, cb);
+    (async function () {
+      try {
+        let count = await app.model.Block.count()
+        if (!count) throw new Error('Failed to get blocks count')
+        let blocks = await app.model.Block.findAll({
+          condition: {
+            height: { $gte: query.offset || 0 }
+          },
+          sort: {
+            height: 1
+          },
+          limit: query.limit || 20
+        })
+        if (!blocks || !blocks.length) return cb('No blocks')
+        return cb(null, { count, blocks })
+      } catch (e) {
+        library.logger.error('Failed to find blocks', e)
+        return cb('Server error')
+      }
+    })()
+
   });
 }
 

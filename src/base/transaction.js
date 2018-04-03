@@ -96,13 +96,13 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
   if (trs.args) {
     let args
 		if (typeof trs.args === 'string') {
-			args = JSON.parse(trs.args)	
+			args = trs.args
+    } else if (Array.isArray(trs.args)) {
+      args = JSON.stringify(trs.args)
     } else {
-      args = trs.args
+      throw new Error('Invalid transaction args')
     }
-		for (var i = 0; i < args.length; ++i) {
-			bb.writeString(args[i])
-		}
+	  bb.writeString(args)
   }
 
   if (!skipSignature && trs.signatures) {
@@ -623,6 +623,7 @@ Transaction.prototype.objectNormalize = function (trs) {
   if (trs.args && typeof trs.args === 'string') {
     try {
       trs.args = JSON.parse(trs.args)
+      if (!Array.isArray(trs.args)) throw new Error('Transaction args must be json array')
     } catch (e) {
       throw new Error('Failed to parse args: ' + e)
     }

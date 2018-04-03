@@ -40,7 +40,7 @@ function BlockStatus() {
   this.calcReward = function (height) {
     var height = parseHeight(height);
 
-    if (height < rewardOffset || height <= 1) {
+    if (height < rewardOffset || height <= 0) {
       return 0;
     } else {
       return milestones[this.calcMilestone(height)];

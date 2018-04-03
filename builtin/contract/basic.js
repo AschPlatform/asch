@@ -25,42 +25,35 @@ function isUniq(arr) {
 }
 
 module.exports = {
-  transfer: async function (currency, amount, recipientId) {
+  transfer: async function (amount, recipientId) {
     // FIXME validate recipient is valid address
     if (!recipientId) return 'Invalid recipient'
-    app.validate('amount', amount)
+    // app.validate('amount', amount)
 
     // FIXME validate permission
     // FIXME validate currency
     // FIXME validate amount
 
     let senderId = this.trs.senderId
-    if (currency !== 'XAS') {
-      let balance = app.balances.get(senderId, currency)
-      if (this.block.height !== 1 && balance.lt(amount)) return 'Insufficient balance'
+    amount = Number(amount)
+    let sender = app.sdb.get('Account', { address: senderId })
+    if ((!sender || !sender.xas || sender.xas < amount) && this.block.height > 0) return 'Insufficient balance'
 
-      app.balances.transfer(currency, amount, senderId, recipientId)
+    app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
+    let recipient = app.sdb.get('Account', { address: recipientId })
+    if (!recipient) {
+      app.sdb.create('Account', {
+        address: recipientId,
+        xas: amount
+      })
     } else {
-      amount = Number(amount)
-      let sender = app.sdb.get('Account', { address: senderId })
-      if ((!sender || !sender.xas || sender.xas < amount) && this.block.height > 0) return 'Insufficient balance'
-
-      app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
-      let recipient = app.sdb.get('Account', { address: recipientId })
-      if (!recipient) {
-        app.sdb.create('Account', {
-          address: recipientId,
-          xas: amount
-        })
-      } else {
-        app.sdb.increment('Account', { xas: amount }, { address: recipientId })
-      }
+      app.sdb.increment('Account', { xas: amount }, { address: recipientId })
     }
     app.sdb.create('Transfer', {
       tid: this.trs.id,
       senderId: senderId,
       recipientId: recipientId,
-      currency: currency,
+      currency: 'XAS',
       amount: amount
     })
   },

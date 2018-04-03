@@ -314,12 +314,12 @@ private.attachApi = function () {
     res.status(500).send({success: false, error: "Blockchain is loading"});
   });
 
-  router.map(shared, {
-    "get /pending": "pending", // Get pending transactions
-    "post /sign": "sign", // Sign transaction
-    "put /": "addMultisignature", // Add multisignature
-    "get /accounts": "getAccounts"
-  });
+  // router.map(shared, {
+  //   "get /pending": "pending", // Get pending transactions
+  //   "post /sign": "sign", // Sign transaction
+  //   "put /": "addMultisignature", // Add multisignature
+  //   "get /accounts": "getAccounts"
+  // });
 
   router.use(function (req, res, next) {
     res.status(500).send({success: false, error: "API endpoint not found"});

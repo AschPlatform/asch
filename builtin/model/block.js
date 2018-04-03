@@ -8,6 +8,8 @@ module.exports = {
     { name: 'payloadHash', type: 'String', length: 64, not_null: true },
     { name: 'prevBlockId', type: 'String', length: 64 },
     { name: 'delegate', type: 'String', length: 64, not_null: true, index: true },
+    { name: 'count', type: 'Number', not_null: true },
+    { name: 'fees', type: 'BigInt', not_null: true },
     { name: 'signature', type: 'String', length: 128, not_null: true }
   ]
 }

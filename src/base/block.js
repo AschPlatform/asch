@@ -112,6 +112,8 @@ Block.prototype.getBytes = function (block, skipSignature) {
   bb.writeInt(block.version);
   bb.writeInt(block.timestamp);
   bb.writeLong(block.height);
+  bb.writeInt(block.count);
+  bb.writeLong(block.fees);
   bb.writeString(block.delegate)
 
   if (block.previousBlock) {
