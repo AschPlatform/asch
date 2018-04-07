@@ -18,47 +18,47 @@ private.unconfirmedTransactions = [];
 private.unconfirmedTransactionsIdIndex = {};
 
 class TransactionPool {
-	constructor() {
-		this.index = new Map
-		this.unConfirmed = new Array
-	}
+  constructor() {
+    this.index = new Map
+    this.unConfirmed = new Array
+  }
 
-	add(trs) {
-		this.unConfirmed.push(trs)
-		this.index.set(trs.id, this.unConfirmed.length - 1)
-	}
+  add(trs) {
+    this.unConfirmed.push(trs)
+    this.index.set(trs.id, this.unConfirmed.length - 1)
+  }
 
-	remove(id) {
-		let pos = this.index.get(id)
-		delete this.index[id]
-		this.unConfirmed[pos] = null
-	}
+  remove(id) {
+    let pos = this.index.get(id)
+    delete this.index[id]
+    this.unConfirmed[pos] = null
+  }
 
-	has(id) {
-		let pos = this.index.get(id)
-		return pos !== undefined && !!this.unConfirmed[pos]
-	}
+  has(id) {
+    let pos = this.index.get(id)
+    return pos !== undefined && !!this.unConfirmed[pos]
+  }
 
-	getUnconfirmed() {
-		var a = [];
+  getUnconfirmed() {
+    var a = [];
 
-		for (var i = 0; i < this.unConfirmed.length; i++) {
-			if (!!this.unConfirmed[i]) {
-				a.push(this.unConfirmed[i]);
-			}
-		}
-		return a
-	}
+    for (var i = 0; i < this.unConfirmed.length; i++) {
+      if (!!this.unConfirmed[i]) {
+        a.push(this.unConfirmed[i]);
+      }
+    }
+    return a
+  }
 
-	clear() {
-		this.index = new Map
-		this.unConfirmed = new Array
-	}
+  clear() {
+    this.index = new Map
+    this.unConfirmed = new Array
+  }
 
-	get(id) {
-		let pos = this.index.get(id)
-		return this.unConfirmed[pos]
-	}
+  get(id) {
+    let pos = this.index.get(id)
+    return this.unConfirmed[pos]
+  }
 }
 
 function Transfer() {
@@ -299,7 +299,7 @@ function Lock() {
     var lastBlock = modules.blocks.getLastBlock()
 
     if (isNaN(lockHeight) || lockHeight <= lastBlock.height) return cb('Invalid lock height')
-    if (global.featureSwitch.enableLockReset){
+    if (global.featureSwitch.enableLockReset) {
       if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight && lockHeight <= sender.lockHeight) return cb('Account is already locked at height ' + sender.lockHeight)
     } else {
       if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight) return cb('Account is already locked at height ' + sender.lockHeight)
@@ -377,7 +377,7 @@ function Transactions(cb, scope) {
   genesisblock = library.genesisblock;
   self = this;
   self.__private = private;
-	self.pool = new TransactionPool()
+  self.pool = new TransactionPool()
   private.attachApi();
 
   library.base.transaction.attachAssetType(TransactionTypes.SEND, new Transfer());
@@ -572,156 +572,156 @@ private.getById = function (id, cb) {
 }
 
 Transactions.prototype.getUnconfirmedTransaction = function (id) {
-	return self.pool.get(id)
+  return self.pool.get(id)
 }
 
 Transactions.prototype.processUnconfirmedTransactionAsync = async function (transaction) {
-	modules.logic.transaction.objectNormalize(transaction)
-	let bytes = modules.logic.transaction.getBytes(transaction)
-	let id = modules.api.crypto.getId(bytes)
-	if (transaction.id) {
-		if (transaction.id != id) {
-			throw new Error('Incorrect trainsaction id')
-		}
-	} else {
-		transaction.id = id
-	}
-	app.logger.debug('process unconfirmed trs', transaction.id, transaction.func)
+  modules.logic.transaction.objectNormalize(transaction)
+  let bytes = modules.logic.transaction.getBytes(transaction)
+  let id = modules.api.crypto.getId(bytes)
+  if (transaction.id) {
+    if (transaction.id != id) {
+      throw new Error('Incorrect trainsaction id')
+    }
+  } else {
+    transaction.id = id
+  }
+  app.logger.debug('process unconfirmed trs', transaction.id, transaction.func)
 
-	if (self.pool.has(transaction.id)) {
-		throw new Error('Transaction already processed')
-	}
+  if (self.pool.has(transaction.id)) {
+    throw new Error('Transaction already processed')
+  }
 
-	let valid = modules.logic.transaction.verify(transaction)
-	if (!valid) {
-		throw new Error('Invalid transaction signature')
-	}
+  let valid = modules.logic.transaction.verify(transaction)
+  if (!valid) {
+    throw new Error('Invalid transaction signature')
+  }
 
-	// TODO reduce fee from sender balance
+  // TODO reduce fee from sender balance
 
-	let exists = await app.model.Transaction.exists({ id: transaction.id })
-	if (exists) {
-		throw new Error('Transaction already confirmed')
-	}
+  let exists = await app.model.Transaction.exists({ id: transaction.id })
+  if (exists) {
+    throw new Error('Transaction already confirmed')
+  }
 
-	if (!transaction.senderId) {
-		transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
-	}
-	let height = modules.blockchain.blocks.getLastBlock().height
+  if (!transaction.senderId) {
+    transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
+  }
+  let height = modules.blockchain.blocks.getLastBlock().height
 
-	let	block = {
-		height: height,
-		delegate: modules.blockchain.round.getCurrentDelegate(height)
-	}
+  let block = {
+    height: height,
+    delegate: modules.blockchain.round.getCurrentDelegate(height)
+  }
 
-	try {
-		await modules.logic.transaction.apply(transaction, block)
-	} catch (e) {
-		app.sdb.rollbackTransaction()
-		throw new Error('Apply transaction error: ' + e)
-	}
+  try {
+    await modules.logic.transaction.apply(transaction, block)
+  } catch (e) {
+    app.sdb.rollbackTransaction()
+    throw new Error('Apply transaction error: ' + e)
+  }
 
-	self.pool.add(transaction)
-	return transaction
+  self.pool.add(transaction)
+  return transaction
 }
 
 Transactions.prototype.getUnconfirmedTransactionList = function () {
-	return self.pool.getUnconfirmed()
+  return self.pool.getUnconfirmed()
 }
 
 Transactions.prototype.removeUnconfirmedTransaction = function (id) {
-	self.pool.remove(id)
+  self.pool.remove(id)
 }
 
 Transactions.prototype.hasUnconfirmed = function (id) {
-	return self.pool.has(id)
+  return self.pool.has(id)
 }
 
 Transactions.prototype.clearUnconfirmed = function () {
-	self.pool.clear()
+  self.pool.clear()
 }
 
 Transactions.prototype.addTransaction = function (req, cb) {
-	let query = req.query
-	library.sequence.add(function addTransaction(cb) {
-		(async function () {
-			try {
-				var trs = await self.processUnconfirmedTransactionAsync(query.transaction)
-				cb(null, { transactionId: trs.id })
-			} catch (e) {
-				cb(e.toString())
-			}
-		})()
-	}, cb)
+  let query = req.query
+  library.sequence.add(function addTransaction(cb) {
+    (async function () {
+      try {
+        var trs = await self.processUnconfirmedTransactionAsync(query.transaction)
+        cb(null, { transactionId: trs.id })
+      } catch (e) {
+        cb(e.toString())
+      }
+    })()
+  }, cb)
 }
 
 Transactions.prototype.getUnconfirmedTransactions = function (_, cb) {
-	setImmediate(cb, null, { transactions: self.getUnconfirmedTransactionList() })
+  setImmediate(cb, null, { transactions: self.getUnconfirmedTransactionList() })
 }
 
 Transactions.prototype.getTransactions = function (req, cb) {
-	let limit = Number(req.query.limit) || 100
-	let offset = Number(req.query.offset) || 0
-	let condition = {}
-	if (req.query.senderId) {
-		condition.senderId = req.query.senderId
-	}
-	if (req.query.type) {
-		condition.type = Number(req.query.type)
-	}
+  let limit = Number(req.query.limit) || 100
+  let offset = Number(req.query.offset) || 0
+  let condition = {}
+  if (req.query.senderId) {
+    condition.senderId = req.query.senderId
+  }
+  if (req.query.type) {
+    condition.type = Number(req.query.type)
+  }
 
-	(async () => {
-		try {
-			let count = await app.model.Transaction.count(condition)
-			let transactions = await app.model.Transaction.findAll({
-				condition: condition,
-				limit: limit,
-				offset: offset
-			})
-			if (!transactions) transactions = []
-			return cb(null, { transactions: transactions, count: count })
-		} catch (e) {
-			app.logger.error('Failed to get transactions', e)
-			return cb('System error: ' + e)
-		}
-	})()
+  (async () => {
+    try {
+      let count = await app.model.Transaction.count(condition)
+      let transactions = await app.model.Transaction.findAll({
+        condition: condition,
+        limit: limit,
+        offset: offset
+      })
+      if (!transactions) transactions = []
+      return cb(null, { transactions: transactions, count: count })
+    } catch (e) {
+      app.logger.error('Failed to get transactions', e)
+      return cb('System error: ' + e)
+    }
+  })()
 }
 
 Transactions.prototype.getTransaction = function (req, cb) {
-	(async function () {
-		try {
-			if (!req.params || !req.params.id) return cb('Invalid transaction id')
-			let id = req.params.id
-			let trs = await app.model.Transaction.findOne({
-				condition: {
-					id: id
-				}
-			})
-			if (!trs) return cb('Transaction not found')
-			return cb(null, { transaction: trs })
-		} catch (e) {
-			return cb('System error: ' + e)
-		}
-	})()
+  (async function () {
+    try {
+      if (!req.params || !req.params.id) return cb('Invalid transaction id')
+      let id = req.params.id
+      let trs = await app.model.Transaction.findOne({
+        condition: {
+          id: id
+        }
+      })
+      if (!trs) return cb('Transaction not found')
+      return cb(null, { transaction: trs })
+    } catch (e) {
+      return cb('System error: ' + e)
+    }
+  })()
 }
 
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
-	(async function () {
-		try {
-			for (let i = 0; i < transactions.length; ++i) {
-				await self.processUnconfirmedTransactionAsync(transactions[i])
-			}
-		} catch (e) {
-			return cb(e)
-		}
-		cb(null, transactions)
-	})()
+  (async function () {
+    try {
+      for (let i = 0; i < transactions.length; ++i) {
+        await self.processUnconfirmedTransactionAsync(transactions[i])
+      }
+    } catch (e) {
+      return cb(e)
+    }
+    cb(null, transactions)
+  })()
 }
 
 Transactions.prototype.receiveTransactionsAsync = async function (transactions) {
-	for (let i = 0; i < transactions.length; ++i) {
-		await self.processUnconfirmedTransactionAsync(transactions[i])
-	}
+  for (let i = 0; i < transactions.length; ++i) {
+    await self.processUnconfirmedTransactionAsync(transactions[i])
+  }
 }
 
 Transactions.prototype.processUnconfirmedTransactionAsync = async function (transaction) {
@@ -733,39 +733,40 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
   }
 
   library.logger.debug('process unconfirmed trs', transaction)
-  
+
   if (self.pool.has(transaction.id)) {
     throw new Error('Transaction already processed')
   }
-  
+
   let valid = library.base.transaction.verify(transaction)
   if (!valid) {
     throw new Error('Invalid transaction signature')
   }
-  
+
   // TODO reduce fee from sender balance
-  
+
   let exists = await app.model.Transaction.exists({ id: transaction.id })
   if (exists) {
     throw new Error('Transaction already confirmed')
   }
-  
+
   if (!transaction.senderId) {
     transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
   }
   let height = modules.blocks.getLastBlock().height
-  
-  let	block = {
+
+  let block = {
     height: height,
   }
-  
+
   try {
     await library.base.transaction.apply(transaction, block)
   } catch (e) {
     app.sdb.rollbackTransaction()
+    library.logger.error(e)
     throw new Error('Apply transaction error: ' + e)
   }
-  
+
   self.pool.add(transaction)
   return transaction
 }
@@ -850,8 +851,8 @@ shared.getTransactions = function (req, cb) {
         minimum: 1,
         maximum: 22
       },
-      and:{
-        type:"integer",
+      and: {
+        type: "integer",
         minimum: 0,
         maximum: 1
       }
@@ -861,6 +862,9 @@ shared.getTransactions = function (req, cb) {
       return cb(err[0].message);
     }
 
+    (async function () {
+      let transactions = await app.model.Transaction.findAll({ limit: 20 })
+    })()
     private.list(query, function (err, data) {
       if (err) {
         return cb("Failed to get transactions");
@@ -961,41 +965,41 @@ shared.getUnconfirmedTransactions = function (req, cb) {
 }
 
 shared.addTransaction = function (req, cb) {
-	let query = req.body
-	library.sequence.add(function addTransaction(cb) {
-		(async function () {
-			try {
-				var trs = await self.processUnconfirmedTransactionAsync(query.transaction)
-				cb(null, { transactionId: trs.id })
-			} catch (e) {
-				cb(e.toString())
-			}
-		})()
-	}, cb)
+  let query = req.body
+  library.sequence.add(function addTransaction(cb) {
+    (async function () {
+      try {
+        var trs = await self.processUnconfirmedTransactionAsync(query.transaction)
+        cb(null, { transactionId: trs.id })
+      } catch (e) {
+        cb(e.toString())
+      }
+    })()
+  }, cb)
 }
 
 shared.addTransactionUnsigned = function (req, cb) {
   let query = req.body
-	if (query.type) {
-		query.type = Number(query.type)
-	}
-	let valid = library.validator.validate(query, {
-		type: 'object',
-		properties: {
-			secret: { type: 'string', maxLength: 100 },
-			fee: { type: 'integer', min: 1 },
-			type: { type: 'integer', min: 1 },
+  if (query.type) {
+    query.type = Number(query.type)
+  }
+  let valid = library.validator.validate(query, {
+    type: 'object',
+    properties: {
+      secret: { type: 'string', maxLength: 100 },
+      fee: { type: 'integer', min: 1 },
+      type: { type: 'integer', min: 1 },
       args: { type: 'string' },
-      message: {type: 'string', maxLength: 50}
-		},
-		required: ['secret', 'fee', 'type']
-	})
-	if (!valid) {
-		return setImmediate(cb, library.validator.getLastError().details[0].message)
-	}
-	library.sequence.add(function addTransactionUnsigned(cb) {
-		(async function () {
-			try {
+      message: { type: 'string', maxLength: 50 }
+    },
+    required: ['secret', 'fee', 'type']
+  })
+  if (!valid) {
+    return setImmediate(cb, library.validator.getLastError().details[0].message)
+  }
+  library.sequence.add(function addTransactionUnsigned(cb) {
+    (async function () {
+      try {
         let hash = crypto.createHash('sha256').update(query.secret, 'utf8').digest();
         let keypair = ed.MakeKeypair(hash);
         let secondKeyPair = null
@@ -1011,13 +1015,13 @@ shared.addTransactionUnsigned = function (req, cb) {
           secondKeyPair: secondKeyPair,
           keypair: keypair
         })
-				await self.processUnconfirmedTransactionAsync(trs)
-				cb(null, { transactionId: trs.id })
-			} catch (e) {
-				cb(e.toString())
-			}
-		})()
-	}, cb)
+        await self.processUnconfirmedTransactionAsync(trs)
+        cb(null, { transactionId: trs.id })
+      } catch (e) {
+        cb(e.toString())
+      }
+    })()
+  }, cb)
 }
 
 shared.putStorage = function (req, cb) {

@@ -30,7 +30,7 @@ function verifyGenesisBlock(scope, block) {
 function main() {
   process.stdin.resume();
 
-  var version = '1.3.6';
+  var version = '1.4.0';
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')

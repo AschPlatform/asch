@@ -762,8 +762,12 @@ Delegates.prototype.getDelegates = function (query, cb) {
         var percent = 100 - (d.missedBlocks / (d.producedBlocks + d.missedBlocks) / 100);
         percent = percent || 0;
         delegates[i].productivity = parseFloat(Math.floor(percent * 100) / 100).toFixed(2);
+
+        delegates[i].vote = delegates[i].votes
+        delegates[i].missedblocks = delegates[i].missedBlocks
+        delegates[i].producedblocks= delegates[i].producedBlocks
       }
-      return cb(null, {delegates: delegates})
+      return cb(null, delegates)
     } catch (e) {
       library.logger.error('Failed to find delegates', e)
       return cb('Cannot find delegates')
@@ -874,18 +878,18 @@ shared.getDelegate = function (req, cb) {
       return cb(err[0].message);
     }
 
-    modules.delegates.getDelegates(query, function (err, result) {
+    modules.delegates.getDelegates(query, function (err, delegates) {
       if (err) {
         return cb(err);
       }
 
-      var delegate = result.delegates.find(function (delegate) {
+      var delegate = delegates.find(function (d) {
         if (query.publicKey) {
-          return delegate.publicKey == query.publicKey;
+          return d.publicKey == query.publicKey;
         } else if (query.address) {
-          return delegate.address == query.address;
+          return d.address == query.address;
         } else if (query.name) {
-          return delegate.name == query.name;
+          return d.name == query.name;
         }
 
         return false;
@@ -979,11 +983,11 @@ shared.getDelegates = function (req, cb) {
     let offset = query.offset || 0
     let limit = query.limit || 20;
 
-    self.getDelegates({}, function (err, result) {
+    self.getDelegates({}, function (err, delegates) {
       if (err) return cb(err)
       return cb(null, {
-        totalCount: result.delegates.length,
-        delegates: result.delegates.slice(offset, offset + limit)
+        totalCount: delegates.length,
+        delegates: delegates.slice(offset, offset + limit)
       })
     })
   });

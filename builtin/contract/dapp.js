@@ -28,14 +28,14 @@ module.exports = {
     app.sdb.update('DAppDelegate', { delegate: to }, { delegate: from })
   },
 
-  addDelegate: async function (dappId, key, unlockNumber) {
+  addDelegate: async function (dappId, key) {
     app.sdb.create('DAppDelegate', { dappId: dappId, delegate: key })
-    app.sdb.update('DApp', { unlockNumber: unlockNumber }, { tid: dappId })
+    app.sdb.increment('DApp', { unlockNumber: 1 }, { tid: dappId })
   },
 
-  removeDelegate: async function (dappId, key, unlockNumber) {
+  removeDelegate: async function (dappId, key) {
     app.sdb.del('DAppDelegate', { dappId: dappId, delegate: key })
-    app.sdb.update('DApp', { unlockNumber: unlockNumber }, { tid: dappId })
+    app.sdb.increment('DApp', { unlockNumber: -1 }, { tid: dappId })
   },
 
   deposit: async function (dappId, currency, amount) {

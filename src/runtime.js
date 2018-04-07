@@ -262,10 +262,23 @@ module.exports = async function (options) {
   app.contractTypeMapping[11] = 'basic.vote'
   app.contractTypeMapping[12] = 'basic.unvote'
 
-  app.contractTypeMapping[100] = 'uia.register'
-  app.contractTypeMapping[101] = 'uia.issue'
+  app.contractTypeMapping[100] = 'uia.registerIssuer'
+  app.contractTypeMapping[101] = 'uia.registerAsset'
+  app.contractTypeMapping[102] = 'uia.issue'
+  app.contractTypeMapping[103] = 'uia.transfer'
 
   app.contractTypeMapping[200] = 'dapp.register'
-  app.contractTypeMapping[201] = 'dapp.deposit'
-  app.contractTypeMapping[202] = 'dapp.withdrawal'
+  app.contractTypeMapping[201] = 'dapp.replaceDelegate'
+  app.contractTypeMapping[202] = 'dapp.addDelegate'
+  app.contractTypeMapping[203] = 'dapp.removeDelegate'
+  app.contractTypeMapping[204] = 'dapp.deposit'
+  app.contractTypeMapping[205] = 'dapp.withdrawal'
+
+  app.contractTypeMapping[300] = 'proposal.propose'
+  app.contractTypeMapping[301] = 'proposal.vote'
+  app.contractTypeMapping[302] = 'proposal.activate'
+
+  app.contractTypeMapping[400] = 'gateway.deposit'
+  app.contractTypeMapping[401] = 'gateway.withdrawal'
+  app.contractTypeMapping[402] = 'gateway.confirmWithdrawal'
 }

@@ -458,7 +458,7 @@ Transaction.prototype.apply0 = function (trs, block, sender, cb) {
 Transaction.prototype.apply = async function (transaction, block) {
   if (block.height !== 0) {
     let sender = app.sdb.get('Account', { address: transaction.senderId })
-    if ((!sender || !sender.xas || sender.xas < transaction.fee) && this.block.height > 0) throw new Error('Insufficient balance')
+    if ((!sender || !sender.xas || sender.xas < transaction.fee) && block.height > 0) throw new Error('Insufficient balance')
 
     app.sdb.increment('Account', { xas: -1 * transaction.fee }, { address: transaction.senderId })
   }

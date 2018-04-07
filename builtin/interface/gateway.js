@@ -1,4 +1,36 @@
 module.exports = async function (router) {
+  router.get('/currencies', async function (req) {
+    return {
+      count: 2,
+      currencies: [
+        {
+          symbol: 'BTC',
+          desc: 'Bitcoin is an innovative payment network and a new kind of money',
+          quantity: 1000
+        },
+        {
+          symbol: 'ETH',
+          desc: 'Ethereum is a decentralized platform for applications that run exactly as programmed without any chance of fraud, censorship or third-party interference',
+          quantity: 5000
+        }
+      ]
+    }
+  })
+
+  router.get('/currencies/:name', async function (req) {
+    return {
+      currency: {
+        symbol: 'BTC',
+        desc: 'Bitcoin is an innovative payment network and a new kind of money',
+        quantity: 1000
+      }
+    }
+  })
+
+  router.get('/address/:sender/:currency', async function (req) {
+    return { address: 'mvGfGo9YfNiTJK6MDnfwDwr5jTdWR1ovdC' }
+  })
+
   router.get('/deposits', async function (req) {
     return {
       count: 1,
@@ -43,7 +75,7 @@ module.exports = async function (router) {
       ]
     }
   })
- 
+
   router.get('/deposits/my/:address/:currency', async function (req) {
     return {
       count: 1,
@@ -106,7 +138,7 @@ module.exports = async function (router) {
       ]
     }
   })
- 
+
   router.get('/withdrawals/my/:address/:currency', async function (req) {
     return {
       count: 1,

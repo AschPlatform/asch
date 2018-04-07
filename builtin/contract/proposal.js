@@ -44,9 +44,11 @@ async function doRevoteCouncil(params) {
 }
 
 module.exports = {
-  propose: async function (topic, content) {
+  propose: async function (title, desc, topic, content) {
     app.sdb.create('Proposal', {
       tid: this.trs.id,
+      title: title,
+      desc: desc,
       topic: topic,
       content: JSON.stringify(content),
       activated: 0,
