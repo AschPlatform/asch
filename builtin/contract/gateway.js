@@ -51,7 +51,8 @@ module.exports = {
 
     app.sdb.create('GatewayDepositSigner', { key: depositKey })
 
-    let deposit = app.sdb.get('GatewayDeposit', { currency: currency, oid: oid })
+    let cond = { currency: currency, oid: oid }
+    let deposit = app.sdb.get('GatewayDeposit', cond)
     if (!deposit) {
       deposit = app.sdb.create('GatewayDeposit', {
         tid: this.trs.id,
@@ -59,17 +60,23 @@ module.exports = {
         amount: amount,
         address: address,
         oid: oid,
-        confirmations: 1
+        confirmations: 1,
+        processed: 0
       })
     } else {
-      app.sdb.increment('GatewayDeposit', { confirmations: 1 }, { tid: deposit.tid })
+      let confirmedDeposit = await app.model.GatewayDeposit.findOne({ condition: cond })
+      if (!confirmedDeposit) return 'Gateway deposit not found'
+      if (amount !== confirmedDeposit.amount || address !== confirmedDeposit.address) {
+        return 'Invalid deposit params'
+      }
+      app.sdb.increment('GatewayDeposit', { confirmations: 1 }, cond)
+      let count = await app.model.GatewayMember.count({ gateway: currency, elected: 1 })
+      if (deposit.confirmations > count / 2 && !deposit.processed) {
+        app.sdb.update('GatewayDeposit', { processed: 1 }, cond)
+        app.balances.increase(gatewayAccount.address, currency, amount)
+      }
     }
 
-    let count = await app.model.GatewayMember.count({ gateway: currency, elected: 1 })
-    if (deposit.confirmations > count / 2 && !deposit.processed) {
-      app.sdb.update('GatewayDeposit', { processed: 1 }, { tid: deposit.tid })
-      app.balances.increase(gatewayAccount.address, deposit.currency, deposit.amount)
-    }
   },
 
   withdrawal: async function (address, currency, amount) {

@@ -441,14 +441,14 @@ Loader.prototype.onPeerReady = function () {
 
   });
 
-  setImmediate(function nextLoadSignatures() {
-    if (!private.loaded) return;
-    private.loadSignatures(function (err) {
-      err && library.logger.error('loadSignatures timer:', err);
+  // setImmediate(function nextLoadSignatures() {
+  //   if (!private.loaded) return;
+  //   private.loadSignatures(function (err) {
+  //     err && library.logger.error('loadSignatures timer:', err);
 
-      //setTimeout(nextLoadSignatures, 14 * 1000)
-    });
-  });
+  //     //setTimeout(nextLoadSignatures, 14 * 1000)
+  //   });
+  // });
 }
 
 Loader.prototype.onBind = function (scope) {

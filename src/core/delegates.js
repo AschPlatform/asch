@@ -814,20 +814,22 @@ Delegates.prototype.cleanup = function (cb) {
   cb();
 }
 
-Delegates.prototype.getTopDelegatesFromDisk = async function () {
-  let delegates = await app.model.Delegate.findAll({
-    limit: 101,
-    sort: {
-      votes: -1
-    }
-  })
-  if (!delegates || !delegates.length) {
-    cb('No active delegates found')
+Delegates.prototype.getTopDelegates = function () {
+  let delegatesMap = new Map()
+  for (let d of app.sdb.entries('Delegate')) {
+    delegatesMap.set(d[1].name, d[1])
   }
-  delegates = delegates.map((d) => {
+  let delegates = []
+  for (let d of delegatesMap.entries()) {
+    delegates.push(d[1])
+  }
+  delegates = delegates.sort((l, r) => {
+    if (l.votes !== r.votes) {
+      return r.votes - l.votes
+    }
+    return l.publicKey < r.publicKey
+  }).map((d) => {
     return d.publicKey
-  }).sort((l, r) => {
-    return l < r
   })
   return delegates
 }
@@ -848,9 +850,14 @@ Delegates.prototype.getBookkeeper = function () {
   return JSON.parse(item.value)
 }
 
-Delegates.prototype.updateBookkeeper = async function () {
-  let delegates = await this.getTopDelegatesFromDisk()
-  app.sdb.update('Variable', { value: JSON.stringify(delegates) }, { key: 'round_bookkeeper' })
+Delegates.prototype.updateBookkeeper = function () {
+  let delegates = this.getTopDelegates()
+  let value = JSON.stringify(delegates)
+  if (!app.sdb.get('Variable', { key: 'round_bookkeeper' })) {
+    app.sdb.create('Variable', { key: 'round_bookkeeper', value: value })
+  } else {
+    app.sdb.update('Variable', { value: value }, { key: 'round_bookkeeper' })
+  }
 }
 
 // Shared

@@ -1005,6 +1005,7 @@ Blocks.prototype.processBlock = async function (block, options) {
       try {
         await PIFY(modules.delegates.validateBlockSlot)(block)
       } catch (e) {
+        library.logger.error(e)
         throw new Error("Can't verify slot: " + e)
       }
       library.logger.debug("verify block slot ok")
@@ -1040,10 +1041,6 @@ Blocks.prototype.processBlock = async function (block, options) {
   let trsCount = block.transactions.length
   app.logger.info('Block applied correctly with ' + trsCount + ' transactions')
   self.setLastBlock(block);
-
-  if (block.height % 101 === 0) {
-    await modules.delegates.updateBookkeeper()
-  }
 
   private.blockCache = {};
   private.proposeCache = {};
@@ -1099,7 +1096,10 @@ Blocks.prototype.saveBlock = function (block) {
 // }
 
 Blocks.prototype.applyRound = async function (block) {
-  if (block.height === 0) return
+  if (block.height === 0) {
+    modules.delegates.updateBookkeeper()
+    return
+  }
 
   app.sdb.increment('Delegate', { producedBlocks: 1 }, { publicKey: block.delegate })
 
@@ -1174,6 +1174,10 @@ Blocks.prototype.applyRound = async function (block) {
   app.logger.info('Asch witness club get new founds: ' + totalClubFounds)
   // FIXME dapp id
   app.balances.increase('club_dapp_id', 'XAS', totalClubFounds)
+
+  if (block.height % 101 === 0) {
+    modules.delegates.updateBookkeeper()
+  }
 }
 
 Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
@@ -1214,8 +1218,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
               }
               next()
             } catch (e) {
-              library.logger.error('Failed to process block: ' + err, block)
-              library.logger.error('Block ' + (block ? block.id : 'null') + ' is not valid, ban 60 min', peerStr);
+              library.logger.error('Failed to process block', err)
               return cb(e)
             }
           })()

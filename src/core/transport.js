@@ -446,6 +446,7 @@ private.attachApi = function () {
         let errMsg = err.message ? err.message : err.toString()
         res.status(200).json({ success: false, error: errMsg });
       } else {
+        library.bus.message('unconfirmedTransaction', transaction, true);
         res.status(200).json({ success: true, transactionId: transactions[0].id });
       }
     });

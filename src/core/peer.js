@@ -229,7 +229,7 @@ private.getByFilter = function (filter, cb) {
 Peer.prototype.list = function (options, cb) {
   options.limit = options.limit || 100;
 
-  app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.dappId ? " inner join peers_dapp pd on p.id = pd.peerId and pd.dappId = $dappId " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
+  app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.dappId ? " inner join peer_dapps pd on p.id = pd.peerId and pd.dappId = $dappId " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
     "ip": String,
     "port": Number,
     "state": Number,
@@ -243,7 +243,7 @@ Peer.prototype.list = function (options, cb) {
 Peer.prototype.listWithDApp = function (options, cb) {
   options.limit = options.limit || 100;
 
-  app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version, pd.dappId from peers p inner join peers_dapp pd on p.id = pd.peerId  where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
+  app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version, pd.dappId from peers p inner join peer_dapps pd on p.id = pd.peerId  where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
     "ip": String,
     "port": Number,
     "state": Number,
@@ -314,7 +314,7 @@ Peer.prototype.addDapp = function (config, cb) {
     }
     var peerId = data[0].id;
 
-    app.db.rawQuery("INSERT OR IGNORE INTO peers_dapp (peerId, dappId) VALUES ($peerId, $dappId);", {
+    app.db.rawQuery("INSERT OR IGNORE INTO peer_dapps (peerId, dappId) VALUES ($peerId, $dappId);", {
       dappId: config.dappId,
       peerId: peerId
     }, cb);

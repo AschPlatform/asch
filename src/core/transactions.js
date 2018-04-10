@@ -575,56 +575,6 @@ Transactions.prototype.getUnconfirmedTransaction = function (id) {
   return self.pool.get(id)
 }
 
-Transactions.prototype.processUnconfirmedTransactionAsync = async function (transaction) {
-  modules.logic.transaction.objectNormalize(transaction)
-  let bytes = modules.logic.transaction.getBytes(transaction)
-  let id = modules.api.crypto.getId(bytes)
-  if (transaction.id) {
-    if (transaction.id != id) {
-      throw new Error('Incorrect trainsaction id')
-    }
-  } else {
-    transaction.id = id
-  }
-  app.logger.debug('process unconfirmed trs', transaction.id, transaction.func)
-
-  if (self.pool.has(transaction.id)) {
-    throw new Error('Transaction already processed')
-  }
-
-  let valid = modules.logic.transaction.verify(transaction)
-  if (!valid) {
-    throw new Error('Invalid transaction signature')
-  }
-
-  // TODO reduce fee from sender balance
-
-  let exists = await app.model.Transaction.exists({ id: transaction.id })
-  if (exists) {
-    throw new Error('Transaction already confirmed')
-  }
-
-  if (!transaction.senderId) {
-    transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
-  }
-  let height = modules.blockchain.blocks.getLastBlock().height
-
-  let block = {
-    height: height,
-    delegate: modules.blockchain.round.getCurrentDelegate(height)
-  }
-
-  try {
-    await modules.logic.transaction.apply(transaction, block)
-  } catch (e) {
-    app.sdb.rollbackTransaction()
-    throw new Error('Apply transaction error: ' + e)
-  }
-
-  self.pool.add(transaction)
-  return transaction
-}
-
 Transactions.prototype.getUnconfirmedTransactionList = function () {
   return self.pool.getUnconfirmed()
 }
@@ -639,20 +589,6 @@ Transactions.prototype.hasUnconfirmed = function (id) {
 
 Transactions.prototype.clearUnconfirmed = function () {
   self.pool.clear()
-}
-
-Transactions.prototype.addTransaction = function (req, cb) {
-  let query = req.query
-  library.sequence.add(function addTransaction(cb) {
-    (async function () {
-      try {
-        var trs = await self.processUnconfirmedTransactionAsync(query.transaction)
-        cb(null, { transactionId: trs.id })
-      } catch (e) {
-        cb(e.toString())
-      }
-    })()
-  }, cb)
 }
 
 Transactions.prototype.getUnconfirmedTransactions = function (_, cb) {
@@ -724,7 +660,7 @@ Transactions.prototype.receiveTransactionsAsync = async function (transactions) 
   }
 }
 
-Transactions.prototype.processUnconfirmedTransactionAsync = async function (transaction) {
+Transactions.prototype.processUnconfirmedTransactionAsync = async function (transaction, broadcast) {
   if (!transaction) {
     return cb("No transaction to process!");
   }
@@ -762,9 +698,13 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
   try {
     await library.base.transaction.apply(transaction, block)
   } catch (e) {
-    app.sdb.rollbackTransaction()
     library.logger.error(e)
+    app.sdb.rollbackTransaction()
     throw e
+  }
+
+  if (broadcast) {
+    library.bus.message('unconfirmedTransaction', transaction, true);
   }
 
   self.pool.add(transaction)
@@ -973,7 +913,7 @@ shared.addTransaction = function (req, cb) {
   library.sequence.add(function addTransaction(cb) {
     (async function () {
       try {
-        var trs = await self.processUnconfirmedTransactionAsync(query.transaction)
+        var trs = await self.processUnconfirmedTransactionAsync(query.transaction, true)
         cb(null, { transactionId: trs.id })
       } catch (e) {
         cb(e.toString())
@@ -1020,7 +960,7 @@ shared.addTransactionUnsigned = function (req, cb) {
           secondKeyPair: secondKeyPair,
           keypair: keypair
         })
-        await self.processUnconfirmedTransactionAsync(trs)
+        await self.processUnconfirmedTransactionAsync(trs, true)
         cb(null, { transactionId: trs.id })
       } catch (e) {
         library.logger.warn('Failed to process unsigned transaction', e)

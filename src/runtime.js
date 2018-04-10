@@ -264,7 +264,7 @@ module.exports = async function (options) {
   await app.sdb.load('Delegate', app.model.Delegate.fields(), [['name'], ['publicKey']])
   await app.sdb.load('Variable', ['key', 'value'], ['key'])
   await app.sdb.load('Round', app.model.Round.fields(), [['round']])
-  await app.sdb.load('GatewayDeposit', ['currency', 'oid', 'confirmations'], [['currency', 'oid']])
+  await app.sdb.load('GatewayDeposit', ['tid', 'currency', 'oid', 'confirmations'], [['currency', 'oid']])
 
   app.contractTypeMapping[1] = 'basic.transfer'
   app.contractTypeMapping[2] = 'basic.setName'
