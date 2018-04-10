@@ -1,40 +1,75 @@
-const GATEWAY_COUNCIL_NAME = 'gateway'
 
 module.exports = {
-  deposit: async function (address, currency, amount, oid, signatures) {
-    // FIXME validate sender permission
-    app.sdb.lock('gateway.submitDeposit@' + currency + '.' + oid)
-    let exists = await app.model.GatewayDeposit.exists({
+  openAccount: async function (gateway) {
+    let exists = await app.model.GatewayAccount.exists({ address: this.trs.senderId })
+    if (exists) return 'Account already opened'
+    let validators = await app.model.GatewayMember.findAll({ condition: { gateway: gateway, elected: 1 } })
+    if (!validators || !validators.length) return 'Gateway validators not found'
+
+    let outPublicKeys = validators.map(function (v) { return v.outPublicKey })
+    let account = app.createMultisigAddress(gateway, Math.floor(outPublicKeys.length / 2) + 1, outPublicKeys)
+    let seq = Number(app.autoID.increment('gate_account_seq'))
+    app.sdb.create('GatewayAccount', {
+      address: this.trs.senderId,
+      gateway: gateway,
+      outAddress: account.address,
+      attachment: account.accountExtrsInfo,
+      seq: seq
+    })
+  },
+
+  registerMember: async function (gateway, publicKey, desc) {
+    app.sdb.lock('gateway.registerMember@' + this.trs.senderId)
+    let exists = await app.model.GatewayMember.exists({ address: this.trs.senderId })
+    if (exists) return 'Account already is a gateway member'
+    app.sdb.create('GatewayMember', {
+      address: this.trs.senderId,
+      gateway: gateway,
+      outPublicKey: publicKey,
+      desc: desc,
+      elected: 0
+    })
+  },
+
+  deposit: async function (address, currency, amount, oid) {
+    let validator = await app.model.GatewayMember.findOne({
       condition: {
-        currency: currency,
-        oid: oid
+        address: this.trs.senderId,
       }
     })
-    if (exists) return 'Gateway deposit oid Already exists'
+    // FIXME get gateway from currency
+    if (!validator || !validator.elected || validator.gateway !== currency) return 'Permission denied'
 
-    let validators = await app.model.CouncilMember.findAll({ condition: { name: GATE_WAY_COUNCIL_NAME } })
-    if (!validators) return 'Gateway validators not found'
+    let depositKey = 'gateway.deposit@' + [this.trs.senderId, currency, oid].join(':')
+    app.sdb.lock(depositKey)
 
-    let validatorPublicKeys = validators.map(function (v) { return v.publicKey })
+    let exists = await app.model.GatewayDepositSigner.exists({ key: depositKey })
+    if (exists) return 'Already submitted'
 
-    let buffer = new ByteBuffer(1, true)
-    buffer.writeString('gateway.deposit')
-    buffer.writeString(address)
-    buffer.writeString(currency)
-    buffer.writeString(amount)
-    buffer.writeString(oid)
-    buffer.flip()
+    let gatewayAccount = await app.model.GatewayAccount.findOne({ condition: { outAddress: address } })
+    if (!gatewayAccount) return 'Gateway account not exist'
 
-    app.checkMultiSignature(buffer.toBuffer(), validatorPublicKeys, signatures, validators.length / 2)
+    app.sdb.create('GatewayDepositSigner', { key: depositKey })
 
-    app.balances.increase(deposit.address, deposit.currency, deposit.amount)
-    app.sdb.create('GatewayDeposit', {
-      tid: this.trs.id,
-      currency: currency,
-      amount: amount,
-      address: address,
-      oid: oid,
-    })
+    let deposit = app.sdb.get('GatewayDeposit', { currency: currency, oid: oid })
+    if (!deposit) {
+      deposit = app.sdb.create('GatewayDeposit', {
+        tid: this.trs.id,
+        currency: currency,
+        amount: amount,
+        address: address,
+        oid: oid,
+        confirmations: 1
+      })
+    } else {
+      app.sdb.increment('GatewayDeposit', { confirmations: 1 }, { tid: deposit.tid })
+    }
+
+    let count = await app.model.GatewayMember.count({ gateway: currency, elected: 1 })
+    if (deposit.confirmations > count / 2 && !deposit.processed) {
+      app.sdb.update('GatewayDeposit', { processed: 1 }, { tid: deposit.tid })
+      app.balances.increase(gatewayAccount.address, deposit.currency, deposit.amount)
+    }
   },
 
   withdrawal: async function (address, currency, amount) {
@@ -58,10 +93,10 @@ module.exports = {
 
     if (withdrawal.processed) return 'Gateway withdrawal already processed'
 
-    let validators = await app.model.CouncilMember.findAll({ condition: { name: GATE_WAY_COUNCIL_NAME } })
+    let validators = await app.model.GatewayMember.findAll({ condition: { gateway: withdrawal.currency, elected: 1 } })
     if (!validators) return 'Gateway validators not found'
 
-    let validatorPublicKeys = validators.map(function (v) { return v.publicKey })
+    let validatorPublicKeys = validators.map(function (v) { return v.inPublicKey })
 
     let buffer = new ByteBuffer(1, true)
     buffer.writeString('gateway.withdrawal')

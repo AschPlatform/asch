@@ -2,7 +2,7 @@ module.exports = {
   table: 'gateway_withdrawals',
   tableFields: [
     { name: 'tid', type: 'String', length: 64, primary_key: true },
-    { name: 'currency', type: 'String', length: 50, index: true },
+    { name: 'gateway', type: 'String', length: 10, index: true },
     { name: 'amount', type: 'String', length: 50 },
     { name: 'address', type: 'String', length: 50, index: true },
     { name: 'processed', type: 'Number', default: 0 },

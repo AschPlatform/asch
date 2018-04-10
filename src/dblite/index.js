@@ -62,7 +62,7 @@ var
 	log = console.log.bind(console),
 	// the default binary as array of paths
 	bin = ['sqlite3'],
-	// private shared variables
+	// private_ shared variables
 	// avoid creation of N functions
 	// keeps memory low and improves performance
 	paramsIndex,  // which index is the current
@@ -784,7 +784,7 @@ function replaceString(string, params) {
 		paramsIndex = 0;
 		paramsArray = params;
 		string = string.replace(REPLACE_QUESTIONMARKS, replaceQuestions);
-	} else {
+	} else if (!!params) {
 		// replace :all @fields with the right
 		// object.all or object.fields occurrences
 		paramsObject = params;

@@ -22,7 +22,6 @@ private.loaded = false;
 private.blockStatus = new BlockStatus();
 private.keypairs = {};
 private.forgingEanbled = true;
-private.roundBookkeeper = null;
 
 function Delegate() {
   this.create = function (data, trs) {
@@ -575,7 +574,7 @@ Delegates.prototype.validateProposeSlot = function (propose, cb) {
 Delegates.prototype.generateDelegateList = function (height, cb) {
   (async function () {
     try {
-      var truncDelegateList = await self.getBookkeeper()
+      var truncDelegateList = self.getBookkeeper()
       var seedSource = modules.round.calc(height).toString();
 
       var currentSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
@@ -765,7 +764,7 @@ Delegates.prototype.getDelegates = function (query, cb) {
 
         delegates[i].vote = delegates[i].votes
         delegates[i].missedblocks = delegates[i].missedBlocks
-        delegates[i].producedblocks= delegates[i].producedBlocks
+        delegates[i].producedblocks = delegates[i].producedBlocks
       }
       return cb(null, delegates)
     } catch (e) {
@@ -795,6 +794,9 @@ Delegates.prototype.onBind = function (scope) {
 Delegates.prototype.onBlockchainReady = function () {
   private.loaded = true;
 
+  if (!app.sdb.get('Variable', { key: 'round_bookkeeper' })) {
+    app.sdb.create('Variable', { key: 'round_bookkeeper', value: '' })
+  }
   private.loadMyDelegates(function nextLoop(err) {
     if (err) {
       library.logger.error("Failed to load delegates", err);
@@ -830,31 +832,25 @@ Delegates.prototype.getTopDelegatesFromDisk = async function () {
   return delegates
 }
 
-Delegates.prototype.getBookkeeper = async function () {
-  if (!!private.roundBookkeeper) {
-    return private.roundBookkeeper.slice()
+Delegates.prototype.getBookkeeperAddresses = function () {
+  let bookkeeper = self.getBookkeeper()
+  let addresses = new Set
+  for (let i of bookkeeper) {
+    let address = modules.accounts.generateAddressByPublicKey(i)
+    addresses.add(address)
   }
-  let rows = await app.db.query('select value from variables where key = "round_bookkeeper"')
-  if (!rows || !rows.length) throw new Error('Round bookkeeper not found')
-  private.roundBookkeeper = JSON.parse(rows[0][0])
-  return private.roundBookkeeper.slice()
+  return addresses
+}
+
+Delegates.prototype.getBookkeeper = function () {
+  let item = app.sdb.get('Variable', { key: 'round_bookkeeper' })
+  if (!item) throw new Error('Bookkeeper variable not found')
+  return JSON.parse(item.value)
 }
 
 Delegates.prototype.updateBookkeeper = async function () {
-  let lastBlock = modules.blocks.getLastBlock()
   let delegates = await this.getTopDelegatesFromDisk()
-  let value = JSON.stringify(delegates)
-  let sql = jsonSql.build({
-    type: 'insert',
-    or: 'replace',
-    table: 'variables',
-    values: {
-      key: 'round_bookkeeper',
-      value: value,
-      _deleted_: 0
-    }
-  })
-  await app.db.query(sql.query)
+  app.sdb.update('Variable', { value: JSON.stringify(delegates) }, { key: 'round_bookkeeper' })
 }
 
 // Shared

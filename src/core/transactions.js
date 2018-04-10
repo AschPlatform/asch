@@ -764,11 +764,15 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
   } catch (e) {
     app.sdb.rollbackTransaction()
     library.logger.error(e)
-    throw new Error('Apply transaction error: ' + e)
+    throw e
   }
 
   self.pool.add(transaction)
   return transaction
+}
+
+Transactions.prototype.addTransactionUnsigned = function (transaction, cb) {
+  shared.addTransactionUnsigned({ body: transaction }, cb)
 }
 
 Transactions.prototype.sandboxApi = function (call, args, cb) {
@@ -983,19 +987,20 @@ shared.addTransactionUnsigned = function (req, cb) {
   if (query.type) {
     query.type = Number(query.type)
   }
-  let valid = library.validator.validate(query, {
+  let valid = library.scheme.validate(query, {
     type: 'object',
     properties: {
       secret: { type: 'string', maxLength: 100 },
       fee: { type: 'integer', min: 1 },
       type: { type: 'integer', min: 1 },
-      args: { type: 'string' },
+      args: { type: 'array' },
       message: { type: 'string', maxLength: 50 }
     },
     required: ['secret', 'fee', 'type']
   })
   if (!valid) {
-    return setImmediate(cb, library.validator.getLastError().details[0].message)
+    library.logger.warn('Failed to validate query params', library.scheme.getLastError())
+    return setImmediate(cb, library.scheme.getLastError().details[0].message)
   }
   library.sequence.add(function addTransactionUnsigned(cb) {
     (async function () {
@@ -1018,6 +1023,7 @@ shared.addTransactionUnsigned = function (req, cb) {
         await self.processUnconfirmedTransactionAsync(trs)
         cb(null, { transactionId: trs.id })
       } catch (e) {
+        library.logger.warn('Failed to process unsigned transaction', e)
         cb(e.toString())
       }
     })()

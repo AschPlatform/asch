@@ -4,6 +4,7 @@ module.exports = {
     { name: 'address', type: 'String', length: 50, primary_key: true, not_null: true },
     { name: 'name', type: 'String', length: 50, index: true },
     { name: 'xas', type: 'BigInt' },
+    { name: 'publicKey', type: 'Binary', length: 32 },
     { name: 'secondPublicKey', type: 'Binary', length: 32 },
     { name: 'isLocked', type: 'Number', default: 0 },
     { name: 'isAgent', type: 'Number', default: 0 },

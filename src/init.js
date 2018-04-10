@@ -25,6 +25,7 @@ var moduleNames = [
   'dapps',
   'sql',
   'blocks',
+  'gateway',
 ];
 
 function getPublicIp() {

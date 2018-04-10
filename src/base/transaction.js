@@ -27,10 +27,11 @@ function calc(height) {
 Transaction.prototype.create = function (data) {
   var trs = {
     type: data.type,
-    senderPublicKey: keypair.publicKey.toString('hex'),
+    senderPublicKey: data.keypair.publicKey.toString('hex'),
     timestamp: slots.getTime(),
     message: data.message,
     args: data.args,
+    fee: data.fee
   };
 
   trs.signatures = [this.sign(data.keypair, trs)];
@@ -458,7 +459,8 @@ Transaction.prototype.apply0 = function (trs, block, sender, cb) {
 Transaction.prototype.apply = async function (transaction, block) {
   if (block.height !== 0) {
     let sender = app.sdb.get('Account', { address: transaction.senderId })
-    if ((!sender || !sender.xas || sender.xas < transaction.fee) && block.height > 0) throw new Error('Insufficient balance')
+    if (!sender) throw new Error('Sender account not found')
+    if (!sender.xas || sender.xas < transaction.fee) throw new Error('Insufficient balance')
 
     app.sdb.increment('Account', { xas: -1 * transaction.fee }, { address: transaction.senderId })
   }

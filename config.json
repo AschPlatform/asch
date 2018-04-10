@@ -142,5 +142,13 @@
   "dapp": {
     "masterpassword": "ytfACAMegjrK",
     "params": {}
+  },
+  "gateway": {
+    "name": "BTC",
+    "rpc": {
+
+    },
+    "secret": "wire extend alcohol range choose woman learn around parent grit six smoke",
+    "outSecret": "cQLrQhHL7QfRqqPLmpszqFEHrWKoxtPx3wzTLhhejgaGMrhAMxhM"
   }
 }

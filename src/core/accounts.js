@@ -261,7 +261,7 @@ private.openAccount = function (secret, cb) {
   var hash = crypto.createHash('sha256').update(secret, 'utf8').digest();
   var keypair = ed.MakeKeypair(hash);
   let publicKey = keypair.publicKey.toString('hex')
-  var address = self.generateAddressByPublicKey2(publicKey);
+  var address = self.generateAddressByPublicKey(publicKey);
   shared.getAccount({ body: { address: address } }, function (err, ret) {
     if (ret && ret.account && !ret.account.publicKey) {
       ret.account.publicKey = publicKey
@@ -271,7 +271,7 @@ private.openAccount = function (secret, cb) {
 }
 
 private.openAccount2 = function (publicKey, cb) {
-  var address = self.generateAddressByPublicKey2(publicKey);
+  var address = self.generateAddressByPublicKey(publicKey);
   shared.getAccount({ body: { address: address } }, function (err, ret) {
     if (ret && ret.account && !ret.account.publicKey) {
       ret.account.publicKey = publicKey
@@ -391,7 +391,7 @@ shared.newAccount = function (req, cb) {
   }
   var secret = new Mnemonic(ent).toString();
   var keypair = ed.MakeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
-  var address = self.generateAddressByPublicKey2(keypair.publicKey)
+  var address = self.generateAddressByPublicKey(keypair.publicKey)
   cb(null, {
     secret: secret,
     publicKey: keypair.publicKey.toString('hex'),

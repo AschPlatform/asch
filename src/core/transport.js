@@ -443,7 +443,8 @@ private.attachApi = function () {
       if (err) {
         library.logger.warn('Receive invalid transaction,id is ' + transaction.id, err);
         private.invalidTrsCache.set(transaction.id, true)
-        res.status(200).json({ success: false, error: err });
+        let errMsg = err.message ? err.message : err.toString()
+        res.status(200).json({ success: false, error: errMsg });
       } else {
         res.status(200).json({ success: true, transactionId: transactions[0].id });
       }

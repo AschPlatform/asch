@@ -228,6 +228,25 @@ class Model {
     let results = await this.db.query(sql)
     return Number(results[0][0])
   }
+
+  async update(modifier, cond) {
+    let sql = jsonSql.build({
+      type: 'update',
+      table: this.schema.table,
+      modifier: modifier,
+      condition: cond
+    }).query
+    return await this.db.query(sql)
+  }
+
+  async del(cond) {
+    let sql = jsonSql.build({
+      type: 'remove',
+      table: this.schema.table,
+      condition: cond
+    }).query
+    return await this.db.query(sql)
+  }
 }
 
 class Transaction {

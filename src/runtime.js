@@ -6,6 +6,7 @@ var changeCase = require('change-case')
 var tracer = require('tracer')
 var validate = require('validate.js')
 var extend = require('extend')
+var GatewayLib = require('gateway-lib')
 
 var PIFY = require('./utils/pify')
 var slots = require('./utils/slots')
@@ -232,6 +233,21 @@ module.exports = async function (options) {
     if (sigCount < m) throw new Error('Signatures not enough')
   }
 
+  app.createMultisigAddress = function (gateway, m, accounts) {
+    if (gateway === 'BTC') {
+      let ma = GatewayLib.bitcoin.createMultisigAddress(m, accounts)
+      ma.accountExtrsInfo.redeemScript = ma.accountExtrsInfo.redeemScript.toString('hex')
+      ma.accountExtrsInfo = JSON.stringify(ma.accountExtrsInfo)
+      return ma
+    } else {
+      throw new Error('Unsupported gateway: ' + gateway)
+    }
+  }
+
+  app.isCurrentBookkeeper = function (addr) {
+    return modules.delegates.getBookkeeperAddresses().has(addr)
+  }
+
   app.sdb = new SmartDB(app)
   app.balances = new BalanceManager(app.sdb)
   app.autoID = new AutoIncrement(app.sdb)
@@ -248,6 +264,7 @@ module.exports = async function (options) {
   await app.sdb.load('Delegate', app.model.Delegate.fields(), [['name'], ['publicKey']])
   await app.sdb.load('Variable', ['key', 'value'], ['key'])
   await app.sdb.load('Round', app.model.Round.fields(), [['round']])
+  await app.sdb.load('GatewayDeposit', ['currency', 'oid', 'confirmations'], [['currency', 'oid']])
 
   app.contractTypeMapping[1] = 'basic.transfer'
   app.contractTypeMapping[2] = 'basic.setName'
@@ -278,7 +295,9 @@ module.exports = async function (options) {
   app.contractTypeMapping[301] = 'proposal.vote'
   app.contractTypeMapping[302] = 'proposal.activate'
 
-  app.contractTypeMapping[400] = 'gateway.deposit'
-  app.contractTypeMapping[401] = 'gateway.withdrawal'
-  app.contractTypeMapping[402] = 'gateway.confirmWithdrawal'
+  app.contractTypeMapping[400] = 'gateway.openAccount'
+  app.contractTypeMapping[401] = 'gateway.registerMember'
+  app.contractTypeMapping[402] = 'gateway.deposit'
+  app.contractTypeMapping[403] = 'gateway.withdrawal'
+  app.contractTypeMapping[404] = 'gateway.confirmWithdrawal'
 }

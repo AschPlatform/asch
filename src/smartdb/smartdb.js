@@ -224,6 +224,7 @@ class SmartDB {
       if (!!invertedList.get(key)) throw Error('Ununique index not supported: ' + key)
       invertedList.set(key, cacheValues)
     })
+    return cacheValues
   }
 
   undoCreate(model, values) {

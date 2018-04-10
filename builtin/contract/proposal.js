@@ -36,11 +36,53 @@ async function doUpdateCouncil(params) {
 }
 
 async function doRevoteCouncil(params) {
-  app.sdb.lock('council@' + name)
+  app.sdb.lock('council@' + params.name)
   let council = await app.model.Council.findOne({ condition: { name: params.name } })
   if (!council) return 'Council not found'
 
   app.sdb.update('Council', { revoked: 1 }, { name: council.name })
+}
+
+async function doGatewayRegister(params, context) {
+  let name = params.name
+  app.sdb.lock('gateway@' + name)
+  let exists = await app.model.Gateway.exists({ name: name })
+  if (exists) return 'Gateway already exists'
+
+  app.sdb.create('Gateway', {
+    name: name,
+    desc: params.desc,
+    updateInterval: params.updateInterval,
+    minimumMembers: params.minimumMembers,
+    lastUpdateHeight: context.block.height,
+    revoked: 0
+  })
+}
+
+async function doGatewayInit(params) {
+  for (let m of params.members) {
+    app.sdb.update('GatewayMember', { elected: 1 }, { gateway: params.gateway, address: m })
+  }
+}
+
+async function doGatewayUpdateMember(params) {
+  app.sdb.lock('gateway@' + params.gateway)
+  let gateway = await app.model.Gateway.findOne({ condition: { name: params.gateway } })
+  if (!gateway) throw new Error('Gateway not found')
+
+  if (this.block.height - gateway.lastUpdateHeight < gateway.updateInterval) {
+    throw new Error('Time not arrived')
+  }
+  app.sdb.update('GatewayMember', { elected: 0 }, { gateway: params.gateway, address: params.from })
+  app.sdb.update('GatewayMember', { elected: 1 }, { gateway: params.gateway, address: params.to })
+}
+
+async function doGatewayRevoke(params) {
+  app.sdb.lock('gateway@' + params.gateway)
+  let gateway = await app.model.Gateway.findOne({ condition: { name: params.gateway } })
+  if (!gateway) return 'Gateway not found'
+
+  app.sdb.update('Gateway', { revoked: 1 }, { name: params.gateway})
 }
 
 module.exports = {
@@ -57,12 +99,13 @@ module.exports = {
   },
 
   vote: async function (pid) {
+    if (!app.isCurrentBookkeeper(this.trs.senderId)) return 'Permission denied'
     let proposal = await app.model.Proposal.findOne({ condition: { tid: pid } })
     if (!proposal) return 'Proposal not found'
     if (this.block.height - proposal.height > 8640 * 30) return 'Proposal expired'
-    let exists = await app.model.CouncilPropose.exists({voter: this.senderId})
+    let exists = await app.model.ProposalVote.exists({ voter: this.trs.senderId , pid: pid })
     if (exists) return 'Already voted'
-    app.sdb.create('CouncilVote', {
+    app.sdb.create('ProposalVote', {
       tid: this.trs.id,
       pid: pid,
       voter: this.trs.senderId
@@ -89,18 +132,26 @@ module.exports = {
 
     let unknownTopic = false
     if (topic === 'council_register') {
-      await doRegisterCouncil(content)
+      await doRegisterCouncil(content, this)
     } else if (topic === 'council_update') {
-      await doUpdateCouncil(content)
+      await doUpdateCouncil(content, this)
     } else if (topic === 'council_revote') {
-      await doRevoteCouncil(content)
+      await doRevoteCouncil(content, this)
+    } else if (topic === 'gateway_register') {
+      await doGatewayRegister(content, this)
+    } else if (topic === 'gateway_init') {
+      await doGatewayInit(content, this)
+    } else if (topic === 'gateway_update_member') {
+      await doGatewayUpdateMember(content, this)
+    } else if (topic === 'gateway_revoke') {
+      await doGatewayRevoke(content, this)
     } else {
       unknownTopic = true
     }
     if (unknownTopic) {
       return 'Unknown propose topic'
     } else {
-      app.sdb.update('Propose', { activated: true }, { tid: pid })
+      app.sdb.update('Proposal', { activated: 1}, { tid: pid })
     }
   }
 }
