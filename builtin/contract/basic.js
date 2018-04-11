@@ -8,7 +8,7 @@ async function doCancelVote(account) {
 }
 
 async function doCancelAgent(account) {
-  app.sdb.increment('Account', { weight: -1 * account.weight }, { address: account.agent })
+  app.sdb.increment('Account', { agentWeight: -1 * account.weight }, { address: account.agent })
   app.sdb.update('Account', { agent: '' }, { address: account.address })
   doCancelVote(account)
 }
@@ -185,9 +185,9 @@ module.exports = {
     if (voteExist) return 'Account already voted'
 
     app.sdb.update('Account', { agent: agent }, { address: senderId })
-    app.sdb.increment('Account', { weight: sender.weight }, { address: agent })
+    app.sdb.increment('Account', { agentWeight: sender.weight }, { address: agent })
 
-    let agentVoteList = await app.model.Vote.findAll({ condition: { address: senderId } })
+    let agentVoteList = await app.model.Vote.findAll({ condition: { address: agent } })
     if (agentVoteList && agentVoteList.length > 0 && sender.weight > 0) {
       for (let voteItem of agentVoteList) {
         app.sdb.increment('Delegate', { votes: sender.weight }, { name: voteItem.delegate })
@@ -254,7 +254,7 @@ module.exports = {
     }
 
     for (let name of delegates) {
-      app.sdb.increment('Delegate', { votes: sender.weight }, { name: name })
+      app.sdb.increment('Delegate', { votes: sender.weight + sender.agentWeight }, { name: name })
       app.sdb.create('Vote', {
         address: senderId,
         delegate: name
@@ -291,7 +291,7 @@ module.exports = {
     }
 
     for (let name of delegates) {
-      app.sdb.increment('Delegate', { votes: -sender.weight }, { name: name })
+      app.sdb.increment('Delegate', { votes: -1 * (sender.weight + sender.agentWeight) }, { name: name })
       app.sdb.del('Vote', { address: senderId, delegate: name })
     }
   },

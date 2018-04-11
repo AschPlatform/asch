@@ -17,17 +17,20 @@ module.exports = async function (router) {
     }
   })
 
-  router.get('/currencies/:name', async function (req) {
+  router.get('/:name/currencies', async function (req) {
     return {
-      currency: {
-        symbol: 'BTC',
-        desc: 'Bitcoin is an innovative payment network and a new kind of money',
-        quantity: 1000
-      }
+      count: 1,
+      currency: [
+        {
+          symbol: 'BTC',
+          desc: 'Bitcoin is an innovative payment network and a new kind of money',
+          quantity: 1000
+        }
+      ]
     }
   })
 
-  router.get('/address/:sender/:currency', async function (req) {
+  router.get('/:name/accounts/:address', async function (req) {
     return { address: 'mvGfGo9YfNiTJK6MDnfwDwr5jTdWR1ovdC' }
   })
 
@@ -46,7 +49,7 @@ module.exports = async function (router) {
     }
   })
 
-  router.get('/deposits/:currency', async function (req) {
+  router.get('/:name/deposits', async function (req) {
     return {
       count: 1,
       deposits: [

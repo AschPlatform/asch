@@ -1,26 +1,25 @@
+const bignum = require('bignumber')
+
 module.exports = {
-  registerIssuer: async function (desc) {
+  registerIssuer: async function (name, desc) {
     // validate(desc, {maxLength: 4096})
-    if (!this.sender.name) return 'Account have not a name'
-    app.sdb.lock('uia.registerIssuer@' + senderId)
-    let exists = await app.model.Issuer.exists({ name: this.sender.name })
+    app.sdb.lock('uia.registerIssuer@' + this.trs.senderId)
+    let exists = await app.model.Issuer.exists({ name: name })
     if (exists) return 'Account is already an issuer'
 
     app.sdb.create('Issuer', {
       tid: this.trs.id,
       issuerId: this.trs.senderId,
-      name: this.sender.name,
+      name: name,
       desc: desc
     })
   },
 
   registerAsset: async function (symbol, desc, maximum, precision) {
-    if (!this.sender.name) return 'Account have not a name'
+    let issuer = await app.model.Issuer.findOne({ condition: { issuerId: this.trs.senderId } })
+    if (!issuer) return 'Account is not an issuer'
 
-    let exists = await app.model.Issuer.exists({ name: this.sender.name })
-    if (!exists) return 'Account is not an issuer'
-
-    let fullName = this.sender.name + '.' + symbol
+    let fullName = issuer.name + '.' + symbol
     app.sdb.lock('uia.registerAsset@' + fullName)
 
     exists = await app.model.Asset.exists({ name: fullName })
@@ -37,18 +36,18 @@ module.exports = {
     })
   },
 
-  issue: async function (symbol, amount) {
-    let fullName = this.sender.name + '.' + symbol
-    app.sdb.lock('uia.issue@' + fullName)
+  issue: async function (name, amount) {
+    app.sdb.lock('uia.issue@' + name)
 
-    let asset = await app.model.Asset.findOne({ condition: { name: fullName } })
+    let asset = await app.model.Asset.findOne({ condition: { name: name } })
     if (!asset) return 'Asset not exists'
+    if (asset.issuerId !== this.trs.senderId ) return 'Permission denied'
 
     let quantity = bignum(asset.quantity).plus(amount)
     if (quantity.gt(asset.maximum)) return 'Exceed issue limit'
 
-    app.sdb.update('Asset', { quantity: quantity }, { name: fullName })
-    app.balances.increase(this.trs.senderId, fullName, amount)
+    app.sdb.update('Asset', { quantity: quantity.toString() }, { name: name })
+    app.balances.increase(this.trs.senderId, name, amount)
   },
 
   transfer: async function (currency, amount, recipientId) {

@@ -6,6 +6,7 @@ module.exports = {
     { name: 'maximum', type: 'String', length: 50, not_null: true, index: true },
     { name: 'precision', type: 'Number' },
     { name: 'quantity', type: 'String', length: 50 },
-    { name: 'issuer', type: 'String', length: 50 }
+    { name: 'desc', type: 'Text' },
+    { name: 'issuerId', type: 'String', length: 50 }
   ]
 }
