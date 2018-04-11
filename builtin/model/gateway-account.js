@@ -6,5 +6,6 @@ module.exports = {
     { name: 'gateway', type: 'String', length: 10, index: true },
     { name: 'outAddress', type: 'String', length: 50, index: true },
     { name: 'attachment', type: 'Text' },
+    { name: 'version', type: 'Number' },
   ]
 }

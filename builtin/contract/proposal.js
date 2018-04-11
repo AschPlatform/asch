@@ -55,6 +55,14 @@ async function doGatewayRegister(params, context) {
     updateInterval: params.updateInterval,
     minimumMembers: params.minimumMembers,
     lastUpdateHeight: context.block.height,
+    revoked: 0,
+    version: 1
+  })
+  app.sdb.create('GatewayCurrency', {
+    gateway: name,
+    symbol: params.currency.symbol,
+    precision: params.currency.precision,
+    desc: params.currency.desc,
     revoked: 0
   })
 }
@@ -75,6 +83,7 @@ async function doGatewayUpdateMember(params) {
   }
   app.sdb.update('GatewayMember', { elected: 0 }, { gateway: params.gateway, address: params.from })
   app.sdb.update('GatewayMember', { elected: 1 }, { gateway: params.gateway, address: params.to })
+  app.sdb.increment('Gateway', { version: 1 }, { name: params.gateway })
 }
 
 async function doGatewayRevoke(params) {
@@ -82,7 +91,7 @@ async function doGatewayRevoke(params) {
   let gateway = await app.model.Gateway.findOne({ condition: { name: params.gateway } })
   if (!gateway) return 'Gateway not found'
 
-  app.sdb.update('Gateway', { revoked: 1 }, { name: params.gateway})
+  app.sdb.update('Gateway', { revoked: 1 }, { name: params.gateway })
 }
 
 module.exports = {
@@ -103,7 +112,7 @@ module.exports = {
     let proposal = await app.model.Proposal.findOne({ condition: { tid: pid } })
     if (!proposal) return 'Proposal not found'
     if (this.block.height - proposal.height > 8640 * 30) return 'Proposal expired'
-    let exists = await app.model.ProposalVote.exists({ voter: this.trs.senderId , pid: pid })
+    let exists = await app.model.ProposalVote.exists({ voter: this.trs.senderId, pid: pid })
     if (exists) return 'Already voted'
     app.sdb.create('ProposalVote', {
       tid: this.trs.id,
@@ -151,7 +160,7 @@ module.exports = {
     if (unknownTopic) {
       return 'Unknown propose topic'
     } else {
-      app.sdb.update('Proposal', { activated: 1}, { tid: pid })
+      app.sdb.update('Proposal', { activated: 1 }, { tid: pid })
     }
   }
 }

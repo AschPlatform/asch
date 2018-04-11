@@ -253,7 +253,6 @@ private.attachApi = function () {
     "get /voters": "getVoters",
     "get /get": "getDelegate",
     "get /": "getDelegates",
-    "get /forging/getForgedByAccount": "getForgedByAccount"
   });
 
   if (process.env.DEBUG) {

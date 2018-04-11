@@ -6,6 +6,8 @@ module.exports = {
     let validators = await app.model.GatewayMember.findAll({ condition: { gateway: gateway, elected: 1 } })
     if (!validators || !validators.length) return 'Gateway validators not found'
 
+    let gw = await app.model.Gateway.findOne({ condition: { name: gateway } })
+    if (!gw) return 'Gateway not found'
     let outPublicKeys = validators.map(function (v) { return v.outPublicKey })
     let account = app.createMultisigAddress(gateway, Math.floor(outPublicKeys.length / 2) + 1, outPublicKeys)
     let seq = Number(app.autoID.increment('gate_account_seq'))
@@ -14,7 +16,8 @@ module.exports = {
       gateway: gateway,
       outAddress: account.address,
       attachment: account.accountExtrsInfo,
-      seq: seq
+      seq: seq,
+      version: gw.version
     })
   },
 
@@ -32,6 +35,7 @@ module.exports = {
   },
 
   deposit: async function (address, currency, amount, oid) {
+    if (! await app.model.GatewayCurrency.exists({ symbol: currency })) return 'Currency not supported'
     let validator = await app.model.GatewayMember.findOne({
       condition: {
         address: this.trs.senderId,
@@ -43,12 +47,15 @@ module.exports = {
     let depositKey = 'gateway.deposit@' + [this.trs.senderId, currency, oid].join(':')
     app.sdb.lock(depositKey)
 
-    let exists = await app.model.GatewayDepositSigner.exists({ key: depositKey })
-    if (exists) return 'Already submitted'
 
     let gatewayAccount = await app.model.GatewayAccount.findOne({ condition: { outAddress: address } })
     if (!gatewayAccount) return 'Gateway account not exist'
 
+    let gw = await app.model.Gateway.findOne({ condition: { name: gatewayAccount.gateway } })
+    if (!gw) return 'Gateway not found'
+    if (gatewayAccount.version !== gw.version) return 'Gateway account version expired'
+
+    if (await app.model.GatewayDepositSigner.exists({ key: depositKey })) return 'Already submitted'
     app.sdb.create('GatewayDepositSigner', { key: depositKey })
 
     let cond = { currency: currency, oid: oid }
