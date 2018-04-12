@@ -372,7 +372,7 @@ Transaction.prototype.verify = function (trs, sender) {
   try {
     var valid = this.verifySignature(trs, trs.senderPublicKey, trs.signatures[0])
     if (valid && trs.secondSignature) {
-      valid = this.verifySignature(trs, sender.secondPublicKey, trs.secondPublicKey)
+      valid = this.verifySignature(trs, sender.secondPublicKey, trs.secondSignature)
     }
   } catch (e) {
     throw new Error('verify signature exception: ' + e)
