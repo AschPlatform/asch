@@ -3,6 +3,9 @@ module.exports = function (router) {
     let offset = req.query.offset ? Number(req.query.offset) : 0
     let limit = req.query.limit ? Number(req.query.limit) : 20
     let condition = { address: req.params.address }
+    if (req.query.flag) {
+      condition.flag = Number(req.query.flag)
+    }
     let count = await app.model.Balance.count(condition)
     let balances = []
     if (count > 0) {

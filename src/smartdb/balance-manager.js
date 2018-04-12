@@ -14,6 +14,18 @@ class BalanceManager {
     return bignum(balance)
   }
 
+  getCurrencyFlag(currency) {
+    if (currency === 'XAS') {
+      return 1
+    } else if (currency.indexOf('.') !== -1) {
+      // UIA
+      return 2
+    } else {
+      // gateway currency
+      return 3
+    }
+  }
+
   increase(address, currency, amount) {
     if (bignum(amount).eq(0)) return
     let cond = {
@@ -26,6 +38,7 @@ class BalanceManager {
       this.sdb.update('Balance', { balance: balance.toString() }, cond)
     } else {
       cond.balance = amount
+      cond.flag = this.getCurrencyFlag(currency)
       this.sdb.create('Balance', cond)
     }
   }
