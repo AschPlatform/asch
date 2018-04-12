@@ -88,18 +88,10 @@ class Model {
     fields = fields.map((f) => { return this.schema.table + '.' + f })
     let sort = options.sort
     if (typeof sort === 'string') {
-      if (sort === 'timestamp') {
-        sort = 't.' + sort
-      } else {
-        sort = this.schema.table + '.' + sort
-      }
+      sort = this.schema.table + '.' + sort
     } else if (typeof sort === 'object') {
       for (let k in sort) {
-        if (k === 'timestamp') {
-          sort['t.' + k] = sort[k]
-        } else {
-          sort[this.schema.table + '.' + k] = sort[k]
-        }
+        sort[this.schema.table + '.' + k] = sort[k]
         delete sort[k]
       }
     }
