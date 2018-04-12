@@ -10,6 +10,7 @@ async function doCancelVote(account) {
 async function doCancelAgent(account) {
   app.sdb.increment('Account', { agentWeight: -1 * account.weight }, { address: account.agent })
   app.sdb.update('Account', { agent: '' }, { address: account.address })
+  app.sdb.del('AgentClientele', { agent: account.agent, clientele: account.address })
   doCancelVote(account)
 }
 
@@ -157,6 +158,7 @@ module.exports = {
     app.sdb.lock('basic.registerAgent@' + senderId)
     let account = await app.model.Account.findOne({ condition: { address: senderId } })
     if (account.isAgent) return 'Agent already registered'
+    if (!account.name) return 'Agent must have a name'
 
     let voteExist = await app.model.Vote.exists({ address: senderId })
     if (voteExist) return 'Account already voted'
@@ -165,6 +167,7 @@ module.exports = {
     if (isDelegate) return 'Delegate cannot be agent'
 
     app.sdb.update('Account', { isAgent: 1 }, { address: senderId })
+    app.sdb.create('Agent', { name: account.name })
   },
 
   setAgent: async function (agent) {
@@ -178,21 +181,26 @@ module.exports = {
     if (sender.agent) return 'Agent already set'
     if (!sender.isLocked) return 'Account is not locked'
 
-    let agentExists = await app.model.Account.exists({ address: agent })
-    if (!agentExists) return 'Agent account not found'
+    let agentAccount = await app.model.Account.findOne({ condition: { name: agent } })
+    if (!agentAccount) return 'Agent account not found'
+    if (!agentAccount.isAgent) return 'Not and agent'
 
     let voteExist = await app.model.Vote.exists({ address: senderId })
     if (voteExist) return 'Account already voted'
 
     app.sdb.update('Account', { agent: agent }, { address: senderId })
-    app.sdb.increment('Account', { agentWeight: sender.weight }, { address: agent })
+    app.sdb.increment('Account', { agentWeight: sender.weight }, { name: agent })
 
-    let agentVoteList = await app.model.Vote.findAll({ condition: { address: agent } })
+    let agentVoteList = await app.model.Vote.findAll({ condition: { address: agentAccount.address } })
     if (agentVoteList && agentVoteList.length > 0 && sender.weight > 0) {
       for (let voteItem of agentVoteList) {
         app.sdb.increment('Delegate', { votes: sender.weight }, { name: voteItem.delegate })
       }
     }
+    app.sdb.create('AgentClientele', {
+      agent: agent,
+      clientele: senderId
+    })
   },
 
   cancelAgent: async function () {
