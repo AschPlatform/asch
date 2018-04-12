@@ -7,6 +7,7 @@ module.exports = {
     { name: 'topic', type: 'String', length: 256 },
     { name: 'content', type: 'Text' },
     { name: 'activated', type: 'Number', default: 0 },
+    { name: 'endHeight', type: 'BigInt', index: true },
     { name: 'height', type: 'BigInt' }
   ]
 }

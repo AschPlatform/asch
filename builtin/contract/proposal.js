@@ -50,7 +50,7 @@ async function doGatewayRevoke(params) {
 }
 
 module.exports = {
-  propose: async function (title, desc, topic, content) {
+  propose: async function (title, desc, topic, content, endHeight) {
     app.sdb.create('Proposal', {
       tid: this.trs.id,
       title: title,
@@ -58,7 +58,8 @@ module.exports = {
       topic: topic,
       content: JSON.stringify(content),
       activated: 0,
-      height: this.block.height
+      height: this.block.height,
+      endHeight: endHeight
     })
   },
 

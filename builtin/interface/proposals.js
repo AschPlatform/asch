@@ -4,8 +4,25 @@ module.exports = function (router) {
     let limit = req.query.limit ? Number(req.query.limit) : 20
     let expired = req.query.expired ? Number(req.query.expired) : 0
     let activated = req.query.activated ? Number(req.query.activated) : 0
-    let condition = { expired: expired, activated: activated }
-    let count = await app.model.Proposal.count({ condition })
+    let condition
+    if (expired) {
+      condition = {
+        endHeight: {
+          $lte: modules.blocks.getLastBlock().height
+        },
+        activated: 0
+      }
+    } else if (!activated) {
+      condition = {
+        endHeight: {
+          $gt: modules.blocks.getLastBlock().height
+        },
+        activated: 0
+      }
+    } else {
+      condition = { activated: 1 }
+    }
+    let count = await app.model.Proposal.count(condition)
     let proposals = []
     if (count > 0) {
       proposals = await app.model.Proposal.findAll({ condition, limit, offset })
