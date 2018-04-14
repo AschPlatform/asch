@@ -14,7 +14,7 @@ module.exports = function (router) {
       condition = {
         activated: 1
       }
-    } else if (req.query.type === 'processing') {
+    } else if (req.query.type === 'ongoing') {
       condition = {
         endHeight: {
           $gt: modules.blocks.getLastBlock().height
