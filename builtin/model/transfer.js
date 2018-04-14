@@ -5,6 +5,7 @@ module.exports = {
     { name: 'senderId', type: 'String', length: 50, not_null: true, index: true },
     { name: 'recipientId', type: 'String', length: 50, not_null: true, index: true },
     { name: 'currency', type: 'String', length: 30, not_null: true, index: true },
-    { name: 'amount', type: 'String', length: 50, not_null: true }
+    { name: 'amount', type: 'String', length: 50, not_null: true },
+    { name: 'timestamp', type: 'Number', index: true },
   ]
 }

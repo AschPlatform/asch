@@ -2,25 +2,29 @@ module.exports = function (router) {
   router.get('/', async function (req) {
     let offset = req.query.offset ? Number(req.query.offset) : 0
     let limit = req.query.limit ? Number(req.query.limit) : 20
-    let expired = req.query.expired ? Number(req.query.expired) : 0
-    let activated = req.query.activated ? Number(req.query.activated) : 0
     let condition
-    if (expired) {
+    if (req.query.type === 'expired') {
       condition = {
         endHeight: {
           $lte: modules.blocks.getLastBlock().height
         },
         activated: 0
       }
-    } else if (!activated) {
+    } else if (req.query.type === 'activated') {
+      condition = {
+        activated: 1
+      }
+    } else if (req.query.type === 'processing') {
       condition = {
         endHeight: {
           $gt: modules.blocks.getLastBlock().height
         },
         activated: 0
       }
+    } else if (req.query.type === 'all') {
+      condition = {}
     } else {
-      condition = { activated: 1 }
+      condition = {}
     }
     let count = await app.model.Proposal.count(condition)
     let proposals = []

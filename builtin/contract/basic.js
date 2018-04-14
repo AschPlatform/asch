@@ -55,7 +55,8 @@ module.exports = {
       senderId: senderId,
       recipientId: recipientId,
       currency: 'XAS',
-      amount: amount
+      amount: amount,
+      timestamp: this.trs.timestamp
     })
   },
 
