@@ -60,9 +60,9 @@ var Eaccount = {
 
 // Account info for genesis account - Needed for voting, registrations and Tx
 var Gaccount = {
-  'address': '14762548536863074694',
-  'publicKey': '8065a105c785a08757727fded3a06f8f312e73ad40f1f3502e0232ea42e67efd',
-  'password': 'someone manual strong movie roof episode eight spatial brown soldier soup motor',
+  'address': 'AAo2hcZjS2wBsdWXKao7cUkXnGvJ5sSYGT',
+  'publicKey': 'd47104221013bb968a740a549abeb14e2846d8640914cbbbef9a9edb1e440252',
+  'password': 'below picnic cycle benefit park fall artist transfer hammer record hen twice',
   'balance': 10000000000000000
 };
 
@@ -266,13 +266,14 @@ function randomAccount() {
   return account;
 }
 
-function genNormalAccount() {
-  var password = randomPassword()
+function genNormalAccount(password) {
+  var password = password || randomPassword()
   var keys = asch.crypto.getKeys(password)
   return {
     address: addressHelper.generateBase58CheckAddress(keys.publicKey),
     publicKey: keys.publicKey,
-    password: password
+    password: password,
+    secret: password
   }
 }
 
@@ -316,13 +317,26 @@ function apiGet(path, cb) {
     .end(cb)
 }
 
+function transactionUnsigned(trs, cb) {
+  api.put('/transactions')
+    .send(trs)
+    .expect('Content-Type', /json/)
+    .expect(200)
+    .end(function (err, res) {
+      if (err) return cb(err)
+      if (!res.body.success) return cb(res.body.error)
+      cb(null, res)
+    })
+}
+
 function giveMoney(address, amount, cb) {
   api.put('/transactions')
     .set('Accept', 'application/json')
     .send({
       secret: Gaccount.password,
-      amount: amount,
-      recipientId: address
+      fee: 10000000,
+      type: 1,
+      args: [amount, address]
     })
     .expect('Content-Type', /json/)
     .expect(200)
@@ -427,5 +441,6 @@ module.exports = {
   giveMoneyAndWaitAsync: giveMoneyAndWaitAsync,
   sleepAsync: PIFY(sleep),
   openAccountAsync: PIFY(openAccount),
-  randomTid: randomTid
+  randomTid: randomTid,
+  transactionUnsignedAsync: PIFY(transactionUnsigned)
 };

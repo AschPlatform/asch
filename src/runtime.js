@@ -234,7 +234,7 @@ module.exports = async function (options) {
   }
 
   app.createMultisigAddress = function (gateway, m, accounts) {
-    if (gateway === 'BTC') {
+    if (gateway === 'bitcoin') {
       let ma = GatewayLib.bitcoin.createMultisigAddress(m, accounts)
       ma.accountExtrsInfo.redeemScript = ma.accountExtrsInfo.redeemScript.toString('hex')
       ma.accountExtrsInfo = JSON.stringify(ma.accountExtrsInfo)
