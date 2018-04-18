@@ -674,21 +674,19 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
     throw new Error('Transaction already processed')
   }
 
-  let valid = library.base.transaction.verify(transaction)
-  if (!valid) {
-    throw new Error('Invalid transaction signature')
+  if (!transaction.senderId) {
+    transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
   }
-
-  // TODO reduce fee from sender balance
+  let sender = await app.model.Account.findOne({ condition: { address: transaction.senderId } })
+  if (!sender) throw new Error('Sender account not found')
+  let error = library.base.transaction.verify(transaction, sender)
+  if (error) throw new Error(error)
 
   let exists = await app.model.Transaction.exists({ id: transaction.id })
   if (exists) {
     throw new Error('Transaction already confirmed')
   }
 
-  if (!transaction.senderId) {
-    transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
-  }
   let height = modules.blocks.getLastBlock().height
 
   let block = {

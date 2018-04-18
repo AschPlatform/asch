@@ -6,17 +6,10 @@ module.exports = function (router) {
         address: req.params.address
       }
     })
-    if (!account) throw new Error('Accout not found')
 
-    let latestBlock = modules.blocks.getLastBlock();
     var ret = {
       account: account,
       unconfirmedAccount: app.sdb.get('Account', {address: address}),
-      latestBlock: {
-        height: latestBlock.height,
-        timestamp: latestBlock.timestamp
-      },
-      version: modules.peer.getVersion()
     }
     return ret
   })

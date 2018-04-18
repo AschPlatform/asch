@@ -288,25 +288,27 @@ module.exports = function(options, done) {
           return;
         }
 
-        var isApiOrPeer = parts.length > 1 && (parts[1] == 'api'|| parts[1] == 'peer') ;
+        const URI_PREFIXS = ['api', 'api2', 'peer']
+        var isApiOrPeer = parts.length > 1 && (URI_PREFIXS.indexOf(parts[1]) !== -1);
         var whiteList = scope.config.api.access.whiteList;
         var blackList = scope.config.peers.blackList;
 
-        var forbidden = isApiOrPeer && ( 
+        var forbidden = isApiOrPeer && (
             (whiteList.length > 0 && whiteList.indexOf(ip) < 0) ||
             (blackList.length > 0 && blackList.indexOf(ip) >= 0) );
 
         if (isApiOrPeer && forbidden){
           res.sendStatus(403);
         }
-        else if ( isApiOrPeer && req.headers["request-node-status"] == "yes"){         
+        else if ( isApiOrPeer/* && req.headers["request-node-status"] == "yes" */){
           //Add server status info to response header
-          var lastBlock = scope.modules.blocks.getLastBlock();         
+          var lastBlock = scope.modules.blocks.getLastBlock();
           res.setHeader('Access-Control-Expose-Headers',"node-status");
           res.setHeader("node-status",JSON.stringify({
             blockHeight: lastBlock.height,
             blockTime: slots.getRealTime(lastBlock.timestamp),
-            blocksBehind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1)
+            blocksBehind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1),
+            version: scope.modules.peer.getVersion(),
           }));
           next();
         }

@@ -35,7 +35,7 @@ function Gateway(cb, scope) {
 }
 
 Gateway.prototype.importAccounts = async function () {
-  const GATEWAY = 'BTC'
+  const GATEWAY = global.Config.gateway.name
   let lastImportAddressLog = await app.model.GatewayLog.findOne({
     condition: {
       gateway: GATEWAY,

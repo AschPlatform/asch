@@ -144,7 +144,7 @@
     "params": {}
   },
   "gateway": {
-    "name": "BTC",
+    "name": "bitcoin",
     "rpc": {
 
     },

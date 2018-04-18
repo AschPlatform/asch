@@ -357,27 +357,29 @@ Transaction.prototype.verify_ = function (trs, sender, requester, cb) { //inheri
 
 Transaction.prototype.verify = function (trs, sender) {
   if (slots.getSlotNumber(trs.timestamp) > slots.getSlotNumber()) {
-    return setImmediate(cb, "Invalid transaction timestamp");
+    return "Invalid transaction timestamp"
   }
 
   if (!trs.type) {
-    throw new Error("Invalid function")
+    return "Invalid function"
   }
 
   let id = this.getId(trs)
   if (trs.id !== id) {
-    throw new Error('Invalid transaction id')
+    return 'Invalid transaction id'
   }
 
   try {
     var valid = this.verifySignature(trs, trs.senderPublicKey, trs.signatures[0])
-    if (valid && trs.secondSignature) {
+    if (!valid) return 'Invalid signature'
+    if (sender.secondPublicKey) {
       valid = this.verifySignature(trs, sender.secondPublicKey, trs.secondSignature)
+      if (!valid) return 'Invalid second signature'
     }
   } catch (e) {
-    throw new Error('verify signature exception: ' + e)
+    library.logger.error('verify signature excpetion', e)
+    return 'Invalid signature'
   }
-  return valid
 }
 
 Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
