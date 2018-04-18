@@ -14,6 +14,17 @@ module.exports = async function (router) {
   })
   router.get('/:name/validators', async function (req) {
     let validators = await app.model.GatewayMember.findAll({ condition: { gateway: req.params.name } })
+    if (validators.length > 0) {
+      let addressList = validators.map((v) => v.address)
+      let accounts = await app.model.Account.findAll({ condition: { address: { $in: addressList } } })
+      let accountMap = new Map
+      for (let a of accounts) {
+        accountMap.set(a.address, a)
+      }
+      for (let v of validators) {
+        v.name = accountMap.get(v.address).name
+      }
+    }
     return { count: validators.length, validators }
   })
   router.get('/currencies', async function (req) {

@@ -24,6 +24,8 @@ module.exports = {
 
   registerMember: async function (gateway, publicKey, desc) {
     app.sdb.lock('gateway.registerMember@' + this.trs.senderId)
+    let sender = await app.model.Account.findOne({ condition: { address: this.trs.senderId } })
+    if (!sender.name) return 'Account have not a name'
     let exists = await app.model.GatewayMember.exists({ address: this.trs.senderId })
     if (exists) return 'Account already is a gateway member'
     app.sdb.create('GatewayMember', {

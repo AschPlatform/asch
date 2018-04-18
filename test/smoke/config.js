@@ -114,6 +114,7 @@ module.exports = {
 
   bitcoinValidators: [
     {
+      name: 'bv1',
       aschAccount: {
         address: 'A5eTVn2Mz5p2j6SjGKdgvmUc2vMsSvKzuy',
         secret: 'wire extend alcohol range choose woman learn around parent grit six smoke',
@@ -126,6 +127,7 @@ module.exports = {
       }
     },
     {
+      name: 'bv2',
       aschAccount: {
         address: 'A3SmW61ZwxmNc26BbfKLbHkaNbmUQzexuj',
         secret: 'life payment beef noble section equal doll split south rival all habit',
@@ -138,6 +140,7 @@ module.exports = {
       }
     },
     {
+      name: 'bv3',
       aschAccount: {
         address: 'A4ncaYtKRrD8YS2Mi82HbwGEE9DxqsbEr9',
         secret: 'aerobic curtain fruit sport trick person light boring image mother custom century',

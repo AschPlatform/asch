@@ -226,6 +226,18 @@ async function testGateway() {
   for (let validator of config.bitcoinValidators) {
     trs = {
       secret: validator.aschAccount.secret,
+      type: 2,
+      fee: 10000000,
+      args: [validator.name]
+    }
+    console.log('set name for gateway validator:', validator.aschAccount.address)
+    await node.transactionUnsignedAsync(trs)
+  }
+  await node.onNewBlockAsync()
+
+  for (let validator of config.bitcoinValidators) {
+    trs = {
+      secret: validator.aschAccount.secret,
       type: 401,
       fee: 10000000,
       args: [
@@ -237,6 +249,7 @@ async function testGateway() {
     console.log('register gateway validator:', validator.aschAccount.address)
     await node.transactionUnsignedAsync(trs)
   }
+  await node.onNewBlockAsync()
 
   for (let i = 0; i < 10; ++i) {
     let d = gDelegates[i]
