@@ -102,9 +102,15 @@ module.exports = {
       if (height !== 0 && height < (Math.max(this.block.height, sender.lockHeight) + MIN_LOCK_HEIGHT)) {
         return 'Invalid lock height'
       }
+      if (height === 0 && amount === 0) {
+        return 'Invalid height or amount'
+      }
     } else {
       if (height < this.block.height + MIN_LOCK_HEIGHT) {
         return 'Invalid lock height'
+      }
+      if (amount === 0) {
+        return 'Invalid amount'
       }
     }
 
@@ -115,14 +121,25 @@ module.exports = {
       app.sdb.update('Account', { lockHeight: height }, { address: senderId })
     }
     if (amount !== 0) {
-      app.sdb.update('Account', { weight: amount }, { address: senderId })
+      app.sdb.increment('Account', { weight: amount }, { address: senderId })
       app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
     }
 
-    let voteList = await app.model.Vote.findAll({ condition: { address: senderId } })
-    if (voteList && voteList.length > 0 && amount > 0) {
-      for (let voteItem of voteList) {
-        app.sdb.increment('Delegate', { votes: amount }, { name: voteItem.delegate })
+    if (sender.agent) {
+      let agentAccount = await app.model.Account.find({condition: {name: sender.agent}})
+      if (!agentAccount) return 'Agent not found'
+      let voteList = await app.model.Vote.findAll({ condition: { address: agentAccount.address } })
+      if (voteList && voteList.length > 0 && amount > 0) {
+        for (let voteItem of voteList) {
+          app.sdb.increment('Delegate', { votes: amount }, { name: voteItem.delegate })
+        }
+      }
+    } else {
+      let voteList = await app.model.Vote.findAll({ condition: { address: senderId } })
+      if (voteList && voteList.length > 0 && amount > 0) {
+        for (let voteItem of voteList) {
+          app.sdb.increment('Delegate', { votes: amount }, { name: voteItem.delegate })
+        }
       }
     }
   },
