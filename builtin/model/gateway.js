@@ -8,5 +8,6 @@ module.exports = {
     { name: 'lastUpdateHeight', type: 'BigInt' },
     { name: 'revoked', type: 'Number', default: 0 },
     { name: 'version', type: 'Number' },
+    { name: 'createTime', type: 'Number' },
   ]
 }

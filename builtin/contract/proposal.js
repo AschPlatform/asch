@@ -11,7 +11,8 @@ async function doGatewayRegister(params, context) {
     minimumMembers: params.minimumMembers,
     lastUpdateHeight: context.block.height,
     revoked: 0,
-    version: 1
+    version: 1,
+    createTime: context.trs.timestamp
   })
   app.sdb.create('GatewayCurrency', {
     gateway: name,

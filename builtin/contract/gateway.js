@@ -17,7 +17,8 @@ module.exports = {
       outAddress: account.address,
       attachment: account.accountExtrsInfo,
       seq: seq,
-      version: gw.version
+      version: gw.version,
+      createTime: this.trs.timestamp
     })
   },
 

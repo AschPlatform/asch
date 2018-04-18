@@ -7,5 +7,6 @@ module.exports = {
     { name: 'outAddress', type: 'String', length: 50, index: true },
     { name: 'attachment', type: 'Text' },
     { name: 'version', type: 'Number' },
+    { name: 'createTime', type: 'Number' },
   ]
 }

@@ -6,6 +6,9 @@ module.exports = async function (router) {
     let gateways = []
     if (count > 0) {
       gateways = await app.model.Gateway.findAll({ limit, offset })
+      for (let gw of gateways) {
+        gw.validatorNumber = await app.model.GatewayMember.count({ gateway: gw.name })
+      }
     }
     return { count, gateways }
   })
