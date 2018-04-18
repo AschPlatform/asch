@@ -297,10 +297,10 @@ module.exports = function(options, done) {
             (whiteList.length > 0 && whiteList.indexOf(ip) < 0) ||
             (blackList.length > 0 && blackList.indexOf(ip) >= 0) );
 
-        if (isApiOrPeer && forbidden){
+        if (isApiOrPeer && forbidden) {
           res.sendStatus(403);
         }
-        else if ( isApiOrPeer/* && req.headers["request-node-status"] == "yes" */){
+        else if ( isApiOrPeer && req.headers["request-node-status"] == "yes") {
           //Add server status info to response header
           var lastBlock = scope.modules.blocks.getLastBlock();
           res.setHeader('Access-Control-Expose-Headers',"node-status");

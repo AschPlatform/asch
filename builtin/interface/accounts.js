@@ -7,9 +7,15 @@ module.exports = function (router) {
       }
     })
 
+    let lastBlock = modules.blocks.getLastBlock()
     var ret = {
       account: account,
       unconfirmedAccount: app.sdb.get('Account', {address: address}),
+      latestBlock: {
+        height: lastBlock.height,
+        timestamp: lastBlock.timestamp
+      },
+      version: modules.peer.getVersion()
     }
     return ret
   })
