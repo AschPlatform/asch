@@ -537,9 +537,12 @@ shared.myVotedDelegates = function (req, cb) {
       address: {
         type: "string",
         minLength: 1
+      },
+      name: {
+        type: "string",
+        minLength: 1
       }
     },
-    required: ["address"]
   }, function (err) {
     if (err) {
       return cb(err[0].message);
@@ -547,9 +550,23 @@ shared.myVotedDelegates = function (req, cb) {
 
     (async function () {
       try {
+        let address
+        if (query.name) {
+          let account = await app.model.Account.findOne({
+            condition: {
+              name: query.name
+            }
+          })
+          if (!account) {
+            return cb('Account not found')
+          }
+          address = account.address
+        } else {
+          address = query.address
+        }
         let votes = await app.model.Vote.findAll({
           condition: {
-            address: query.address
+            address: address
           },
         })
         if (!votes || !votes.length) {
