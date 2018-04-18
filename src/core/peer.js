@@ -500,7 +500,7 @@ shared.getPeers = function (req, cb) {
         if (err) {
           return cb("Can not get peers count");
         }
-        cb(null, { peers: peers, totalCount: count[0] });
+        cb(null, { peers: peers, count: Number(count[0][0]) });
       });
     });
   });
