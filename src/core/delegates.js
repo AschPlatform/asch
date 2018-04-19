@@ -793,9 +793,6 @@ Delegates.prototype.onBind = function (scope) {
 Delegates.prototype.onBlockchainReady = function () {
   private.loaded = true;
 
-  if (!app.sdb.get('Variable', { key: 'round_bookkeeper' })) {
-    app.sdb.create('Variable', { key: 'round_bookkeeper', value: '' })
-  }
   private.loadMyDelegates(function nextLoop(err) {
     if (err) {
       library.logger.error("Failed to load delegates", err);

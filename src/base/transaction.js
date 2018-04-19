@@ -5,6 +5,7 @@ var ed = require('../utils/ed.js');
 var bignum = require('bignumber');
 var constants = require('../utils/constants.js');
 var slots = require('../utils/slots.js');
+var feeCalculators = require('../utils/calculate-fee.js')
 
 var genesisblock = null;
 
@@ -364,6 +365,11 @@ Transaction.prototype.verify = function (trs, sender) {
     return "Invalid function"
   }
 
+  let feeCalculator = feeCalculators[trs.type]
+  if (!feeCalculator) return 'Fee calculator not found'
+  let minFee = 100000000 * feeCalculator(trs)
+  if (trs.fee < minFee) return 'Fee not enough'
+
   let id = this.getId(trs)
   if (trs.id !== id) {
     return 'Invalid transaction id'
@@ -380,9 +386,6 @@ Transaction.prototype.verify = function (trs, sender) {
     library.logger.error('verify signature excpetion', e)
     return 'Faied to verify signature'
   }
-}
-
-Transaction.prototype.calculateFee = function (trs) {
 }
 
 Transaction.prototype.verifySignature = function (trs, publicKey, signature) {

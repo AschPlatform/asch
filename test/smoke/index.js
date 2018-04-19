@@ -53,7 +53,7 @@ async function testUIA() {
     let trs = {
       secret: issuer.account.secret,
       type: 100,
-      fee: 10000000,
+      fee: 10000000000,
       args: [issuer.name, issuer.desc],
     }
     console.log('register issuer:', issuer.name)
@@ -65,7 +65,7 @@ async function testUIA() {
       let trs = {
         secret: issuer.account.secret,
         type: 101,
-        fee: 10000000,
+        fee: 50000000000,
         args: [
           asset.name,
           asset.desc,
@@ -118,7 +118,7 @@ async function testAgent() {
     let trs = {
       secret: agent.secret,
       type: 2,
-      fee: 10000000,
+      fee: 1000000000,
       args: [agent.name]
     }
     console.log('set agent name:', agent.name)
@@ -130,7 +130,7 @@ async function testAgent() {
     let trs = {
       secret: agent.secret,
       type: 7,
-      fee: 10000000,
+      fee: 10000000000,
       args: []
     }
     console.log('register agent:', agent.name)
@@ -172,7 +172,7 @@ async function testGateway() {
   let trs = {
     secret: config.proposals[0].account.secret,
     type: 300,
-    fee: 10000000,
+    fee: 1000000000,
     args: [
       config.proposals[0].title,
       config.proposals[0].desc,
@@ -200,7 +200,7 @@ async function testGateway() {
   trs = {
     secret: gDelegates[0].secret,
     type: 302,
-    fee: 10000000,
+    fee: 0,
     args: [proposalId]
   }
   console.log('activate proposal:', config.proposals[0].title)
@@ -210,7 +210,7 @@ async function testGateway() {
   trs = {
     secret: config.proposals[1].account.secret,
     type: 300,
-    fee: 10000000,
+    fee: 1000000000,
     args: [
       config.proposals[1].title,
       config.proposals[1].desc,
@@ -227,7 +227,7 @@ async function testGateway() {
     trs = {
       secret: validator.aschAccount.secret,
       type: 2,
-      fee: 10000000,
+      fee: 10000000000,
       args: [validator.name]
     }
     console.log('set name for gateway validator:', validator.aschAccount.address)
@@ -239,7 +239,7 @@ async function testGateway() {
     trs = {
       secret: validator.aschAccount.secret,
       type: 401,
-      fee: 10000000,
+      fee: 10000000000,
       args: [
         'bitcoin',
         validator.bitcoinAccount.publicKey,
@@ -266,7 +266,7 @@ async function testGateway() {
   trs = {
     secret: config.proposals[2].account.secret,
     type: 300,
-    fee: 10000000,
+    fee: 1000000000,
     args: [
       config.proposals[2].title,
       config.proposals[2].desc,
@@ -305,7 +305,7 @@ async function testGateway() {
     trs = {
       secret: ga.secret,
       type: 400,
-      fee: 10000000,
+      fee: 10000000000,
       args: ['bitcoin']
     }
     console.log('open gateway account for:', ga.address)
