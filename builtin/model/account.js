@@ -8,6 +8,7 @@ module.exports = {
     { name: 'secondPublicKey', type: 'String', length: 64 },
     { name: 'isLocked', type: 'Number', default: 0 },
     { name: 'isAgent', type: 'Number', default: 0 },
+    { name: 'isDelegate', type: 'Number', default: 0 },
     { name: 'lockHeight', type: 'BigInt' },
     { name: 'agent', type: 'String', length: 50 },
     { name: 'weight', type: 'BigInt' },

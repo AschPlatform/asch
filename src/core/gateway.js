@@ -73,7 +73,7 @@ Gateway.prototype.importAccounts = async function () {
 }
 
 Gateway.prototype.processDeposits = async function () {
-  const GATEWAY = 'BTC'
+  const GATEWAY = global.Config.gateway.name
   let cond = {
     gateway: GATEWAY,
     type: GatewayLogType.DEPOSIT

@@ -126,7 +126,7 @@ module.exports = {
     }
 
     if (sender.agent) {
-      let agentAccount = await app.model.Account.find({condition: {name: sender.agent}})
+      let agentAccount = await app.model.Account.find({ condition: { name: sender.agent } })
       if (!agentAccount) return 'Agent not found'
       let voteList = await app.model.Vote.findAll({ condition: { address: agentAccount.address } })
       if (voteList && voteList.length > 0 && amount > 0) {
@@ -235,9 +235,16 @@ module.exports = {
   registerDelegate: async function () {
     let senderId = this.trs.senderId
     app.sdb.lock('account@' + senderId)
-    let sender = app.sdb.get('Account', { address: senderId })
-    if (!sender || !sender.name) return 'Account has not a name'
-    if (sender.isAgent) return 'Agent cannot be delegate'
+    let sender
+    if (this.block.height > 0) {
+      sender = await app.model.Account.findOne({ condition: { address: senderId } })
+      if (!sender) return 'Account not found'
+      if (!sender.name) return 'Account has not a name'
+      if (sender.isDelegate) return 'Agent is already delegate'
+      if (sender.isAgent) return 'Agent cannot be delegate'
+    } else {
+      sender = app.sdb.get('Account', {address: senderId})
+    }
     app.sdb.create('Delegate', {
       address: senderId,
       name: sender.name,
@@ -249,6 +256,7 @@ module.exports = {
       fees: 0,
       rewards: 0
     })
+    app.sdb.update('Account', { isDelegate: 1 }, { address: senderId })
   },
 
   vote: async function (delegates) {

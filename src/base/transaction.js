@@ -378,8 +378,11 @@ Transaction.prototype.verify = function (trs, sender) {
     }
   } catch (e) {
     library.logger.error('verify signature excpetion', e)
-    return 'Invalid signature'
+    return 'Faied to verify signature'
   }
+}
+
+Transaction.prototype.calculateFee = function (trs) {
 }
 
 Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
