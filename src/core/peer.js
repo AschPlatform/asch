@@ -98,7 +98,7 @@ private.updatePeerList = function (cb) {
             version: {
               type: "string"
             },
-            dappId: {
+            chain: {
               type: "string",
               length: 64
             }
@@ -229,7 +229,7 @@ private.getByFilter = function (filter, cb) {
 Peer.prototype.list = function (options, cb) {
   options.limit = options.limit || 100;
 
-  app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.dappId ? " inner join peer_dapps pd on p.id = pd.peerId and pd.dappId = $dappId " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
+  app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.chain ? " inner join peer_chains pd on p.id = pd.peerId and pd.chain = $chain " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
     "ip": String,
     "port": Number,
     "state": Number,
@@ -240,10 +240,10 @@ Peer.prototype.list = function (options, cb) {
   });
 }
 
-Peer.prototype.listWithDApp = function (options, cb) {
+Peer.prototype.listWithChain = function (options, cb) {
   options.limit = options.limit || 100;
 
-  app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version, pd.dappId from peers p inner join peer_dapps pd on p.id = pd.peerId  where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
+  app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version, pd.chain from peers p inner join peer_chains pd on p.id = pd.peerId  where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
     "ip": String,
     "port": Number,
     "state": Number,
@@ -301,7 +301,7 @@ Peer.prototype.remove = function (pip, port, cb) {
   });
 }
 
-Peer.prototype.addDapp = function (config, cb) {
+Peer.prototype.addChain = function (config, cb) {
   app.db.rawQuery("SELECT id from peers where ip = $ip and port = $port", {
     ip: config.ip,
     port: config.port
@@ -314,8 +314,8 @@ Peer.prototype.addDapp = function (config, cb) {
     }
     var peerId = data[0].id;
 
-    app.db.rawQuery("INSERT OR IGNORE INTO peer_dapps (peerId, dappId) VALUES ($peerId, $dappId);", {
-      dappId: config.dappId,
+    app.db.rawQuery("INSERT OR IGNORE INTO peer_chains (peerId, chain) VALUES ($peerId, $chain);", {
+      chain: config.chain,
       peerId: peerId
     }, cb);
   });
@@ -326,7 +326,7 @@ Peer.prototype.update = function (peer, cb) {
     cb && cb();
     return;
   }
-  var dappId = peer.dappId;
+  var chain = peer.chain;
   var params = {
     ip: peer.ip,
     port: peer.port,
@@ -344,8 +344,8 @@ Peer.prototype.update = function (peer, cb) {
       app.db.rawQuery("UPDATE peers SET os = $os, version = $version" + (peer.state !== undefined ? ", state = CASE WHEN state = 0 THEN state ELSE $state END " : "") + " WHERE ip = $ip and port = $port;", params, cb);
     },
     function (cb) {
-      if (dappId) {
-        self.addDapp({ dappId: dappId, ip: peer.ip, port: peer.port }, cb);
+      if (chain) {
+        self.addChain({ chain: chain, ip: peer.ip, port: peer.port }, cb);
       } else {
         setImmediate(cb);
       }

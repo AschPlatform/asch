@@ -42,7 +42,7 @@ function main() {
     .option('-l, --log <level>', 'Log level')
     .option('-d, --daemon', 'Run asch node as daemon')
     .option('-e, --execute <path>', 'exe')
-    .option('--dapps <dir>', 'DApps directory')
+    .option('--chains <dir>', 'Chains directory')
     .option('--base <dir>', 'Base directory')
     .parse(process.argv);
 
@@ -60,9 +60,9 @@ function main() {
   }
   var appConfig = JSON.parse(fs.readFileSync(appConfigFile, 'utf8'));
 
-  if (!appConfig.dapp.masterpassword) {
+  if (!appConfig.chain.masterpassword) {
     var randomstring = require("randomstring");
-    appConfig.dapp.masterpassword = randomstring.generate({
+    appConfig.chain.masterpassword = randomstring.generate({
       length: 12,
       readable: true,
       charset: 'alphanumeric'
@@ -75,7 +75,7 @@ function main() {
   appConfig.buildVersion = 'development';
   appConfig.netVersion = process.env.NET_VERSION || 'localnet';
   appConfig.publicDir = path.join(baseDir, 'public', 'dist');
-  appConfig.dappsDir = program.dapps || path.join(baseDir, 'dapps')
+  appConfig.chainDir = program.chains || path.join(baseDir, 'chains')
 
   global.Config = appConfig;
 

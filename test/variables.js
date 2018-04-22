@@ -6,8 +6,6 @@ var async = require('async');
 var request = require('request');
 var asch = require('asch-js');
 
-var DappType = require('../src/utils/dapp-types.js');
-var DappCategory = require('../src/utils/dapp-category.js');
 var TxTypes = require('../src/utils/transaction-types.js');
 var addressHelper = require('../src/utils/address.js');
 
@@ -398,8 +396,6 @@ module.exports = {
   Daccount: Daccount,
   Eaccount: Eaccount,
   TxTypes: TxTypes,
-  DappType: DappType,
-  DappCategory: DappCategory,
   guestbookDapp: guestbookDapp,
   Fees: Fees,
   normalizer: normalizer,

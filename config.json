@@ -139,7 +139,7 @@
       "cert": "./ssl/server.crt"
     }
   },
-  "dapp": {
+  "chain": {
     "masterpassword": "ytfACAMegjrK",
     "params": {}
   },

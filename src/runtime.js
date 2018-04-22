@@ -284,12 +284,12 @@ module.exports = async function (options) {
   app.contractTypeMapping[102] = 'uia.issue'
   app.contractTypeMapping[103] = 'uia.transfer'
 
-  app.contractTypeMapping[200] = 'dapp.register'
-  app.contractTypeMapping[201] = 'dapp.replaceDelegate'
-  app.contractTypeMapping[202] = 'dapp.addDelegate'
-  app.contractTypeMapping[203] = 'dapp.removeDelegate'
-  app.contractTypeMapping[204] = 'dapp.deposit'
-  app.contractTypeMapping[205] = 'dapp.withdrawal'
+  app.contractTypeMapping[200] = 'chain.register'
+  app.contractTypeMapping[201] = 'chain.replaceDelegate'
+  app.contractTypeMapping[202] = 'chain.addDelegate'
+  app.contractTypeMapping[203] = 'chain.removeDelegate'
+  app.contractTypeMapping[204] = 'chain.deposit'
+  app.contractTypeMapping[205] = 'chain.withdrawal'
 
   app.contractTypeMapping[300] = 'proposal.propose'
   app.contractTypeMapping[301] = 'proposal.vote'

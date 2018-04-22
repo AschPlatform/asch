@@ -40,8 +40,8 @@ private.attachApi = function() {
     res.status(200).send('' + modules.blocks.getCirculatingSupply() / 100000000);
   });
 
-  router.get('/dapps/:id', function (req, res) {
-    res.render('dapps/' + req.params.id + '/index.html');
+  router.get('/chains/:id', function (req, res) {
+    res.render('chains/' + req.params.id + '/index.html');
   });
 
   router.use(function (req, res, next) {

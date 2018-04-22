@@ -22,8 +22,7 @@ var moduleNames = [
   'round',
   'multisignatures',
   'uia',
-  'dapps',
-  'sql',
+  'chains',
   'blocks',
   'gateway',
 ];
