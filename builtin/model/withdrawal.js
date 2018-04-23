@@ -6,6 +6,7 @@ module.exports = {
     { name: 'oid', type: 'String', length: 64, index: true },
     { name: 'currency', type: 'String', length: 22 },
     { name: 'amount', type: 'String', length: 50 },
+    { name: 'recipientId', type: 'String', length: 50 },
     { name: 'seq', type: 'Number', index: true }
   ]
 }

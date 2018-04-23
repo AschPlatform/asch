@@ -920,7 +920,7 @@ shared.setReady = function (req, cb) {
   cb(null, {});
 }
 
-shared.getWithdrawalLastTransaction = function (req, cb) {
+shared.getLastWithdrawal = function (req, cb) {
   (async function () {
     try {
       let withdrawals = await app.model.Withdrawal.findAll({
@@ -944,13 +944,13 @@ shared.getWithdrawalLastTransaction = function (req, cb) {
   })()
 }
 
-shared.getBalanceTransactions = function (req, cb) {
+shared.getDeposits = function (req, cb) {
   (async function () {
     try {
       let deposits = await app.model.Deposit.findAll({
         condition: {
           seq: {
-            $gt: req.body.lastSeq
+            $gt: req.body.seq
           },
           chain: req.chain
         },
@@ -966,8 +966,8 @@ shared.getBalanceTransactions = function (req, cb) {
 
 shared.submitOutTransfer = function (req, cb) {
   let trs = req.body
-  library.balancesSequence.add(function (cb) {
-    if (modules.transactions.hasUnconfirmedTransaction(trs)) {
+  library.sequence.add(function (cb) {
+    if (modules.transactions.hasUnconfirmed(trs)) {
       return cb('Already exists');
     }
     library.logger.log('Submit outtransfer transaction ' + trs.id + ' from chain ' + req.chain);

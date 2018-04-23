@@ -52,35 +52,30 @@ module.exports = {
       if (!sender || !sender.xas || sender.xas < amount) return 'Insufficient balance'
 
       app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
-      app.balances.increment(chain.tid, currency, amount)
+      app.balances.increase(chain.tid, currency, amount)
     }
-    app.sdb.create('ChainDeposit', {
-      chainName,
+    app.sdb.create('Deposit', {
+      tid: this.trs.id,
+      senderId: this.trs.senderId,
+      chain: chainName,
       currency,
-      amount
+      amount,
+      seq: Number(app.autoID.increment('deposit_seq'))
     })
   },
 
-  withdrawal: async function (chainName, recipient, amount, wid, signatures) {
+  withdrawal: async function (chainName, recipient, currency, amount, oid, seq) {
     let chain = await app.model.Chain.findOne({ condition: { name: chainName } })
     if (!chain) return 'Chain not found'
 
-    let exists = await app.model.ChainWithdrawal.exists({ name: chain, wid: wid })
+    let exists = await app.model.Withdrawal.exists({ chain: chainName, oid: oid })
     if (exists) return 'Chain withdrawal already processed'
 
-    let buffer = new ByteBuffer(1, true)
-    buffer.writeString('chain.withdrawal')
-    buffer.writeString(chain)
-    buffer.writeString(recipient)
-    buffer.writeString(amount)
-    buffer.writeString(wid)
-    buffer.flip()
-
-    let validators = await app.model.ChainDelegate.findAll({ condition: { chain } })
+    let validators = await app.model.ChainDelegate.findAll({ condition: { chain: chainName } })
     if (!validators || !validators.length) return 'Chain delegates not found'
 
-    let validatorPublicKeys = validators.map((v) => v.delegate)
-    app.checkMultiSignature(buffer.toBuffer(), validatorPublicKeys, signatures, chain.unlockNumber)
+    //let validatorPublicKeys = validators.map((v) => v.delegate)
+    //app.checkMultiSignature(buffer.toBuffer(), validatorPublicKeys, signatures, chain.unlockNumber)
 
     let balance = app.balances.get(chain.tid, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
@@ -89,34 +84,25 @@ module.exports = {
     if (currency !== 'XAS') {
       app.balances.transfer(currency, amount, chain.tid, recipient)
     } else {
-      if (app.isAddress(recipient)) {
-        amount = Number(amount)
-        let account = app.sdb.get('Account', { address: recipient })
-        if (!account) {
-          app.sdb.create('Account', {
-            address: recipient,
-            xas: amount
-          })
-        } else {
-          app.sdb.increment('Account', { xas: amount }, { address: recipient })
-        }
-      } else if (app.isName(recipient)) {
-        amount = Number(amount)
-        let account = app.sdb.get('Account', { name: recipient })
-        if (!account) return 'Recipient has not a name'
-        app.sdb.increment('Account', { xas: amount }, { address: account.address })
-      } else if (app.isChainId(recipient)) {
-        app.balances.increase(recipient, currency, amount)
+      amount = Number(amount)
+      let account = app.sdb.get('Account', { address: recipient })
+      if (!account) {
+        app.sdb.create('Account', {
+          address: recipient,
+          xas: amount
+        })
       } else {
-        return 'Invalid recipient'
+        app.sdb.increment('Account', { xas: amount }, { address: recipient })
       }
     }
-    app.sdb.create('ChainWithdrawal', {
-      chain,
+    app.sdb.create('Withdrawal', {
+      tid: this.trs.id,
+      chain: chain.name,
       currency,
       amount,
-      recipient,
-      wid
+      recipientId: recipient,
+      oid,
+      seq
     })
   }
 }

@@ -90,8 +90,8 @@ private.attachApi = function () {
         version: headers.version
       };
 
-      if (req.body && req.body.dappId) {
-        peer.dappId = req.body.dappId;
+      if (req.body && req.body.chain) {
+        peer.chain = req.body.chain;
       }
 
       if (peer.port && peer.port > 0 && peer.port <= 65535) {
@@ -112,7 +112,7 @@ private.attachApi = function () {
 
   router.get('/list', function (req, res) {
     res.set(private.headers);
-    modules.peer.listWithDApp({ limit: 100 }, function (err, peers) {
+    modules.peer.listWithChain({ limit: 100 }, function (err, peers) {
       return res.status(200).json({ peers: !err ? peers : [] });
     })
   });
@@ -459,12 +459,12 @@ private.attachApi = function () {
     });
   });
 
-  router.post("/dapp/message", function (req, res) {
+  router.post("/chain/message", function (req, res) {
     res.set(private.headers);
 
     try {
-      if (!req.body.dappId) {
-        return res.status(200).json({ success: false, error: "missed dappId" });
+      if (!req.body.chain) {
+        return res.status(200).json({ success: false, error: "missed chain" });
       }
       if (!req.body.timestamp || !req.body.hash) {
         return res.status(200).json({
@@ -485,7 +485,7 @@ private.attachApi = function () {
     }
 
     private.messages[req.body.hash] = true;
-    modules.dapps.message(req.body.dappId, req.body.body, function (err, body) {
+    modules.chains.message(req.body.chain, req.body.body, function (err, body) {
       if (!err && body.error) {
         err = body.error;
       }
@@ -499,12 +499,12 @@ private.attachApi = function () {
     });
   });
 
-  router.post("/dapp/request", function (req, res) {
+  router.post("/chain/request", function (req, res) {
     res.set(private.headers);
 
     try {
-      if (!req.body.dappId) {
-        return res.status(200).json({ success: false, error: "missed dappId" });
+      if (!req.body.chain) {
+        return res.status(200).json({ success: false, error: "missed chain" });
       }
       if (!req.body.timestamp || !req.body.hash) {
         return res.status(200).json({
@@ -520,7 +520,7 @@ private.attachApi = function () {
       return res.status(200).json({ success: false, error: e.toString() });
     }
 
-    modules.dapps.request(req.body.dappId, req.body.body.method, req.body.body.path, { query: req.body.body.query }, function (err, body) {
+    modules.chains.request(req.body.chain, req.body.body.method, req.body.body.path, { query: req.body.body.query }, function (err, body) {
       if (!err && body.error) {
         err = body.error;
       }
@@ -532,18 +532,18 @@ private.attachApi = function () {
     });
   });
 
-  router.post("/dappReady", function (req, res) {
+  router.post("/chainReady", function (req, res) {
     res.set(private.headers);
 
     library.scheme.validate(req.body, {
       type: "object",
       properties: {
-        dappId: {
+        chain: {
           type: "string",
           length: 64
         }
       },
-      required: ["dappId"]
+      required: ["chain"]
     }, function (err) {
       if (err) {
         return res.status(200).json({ success: false, error: "Schema validation error" });
@@ -796,12 +796,12 @@ Transport.prototype.onNewPropose = function (propose, broadcast) {
   }
 }
 
-Transport.prototype.onDappReady = function (dappId, broadcast) {
+Transport.prototype.onChainReady = function (chain, broadcast) {
   if (broadcast) {
     var data = {
-      dappId: dappId
+      chain: chain 
     }
-    self.broadcast({}, { api: '/dappReady', data: data, method: "POST" })
+    self.broadcast({}, { api: '/chainReady', data: data, method: "POST" })
   }
 }
 
@@ -815,7 +815,7 @@ Transport.prototype.sendVotes = function (votes, address) {
 
 Transport.prototype.onMessage = function (msg, broadcast) {
   if (broadcast) {
-    self.broadcast({ dappId: msg.dappId }, { api: '/dapp/message', data: msg, method: "POST" });
+    self.broadcast({ chain: msg.chain }, { api: '/chain/message', data: msg, method: "POST" });
   }
 }
 
@@ -829,7 +829,7 @@ shared.message = function (msg, cb) {
   msg.timestamp = (new Date()).getTime();
   msg.hash = private.hashsum(msg.body, msg.timestamp);
 
-  self.broadcast({ dappId: msg.dappId }, { api: '/dapp/message', data: msg, method: "POST" });
+  self.broadcast({ chain: msg.chain }, { api: '/chain/message', data: msg, method: "POST" });
 
   cb(null, {});
 }
@@ -840,12 +840,12 @@ shared.request = function (msg, cb) {
 
   if (msg.body.peer) {
     self.getFromPeer(msg.body.peer, {
-      api: '/dapp/request',
+      api: '/chain/request',
       data: msg,
       method: "POST"
     }, cb);
   } else {
-    self.getFromRandomPeer({ dappId: msg.dappId }, { api: '/dapp/request', data: msg, method: "POST" }, cb);
+    self.getFromRandomPeer({ chain: msg.chain }, { api: '/chain/request', data: msg, method: "POST" }, cb);
   }
 }
 

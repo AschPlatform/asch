@@ -648,6 +648,7 @@ Transactions.prototype.receiveTransactions = function (transactions, cb) {
         await self.processUnconfirmedTransactionAsync(transactions[i])
       }
     } catch (e) {
+      library.logger.error('reeiveTransactions error', e)
       return cb(e)
     }
     cb(null, transactions)
@@ -674,13 +675,17 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
     throw new Error('Transaction already processed')
   }
 
+  // FIXME
   if (!transaction.senderId) {
     transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
   }
   let height = modules.blocks.getLastBlock().height
 
-  let sender = await app.model.Account.findOne({ condition: { address: transaction.senderId } })
-  if (!sender) throw new Error('Sender account not found')
+  let sender = {}
+  if (transaction.senderPublicKey !== '00') {
+    sender = await app.model.Account.findOne({ condition: { address: transaction.senderId } })
+    if (!sender) throw new Error('Sender account not found')
+  }
 
   if (height > 0) {
     let error = library.base.transaction.verify(transaction, sender)
@@ -691,7 +696,6 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
   if (exists) {
     throw new Error('Transaction already confirmed')
   }
-
 
   let block = {
     height: height,
