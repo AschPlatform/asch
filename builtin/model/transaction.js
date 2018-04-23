@@ -5,7 +5,7 @@ module.exports = {
     { name: 'type', type: 'Number', not_null: true, index: true },
     { name: 'timestamp', type: 'Number', not_null: true, index: true },
     { name: 'senderId', type: 'String', length: 50, not_null: true, index: true },
-    { name: 'senderPublicKey', type: 'String', length: 64, not_null: true },
+    { name: 'senderPublicKey', type: 'String', length: 64 },
     { name: 'fee', type: 'BigInt', not_null: true },
     { name: 'signatures', type: 'Text', not_null: true },
     { name: 'secondSignature', type: 'String', length: 128 },

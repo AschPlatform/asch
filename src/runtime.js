@@ -247,12 +247,16 @@ module.exports = async function (options) {
   app.isCurrentBookkeeper = function (addr) {
     return modules.delegates.getBookkeeperAddresses().has(addr)
   }
-
+  
   app.sdb = new SmartDB(app)
   app.balances = new BalanceManager(app.sdb)
   app.autoID = new AutoIncrement(app.sdb)
   app.feePool = new FeePool(app.sdb)
   app.events = new EventEmitter()
+
+  app.util = {
+    address: require('./utils/address.js')
+  }
 
   let builtinModelDir = path.join(rootDir, 'builtin')
   await loadModels(path.join(builtinModelDir, 'model'))

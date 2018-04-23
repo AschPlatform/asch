@@ -1,13 +1,18 @@
 module.exports = {
   register: async function (name, desc, link, icon, delegates, unlockNumber) {
-    let exists = await app.model.Chain.exists({ name: name })
-    if (exists) return 'Chain name already registered'
+    let tid = this.trs.id
+    let chainAddress = app.util.address.generateChainAddress(tid)
+
+    let exists = await app.model.Account.exists({ name: name })
+    if (exists) return 'Name already registered'
 
     exists = await app.model.Chain.exists({ link: link })
     if (exists) return 'Chain link already registered'
 
+    app.sdb.create('Account', { address: chainAddress, name: name, xas: 0 })
     app.sdb.create('Chain', {
-      tid: this.trs.id,
+      tid: tid,
+      address: chainAddress,
       name,
       desc,
       link,
@@ -45,14 +50,14 @@ module.exports = {
       let balance = app.balances.get(senderId, currency)
       if (balance.lt(amount)) return 'Insufficient balance'
 
-      app.balances.transfer(currency, amount, senderId, chain.tid)
+      app.balances.transfer(currency, amount, senderId, chain.address)
     } else {
       amount = Number(amount)
       let sender = app.sdb.get('Account', { address: senderId })
       if (!sender || !sender.xas || sender.xas < amount) return 'Insufficient balance'
 
       app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
-      app.balances.increase(chain.tid, currency, amount)
+      app.sdb.increment('Account', { xas: 1 * amount }, { address: chain.address })
     }
     app.sdb.create('Deposit', {
       tid: this.trs.id,
@@ -74,17 +79,28 @@ module.exports = {
     let validators = await app.model.ChainDelegate.findAll({ condition: { chain: chainName } })
     if (!validators || !validators.length) return 'Chain delegates not found'
 
-    //let validatorPublicKeys = validators.map((v) => v.delegate)
-    //app.checkMultiSignature(buffer.toBuffer(), validatorPublicKeys, signatures, chain.unlockNumber)
+    let validatorPublicKeySet = new Set
+    for (let v of validators) {
+      validatorPublicKeySet.add(v.delegate)
+    }
+    let validSignatureNumber = 0
+    for (let s of this.trs.signatures) {
+      let k = s.substr(0, 64)
+      if (validatorPublicKeySet.has(k)) {
+        validSignatureNumber++
+      }
+    }
+    if (validSignatureNumber < chain.unlockNumber) return 'Signature not enough'
 
-    let balance = app.balances.get(chain.tid, currency)
-    if (balance.lt(amount)) return 'Insufficient balance'
-
-    app.balances.decrease(chain.tid, currency, amount)
     if (currency !== 'XAS') {
-      app.balances.transfer(currency, amount, chain.tid, recipient)
+      let balance = app.balances.get(chain.address, currency)
+      if (balance.lt(amount)) return 'Insufficient balance'
+      app.balances.transfer(currency, amount, chain.address, recipient)
     } else {
       amount = Number(amount)
+      let sender = app.sdb.get('Account', { address: chain.address })
+      if (!sender || !sender.xas || sender.xas < amount) return 'Insufficient balance'
+      app.sdb.increment('Account', { xas: -1 * amount }, { address: chain.address })
       let account = app.sdb.get('Account', { address: recipient })
       if (!account) {
         app.sdb.create('Account', {

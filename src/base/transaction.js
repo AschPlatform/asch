@@ -5,6 +5,7 @@ var ed = require('../utils/ed.js');
 var bignum = require('bignumber');
 var constants = require('../utils/constants.js');
 var slots = require('../utils/slots.js');
+var addressHelper = require('../utils/address.js')
 var feeCalculators = require('../utils/calculate-fee.js')
 
 var genesisblock = null;
@@ -34,7 +35,7 @@ Transaction.prototype.create = function (data) {
     args: data.args,
     fee: data.fee
   };
-
+  trs.senderId = addressHelper.generateBase58CheckAddress(trs.senderPublicKey)
   trs.signatures = [this.sign(data.keypair, trs)];
 
   if (data.secondKeypair) {
@@ -88,27 +89,23 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
   bb.writeInt(trs.type);
   bb.writeInt(trs.timestamp);
   bb.writeLong(trs.fee);
-
-  var senderPublicKeyBuffer = new Buffer(trs.senderPublicKey, 'hex');
-  for (var i = 0; i < senderPublicKeyBuffer.length; i++) {
-    bb.writeByte(senderPublicKeyBuffer[i]);
-  }
+  bb.writeString(trs.senderId)
 
   if (trs.message) bb.writeString(trs.message);
   if (trs.args) {
     let args
-		if (typeof trs.args === 'string') {
-			args = trs.args
+    if (typeof trs.args === 'string') {
+      args = trs.args
     } else if (Array.isArray(trs.args)) {
       args = JSON.stringify(trs.args)
     } else {
       throw new Error('Invalid transaction args')
     }
-	  bb.writeString(args)
+    bb.writeString(args)
   }
 
   // FIXME
-  if (!skipSignature && trs.signatures && trs.senderPublicKey !== '00') {
+  if (!skipSignature && trs.signatures) {
     for (let signature of trs.signatures) {
       var signatureBuffer = new Buffer(signature, 'hex');
       for (var i = 0; i < signatureBuffer.length; i++) {
@@ -357,6 +354,29 @@ Transaction.prototype.verify_ = function (trs, sender, requester, cb) { //inheri
 
 }
 
+Transaction.prototype.verifyNormalSignature = function (trs, sender) {
+  if (!this.verifySignature(trs, trs.senderPublicKey, trs.signatures[0])) {
+    return 'Invalid signature'
+  }
+  if (sender.secondPublicKey) {
+    if (!this.verifySignature(trs, sender.secondPublicKey, trs.secondSignature)) {
+      return 'Invalid second signature'
+    }
+  }
+}
+
+Transaction.prototype.verifyMultiSignature = function (trs, sender) {
+  let bytes = this.getBytes(trs, true, true)
+  for (let ks of trs.signatures) {
+    if (ks.length !== 192) return 'Invalid key-signature format'
+    let key = ks.substr(0, 64)
+    let signature = ks.substr(64, 192)
+    if (!this.verifyBytes(bytes, key, signature)) {
+      return 'Invalid multi signatures'
+    }
+  }
+}
+
 Transaction.prototype.verify = function (trs, sender) {
   if (slots.getSlotNumber(trs.timestamp) > slots.getSlotNumber()) {
     return "Invalid transaction timestamp"
@@ -375,15 +395,19 @@ Transaction.prototype.verify = function (trs, sender) {
   if (trs.id !== id) {
     return 'Invalid transaction id'
   }
-  // FIXME
-  if (trs.senderPublicKey === '00') return
+
+  let ADDRESS_TYPE = app.util.address.TYPE
+  let addrType = app.util.address.getType(trs.senderId)
 
   try {
-    var valid = this.verifySignature(trs, trs.senderPublicKey, trs.signatures[0])
-    if (!valid) return 'Invalid signature'
-    if (sender.secondPublicKey) {
-      valid = this.verifySignature(trs, sender.secondPublicKey, trs.secondSignature)
-      if (!valid) return 'Invalid second signature'
+    if (addrType === ADDRESS_TYPE.NORMAL) {
+      return this.verifyNormalSignature(trs, sender)
+    } else if (addrType === ADDRESS_TYPE.CHAIN) {
+      return this.verifyMultiSignature(trs, sender)
+    } else if (addrType === ADDRESS_TYPE.MULTISIG) {
+      return this.verifyMultiSignature(trs, sender)
+    } else if (addrType === ADDRESS_TYPE.NONE) {
+      return 'Unknow address type'
     }
   } catch (e) {
     library.logger.error('verify signature excpetion', e)
@@ -468,8 +492,7 @@ Transaction.prototype.apply0 = function (trs, block, sender, cb) {
 }
 
 Transaction.prototype.apply = async function (transaction, block) {
-  // FIXME
-  if (block.height !== 0 && transaction.senderPublicKey !== '00') {
+  if (block.height !== 0) {
     let sender = app.sdb.get('Account', { address: transaction.senderId })
     if (!sender) throw new Error('Sender account not found')
     if (!sender.xas || sender.xas < transaction.fee) throw new Error('Insufficient balance')

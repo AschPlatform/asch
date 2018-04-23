@@ -665,11 +665,10 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
   if (!transaction) {
     return cb("No transaction to process!");
   }
+  library.logger.debug('process unconfirmed trs', transaction)
   if (!transaction.id) {
     transaction.id = library.base.transaction.getId(transaction);
   }
-
-  library.logger.debug('process unconfirmed trs', transaction)
 
   if (self.pool.has(transaction.id)) {
     throw new Error('Transaction already processed')
@@ -681,11 +680,8 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
   }
   let height = modules.blocks.getLastBlock().height
 
-  let sender = {}
-  if (transaction.senderPublicKey !== '00') {
-    sender = await app.model.Account.findOne({ condition: { address: transaction.senderId } })
-    if (!sender) throw new Error('Sender account not found')
-  }
+  let sender = await app.model.Account.findOne({ condition: { address: transaction.senderId } })
+  if (!sender) throw new Error('Sender account not found')
 
   if (height > 0) {
     let error = library.base.transaction.verify(transaction, sender)

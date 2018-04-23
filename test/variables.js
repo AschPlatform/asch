@@ -57,10 +57,11 @@ var Eaccount = {
 };
 
 // Account info for genesis account - Needed for voting, registrations and Tx
+
 var Gaccount = {
-  'address': 'AAo2hcZjS2wBsdWXKao7cUkXnGvJ5sSYGT',
-  'publicKey': 'd47104221013bb968a740a549abeb14e2846d8640914cbbbef9a9edb1e440252',
-  'password': 'below picnic cycle benefit park fall artist transfer hammer record hen twice',
+  'address': 'APSu9NhiCTtvRGx1EpkeKNubiApiBWMf7T',
+  'publicKey': '56a2ef5646bbfcc0747101864d53da961363a20aec8344f6cb078a0fc47030e8',
+  'password': 'token exhibit rich scare arch devote trash scout element label room master',
   'balance': 10000000000000000
 };
 
