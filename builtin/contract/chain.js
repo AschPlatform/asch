@@ -3,13 +3,13 @@ module.exports = {
     let tid = this.trs.id
     let chainAddress = app.util.address.generateChainAddress(tid)
 
-    let exists = await app.model.Account.exists({ name: name })
-    if (exists) return 'Name already registered'
+    let exists = await app.model.Chain.exists({ name: name })
+    if (exists) return 'Chain name already registered'
 
     exists = await app.model.Chain.exists({ link: link })
     if (exists) return 'Chain link already registered'
 
-    app.sdb.create('Account', { address: chainAddress, name: name, xas: 0 })
+    app.sdb.create('Account', { address: chainAddress, xas: 0 })
     app.sdb.create('Chain', {
       tid: tid,
       address: chainAddress,
