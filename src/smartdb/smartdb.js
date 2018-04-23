@@ -458,24 +458,7 @@ class SmartDB {
 
   del(model, cond) {
     if (!model || !cond) throw new Error('Invalid params')
-    let c = deconstruct(cond)
     this.trsLogs.push(['Del', model, cond])
-
-    let invertedList = this.indexes.get(model)
-    if (!invertedList) return
-
-    let indexKey = c.join(':')
-    let item = invertedList.get(indexKey)
-    if (!item) return
-    this.trsLogs[this.trsLogs.length - 1].push(item)
-
-    let schema = this.indexSchema.get(model)
-    for (let k in item) {
-      if (schema.indexes.indexOf(k) != -1) {
-        indexKey = k + ':' + item[k]
-        invertedList.delete(indexKey)
-      }
-    }
   }
 
   undoDel(model, cond, oldItem) {
@@ -494,12 +477,9 @@ class SmartDB {
   buildDel(model, cond) {
     let table = fromModelToTable(model)
     return jsonSql.build({
-      type: 'update',
+      type: 'remove',
       table: table,
       condition: cond,
-      modifier: {
-        _deleted_: 1
-      }
     })
   }
 
