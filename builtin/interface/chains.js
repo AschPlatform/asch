@@ -7,7 +7,7 @@ module.exports = function (router) {
     return { count, chains }
   })
   router.get('/:name', async function (req) {
-    let chain = app.model.Chain.findOne({
+    let chain = await app.model.Chain.findOne({
       condition: {
         name: req.params.name
       }

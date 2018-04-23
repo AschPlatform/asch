@@ -141,7 +141,7 @@ private.attachApi = function () {
         return res.json({ success: true, chain: [] });
       }
 
-      private.getByIds(files, function (err, chains) {
+      private.getByNames(files, function (err, chains) {
         if (err) {
           library.logger.error(err);
           return res.json({ success: false, error: "Can't get installed chains, see logs" });
@@ -340,7 +340,6 @@ private.attachApi = function () {
   });
 }
 
-// Private methods
 private.get = function (name, cb) {
   (async function () {
     try {
@@ -354,6 +353,24 @@ private.get = function (name, cb) {
     } catch (e) {
       library.logger.error(e)
       cb('Failed to get chain: ' + e)
+    }
+  })()
+}
+
+private.getByNames = function (names, cb) {
+  (async function () {
+    try {
+      let chains = await app.model.Chain.findAll({
+        condition: {
+          name: {
+            $in: names
+          }
+        }
+      })
+      cb(null, chains)
+    } catch (e) {
+      library.logger.error(e)
+      cb('Server error')
     }
   })()
 }
