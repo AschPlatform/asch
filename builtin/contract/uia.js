@@ -16,6 +16,7 @@ module.exports = {
   },
 
   registerAsset: async function (symbol, desc, maximum, precision) {
+    if (!/^[A-Z]{3,6}$/.test(symbol)) return 'Invalid symbol'
     let issuer = await app.model.Issuer.findOne({ condition: { issuerId: this.trs.senderId } })
     if (!issuer) return 'Account is not an issuer'
 
