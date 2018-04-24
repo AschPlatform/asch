@@ -97,6 +97,7 @@ module.exports = {
 
     const MIN_LOCK_HEIGHT = 8640 * 30
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
+    if (sender.isAgent) return 'Agent account cannot lock'
     if (sender.xas - 100000000 < amount) return 'Insufficient balance'
     if (sender.isLocked) {
       if (height !== 0 && height < (Math.max(this.block.height, sender.lockHeight) + MIN_LOCK_HEIGHT)) {
@@ -125,21 +126,10 @@ module.exports = {
       app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
     }
 
-    if (sender.agent) {
-      let agentAccount = await app.model.Account.find({ condition: { name: sender.agent } })
-      if (!agentAccount) return 'Agent not found'
-      let voteList = await app.model.Vote.findAll({ condition: { address: agentAccount.address } })
-      if (voteList && voteList.length > 0 && amount > 0) {
-        for (let voteItem of voteList) {
-          app.sdb.increment('Delegate', { votes: amount }, { name: voteItem.delegate })
-        }
-      }
-    } else {
-      let voteList = await app.model.Vote.findAll({ condition: { address: senderId } })
-      if (voteList && voteList.length > 0 && amount > 0) {
-        for (let voteItem of voteList) {
-          app.sdb.increment('Delegate', { votes: amount }, { name: voteItem.delegate })
-        }
+    let voteList = await app.model.Vote.findAll({ condition: { address: senderId } })
+    if (voteList && voteList.length > 0 && amount > 0) {
+      for (let voteItem of voteList) {
+        app.sdb.increment('Delegate', { votes: amount }, { name: voteItem.delegate })
       }
     }
   },
@@ -156,11 +146,7 @@ module.exports = {
     if (!sender.isLocked) return 'Account is not locked'
     if (this.block.height <= sender.lockHeight) return 'Account cannot unlock'
 
-    if (sender.agent) {
-      await doCancelAgent(sender)
-    } else {
-      await doCancelVote(sender)
-    }
+    await doCancelVote(sender)
     app.sdb.update('Account', { isLocked: 0 }, { address: senderId })
     app.sdb.update('Account', { lockHeight: 0 }, { address: senderId })
     app.sdb.increment('Account', { xas: account.weight }, { address: senderId })
@@ -177,6 +163,7 @@ module.exports = {
     let account = await app.model.Account.findOne({ condition: { address: senderId } })
     if (account.isAgent) return 'Agent already registered'
     if (!account.name) return 'Agent must have a name'
+    if (account.isLocked) return 'Locked account cannot be agent'
 
     let voteExist = await app.model.Vote.exists({ address: senderId })
     if (voteExist) return 'Account already voted'
@@ -240,10 +227,10 @@ module.exports = {
       sender = await app.model.Account.findOne({ condition: { address: senderId } })
       if (!sender) return 'Account not found'
       if (!sender.name) return 'Account has not a name'
-      if (sender.isDelegate) return 'Agent is already delegate'
-      if (sender.isAgent) return 'Agent cannot be delegate'
+      if (sender.isDelegate) return 'Account is already delegate'
+      if (sender.isAgent) return 'Account cannot be delegate'
     } else {
-      sender = app.sdb.get('Account', {address: senderId})
+      sender = app.sdb.get('Account', { address: senderId })
     }
     app.sdb.create('Delegate', {
       address: senderId,

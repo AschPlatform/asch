@@ -60,7 +60,8 @@ module.exports = {
       content: JSON.stringify(content),
       activated: 0,
       height: this.block.height,
-      endHeight: endHeight
+      endHeight: endHeight,
+      senderId: this.trs.senderId
     })
   },
 

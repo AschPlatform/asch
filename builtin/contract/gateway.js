@@ -104,6 +104,10 @@ module.exports = {
     })
   },
 
+  submitWithdrawalSignature: async function () {
+
+  },
+
   confirmWithdrawal: async function (tid, oid, signatures) {
     let withdrawal = await app.model.GatewayWithdrawal.findOne({ condition: { tid: tid } })
     if (!withdrawal) return 'Gateway withdrawal not exists'
