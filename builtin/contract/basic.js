@@ -26,9 +26,9 @@ function isUniq(arr) {
 }
 
 module.exports = {
-  transfer: async function (amount, recipientId) {
+  transfer: async function (amount, recipient) {
     // FIXME validate recipient is valid address
-    if (!recipientId) return 'Invalid recipient'
+    if (!recipient) return 'Invalid recipient'
     // app.validate('amount', amount)
 
     // FIXME validate permission
@@ -41,19 +41,29 @@ module.exports = {
     if ((!sender || !sender.xas || sender.xas < amount) && this.block.height > 0) return 'Insufficient balance'
 
     app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
-    let recipient = app.sdb.get('Account', { address: recipientId })
-    if (!recipient) {
+
+    let recipientAddress
+    if (app.util.address.isNormalAddress(recipient)) {
+      recipientAddress = recipient
+    } else {
+      let recipientAccount = await app.model.Account.findOne({ condition: { name: recipient } })
+      if (!recipientAccount) return 'Recipient name not exist'
+      recipientAddress = recipientAccount.address
+    }
+
+    let condition = { address: recipientAddress }
+    if (!app.sdb.get('Account', condition)) {
       app.sdb.create('Account', {
-        address: recipientId,
+        address: recipientAddress,
         xas: amount
       })
     } else {
-      app.sdb.increment('Account', { xas: amount }, { address: recipientId })
+      app.sdb.increment('Account', { xas: amount }, condition)
     }
     app.sdb.create('Transfer', {
       tid: this.trs.id,
       senderId: senderId,
-      recipientId: recipientId,
+      recipientId: recipientAddress,
       currency: 'XAS',
       amount: amount,
       timestamp: this.trs.timestamp

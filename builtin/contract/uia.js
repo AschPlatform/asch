@@ -51,16 +51,25 @@ module.exports = {
     app.balances.increase(this.trs.senderId, name, amount)
   },
 
-  transfer: async function (currency, amount, recipientId) {
+  transfer: async function (currency, amount, recipient) {
     let senderId = this.trs.senderId
     let balance = app.balances.get(senderId, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
 
-    app.balances.transfer(currency, amount, senderId, recipientId)
+    let recipientAddress
+    if (app.util.address.isNormalAddress(recipient)) {
+      recipientAddress = recipient
+    } else {
+      let recipientAccount = await app.model.Account.findOne({ condition: { name: recipient } })
+      if (!recipientAccount) return 'Recipient name not exist'
+      recipientAddress = recipientAccount.address
+    }
+
+    app.balances.transfer(currency, amount, senderId, recipientAddress)
     app.sdb.create('Transfer', {
       tid: this.trs.id,
       senderId: senderId,
-      recipientId: recipientId,
+      recipientId: recipientAddress,
       currency: currency,
       amount: amount,
       timestamp: this.trs.timestamp
