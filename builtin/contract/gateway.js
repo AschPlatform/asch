@@ -9,7 +9,9 @@ module.exports = {
     let gw = await app.model.Gateway.findOne({ condition: { name: gateway } })
     if (!gw) return 'Gateway not found'
     let outPublicKeys = validators.map(function (v) { return v.outPublicKey })
-    let account = app.createMultisigAddress(gateway, Math.floor(outPublicKeys.length / 2) + 1, outPublicKeys)
+    let unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
+    outPublicKeys.push(this.senderPublicKey)
+    let account = app.createMultisigAddress(gateway, unlockNumber, outPublicKeys)
     let seq = Number(app.autoID.increment('gate_account_seq'))
     app.sdb.create('GatewayAccount', {
       address: this.trs.senderId,
@@ -44,7 +46,6 @@ module.exports = {
         address: this.trs.senderId,
       }
     })
-    // FIXME get gateway from currency
     if (!validator || !validator.elected || validator.gateway !== currency) return 'Permission denied'
 
     let depositKey = 'gateway.deposit@' + [this.trs.senderId, currency, oid].join(':')
@@ -89,47 +90,69 @@ module.exports = {
 
   },
 
-  withdrawal: async function (address, currency, amount) {
+  withdrawal: async function (address, gateway, currency, amount) {
     let balance = app.balances.get(this.trs.senderId, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
 
     app.balances.decrease(this.trs.senderId, currency, amount)
+    let seq = Number(app.autoID.increment('gate_withdrawal_seq'))
     app.sdb.create('GatewayWithdrawal', {
       tid: this.trs.id,
+      seq: seq,
+      gateway: gateway,
       currency: currency,
       amount: amount,
-      address: address,
+      senderId: this.trs.senderId,
+      recipientId: address,
       processed: 0,
+      outTransaction: '',
       oid: ''
     })
   },
 
-  submitWithdrawalSignature: async function () {
+  submitWithdrawalTransaction: async function (wid, ot, ots) {
+    app.sdb.lock('gateway.submitWithdrawalTransaction@' + this.trs.senderId)
+    let withdrawal = await app.model.GatewayWithdrawal.findOne({ condition: { tid: wid } })
+    if (!withdrawal) return 'Gateway withdrawal not exist'
+    if (withdrawal.outTransaction) return 'Out transaction already exist'
 
+    let validator = await app.model.GatewayMember.findOne({
+      condition: {
+        address: this.trs.senderId,
+      }
+    })
+    if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
+
+    app.sdb.update('GatewayWithdrawal', { outTransaction: ot }, { tid: wid })
+    app.sdb.create('GatewayWithdrawalPrep', {
+      wid: wid,
+      signer: this.trs.senderId,
+      signature: ots
+    })
   },
 
-  confirmWithdrawal: async function (tid, oid, signatures) {
-    let withdrawal = await app.model.GatewayWithdrawal.findOne({ condition: { tid: tid } })
-    if (!withdrawal) return 'Gateway withdrawal not exists'
+  submitWithdrawalSignature: async function (wid, signature) {
+    app.sdb.lock('gateway.submitWithdrawalSignature@' + this.trs.senderId)
+    let withdrawal = await app.model.GatewayWithdrawal.findOne({ condition: { tid: wid } })
+    if (!withdrawal) return 'Gateway withdrawal not exist'
+    if (!withdrawal.outTransaction) return 'Out transaction not exist'
+    // TODO validate signature
 
-    if (withdrawal.processed) return 'Gateway withdrawal already processed'
+    let validator = await app.model.GatewayMember.findOne({
+      condition: {
+        address: this.trs.senderId,
+      }
+    })
+    if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
+    
+    if (await app.model.GatewayWithdrawalPrep.exists({wid: wid, signer: this.trs.senderId})) {
+      return 'Duplicated withdrawal signature'
+    }
 
-    let validators = await app.model.GatewayMember.findAll({ condition: { gateway: withdrawal.currency, elected: 1 } })
-    if (!validators) return 'Gateway validators not found'
-
-    let validatorPublicKeys = validators.map(function (v) { return v.inPublicKey })
-
-    let buffer = new ByteBuffer(1, true)
-    buffer.writeString('gateway.withdrawal')
-    buffer.writeString(withdrawal.address)
-    buffer.writeString(withdrawal.currency)
-    buffer.writeString(withdrawal.amount)
-    buffer.writeString(oid)
-    buffer.flip()
-
-    app.checkMultiSignature(buffer.toBuffer(), validatorPublicKeys, signatures, validators.length / 2)
-
-    app.sdb.update('GatewayWithdrawal', { processed: 1 }, { tid: tid })
-    app.sdb.update('GatewayWithdrawal', { oid: oid }, { tid: tid })
+    app.sdb.create('GatewayWithdrawalPrep', {
+      wid: wid,
+      signer: this.trs.senderId,
+      signature: signature
+    })
   },
 }
