@@ -60,7 +60,6 @@ restart() {
 }
 
 ismainnet(){
-  magic=$(grep magic $PROG_DIR/config.json | awk -F: '{print $2}' | cut -d \" -f2)
   net="testnet"
   echo "net is $net"
 }
