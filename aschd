@@ -5,7 +5,7 @@ readonly PID_FILE=$PROG_DIR/asch.pid
 readonly IPS=("https://www.asch.io/downloads-International" "http://125.32.110.138:9999/downloads-Chinese" "http://39.107.52.143-Chinese")
 
 function read_port() {
-  echo $(cat $PROG_DIR/config.json |grep '"port"'|head -n 1| awk -F "[:,]" '{print$2}'|tr -d ' ')
+  echo $(cat $PROG_DIR/config.json | grep '"port"' | head -n 1 | awk -F "[:,]" '{print$2}' | tr -d ' ')
 }
 
 function is_running() {
@@ -81,8 +81,8 @@ function chosenode(){
 
   ip=$(echo ${IPS[$num]} | awk -F- '{print $1}')
   var=$(curl -sL -m 10 "$ip/$meta_file")
-  Name=$(echo $var| awk '{print $1}')
-  Md5=$(echo $var| awk '{print $2}')
+  Name=$(echo $var | awk '{print $1}')
+  Md5=$(echo $var | awk '{print $2}')
 }
 
 function rebuild() {
@@ -105,12 +105,12 @@ function rebuild() {
     fi
     if [ $cnt -eq 0 ];then
       status[$i]="Y"
-      Name=$(echo $var| awk '{print $1}')
-      Md5=$(echo $var| awk '{print $2}')
-      Date=$(echo $var| awk '{print $3}')
-      Height=$(echo $var| awk '{print $4}')
-      Size=$(echo $var| awk '{print $5}')
-      DB=$(echo $var| awk '{print $6}')
+      Name=$(echo $var | awk '{print $1}')
+      Md5=$(echo $var | awk '{print $2}')
+      Date=$(echo $var | awk '{print $3}')
+      Height=$(echo $var | awk '{print $4}')
+      Size=$(echo $var | awk '{print $5}')
+      DB=$(echo $var | awk '{print $6}')
       echo $i. $ip [$memo]  "Height:"$Height "Date:"$Date "Size:"$Size
     else
       status[$i]="N"
@@ -178,11 +178,11 @@ function upgrade() {
     fi
     if [ $cnt -eq 0 ];then
       status[$i]="Y"
-      Name=$(echo $var| awk '{print $1}')
-      Md5=$(echo $var| awk '{print $2}')
-      Date=$(echo $var| awk '{print $3}')
-      Version=$(echo $var| awk '{print $4}')
-      Size=$(echo $var| awk '{print $5}')
+      Name=$(echo $var | awk '{print $1}')
+      Md5=$(echo $var | awk '{print $2}')
+      Date=$(echo $var | awk '{print $3}')
+      Version=$(echo $var | awk '{print $4}')
+      Size=$(echo $var | awk '{print $5}')
 
       echo $i. $ip [$memo] "Version:"$Version "Date:"$Date  "Size:"$Size
     else
@@ -207,7 +207,7 @@ function upgrade() {
 
   echo "Extracting new package ..."
   tar zxf tmp/$Name -C tmp/
-  extractedDir=$(find tmp -maxdepth 1 -type d | grep asch |head -n 1)
+  extractedDir=$(find tmp -maxdepth 1 -type d | grep asch | head -n 1)
   currentVersion=$(./aschd version)
   chmod u+x $extractedDir/aschd
   ./aschd stop
