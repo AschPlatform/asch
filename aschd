@@ -4,15 +4,15 @@ readonly PROG_DIR=$(pwd)
 readonly PID_FILE=$PROG_DIR/asch.pid
 readonly IPS=("https://www.asch.io/downloads-International" "http://125.32.110.138:9999/downloads-Chinese" "http://39.107.52.143-Chinese")
 
-function read_port() {
+read_port() {
   echo $(cat $PROG_DIR/config.json | grep '"port"' | head -n 1 | awk -F "[:,]" '{print$2}' | tr -d ' ')
 }
 
-function is_running() {
+is_running() {
   test -f $PID_FILE && ps -p $(cat $PID_FILE) > /dev/null
 }
 
-function status() {
+status() {
   if is_running; then
     echo "Asch server is running"
   else
@@ -20,7 +20,7 @@ function status() {
   fi
 }
 
-function start() {
+start() {
   if is_running; then
     echo "Asch server is already started"
   else
@@ -29,7 +29,7 @@ function start() {
   fi
 }
 
-function stop() {
+stop() {
   local pid
   if test -f $PID_FILE; then
     pid=$(cat $PID_FILE)
@@ -54,18 +54,18 @@ function stop() {
   rm -f $PID_FILE
 }
 
-function restart() {
+restart() {
   stop
   start
 }
 
-function ismainnet(){
+ismainnet(){
   magic=$(cat $PROG_DIR/config.json | grep magic | awk -F: '{print $2}' | cut -d \" -f2)
   net="testnet"
   echo "net is $net"
 }
 
-function chosenode(){
+chosenode(){
   read -p "Please input your choice [default 0] : "  num
   num=${num:-0}
 
@@ -85,7 +85,7 @@ function chosenode(){
   Md5=$(echo $var | awk '{print $2}')
 }
 
-function rebuild() {
+rebuild() {
   ismainnet
   meta_file=metadata_rebuild_$net.txt
 
@@ -139,25 +139,25 @@ function rebuild() {
   ./aschd start
 }
 
-function version() {
+version() {
   node $PROG_DIR/app.js --version
 }
 
-function check_os() {
+check_os() {
   os_num=$(cat /etc/os-release | grep '\"Ubuntu\"'  | wc -l)
   if [ $os_num -ne 1 ];then
     echo "Linux is not Ubuntu, please configure manually!" && exit 1
   fi
 }
 
-function configure() {
+configure() {
   check_os
   sudo bash $PROG_DIR/init/install_deps.sh
   sudo bash $PROG_DIR/init/config_ntp.sh
   sudo bash $PROG_DIR/init/config_monitor.sh
 }
 
-function upgrade() {
+upgrade() {
   ismainnet
   meta_file=metadata_upgrade_$net.txt
 
@@ -225,13 +225,13 @@ function upgrade() {
   ./aschd start
 }
 
-function enable() {
+enable() {
   local secret="$@"
   local port=$(read_port)
   curl -k -H "Content-Type: application/json" -X POST -d '{"secret":"'"$secret"'"}' localhost:$port/api/delegates/forging/enable
 }
 
-function main() {
+main() {
   export PATH=$PROG_DIR/bin:$PATH
   local cmdType=$(type -t $1)
   if [ $cmdType == "function" ]; then
