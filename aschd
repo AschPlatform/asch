@@ -25,7 +25,7 @@ start() {
     echo "Asch server is already started"
   else
     rm -f $PROG_DIR/asch.pid
-    node $PROG_DIR/app.js --base $PROG_DIR --daemon $@
+    node $PROG_DIR/app.js --base $PROG_DIR --daemon "$@"
   fi
 }
 
@@ -235,10 +235,10 @@ main() {
   export PATH=$PROG_DIR/bin:$PATH
   local cmdType=$(type -t $1)
   if [ $cmdType == "function" ]; then
-    eval $@
+    eval "$@"
   else
     echo "Command not supported"
   fi
 }
 
-main $@
+main "$@"
