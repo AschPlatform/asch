@@ -5,7 +5,7 @@ readonly PID_FILE=$PROG_DIR/asch.pid
 readonly IPS=("https://www.asch.io/downloads-International" "http://125.32.110.138:9999/downloads-Chinese" "http://39.107.52.143-Chinese")
 
 read_port() {
-  echo $(cat $PROG_DIR/config.json | grep '"port"' | head -n 1 | awk -F "[:,]" '{print$2}' | tr -d ' ')
+   grep '"port"' $PROG_DIR/config.json | head -n 1 | awk -F "[:,]" '{print$2}' | tr -d ' '
 }
 
 is_running() {
@@ -60,7 +60,7 @@ restart() {
 }
 
 ismainnet(){
-  magic=$(cat $PROG_DIR/config.json | grep magic | awk -F: '{print $2}' | cut -d \" -f2)
+  magic=$(grep magic $PROG_DIR/config.json | awk -F: '{print $2}' | cut -d \" -f2)
   net="testnet"
   echo "net is $net"
 }
@@ -144,7 +144,7 @@ version() {
 }
 
 check_os() {
-  os_num=$(cat /etc/os-release | grep '\"Ubuntu\"'  | wc -l)
+  os_num=$(grep '\"Ubuntu\"' /etc/os-release | wc -l)
   if [ $os_num -ne 1 ];then
     echo "Linux is not Ubuntu, please configure manually!" && exit 1
   fi
