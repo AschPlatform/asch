@@ -369,7 +369,7 @@ class SmartDB {
     let item = invertedList.get(token)
     if (!item) return
 
-    if (!oldValue) throw new Error('Old value should exists')
+    if (oldValue === undefined) throw new Error('Old value should exists')
     item[m[0]] = oldValue
   }
 

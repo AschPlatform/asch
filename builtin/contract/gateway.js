@@ -10,7 +10,7 @@ module.exports = {
     if (!gw) return 'Gateway not found'
     let outPublicKeys = validators.map(function (v) { return v.outPublicKey })
     let unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
-    outPublicKeys.push(this.senderPublicKey)
+    outPublicKeys.push('02' + this.trs.senderPublicKey)
     let account = app.createMultisigAddress(gateway, unlockNumber, outPublicKeys)
     let seq = Number(app.autoID.increment('gate_account_seq'))
     app.sdb.create('GatewayAccount', {
@@ -39,14 +39,14 @@ module.exports = {
     })
   },
 
-  deposit: async function (address, currency, amount, oid) {
+  deposit: async function (gateway, address, currency, amount, oid) {
     if (! await app.model.GatewayCurrency.exists({ symbol: currency })) return 'Currency not supported'
     let validator = await app.model.GatewayMember.findOne({
       condition: {
         address: this.trs.senderId,
       }
     })
-    if (!validator || !validator.elected || validator.gateway !== currency) return 'Permission denied'
+    if (!validator || !validator.elected || validator.gateway !== gateway) return 'Permission denied'
 
     let depositKey = 'gateway.deposit@' + [this.trs.senderId, currency, oid].join(':')
     app.sdb.lock(depositKey)

@@ -63,10 +63,10 @@ module.exports = async function (router) {
     let ga = await app.model.GatewayAccount.findOne({ condition: { gateway: gc.gateway, address: req.params.address } })
     if (!ga) return 'Gateway account not found'
     let condition = {
-      currency: currency,
+      currency: req.params.currency,
       address: ga.outAddress
     }
-    let count = await app.model.GatewayDeosit.count({ condition })
+    let count = await app.model.GatewayDeposit.count(condition)
     let deposits = []
     if (count > 0) {
       deposits = await app.model.GatewayDeposit.findAll({ condition, limit, offset })
