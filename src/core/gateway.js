@@ -12,6 +12,7 @@ const GatewayLogType = {
   IMPORT_ADDRESS: 1,
   DEPOSIT: 2,
   WITHDRAWAL: 3,
+  SEND_WITHDRAWAL: 4
 }
 
 function loopAsyncFunc(asyncFunc, interval) {
@@ -32,9 +33,9 @@ async function getGatewayAccountByOutAddress(addresses, coldAccount) {
   for (let i of addresses) {
     let account
     if (coldAccount.address === i) {
-      account = coldAccount.redeemScript
+      account = coldAccount.accountExtrsInfo.redeemScript
     } else {
-      let gatewayAccount = await app.model.GatewayAccount.findOne({condition: {outAddress: i}})
+      let gatewayAccount = await app.model.GatewayAccount.findOne({ condition: { outAddress: i } })
       if (!gatewayAccount) throw new Error('Input address have no gateway account')
       account = JSON.parse(gatewayAccount.attachment).redeemScript
     }
@@ -85,7 +86,7 @@ Gateway.prototype.importAccounts = async function () {
       await PIFY(gatewayLib.bitcoin.importAddress)(a.outAddress)
     }
     lastSeq = gatewayAccounts[len - 1].seq
-    await app.model.GatewayLog.update({ seq: lastSeq }, { gateway: GATEWAY, type: GatewayLogType.IMPORT_ADDRESS})
+    await app.model.GatewayLog.update({ seq: lastSeq }, { gateway: GATEWAY, type: GatewayLogType.IMPORT_ADDRESS })
   }
 }
 
@@ -97,7 +98,7 @@ Gateway.prototype.processDeposits = async function () {
     type: GatewayLogType.DEPOSIT
   }
   let lastDepositLog = await app.model.GatewayLog.findOne({ condition: cond })
-  library.logger.debug('find gateway deposit log', lastDepositLog)
+  library.logger.debug('find DEPOSIT log', lastDepositLog)
   let lastSeq = 0
   if (lastDepositLog) {
     lastSeq = lastDepositLog.seq
@@ -106,13 +107,13 @@ Gateway.prototype.processDeposits = async function () {
       gateway: GATEWAY, type: GatewayLogType.DEPOSIT, seq: 0
     })
   }
-  let ret = await PIFY(gatewayLib.bitcoin.getTransactionsFromBlockHeight)(lastSeq)
+  let ret = await PIFY(gatewayLib.bitcoin.getTransactionsFromBlockHeight)(lastSeq - 1)
   if (!ret || !ret.transactions) {
     library.logger.error('Failed to get gateway transactions')
     return
   }
   let outTransactions = ret.transactions.filter((ot) => {
-    return ot.category === 'receive'
+    return ot.category === 'receive' && ot.confirmation
   }).sort((l, r) => {
     return l.height - r.height
   })
@@ -120,9 +121,9 @@ Gateway.prototype.processDeposits = async function () {
   let len = outTransactions.length
   if (len > 0) {
     for (let ot of outTransactions) {
-      let isAccountOpened = await app.model.GatewayAccount.exists({outAddress: ot.address})
+      let isAccountOpened = await app.model.GatewayAccount.exists({ outAddress: ot.address })
       if (!isAccountOpened) {
-        library.logger.warn('unknow address', {address: ot.address, gateway: GATEWAY, t: ot})
+        library.logger.warn('unknow address', { address: ot.address, gateway: GATEWAY, t: ot })
         continue
       }
       try {
@@ -132,7 +133,7 @@ Gateway.prototype.processDeposits = async function () {
           fee: 10000000,
           args: [GATEWAY, ot.address, CURRENCY, String(ot.amount * 100000000), ot.txid]
         })
-        library.logger.info('submit gateway transaction', {address: ot.address, amount: ot.amount, gateway: GATEWAY})
+        library.logger.info('submit gateway transaction', { address: ot.address, amount: ot.amount, gateway: GATEWAY })
       } catch (e) {
         library.logger.warn('Failed to submit gateway deposit', e)
       }
@@ -155,20 +156,20 @@ Gateway.prototype.processWithdrawals = async function () {
     library.logger.error('Validators not found')
     return
   }
-  library.logger.debug('--------------------get gateway validators', validators)
+  library.logger.debug('find gateway validators', validators)
 
-  let outPublicKeys = validators.map((v) => v.outPublicKey ).sort((l, r) => l - r)
+  let outPublicKeys = validators.map((v) => v.outPublicKey).sort((l, r) => l - r)
   let unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
-  let multiAccount = app.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys)
+  let multiAccount = app.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
   library.logger.debug('gateway validators cold account', multiAccount)
 
   let cond = {
     gateway: GATEWAY,
-    type: GatewayLogType.WITHDRAWAL 
+    type: GatewayLogType.WITHDRAWAL
   }
   let lastSeq = 0
   let lastWithdrawalLog = await app.model.GatewayLog.findOne({ condition: cond })
-  library.logger.debug('find gateway withdrawal log', lastWithdrawalLog)
+  library.logger.debug('find WITHDRAWAL log', lastWithdrawalLog)
   if (lastWithdrawalLog) {
     lastSeq = lastWithdrawalLog.seq
   } else {
@@ -177,9 +178,9 @@ Gateway.prototype.processWithdrawals = async function () {
   let withdrawals = await app.model.GatewayWithdrawal.findAll({
     condition: {
       gateway: GATEWAY,
-      seq: { $gt: lastSeq - PAGE_SIZE}
+      seq: { $gt: lastSeq }
     },
-    limit: PAGE_SIZE * 2
+    limit: PAGE_SIZE
   })
   library.logger.debug('get gateway withdrawals', withdrawals)
   if (!withdrawals || !withdrawals.length) {
@@ -211,7 +212,7 @@ Gateway.prototype.processWithdrawals = async function () {
       } else {
         let ot = JSON.parse(w.outTransaction)
         let inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
-        let ots = gatewaylib.bitcoin.signTransaction(ot, account, inputAccountInfo)
+        let ots = gatewayLib.bitcoin.signTransaction(ot, account, inputAccountInfo)
         contractParams = {
           type: 405,
           secret: global.Config.gateway.secret,
@@ -227,10 +228,87 @@ Gateway.prototype.processWithdrawals = async function () {
       await PIFY(modules.transactions.addTransactionUnsigned)(contractParams)
     } catch (e) {
       library.logger.error('process withdrawal contract error', e)
+      // if failed to invoke 404, should continue to invoke 405
+      if (contractParams.type === 404) {
+        return
+      }
     }
   }
   let len = withdrawals.length
-  await app.model.GatewayLog.update({ seq: withdrawals[len-1].seq }, cond)
+  await app.model.GatewayLog.update({ seq: withdrawals[len - 1].seq }, cond)
+}
+
+Gateway.prototype.sendWithdrawals = async function () {
+  let GATEWAY = global.Config.gateway.name
+  const PAGE_SIZE = 25
+  let logCond = {
+    gateway: GATEWAY,
+    type: GatewayLogType.SEND_WITHDRAWAL
+  }
+  let lastSeq = 0
+  let lastLog = await app.model.GatewayLog.findOne({ condition: logCond })
+  library.logger.debug('find ======SEND_WITHDRAWAL====== log', lastLog)
+  if (lastLog) {
+    lastSeq = lastLog.seq
+  } else {
+    await app.model.GatewayLog.create({ gateway: GATEWAY, type: GatewayLogType.SEND_WITHDRAWAL, seq: 0 })
+  }
+  let withdrawals = await app.model.GatewayWithdrawal.findAll({
+    condition: {
+      gateway: GATEWAY,
+      seq: { $gt: lastSeq }
+    },
+    limit: PAGE_SIZE
+  })
+  library.logger.debug('get gateway withdrawals', withdrawals)
+  if (!withdrawals || !withdrawals.length) {
+    return
+  }
+  let validators = await app.model.GatewayMember.findAll({
+    condition: {
+      gateway: GATEWAY,
+      elected: 1
+    }
+  })
+  if (!validators) {
+    library.logger.error('Validators not found')
+    return
+  }
+  library.logger.debug('find gateway validators', validators)
+
+  let outPublicKeys = validators.map((v) => v.outPublicKey).sort((l, r) => l - r)
+  let unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
+  let multiAccount = app.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
+  library.logger.debug('gateway validators cold account', multiAccount)
+
+  for (let w of withdrawals) {
+    if (!w.outTransaction) {
+      library.logger.debug('out transaction not created')
+      return
+    }
+    let preps = await app.model.GatewayWithdrawalPrep.findAll({ condition: { wid: w.tid } })
+    if (preps.length < unlockNumber) {
+      library.logger.debug('not enough signature')
+      return
+    }
+    let ot = JSON.parse(w.outTransaction)
+    let ots = []
+    for (let i = 0; i < unlockNumber; i++) {
+      ots.push(JSON.parse(preps[i].signature))
+    }
+    let inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
+    library.logger.debug('before build transaction')
+    let finalTransaction = gatewayLib.bitcoin.buildTransaction(ot, ots, inputAccountInfo)
+    try {
+      library.logger.debug('before send raw tarnsaction', finalTransaction)
+      let response = await PIFY(gatewayLib.bitcoin.sendRawTransaction)(finalTransaction)
+      library.logger.debug('after send raw transaction', response)
+    } catch (e) {
+      library.logger.error('send raw transaction error', e)
+    }
+  }
+  let len = withdrawals.length
+  await app.model.GatewayLog.update({ seq: withdrawals[len - 1].seq }, logCond)
 }
 
 Gateway.prototype.onBlockchainReady = function () {
@@ -238,6 +316,9 @@ Gateway.prototype.onBlockchainReady = function () {
     loopAsyncFunc(self.importAccounts.bind(self), 10 * 1000)
     loopAsyncFunc(self.processDeposits.bind(self), 10 * 1000)
     loopAsyncFunc(self.processWithdrawals.bind(self), 10 * 1000)
+    if (global.Config.gateway.sendWithdrawal) {
+      loopAsyncFunc(self.sendWithdrawals.bind(self), 10 * 1000)
+    }
   }
 }
 
