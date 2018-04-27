@@ -75,18 +75,19 @@ module.exports = async function (router) {
   })
 
   router.get('/withdrawals/:address/:currency', async function (req) {
-    return {
-      count: 1,
-      withdrawals: [
-        {
-          tid: '2bfc06d4984a2e8d1a0d55513c29fadcd8dc535de753e4cd584dec38ae91686c',
-          currency: 'BTC',
-          amount: '10.5',
-          address: 'mvGfGo9YfNiTJK6MDnfwDwr5jTdWR1ovdC',
-          processed: 1,
-          oid: '02195dfafc389e465efe8e5bfc2ad4d5aa7b248eb81700b76fa25d657536aafdfe',
-        }
-      ]
+    let offset = req.query.offset ? Number(req.query.offset) : 0
+    let limit = req.query.limit ? Number(req.query.limit) : 20
+    let gc = await app.model.GatewayCurrency.findOne({ condition: { symbol: req.params.currency } })
+    if (!gc) return 'Gateway currency not found'
+    let condition = {
+      currency: req.params.currency,
+      senderId: req.params.address
     }
+    let count = await app.model.GatewayWithdrawal.count(condition)
+    let withdrawals = []
+    if (count > 0) {
+      withdrawals = await app.model.GatewayWithdrawal.findAll({ condition, limit, offset })
+    }
+    return { count, withdrawals }
   })
 }
