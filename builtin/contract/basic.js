@@ -29,7 +29,7 @@ module.exports = {
   transfer: async function (amount, recipient) {
     // FIXME validate recipient is valid address
     if (!recipient) return 'Invalid recipient'
-    // app.validate('amount', amount)
+    app.validate('amount', String(amount))
 
     // FIXME validate permission
     // FIXME validate currency

@@ -15,14 +15,30 @@ module.exports = function (router) {
         currencyMap.set(b.currency, 1)
       }
       let assetNameList = Array.from(currencyMap.keys())
-      let assets = await app.model.Asset.findAll({
-        condition: {
-          name: { $in: Array.from(currencyMap.keys()) }
+      let uiaNameList = assetNameList.filter((n) => n.indexOf('.') !== -1)
+      let gaNameList = assetNameList.filter((n) => n.indexOf('.') === -1)
+
+      if (uiaNameList && uiaNameList.length) {
+        let assets = await app.model.Asset.findAll({
+          condition: {
+            name: { $in: uiaNameList }
+          }
+        })
+        for (let a of assets) {
+          currencyMap.set(a.name, a)
         }
-      })
-      for (let a of assets) {
-        currencyMap.set(a.name, a)
       }
+      if (gaNameList && gaNameList.length) {
+        let gatewayAssets = await app.model.GatewayCurrency.findAll({
+          condition: {
+            symbol: { $in: gaNameList }
+          }
+        })
+        for (let a of gatewayAssets) {
+          currencyMap.set(a.symbol, a)
+        }
+      }
+
       for (let b of balances) {
         b.asset = currencyMap.get(b.currency)
       }
@@ -31,13 +47,19 @@ module.exports = function (router) {
   })
 
   router.get('/:address/:currency', async function (req) {
+    let currency = req.params.currency
     let condition = {
       address: req.params.address,
-      currency: req.params.currency
+      currency: currency
     }
     let balance = await app.model.Balance.findOne({ condition })
     if (!balance) return 'No balance'
-    balance.asset = await app.model.Asset.findOne({ condition: { name: balance.currency } })
+    if (currency.indexOf('.') !== -1) {
+      balance.asset = await app.model.Asset.findOne({ condition: { name: balance.currency } })
+    } else {
+      balance.asset = await app.model.GatewayCurrency.findOne({ condition: { symbol: balance.currency } })
+    }
+    
     return { balance: balance }
   })
 }
