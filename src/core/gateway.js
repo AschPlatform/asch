@@ -113,7 +113,7 @@ Gateway.prototype.processDeposits = async function () {
     return
   }
   let outTransactions = ret.transactions.filter((ot) => {
-    return ot.category === 'receive' && ot.confirmation > 0
+    return ot.category === 'receive' && ot.confirmation >= 0
   }).sort((l, r) => {
     return l.height - r.height
   })
