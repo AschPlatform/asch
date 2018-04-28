@@ -74,7 +74,8 @@ module.exports = {
   },
 
   setName: async function (name) {
-    if (!name || name.length > 20) return 'Invalid name'
+    let reg = /^[a-z0-9_]{2,20}$/
+    if (!reg.test(name)) return 'Invalid name'
 
     app.sdb.lock('basic.setName@' + this.trs.senderId)
 
