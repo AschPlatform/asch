@@ -201,7 +201,7 @@ module.exports = {
 
     let agentAccount = await app.model.Account.findOne({ condition: { name: agent } })
     if (!agentAccount) return 'Agent account not found'
-    if (!agentAccount.isAgent) return 'Not and agent'
+    if (!agentAccount.isAgent) return 'Not an agent'
 
     let voteExist = await app.model.Vote.exists({ address: senderId })
     if (voteExist) return 'Account already voted'
@@ -266,6 +266,7 @@ module.exports = {
 
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
+    if (sender.agent) return 'Account already set agent'
 
     delegates = delegates.split(',')
     if (!delegates || !delegates.length) return 'Invalid delegates'
@@ -303,6 +304,7 @@ module.exports = {
 
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
+    if (sender.agent) return 'Account already set agent'
 
     delegates = delegates.split(',')
     if (!delegates || !delegates.length) return 'Invalid delegates'
