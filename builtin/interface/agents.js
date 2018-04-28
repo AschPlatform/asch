@@ -20,7 +20,14 @@ module.exports = function (router) {
     if (count > 0) {
       clienteles = await app.model.AgentClientele.findAll({ condition, limit, offset })
       let addressList = clienteles.map((c) => c.clientele)
-      clienteles = await app.model.Account.findAll({ condition: { address: { $in: addressList } } })
+      let accounts = await app.model.Account.findAll({ condition: { address: { $in: addressList } } })
+      let accountMap = new Map
+      for (let a of accounts) {
+        accountMap.set(a.address, a)
+      }
+      for (let c of clienteles) {
+        c.account = accountMap.get(c.clientele)
+      }
     }
     return { count: count, clienteles: clienteles }
   })

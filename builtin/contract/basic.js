@@ -217,7 +217,8 @@ module.exports = {
     }
     app.sdb.create('AgentClientele', {
       agent: agent,
-      clientele: senderId
+      clientele: senderId,
+      tid: this.trs.id
     })
   },
 
