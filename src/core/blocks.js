@@ -1463,7 +1463,7 @@ Blocks.prototype.onReceiveVotes = function (votes) {
           library.logger.log('Forged new block id: ' + id +
             ' height: ' + height +
             ' round: ' + modules.round.calc(height) +
-            ' slot: ' + slots.getSlotNumber(block.timestamp) + 
+            ' slot: ' + slots.getSlotNumber(block.timestamp) +
             ' reward: ' + private.blockStatus.calcReward(block.height));
         } catch (e) {
           library.logger.error("Failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
@@ -1646,16 +1646,24 @@ shared.getBlocks = function (req, cb) {
 
     (async function () {
       try {
-        let count = await app.model.Block.count()
+        let offset = query.offset ? Number(query.offset) : 0
+        let limit = query.limit ? Number(query.limit) : 20
+        let condition = {
+          height: {
+            $gte: offset
+          }
+        }
+        if (query.generatorPublicKey) {
+          condition.delegate = query.generatorPublicKey
+        }
+        let count = await app.model.Block.count(condition)
         if (!count) throw new Error('Failed to get blocks count')
         let blocks = await app.model.Block.findAll({
-          condition: {
-            height: { $gte: query.offset || 0 }
-          },
+          condition: condition,
           sort: {
             height: 1
           },
-          limit: query.limit || 20
+          limit: limit
         })
         if (!blocks || !blocks.length) return cb('No blocks')
         return cb(null, { count, blocks })
