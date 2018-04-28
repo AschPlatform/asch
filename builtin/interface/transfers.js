@@ -1,3 +1,32 @@
+async function getAssetMap(assetNames) {
+  let assetMap = new Map
+  let assetNameList = Array.from(assetNames.keys())
+  let uiaNameList = assetNameList.filter((n) => n.indexOf('.') !== -1)
+  let gaNameList = assetNameList.filter((n) => n.indexOf('.') === -1)
+
+  if (uiaNameList && uiaNameList.length) {
+    let assets = await app.model.Asset.findAll({
+      condition: {
+        name: { $in: uiaNameList }
+      }
+    })
+    for (let a of assets) {
+      assetMap.set(a.name, a)
+    }
+  }
+  if (gaNameList && gaNameList.length) {
+    let gatewayAssets = await app.model.GatewayCurrency.findAll({
+      condition: {
+        symbol: { $in: gaNameList }
+      }
+    })
+    for (let a of gatewayAssets) {
+      assetMap.set(a.symbol, a)
+    }
+  }
+  return assetMap
+}
+
 module.exports = function (router) {
   router.get('/', async (req) => {
     let ownerId = req.query.ownerId
@@ -23,14 +52,15 @@ module.exports = function (router) {
     } else {
       condition1 = condition2 = null
     }
+    let count = 0
+    let transfers
     if (condition1 === null || condition1 === condition2) {
-      let count = await app.model.Transfer.count(condition1)
-      let transfers = await app.model.Transfer.findAll({
+      count = await app.model.Transfer.count(condition1)
+      transfers = await app.model.Transfer.findAll({
         condition: condition1,
         limit: limit,
         offset: offset,
       })
-      return { count: count, transfers: transfers }
     } else {
       let count1 = await app.model.Transfer.count(condition1)
       let count2 = await app.model.Transfer.count(condition2)
@@ -46,10 +76,25 @@ module.exports = function (router) {
         offset: offset,
         sort: { timestamp: -1 }
       })
-      let transfers = t1.concat(t2).sort((l, r) => {
+      transfers = t1.concat(t2).sort((l, r) => {
         return r.t_timestamp - l.t_timestamp
       }).slice(0, limit)
-      return { count: count1 + count2, transfers: transfers }
+      count = count1 + count2
     }
+    if (count > 0) {
+      let assetNames = new Set
+      for (let t of transfers) {
+        if (t.currency !== 'XAS') {
+          assetNames.add(t.currency)
+        }
+      }
+      let assetMap = await getAssetMap(assetNames)
+      for (let t of transfers) {
+        if (t.currency !== 'XAS') {
+          t.asset = assetMap.get(t.currency)
+        }
+      }
+    }
+    return { count, transfers }
   })
 }

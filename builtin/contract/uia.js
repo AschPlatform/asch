@@ -57,9 +57,11 @@ module.exports = {
     if (balance.lt(amount)) return 'Insufficient balance'
 
     let recipientAddress
+    let recipientName = ''
     if (app.util.address.isNormalAddress(recipient)) {
       recipientAddress = recipient
     } else {
+      recipientName = recipient
       let recipientAccount = await app.model.Account.findOne({ condition: { name: recipient } })
       if (!recipientAccount) return 'Recipient name not exist'
       recipientAddress = recipientAccount.address
@@ -70,6 +72,7 @@ module.exports = {
       tid: this.trs.id,
       senderId: senderId,
       recipientId: recipientAddress,
+      recipientName: recipientName,
       currency: currency,
       amount: amount,
       timestamp: this.trs.timestamp
