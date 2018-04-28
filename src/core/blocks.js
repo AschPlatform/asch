@@ -1648,10 +1648,18 @@ shared.getBlocks = function (req, cb) {
       try {
         let offset = query.offset ? Number(query.offset) : 0
         let limit = query.limit ? Number(query.limit) : 20
-        let condition = {
-          height: {
+        let condition = {}
+        let sort = {}
+        if (query.orderBy === 'height:desc') {
+          condition.height = {
+            $lte: private.lastBlock.height - offset
+          }
+          sort = { height: -1 }
+        } else {
+          condition.height = {
             $gte: offset
           }
+          sort = { height: 1 }
         }
         if (query.generatorPublicKey) {
           condition.delegate = query.generatorPublicKey
@@ -1660,10 +1668,8 @@ shared.getBlocks = function (req, cb) {
         if (!count) throw new Error('Failed to get blocks count')
         let blocks = await app.model.Block.findAll({
           condition: condition,
-          sort: {
-            height: 1
-          },
-          limit: limit
+          limit: limit,
+          sort: sort
         })
         if (!blocks || !blocks.length) return cb('No blocks')
         return cb(null, { count, blocks })
