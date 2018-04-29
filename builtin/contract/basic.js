@@ -70,7 +70,7 @@ module.exports = {
     let reg = /^[a-z0-9_]{2,20}$/
     if (!reg.test(name)) return 'Invalid name'
 
-    app.sdb.lock('basic.setName@' + this.trs.senderId)
+    app.sdb.lock('basic.account@' + senderId)
 
     if (this.block.height === 0) {
       app.sdb.create('Account', {
@@ -100,7 +100,7 @@ module.exports = {
     height = Number(height)
     amount = Number(amount)
     let senderId = this.trs.senderId
-    app.sdb.lock('basic.lock@' + senderId)
+    app.sdb.lock('basic.account@' + senderId)
 
     const MIN_LOCK_HEIGHT = 8640 * 30
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
@@ -147,7 +147,7 @@ module.exports = {
     // 如果已經設置代理，查詢代理人所投受託人，減去代理權重
     // 自動取消代理
     let senderId = this.trs.senderId
-    app.sdb.lock('basic.unlock@' + senderId)
+    app.sdb.lock('basic.account@' + senderId)
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
     if (!sender) return 'Account not found'
     if (!sender.isLocked) return 'Account is not locked'
@@ -166,7 +166,7 @@ module.exports = {
 
   registerAgent: async function () {
     let senderId = this.trs.senderId
-    app.sdb.lock('basic.registerAgent@' + senderId)
+    app.sdb.lock('basic.account@' + senderId)
     let account = await app.model.Account.findOne({ condition: { address: senderId } })
     if (account.isAgent) return 'Agent already registered'
     if (!account.name) return 'Agent must have a name'
@@ -187,7 +187,7 @@ module.exports = {
     // 有投票記錄的無法設置agent
     // 將自身權重增加到agent的weight，給agent所投人增加權重
     let senderId = this.trs.senderId
-    app.sdb.lock('basic.setAgent@' + senderId)
+    app.sdb.lock('basic.account@' + senderId)
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
     if (sender.isAgent) return 'Agent cannot set agent'
     if (sender.agent) return 'Agent already set'
@@ -220,7 +220,7 @@ module.exports = {
     // 減去agent的weight
     // 獲得agent所投的受託人列表，減去相應權重
     let senderId = this.trs.senderId
-    app.sdb.lock('basic.cancelAgent@' + senderId)
+    app.sdb.lock('basic.account@' + senderId)
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
     if (!sender.agent) return 'Agent is not set'
 
@@ -239,7 +239,7 @@ module.exports = {
 
   registerDelegate: async function () {
     let senderId = this.trs.senderId
-    app.sdb.lock('account@' + senderId)
+    app.sdb.lock('basic.account@' + senderId)
     let sender
     if (this.block.height > 0) {
       sender = await app.model.Account.findOne({ condition: { address: senderId } })
