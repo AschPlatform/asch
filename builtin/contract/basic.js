@@ -225,12 +225,15 @@ module.exports = {
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
     if (!sender.agent) return 'Agent is not set'
 
+    let agentAccount = await app.model.Account.findOne({ condition: { name: sender.agent } })
+    if (!agentAccount) return 'Agent account not found'
+  
     let cancelWeight = sender.weight
-    app.sdb.increment('Account', { agentWeight: -1 * cancelWeight }, { address: sender.agent })
+    app.sdb.increment('Account', { agentWeight: -1 * cancelWeight }, { name: sender.agent })
     app.sdb.update('Account', { agent: '' }, { address: sender.address })
     app.sdb.del('AgentClientele', { agent: sender.agent, clientele: sender.address })
 
-    let voteList = await app.model.Vote.findAll({ condition: { address: sender.agent } })
+    let voteList = await app.model.Vote.findAll({ condition: { address: agentAccount.address } })
     if (voteList && voteList.length > 0 && cancelWeight > 0) {
       for (let voteItem of voteList) {
         app.sdb.increment('Delegate', { votes: -1 * cancelWeight }, { name: voteItem.delegate })
