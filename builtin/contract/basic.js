@@ -70,11 +70,12 @@ module.exports = {
     let reg = /^[a-z0-9_]{2,20}$/
     if (!reg.test(name)) return 'Invalid name'
 
+    let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
 
     if (this.block.height === 0) {
       app.sdb.create('Account', {
-        address: this.trs.senderId,
+        address: senderId,
         xas: 0,
         name: name
       })
@@ -82,11 +83,11 @@ module.exports = {
       let exists = await app.model.Account.exists({ name: name })
       if (exists) return 'Name already registered'
 
-      let condition = { address: this.trs.senderId }
+      let condition = { address: senderId }
       let account = await app.model.Account.findOne({ condition: condition })
       if (account && !!account.name) return 'Name already set'
 
-      app.sdb.update('Account', { name: name }, { address: this.trs.senderId })
+      app.sdb.update('Account', { name: name }, { address: senderId })
     }
   },
 
