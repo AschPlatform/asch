@@ -107,13 +107,13 @@ Gateway.prototype.processDeposits = async function () {
       gateway: GATEWAY, type: GatewayLogType.DEPOSIT, seq: 0
     })
   }
-  let ret = await PIFY(gatewayLib.bitcoin.getTransactionsFromBlockHeight)(lastSeq - 1)
+  let ret = await PIFY(gatewayLib.bitcoin.getTransactionsFromBlockHeight)(lastSeq)
   if (!ret || !ret.transactions) {
     library.logger.error('Failed to get gateway transactions')
     return
   }
   let outTransactions = ret.transactions.filter((ot) => {
-    return ot.category === 'receive' && ot.confirmations >= 0
+    return ot.category === 'receive' && ot.confirmations >= 1
   }).sort((l, r) => {
     return l.height - r.height
   })
