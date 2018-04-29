@@ -242,7 +242,7 @@ private.loadUnconfirmedTransactions = function (cb) {
 
     var trs = [];
     for (var i = 0; i < transactions.length; ++i) {
-      if (!modules.transactions.hasUnconfirmedTransaction(transactions[i])) {
+      if (!modules.transactions.hasUnconfirmed(transactions[i])) {
         trs.push(transactions[i]);
       }
     }
