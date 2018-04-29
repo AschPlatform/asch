@@ -7,13 +7,6 @@ async function doCancelVote(account) {
   }
 }
 
-async function doCancelAgent(account) {
-  app.sdb.increment('Account', { agentWeight: -1 * account.weight }, { address: account.agent })
-  app.sdb.update('Account', { agent: '' }, { address: account.address })
-  app.sdb.del('AgentClientele', { agent: account.agent, clientele: account.address })
-  doCancelVote(account)
-}
-
 function isUniq(arr) {
   let s = new Set
   for (let i of arr) {
@@ -231,7 +224,17 @@ module.exports = {
     let sender = await app.model.Account.findOne({ condition: { address: senderId } })
     if (!sender.agent) return 'Agent is not set'
 
-    await doCancelAgent(sender)
+    let cancelWeight = sender.weight
+    app.sdb.increment('Account', { agentWeight: -1 * cancelWeight }, { address: sender.agent })
+    app.sdb.update('Account', { agent: '' }, { address: sender.address })
+    app.sdb.del('AgentClientele', { agent: sender.agent, clientele: sender.address })
+
+    let voteList = await app.model.Vote.findAll({ condition: { address: sender.agent } })
+    if (voteList && voteList.length > 0 && cancelWeight > 0) {
+      for (let voteItem of voteList) {
+        app.sdb.increment('Delegate', { votes: -1 * cancelWeight }, { name: voteItem.delegate })
+      }
+    }
   },
 
   registerDelegate: async function () {
