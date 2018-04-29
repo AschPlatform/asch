@@ -240,7 +240,7 @@ module.exports = {
 
   registerDelegate: async function () {
     let senderId = this.trs.senderId
-    app.sdb.lock('basic.account@' + senderId)
+    app.sdb.lock('basic.registerDelegate@' + senderId)
     let sender
     if (this.block.height > 0) {
       sender = await app.model.Account.findOne({ condition: { address: senderId } })
