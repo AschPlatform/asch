@@ -144,14 +144,25 @@ module.exports = {
       app.sdb.update('Account', { lockHeight: height }, { address: senderId })
     }
     if (amount !== 0) {
-      app.sdb.increment('Account', { weight: amount }, { address: senderId })
       app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
-    }
-
-    let voteList = await app.model.Vote.findAll({ condition: { address: senderId } })
-    if (voteList && voteList.length > 0 && amount > 0) {
-      for (let voteItem of voteList) {
-        app.sdb.increment('Delegate', { votes: amount }, { name: voteItem.delegate })
+      if (sender.agent) {
+        let agentAccount = await app.model.Account.findOne({ condition: { name: sender.agent } })
+        if (!agentAccount) return 'Agent account not found'
+        app.sdb.increment('Account', { agentWeight: amount }, { address: agentAccount.address })
+        let voteList = await app.model.Vote.findAll({ condition: { address: agentAccount.address } })
+        if (voteList && voteList.length > 0) {
+          for (let voteItem of voteList) {
+            app.sdb.increment('Delegate', { votes: amount }, { name: voteItem.delegate })
+          }
+        }
+      } else {
+        app.sdb.increment('Account', { weight: amount }, { address: senderId })
+        let voteList = await app.model.Vote.findAll({ condition: { address: senderId } })
+        if (voteList && voteList.length > 0) {
+          for (let voteItem of voteList) {
+            app.sdb.increment('Delegate', { votes: amount }, { name: voteItem.delegate })
+          }
+        }
       }
     }
   },
