@@ -8,11 +8,17 @@ module.exports = function (router) {
     }
 
     let account = await app.model.Account.findOne({ condition })
+    let unconfirmedAccount = null
+    if (account) {
+      unconfirmedAccount = app.sdb.get('Account', { address: account.address })
+    } else {
+      unconfirmedAccount = null
+    }
 
     let lastBlock = modules.blocks.getLastBlock()
     var ret = {
       account: account,
-      unconfirmedAccount: app.sdb.get('Account', { address: account.address }),
+      unconfirmedAccount: unconfirmedAccount,
       latestBlock: {
         height: lastBlock.height,
         timestamp: lastBlock.timestamp
