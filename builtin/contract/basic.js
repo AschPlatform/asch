@@ -7,6 +7,20 @@ async function doCancelVote(account) {
   }
 }
 
+async function doCancelAgent(sender, agentAccount) {
+  let cancelWeight = sender.weight
+  app.sdb.increment('Account', { agentWeight: -1 * cancelWeight }, { address: agentAccount.address })
+  app.sdb.update('Account', { agent: '' }, { address: sender.address })
+  app.sdb.del('AgentClientele', { agent: sender.agent, clientele: sender.address })
+
+  let voteList = await app.model.Vote.findAll({ condition: { address: agentAccount.address } })
+  if (voteList && voteList.length > 0 && cancelWeight > 0) {
+    for (let voteItem of voteList) {
+      app.sdb.increment('Delegate', { votes: -1 * cancelWeight }, { name: voteItem.delegate })
+    }
+  }
+}
+
 function isUniq(arr) {
   let s = new Set
   for (let i of arr) {
@@ -154,10 +168,17 @@ module.exports = {
     if (!sender.isLocked) return 'Account is not locked'
     if (this.block.height <= sender.lockHeight) return 'Account cannot unlock'
 
-    await doCancelVote(sender)
+    if (!sender.agent) {
+      await doCancelVote(sender)
+    } else {
+      let agentAccount = await app.model.Account.findOne({ condition: { name: sender.agent } })
+      if (!agentAccount) return 'Agent account not found'
+
+      await doCancelAgent(sender, agentAccount)
+    }
     app.sdb.update('Account', { isLocked: 0 }, { address: senderId })
     app.sdb.update('Account', { lockHeight: 0 }, { address: senderId })
-    app.sdb.increment('Account', { xas: account.weight }, { address: senderId })
+    app.sdb.increment('Account', { xas: sender.weight }, { address: senderId })
     app.sdb.update('Account', { weight: 0 }, { address: senderId })
   },
 
@@ -227,18 +248,8 @@ module.exports = {
 
     let agentAccount = await app.model.Account.findOne({ condition: { name: sender.agent } })
     if (!agentAccount) return 'Agent account not found'
-  
-    let cancelWeight = sender.weight
-    app.sdb.increment('Account', { agentWeight: -1 * cancelWeight }, { name: sender.agent })
-    app.sdb.update('Account', { agent: '' }, { address: sender.address })
-    app.sdb.del('AgentClientele', { agent: sender.agent, clientele: sender.address })
 
-    let voteList = await app.model.Vote.findAll({ condition: { address: agentAccount.address } })
-    if (voteList && voteList.length > 0 && cancelWeight > 0) {
-      for (let voteItem of voteList) {
-        app.sdb.increment('Delegate', { votes: -1 * cancelWeight }, { name: voteItem.delegate })
-      }
-    }
+    await doCancelAgent(sender, agentAccount)
   },
 
   registerDelegate: async function () {
