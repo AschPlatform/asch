@@ -228,5 +228,20 @@ module.exports = {
       secret: 'clog jeans spirit mechanic ketchup involve hello era tilt permit wall you',
       publicKey: '52ead1235e3a9f47213ee09e27adc48b061c08ea9ff8d763af2f7a23f86ff559'
     }
+  ],
+
+  chains: [
+    {
+      name: "test",
+      link: "https://github.com/testchain.zip",
+      desc: "test chain",
+      icon: "https://github.com/testchain.png",
+      delegates: [
+        "a704517b213812e4631935e1f14c0f2ff199d8fc425e43fa1794afaabf0ed3b4",
+        "3880d38149d57b73de4036dda0844dd2192135d98e17b9052265658b755cb629",
+        "25bcb63b994f17b605f4468a48be08e07f4cff6df7a5e01b3a6dad9e4bbf8c86"
+      ],
+      unlockDelegates: 3
+    }
   ]
 }

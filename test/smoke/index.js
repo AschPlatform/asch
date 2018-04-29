@@ -314,11 +314,50 @@ async function testGateway() {
   await node.onNewBlockAsync()
 }
 
+async function testChain() {
+  // for (let chain of config.chains) {
+  //   let trs = {
+  //     secret: config.issuers[0].account.secret,
+  //     type: 200,
+  //     fee: 10000000000,
+  //     args: [
+  //       chain.name,
+  //       chain.desc,
+  //       chain.link,
+  //       chain.icon,
+  //       chain.delegates,
+  //       chain.unlockDelegates
+  //     ],
+  //   }
+  //   console.log('register chain:', chain.name)
+  //   await node.transactionUnsignedAsync(trs)
+  // }
+  // await node.onNewBlockAsync()
+
+  for (let chain of config.chains) {
+    let currencyFullName = config.issuers[0].name + '.' + config.issuers[0].assets[0].name
+    let trs = {
+      secret: config.issuers[0].account.secret,
+      type: 204,
+      fee: 10000000,
+      args: [
+        chain.name,
+        currencyFullName,
+        String(Number(config.issuers[0].assets[0].issueAmount) / 10)
+      ],
+    }
+    console.log('deposit ' + currencyFullName + ' to chain ' + chain.name)
+    await node.transactionUnsignedAsync(trs)
+  }
+  await node.onNewBlockAsync()
+}
+
 async function main() {
-  await init()
-  await testUIA()
-  await testAgent()
-  await testGateway()
+  // await init()
+  // await testUIA()
+  // await testAgent()
+  // await testGateway()
+  await testChain()
 }
 
 (async function () {
