@@ -53,6 +53,9 @@ function Gateway(cb, scope) {
 }
 
 Gateway.prototype.importAccounts = async function () {
+  if (modules.loader.syncing()) {
+    return
+  }
   const GATEWAY = global.Config.gateway.name
   let lastImportAddressLog = await app.model.GatewayLog.findOne({
     condition: {
@@ -91,6 +94,9 @@ Gateway.prototype.importAccounts = async function () {
 }
 
 Gateway.prototype.processDeposits = async function () {
+  if (modules.loader.syncing()) {
+    return
+  }
   const GATEWAY = global.Config.gateway.name
   const CURRENCY = 'BTC'
   let cond = {
@@ -144,6 +150,9 @@ Gateway.prototype.processDeposits = async function () {
 }
 
 Gateway.prototype.processWithdrawals = async function () {
+  if (modules.loader.syncing()) {
+    return
+  }
   let GATEWAY = global.Config.gateway.name
   let PAGE_SIZE = 25
   let validators = await app.model.GatewayMember.findAll({
@@ -239,6 +248,9 @@ Gateway.prototype.processWithdrawals = async function () {
 }
 
 Gateway.prototype.sendWithdrawals = async function () {
+  if (modules.loader.syncing()) {
+    return
+  }
   let GATEWAY = global.Config.gateway.name
   const PAGE_SIZE = 25
   let logCond = {

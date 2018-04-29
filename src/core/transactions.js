@@ -644,9 +644,7 @@ Transactions.prototype.getTransaction = function (req, cb) {
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
   (async function () {
     try {
-      for (let i = 0; i < transactions.length; ++i) {
-        await self.processUnconfirmedTransactionAsync(transactions[i])
-      }
+      await self.receiveTransactionsAsync(transactions)
     } catch (e) {
       return cb(e)
     }
@@ -661,9 +659,6 @@ Transactions.prototype.receiveTransactionsAsync = async function (transactions) 
 }
 
 Transactions.prototype.processUnconfirmedTransactionAsync = async function (transaction, broadcast) {
-  if (!transaction) {
-    return cb("No transaction to process!");
-  }
   library.logger.debug('process unconfirmed trs', transaction)
   if (!transaction.id) {
     transaction.id = library.base.transaction.getId(transaction);
