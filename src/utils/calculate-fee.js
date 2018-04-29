@@ -4,7 +4,9 @@ module.exports = {
   },
   2: function (trs) {
     let len = trs.args[0].length
-    if (len === 3) {
+    if (len === 2) {
+      return 200
+    } else if (len === 3) {
       return 100
     } else if (len === 4) {
       return 80
