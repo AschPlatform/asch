@@ -10,10 +10,9 @@ module.exports = {
     let exists = await app.model.Issuer.exists({ name: name })
     if (exists) return 'Issuer name already exists'
 
-    let sender = await app.model.Account.findOne({condition: {address: senderId}})
-    if (sender.role) return 'Account already have a role'
+    exists = await app.model.Issuer.findOne({condition: {issuerId: senderId}})
+    if (exists) return 'Account is already an issuer'
 
-    app.sdb.update('Account', { role: app.AccountRole.ISSUER }, { address: senderId })
     app.sdb.create('Issuer', {
       tid: this.trs.id,
       issuerId: senderId,
