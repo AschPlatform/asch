@@ -2,7 +2,9 @@ const bignum = require('bignumber')
 
 module.exports = {
   registerIssuer: async function (name, desc) {
-    // validate(desc, {maxLength: 4096})
+    if (!/^[A-Za-z]{1,16}$/.test(name)) return 'Invalid issuer name'
+    if (desc.length > 4096) return 'Invalid issuer description'
+
     app.sdb.lock('uia.registerIssuer@' + this.trs.senderId)
     let exists = await app.model.Issuer.exists({ name: name })
     if (exists) return 'Account is already an issuer'
@@ -17,6 +19,10 @@ module.exports = {
 
   registerAsset: async function (symbol, desc, maximum, precision) {
     if (!/^[A-Z]{3,6}$/.test(symbol)) return 'Invalid symbol'
+    if (desc.length > 4096) return 'Invalid asset description'
+    if (precision > 16 || precision < 0) return 'Invalid asset precision'
+    app.validate('amount', maximum)
+
     let issuer = await app.model.Issuer.findOne({ condition: { issuerId: this.trs.senderId } })
     if (!issuer) return 'Account is not an issuer'
 
