@@ -17,7 +17,7 @@ var modules, library, self, private = {}, shared = {};
 private.headers = {};
 private.loaded = false;
 private.messages = {};
-private.invalidTrsCache = new LimitCache()
+private.processedTrsCache = new LimitCache()
 
 // Constructor
 function Transport(cb, scope) {
@@ -429,7 +429,7 @@ private.attachApi = function () {
       return res.status(200).json({ success: false, error: "Invalid transaction body" });
     }
 
-    if (private.invalidTrsCache.has(transaction.id)) {
+    if (private.processedTrsCache.has(transaction.id)) {
       return res.status(200).json({ success: false, error: "Already processed transaction" + transaction.id });
     }
 
@@ -440,9 +440,9 @@ private.attachApi = function () {
       library.logger.log('Received transaction ' + transaction.id + ' from peer ' + peerStr);
       modules.transactions.receiveTransactions([transaction], cb);
     }, function (err, transactions) {
+      private.processedTrsCache.set(transaction.id, true)
       if (err) {
         library.logger.warn('Receive invalid transaction,id is ' + transaction.id, err);
-        private.invalidTrsCache.set(transaction.id, true)
         let errMsg = err.message ? err.message : err.toString()
         res.status(200).json({ success: false, error: errMsg });
       } else {
