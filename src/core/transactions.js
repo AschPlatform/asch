@@ -904,20 +904,6 @@ shared.getUnconfirmedTransactions = function (req, cb) {
   });
 }
 
-shared.addTransaction = function (req, cb) {
-  let query = req.body
-  library.sequence.add(function addTransaction(cb) {
-    (async function () {
-      try {
-        var trs = await self.processUnconfirmedTransactionAsync(query.transaction, true)
-        cb(null, { transactionId: trs.id })
-      } catch (e) {
-        cb(e.toString())
-      }
-    })()
-  }, cb)
-}
-
 shared.addTransactionUnsigned = function (req, cb) {
   let query = req.body
   if (query.type) {
