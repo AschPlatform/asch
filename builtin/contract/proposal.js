@@ -64,7 +64,7 @@ async function validateGatewayRegister(content, context) {
   if (!content.desc || content.desc.length === 0 || content.desc.length > 4096) {
     throw new Error('Invalid gateway description')
   }
-  if (!Number.isInteger(content.minimumMembers) || content.minimumMembers < 5 || content.minimumMembers > 33) {
+  if (!Number.isInteger(content.minimumMembers) || content.minimumMembers < 3 || content.minimumMembers > 33) {
     throw new Error('Invalid gateway member limit')
   }
   if (!Number.isInteger(content.updateInterval) || content.updateInterval < 8640) {
