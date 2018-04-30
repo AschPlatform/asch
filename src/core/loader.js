@@ -11,7 +11,7 @@ require('colors');
 var modules, library, self, private = {}, shared = {};
 
 private.loaded = false;
-private.isActive = false;
+private.syncing = false;
 private.loadingLastBlock = null;
 private.genesisBlock = null;
 private.total = 0;
@@ -92,11 +92,11 @@ private.findUpdate = function (lastBlock, peer, cb) {
       return cb();
     }
 
-    app.sdb.rollbackBlock()
-    modules.transactions.clearUnconfirmed();
-
     (async function () {
       try {
+        // FIXME
+        app.sdb.rollbackBlock()
+        modules.transactions.clearUnconfirmed();
         if (toRemove > 0) {
           for (let h = lastBlock.height; h > commonBlock.height; h--) {
             library.logger.info('rollback block height: ' + h)
@@ -246,7 +246,7 @@ private.loadUnconfirmedTransactions = function (cb) {
         trs.push(transactions[i]);
       }
     }
-    library.balancesSequence.add(function (cb) {
+    library.sequence.add(function (cb) {
       modules.transactions.receiveTransactions(trs, cb);
     }, cb);
   });
@@ -256,7 +256,7 @@ private.loadBalances = function (cb) {
   library.model.getAllNativeBalances(function (err, results) {
     if (err) return cb('Failed to load native balances: ' + err)
     for (let i = 0; i < results.length; ++i) {
-      let {address, balance} = results[i]
+      let { address, balance } = results[i]
       library.balanceCache.setNativeBalance(address, balance)
     }
     library.balanceCache.commit()
@@ -395,7 +395,7 @@ private.loadBlockChain = function (cb) {
 
 // Public methods
 Loader.prototype.syncing = function () {
-  return !!private.syncIntervalId;
+  return private.syncing;
 }
 
 Loader.prototype.sandboxApi = function (call, args, cb) {
@@ -403,21 +403,21 @@ Loader.prototype.sandboxApi = function (call, args, cb) {
 }
 
 Loader.prototype.startSyncBlocks = function () {
-  library.logger.debug('startSyncBlocks enter');
-  if (private.isActive || !private.loaded || self.syncing()) return;
-  private.isActive = true;
+  library.logger.debug('startSyncBlocks enter')
+  if (!private.loaded || self.syncing()) {
+    library.logger.debug('blockchain is already syncing')
+    return
+  }
   library.sequence.add(function syncBlocks(cb) {
-    library.logger.debug('startSyncBlocks enter sequence');
-    private.syncTrigger(true);
-    var lastBlock = modules.blocks.getLastBlock();
-    private.loadBlocks(lastBlock, cb);
+    library.logger.debug('startSyncBlocks enter sequence')
+    private.syncing = true
+    var lastBlock = modules.blocks.getLastBlock()
+    private.loadBlocks(lastBlock, cb)
   }, function (err) {
-    err && library.logger.error('loadBlocks timer:', err);
-    private.syncTrigger(false);
-    private.blocksToSync = 0;
-
-    private.isActive = false;
-    library.logger.debug('startSyncBlocks end');
+    err && library.logger.error('loadBlocks error:', err)
+    private.syncing = false
+    private.blocksToSync = 0
+    library.logger.debug('startSyncBlocks end')
   });
 }
 

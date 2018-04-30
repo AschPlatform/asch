@@ -461,7 +461,7 @@ private.getIdSequence2 = function (height, cb) {
       let ids = blocks.map((b) => {
         return b.id
       })
-      return cb(null, { ids: ids, firstHeight: blocks[4].height })
+      return cb(null, { ids: ids, firstHeight: blocks[blocks.length-1].height })
     } catch (e) {
       cb(e)
     }
