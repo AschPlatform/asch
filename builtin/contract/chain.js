@@ -9,7 +9,7 @@ module.exports = {
     exists = await app.model.Chain.exists({ link: link })
     if (exists) return 'Chain link already registered'
 
-    app.sdb.create('Account', { address: chainAddress, xas: 0 })
+    app.sdb.create('Account', { address: chainAddress, xas: 0, name: '' })
     app.sdb.create('Chain', {
       tid: tid,
       address: chainAddress,
@@ -105,7 +105,8 @@ module.exports = {
       if (!account) {
         app.sdb.create('Account', {
           address: recipient,
-          xas: amount
+          xas: amount,
+          name: ''
         })
       } else {
         app.sdb.increment('Account', { xas: amount }, { address: recipient })

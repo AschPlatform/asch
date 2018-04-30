@@ -64,7 +64,8 @@ module.exports = {
     if (!app.sdb.get('Account', condition)) {
       app.sdb.create('Account', {
         address: recipientAddress,
-        xas: amount
+        xas: amount,
+        name: ''
       })
     } else {
       app.sdb.increment('Account', { xas: amount }, condition)
