@@ -178,7 +178,7 @@ Gateway.prototype.processWithdrawals = async function () {
   }
   let lastSeq = 0
   let lastWithdrawalLog = await app.model.GatewayLog.findOne({ condition: cond })
-  library.logger.debug('find WITHDRAWAL log', lastWithdrawalLog)
+  library.logger.debug('find ==========WITHDRAWAL============ log', lastWithdrawalLog)
   if (lastWithdrawalLog) {
     lastSeq = lastWithdrawalLog.seq
   } else {
