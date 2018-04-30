@@ -7,6 +7,7 @@ module.exports = {
     let validators = await app.model.GatewayMember.findAll({ condition: { gateway: gateway, elected: 1 } })
     if (!validators || !validators.length) return 'Gateway validators not found'
 
+    // FIXME process gateway revoke
     let gw = await app.model.Gateway.findOne({ condition: { name: gateway } })
     if (!gw) return 'Gateway not found'
     let outPublicKeys = validators.map(function (v) { return v.outPublicKey })
