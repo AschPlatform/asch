@@ -369,14 +369,14 @@ class SmartDB {
     let item = invertedList.get(token)
     if (!item) return
 
-    if (oldValue === undefined) {
-      library.logger.debug('undoUpdate unexpected params', {
-        model: model,
-        modifier: modifier,
-        cond: cond
-      })
-      throw new Error('Old value should exists')
-    }
+    // if (oldValue === undefined) {
+    //   library.logger.debug('undoUpdate unexpected params', {
+    //     model: model,
+    //     modifier: modifier,
+    //     cond: cond
+    //   })
+    //   throw new Error('Old value should exists')
+    // }
     item[m[0]] = oldValue
   }
 
