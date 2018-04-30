@@ -99,6 +99,18 @@ Gateway.prototype.processDeposits = async function () {
   }
   const GATEWAY = global.Config.gateway.name
   const CURRENCY = 'BTC'
+
+  let validators = await app.model.GatewayMember.findAll({
+    condition: {
+      gateway: GATEWAY,
+      elected: 1
+    }
+  })
+  if (!validators || !validators.length) {
+    library.logger.error('Validators not found')
+    return
+  }
+
   let cond = {
     gateway: GATEWAY,
     type: GatewayLogType.DEPOSIT
@@ -161,7 +173,7 @@ Gateway.prototype.processWithdrawals = async function () {
       elected: 1
     }
   })
-  if (!validators) {
+  if (!validators || !validators.length) {
     library.logger.error('Validators not found')
     return
   }
