@@ -97,7 +97,7 @@ module.exports = {
     return 0.01
   },
   403: function (trs) {
-    return 0.1
+    return 0
   },
   404: function (trs) {
     return 0.01

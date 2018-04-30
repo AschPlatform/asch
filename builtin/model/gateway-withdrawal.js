@@ -8,6 +8,7 @@ module.exports = {
     { name: 'currency', type: 'String', length: 10, index: true },
     { name: 'seq', type: 'Number' , index: true },
     { name: 'amount', type: 'String', length: 50 },
+    { name: 'fee', type: 'String', length: 50 },
     { name: 'outTransaction', type: 'Text' },
     { name: 'processed', type: 'Number', default: 0 },
     { name: 'oid', type: 'String', length: 64 }

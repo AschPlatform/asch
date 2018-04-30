@@ -1,3 +1,4 @@
+const bignum = require('bignumber')
 
 module.exports = {
   openAccount: async function (gateway) {
@@ -95,19 +96,25 @@ module.exports = {
   },
 
   withdrawal: async function (address, gateway, currency, amount) {
+    const FEE = '10000' // FIXME
     let balance = app.balances.get(this.trs.senderId, currency)
-    if (balance.lt(amount)) return 'Insufficient balance'
+    if (balance.lt(amount) || bignum(amount).lt(FEE)) return 'Insufficient balance'
+
+    let outAmount = bignum(amount).sub(FEE).toString()
 
     app.balances.decrease(this.trs.senderId, currency, amount)
     let seq = Number(app.autoID.increment('gate_withdrawal_seq'))
+
+    
     app.sdb.create('GatewayWithdrawal', {
       tid: this.trs.id,
       seq: seq,
       gateway: gateway,
       currency: currency,
-      amount: amount,
+      amount: outAmount,
       senderId: this.trs.senderId,
       recipientId: address,
+      fee: FEE,
       processed: 0,
       outTransaction: '',
       oid: ''

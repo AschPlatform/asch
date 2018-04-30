@@ -111,6 +111,11 @@ Gateway.prototype.processDeposits = async function () {
     return
   }
 
+  if (await app.model.GatewayAccount.count({gateway: GATEWAY}) == 0) {
+    library.logger.error('No gateway accounts')
+    return
+  }
+
   let cond = {
     gateway: GATEWAY,
     type: GatewayLogType.DEPOSIT
