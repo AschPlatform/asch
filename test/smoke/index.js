@@ -315,24 +315,24 @@ async function testGateway() {
 }
 
 async function testChain() {
-  // for (let chain of config.chains) {
-  //   let trs = {
-  //     secret: config.issuers[0].account.secret,
-  //     type: 200,
-  //     fee: 10000000000,
-  //     args: [
-  //       chain.name,
-  //       chain.desc,
-  //       chain.link,
-  //       chain.icon,
-  //       chain.delegates,
-  //       chain.unlockDelegates
-  //     ],
-  //   }
-  //   console.log('register chain:', chain.name)
-  //   await node.transactionUnsignedAsync(trs)
-  // }
-  // await node.onNewBlockAsync()
+  for (let chain of config.chains) {
+    let trs = {
+      secret: config.issuers[0].account.secret,
+      type: 200,
+      fee: 10000000000,
+      args: [
+        chain.name,
+        chain.desc,
+        chain.link,
+        chain.icon,
+        chain.delegates,
+        chain.unlockDelegates
+      ],
+    }
+    console.log('register chain:', chain.name)
+    await node.transactionUnsignedAsync(trs)
+  }
+  await node.onNewBlockAsync()
 
   for (let chain of config.chains) {
     let currencyFullName = config.issuers[0].name + '.' + config.issuers[0].assets[0].name
@@ -353,10 +353,10 @@ async function testChain() {
 }
 
 async function main() {
-  // await init()
-  // await testUIA()
-  // await testAgent()
-  // await testGateway()
+  await init()
+  await testUIA()
+  await testAgent()
+  await testGateway()
   await testChain()
 }
 
