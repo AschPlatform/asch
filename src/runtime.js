@@ -17,6 +17,7 @@ var SmartDB = require('./smartdb/smartdb')
 var BalanceManager = require('./smartdb/balance-manager')
 var AutoIncrement = require('./smartdb/auto-increment')
 var FeePool = require('./smartdb/fee-pool')
+var AccountRole = require('./utils/account-role')
 
 class RouteWrapper {
   constructor() {
@@ -249,6 +250,8 @@ module.exports = async function (options) {
   app.isCurrentBookkeeper = function (addr) {
     return modules.delegates.getBookkeeperAddresses().has(addr)
   }
+
+  app.AccountRole = AccountRole
   
   app.sdb = new SmartDB(app)
   app.balances = new BalanceManager(app.sdb)

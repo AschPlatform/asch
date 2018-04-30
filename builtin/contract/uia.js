@@ -5,13 +5,18 @@ module.exports = {
     if (!/^[A-Za-z]{1,16}$/.test(name)) return 'Invalid issuer name'
     if (desc.length > 4096) return 'Invalid issuer description'
 
-    app.sdb.lock('uia.registerIssuer@' + this.trs.senderId)
+    let senderId = this.trs.senderId
+    app.sdb.lock('uia.registerIssuer@' + senderId)
     let exists = await app.model.Issuer.exists({ name: name })
-    if (exists) return 'Account is already an issuer'
+    if (exists) return 'Issuer name already exists'
 
+    let sender = await app.model.Account.findOne({condition: {address: senderId}})
+    if (sender.role) return 'Account already have a role'
+
+    app.sdb.update('Account', { role: app.AccountRole.ISSUER }, { address: senderId })
     app.sdb.create('Issuer', {
       tid: this.trs.id,
-      issuerId: this.trs.senderId,
+      issuerId: senderId,
       name: name,
       desc: desc
     })

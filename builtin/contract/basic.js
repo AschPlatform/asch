@@ -202,16 +202,15 @@ module.exports = {
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
     let account = await app.model.Account.findOne({ condition: { address: senderId } })
-    if (account.isAgent) return 'Agent already registered'
+    if (account.role) return 'Agent already have a role'
     if (!account.name) return 'Agent must have a name'
     if (account.isLocked) return 'Locked account cannot be agent'
 
     let voteExist = await app.model.Vote.exists({ address: senderId })
     if (voteExist) return 'Account already voted'
 
-    let isDelegate = await app.model.Delegate.exists({ address: senderId })
-    if (isDelegate) return 'Delegate cannot be agent'
 
+    app.sdb.update('Account', { role: app.AccountRole.AGENT }, { address: senderId })
     app.sdb.update('Account', { isAgent: 1 }, { address: senderId })
     app.sdb.create('Agent', { name: account.name })
   },
@@ -272,8 +271,7 @@ module.exports = {
       sender = await app.model.Account.findOne({ condition: { address: senderId } })
       if (!sender) return 'Account not found'
       if (!sender.name) return 'Account has not a name'
-      if (sender.isDelegate) return 'Account is already delegate'
-      if (sender.isAgent) return 'Account cannot be delegate'
+      if (sender.role) return 'Account already have a role'
     } else {
       sender = app.sdb.get('Account', { address: senderId })
     }
@@ -289,6 +287,7 @@ module.exports = {
       rewards: 0
     })
     app.sdb.update('Account', { isDelegate: 1 }, { address: senderId })
+    app.sdb.update('Account', { role: app.AccountRole.DELEGATE }, { address: senderId })
   },
 
   vote: async function (delegates) {

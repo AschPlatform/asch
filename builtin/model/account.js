@@ -9,6 +9,7 @@ module.exports = {
     { name: 'isLocked', type: 'Number', default: 0 },
     { name: 'isAgent', type: 'Number', default: 0 },
     { name: 'isDelegate', type: 'Number', default: 0 },
+    { name: 'role', type: 'Number', default: 0 },
     { name: 'lockHeight', type: 'BigInt', default: 0 },
     { name: 'agent', type: 'String', length: 50 },
     { name: 'weight', type: 'BigInt', default: 0 },

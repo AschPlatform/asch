@@ -25,14 +25,15 @@ module.exports = {
   },
 
   registerMember: async function (gateway, publicKey, desc) {
+    let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + this.trs.senderId)
-    let sender = await app.model.Account.findOne({ condition: { address: this.trs.senderId } })
+    let sender = await app.model.Account.findOne({ condition: { address: senderId } })
     if (!sender.name) return 'Account have not a name'
-    if (sender.isAgent) return 'Agent cannot be gateway validator'
-    if (sender.isDelegate) return 'Delegate cannot be gateway validator'
+    if (sender.role) return 'Account already have a role'
     if (!await app.model.Gateway.exists({name: gateway})) return 'Gateway not found'
-    let exists = await app.model.GatewayMember.exists({ address: this.trs.senderId })
+    let exists = await app.model.GatewayMember.exists({ address: senderId })
     if (exists) return 'Account already is a gateway member'
+    app.sdb.update('Account', { role: app.AccountRole.GATEWAY_VALIDATOR }, { address: senderId })
     app.sdb.create('GatewayMember', {
       address: this.trs.senderId,
       gateway: gateway,
