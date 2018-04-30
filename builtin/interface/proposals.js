@@ -44,6 +44,17 @@ module.exports = function (router) {
     let votes = await app.model.ProposalVote.findAll({ condition: { pid: req.params.pid } })
     let totalCount = votes.length
     let validCount = votes.filter((v) => app.isCurrentBookkeeper(v.voter)).length
+    if (totalCount > 0) {
+      let voterAddresses = votes.map((v) => v.voter)
+      let accounts = await app.model.Account.findAll({ condition: { address: { $in: voterAddresses } } })
+      let accountMap = new Map
+      for (let a of accounts) {
+        accountMap.set(a.address, a)
+      }
+      for (let v of votes) {
+        v.account = accountMap.get(v.voter)
+      }
+    }
     return { totalCount, validCount, votes }
   })
 }
