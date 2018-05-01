@@ -247,11 +247,11 @@ class Transaction {
   }
 
   commit() {
-    return this.db.query('RELEASE SAVEPOINT tmp')
+    return this.db.query('commit')
   }
 
   rollback() {
-    return this.db.query('ROLLBACK TO SAVEPOINT tmp')
+    return this.db.query('rollback')
   }
 }
 
@@ -276,7 +276,7 @@ class Orm {
   }
 
   async transaction() {
-    await this.query('SAVEPOINT tmp')
+    await this.query('begin transaction')
     return new Transaction(this)
   }
 
