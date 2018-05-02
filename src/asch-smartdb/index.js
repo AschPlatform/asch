@@ -1657,7 +1657,7 @@ class SmartDB extends events_1.EventEmitter {
      * initialize SmartDB , you need call this before use SmartDB
      * @param schemas table schemas in Database
      */
-    init(...schemas) {
+    init(schemas) {
         return __awaiter(this, void 0, void 0, function* () {
             Common_1.CodeContract.argument('schemas', () => Common_1.CodeContract.notNull(schemas));
             yield this.connection.connect();

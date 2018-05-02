@@ -151,7 +151,7 @@ function main() {
   //logger.setLevel = tracer.setLevel
 
   var options = {
-    dbFile: program.blockchain || path.join(baseDir, 'blockchain.db'),
+    dbFile: program.blockchain || path.join(baseDir, 'data', 'blockchain.db'),
     appConfig: appConfig,
     genesisblock: genesisblock,
     logger: logger,
