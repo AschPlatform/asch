@@ -1,15 +1,17 @@
 let bignum = require('bignumber')
+let AschCore = require('../asch-smartdb').AschCore
 
 class BalanceManager {
   constructor(sdb) {
     this.sdb = sdb
   }
 
+  _getBalanceId(address, currency){
+    return AschCore.CompositeKey.makeKey( address, currency)
+  }
+
   get(address, currency) {
-    let item = this.sdb.get('Balance', {
-      address: address,
-      currency: currency
-    })
+    let item = this.sdb.getCached('Balance', this._getBalanceId(address, currency))
     let balance = item ? item.balance : '0'
     return bignum(balance)
   }
@@ -28,18 +30,16 @@ class BalanceManager {
 
   increase(address, currency, amount) {
     if (bignum(amount).eq(0)) return
-    let cond = {
-      address: address,
-      currency: currency
-    }
-    let item = this.sdb.get('Balance', cond)
+
+    let balanceId = this._getBalanceId(address, currency)
+    let item = this.sdb.getCached('Balance', balanceId)
     if (item !== null) {
-      let balance = bignum(item.balance).plus(amount)
-      this.sdb.update('Balance', { balance: balance.toString() }, cond)
+      item.balance = bignum(item.balance).plus(amount)
     } else {
-      cond.balance = amount
-      cond.flag = this.getCurrencyFlag(currency)
-      this.sdb.create('Balance', cond)
+      item = this.sdb.create('Balance', balanceId)
+      item.address = address
+      item.balance = amount
+      item.flag = this.getCurrencyFlag(currency)
     }
   }
 

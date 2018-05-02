@@ -12,12 +12,14 @@ var PIFY = require('./utils/pify')
 var slots = require('./utils/slots')
 var amountHelper = require('./utils/amount')
 var Router = require('./utils/router.js');
-var ORM = require('./smartdb/orm')
-var SmartDB = require('./smartdb/smartdb')
 var BalanceManager = require('./smartdb/balance-manager')
 var AutoIncrement = require('./smartdb/auto-increment')
 var FeePool = require('./smartdb/fee-pool')
+<<<<<<< Updated upstream
 var AccountRole = require('./utils/account-role')
+=======
+const AschCore = require('./asch-smartdb').AschCore
+>>>>>>> Stashed changes
 
 class RouteWrapper {
   constructor() {
@@ -55,6 +57,8 @@ async function loadModels(dir) {
     return
   }
   app.logger.debug('models', modelFiles)
+
+  let schemas = []
   for (let i in modelFiles) {
     var modelFile = modelFiles[i]
     app.logger.info('loading model', modelFile)
@@ -62,9 +66,9 @@ async function loadModels(dir) {
     let modelName = changeCase.pascalCase(basename)
     let fullpath = path.join('../', dir, modelFile)
     let schema = require(fullpath)
-    app.model[modelName] = app.db.define(changeCase.snakeCase(basename), schema, { timestamps: false })
-    await app.model[modelName].sync()
+    schemas.push(new AschCore.ModelSchema(schema, modelName))
   }
+  await app.sdb.init(schemas)
 }
 
 async function loadContracts(dir) {
@@ -184,6 +188,7 @@ module.exports = async function (options) {
   app.getFee = function (type) {
     return app.feeMapping[type]
   }
+
   app.setDefaultFee = function (min, currency) {
     app.defaultFee.currency = currency
     app.defaultFee.min = min
@@ -192,13 +197,6 @@ module.exports = async function (options) {
   app.getRealTime = function (epochTime) {
     return slots.getRealTime(epochTime)
   }
-
-  let rootDir = options.appConfig.baseDir
-  app.db = new ORM('', '', '', {
-    dialect: 'sqlite',
-    storage: options.dbFile,
-    logging: false
-  })
 
   app.registerHook = function (name, func) {
     app.hooks[name] = func
@@ -253,7 +251,11 @@ module.exports = async function (options) {
 
   app.AccountRole = AccountRole
   
-  app.sdb = new SmartDB(app)
+
+  const BLOCK_HEADER_DIR = path.get( __dirname , options.dbFile || 'block_db/blockHeader' )
+  const BLOCK_DB_PATH = path.get( __dirname, options.blockHeaderDir || 'block_db/blockchain.db')
+
+  app.sdb = new AschCore.SmartDB(BLOCK_DB_PATH, BLOCK_HEADER_DIR)
   app.balances = new BalanceManager(app.sdb)
   app.autoID = new AutoIncrement(app.sdb)
   app.feePool = new FeePool(app.sdb)
@@ -263,17 +265,18 @@ module.exports = async function (options) {
     address: require('./utils/address.js')
   }
 
+  let rootDir = options.appConfig.baseDir
   let builtinModelDir = path.join(rootDir, 'builtin')
   await loadModels(path.join(builtinModelDir, 'model'))
   await loadContracts(path.join(builtinModelDir, 'contract'))
   await loadInterfaces(path.join(builtinModelDir, 'interface'), options.library.network.app)
 
-  await app.sdb.load('Account', ['xas', 'name', 'address'], ['address'])
-  await app.sdb.load('Balance', app.model.Balance.fields(), [['address', 'currency']])
-  await app.sdb.load('Delegate', app.model.Delegate.fields(), [['name'], ['publicKey']])
-  await app.sdb.load('Variable', ['key', 'value'], ['key'])
-  await app.sdb.load('Round', app.model.Round.fields(), [['round']])
-  await app.sdb.load('GatewayDeposit', ['tid', 'currency', 'oid', 'confirmations'], [['currency', 'oid']])
+  // await app.sdb.load('Account', ['xas', 'name', 'address'], ['address'])
+  // await app.sdb.load('Balance', app.model.Balance.fields(), [['address', 'currency']])
+  // await app.sdb.load('Delegate', app.model.Delegate.fields(), [['name'], ['publicKey']])
+  // await app.sdb.load('Variable', ['key', 'value'], ['key'])
+  // await app.sdb.load('Round', app.model.Round.fields(), [['round']])
+  // await app.sdb.load('GatewayDeposit', ['tid', 'currency', 'oid', 'confirmations'], [['currency', 'oid']])
 
   app.contractTypeMapping[1] = 'basic.transfer'
   app.contractTypeMapping[2] = 'basic.setName'

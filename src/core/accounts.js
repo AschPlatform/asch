@@ -552,11 +552,7 @@ shared.myVotedDelegates = function (req, cb) {
       try {
         let address
         if (query.name) {
-          let account = await app.model.Account.findOne({
-            condition: {
-              name: query.name
-            }
-          })
+          let account = await app.sdb.getBy( 'Account', { name: query.name } )
           if (!account) {
             return cb('Account not found')
           }
@@ -564,11 +560,7 @@ shared.myVotedDelegates = function (req, cb) {
         } else {
           address = query.address
         }
-        let votes = await app.model.Vote.findAll({
-          condition: {
-            address: address
-          },
-        })
+        let votes = await app.sdb.findAll('Vote', { address: address } )
         if (!votes || !votes.length) {
           return cb(null, { delegates: [] })
         }
@@ -610,7 +602,7 @@ shared.getAccount = function (req, cb) {
 
     (async function () {
       try {
-        let account = await app.model.Account.findOne({ condition: { address: query.address } })
+        let account = await app.sdb.get('Account', query.address )
         let accountData
         if (!account) {
           accountData = {
@@ -621,7 +613,7 @@ shared.getAccount = function (req, cb) {
             lockHeight: 0
           }
         } else {
-          let unconfirmedAccount = app.sdb.get('Account', { address: query.address })
+          let unconfirmedAccount = app.sdb.get('Account', query.address )
           accountData = {
             address: account.address,
             unconfirmedBalance: unconfirmedAccount.xas,

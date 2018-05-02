@@ -830,7 +830,7 @@ Blocks.prototype.applyBlock = async function (block, options) {
   let appliedTransactions = {}
 
   try {
-    app.sdb.beginBlock()
+    app.sdb.beginBlock(block)
     for (let i in block.transactions) {
       let transaction = block.transactions[i]
       transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
@@ -998,8 +998,8 @@ Blocks.prototype.processBlock = async function (block, options) {
     await self.verifyBlock(block, options)
 
     library.logger.debug("verify block ok");
-    let exists = await app.model.Block.exists({ id: block.id })
-    if (exists) throw new Error('Block already exists: ' + block.id)
+    let exists = undefined !== await app.sdb.getBlockById( block.id ) 
+    if ( exists ) throw new Error('Block already exists: ' + block.id)
 
     if (block.height !== 0) {
       try {
@@ -1015,7 +1015,7 @@ Blocks.prototype.processBlock = async function (block, options) {
     for (let i in block.transactions) {
       let transaction = block.transactions[i]
       library.base.transaction.objectNormalize(transaction)
-      let exists = await app.model.Transaction.exists({ id: transaction.id })
+      let exists = await app.sdb.exists('Transaction', { id : transaction.id })
       if (exists) throw new Error('Block contain already confirmed transaction')
     }
 
@@ -1032,7 +1032,7 @@ Blocks.prototype.processBlock = async function (block, options) {
     // self.processFee(block)
     self.saveBlock(block)
     await self.applyRound(block)
-    await app.sdb.commitBlock({ noTransaction: !!options.noTransaction })
+    await app.sdb.commitBlock()
   } catch (e) {
     app.logger.error('save block error: ', e)
     app.sdb.rollbackBlock()
@@ -1068,23 +1068,16 @@ Blocks.prototype.processBlock = async function (block, options) {
   }
 }
 
-Blocks.prototype.saveBlock = function (block) {
-  app.logger.trace('Blocks#save height', block.height)
+Blocks.prototype.saveBlockTransactions = function (block) {
+  app.logger.trace('Blocks#saveBlockTransactions height', block.height)
   for (let i in block.transactions) {
     let trs = block.transactions[i]
     trs.height = block.height
     trs.args = JSON.stringify(trs.args)
     trs.signatures = JSON.stringify(trs.signatures)
-    app.sdb.create('Transaction', trs)
+    app.sdb.create('Transaction', trs.id, trs)
   }
-  let blockObj = {}
-  for (let k in block) {
-    if (k !== 'transactions') {
-      blockObj[k] = block[k]
-    }
-  }
-  app.sdb.create('Block', blockObj)
-  app.logger.trace('Blocks#save end')
+  app.logger.trace('Blocks#save transactions')
 }
 
 // Blocks.prototype.processFee = function (block) {
@@ -1101,35 +1094,32 @@ Blocks.prototype.applyRound = async function (block) {
     return
   }
 
-  app.sdb.increment('Delegate', { producedBlocks: 1 }, { publicKey: block.delegate })
+  //TODO : TEST...
+  let delegate = app.sdb.getCached('Delegate', modules.accounts.generateAddressByPublicKey(block.delegate) )
+  deletage.producedBlocks = deletage.producedBlocks + 1
 
   let delegates = await PIFY(modules.delegates.generateDelegateList)(block.height)
 
   // process fee
-  let round = Math.floor((block.height + delegates.length - 1) / delegates.length)
+  let roundNumber = Math.floor((block.height + delegates.length - 1) / delegates.length)
 
-  if (!app.sdb.get('Round', { round: round })) {
-    app.sdb.create('Round', { fees: 0, rewards: 0, round: round })
-  }
+  let round = app.sdb.load('Round',  roundNumber ) ||
+    app.sdb.create('Round', round, { fees: 0, rewards: 0, round: roundNumber })
 
+  let transFee = 0
   for (let t of block.transactions) {
-    app.sdb.increment('Round', { fees: t.fee }, { round: round })
+    transFee += t.fee 
   }
 
-  var reward = private.blockStatus.calcReward(block.height)
-  app.sdb.increment('Round', { rewards: reward }, { round: round })
+  round.fees += transFee
+  round.rewards += private.blockStatus.calcReward(block.height)
 
   if (block.height % 101 !== 0) return
 
   app.logger.debug('----------------------on round ' + round + ' end-----------------------')
   app.logger.debug('delegate length', delegates.length)
 
-  let forgedBlocks = await app.model.Block.findAll({
-    limit: 100,
-    sort: {
-      height: -1
-    }
-  })
+  let forgedBlocks = await app.sdb.getBlocksByHeightRange( app.sdb.lastBlockHeight, )
   let forgedDelegates = forgedBlocks.map(function (b) {
     return b.delegate
   })
