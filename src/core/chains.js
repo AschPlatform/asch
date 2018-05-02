@@ -343,7 +343,7 @@ private.attachApi = function () {
 private.get = function (name, cb) {
   (async function () {
     try {
-      let chain = await private.getChainByName( name )
+      let chain = await private.getChainByName(name)
       if (!chain) return cb('Chain not found')
       cb(null, chain)
     } catch (e) {
@@ -356,7 +356,7 @@ private.get = function (name, cb) {
 private.getByNames = function (names, cb) {
   (async function () {
     try {
-      let chains = app.sdb.getAllCached('Chain',  c => names.exists( n => n === c.name ) )
+      let chains = app.sdb.getAllCached('Chain', c => names.indexOf(c.name) >= 0)
       cb(null, chains)
     } catch (e) {
       library.logger.error(e)
@@ -896,17 +896,17 @@ Chains.prototype.onNewBlock = function (block, votes, broadcast) {
   });
 }
 
-private.getChainByName = async function ( name )  {
-  let chains = await app.sdb.getAllCached('Chain',  c => c.name === name )
+private.getChainByName = async function (name) {
+  let chains = await app.sdb.getAllCached('Chain', c => c.name === name)
   return chains !== undefined ? chains[0] : undefined
 }
 
 shared.getChain = function (req, cb) {
   (async function () {
     try {
-      let chain = await private.getChainByName( req.name )
+      let chain = await private.getChainByName(req.name)
       if (!chain) return cb('Not found')
-      let delegates = await app.sdb.findMany('ChainDelegate', { chain: req.chain } )
+      let delegates = await app.sdb.findMany('ChainDelegate', { chain: req.chain })
       if (delegates && delegates.length) {
         chain.delegates = delegates.map((d) => d.delegate)
       }
@@ -926,8 +926,8 @@ shared.setReady = function (req, cb) {
 
 shared.getLastWithdrawal = function (req, cb) {
   (async function () {
-    try {      
-      let withdrawals = await app.sdb.query('Withdrawal', { chain: req.chain }, 1, { seq: -1 } )
+    try {
+      let withdrawals = await app.sdb.query('Withdrawal', { chain: req.chain }, 1, { seq: -1 })
       if (!withdrawals || !withdrawals.length) {
         return cb(null, null)
       } else {
@@ -943,7 +943,7 @@ shared.getLastWithdrawal = function (req, cb) {
 shared.getDeposits = function (req, cb) {
   (async function () {
     try {
-      let deposits = await app.sdb.findMany('Deposit', { seq: { $gt: req.body.seq }, chain: req.chain }, 100 )
+      let deposits = await app.sdb.findMany('Deposit', { seq: { $gt: req.body.seq }, chain: req.chain }, 100)
       return cb(null, deposits)
     } catch (e) {
       library.logger.error(e)
