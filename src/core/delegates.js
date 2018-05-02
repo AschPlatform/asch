@@ -827,7 +827,7 @@ Delegates.prototype.getTopDelegates = function () {
   }).map((d) => {
     return d.publicKey
   })
-  return delegates
+  return delegates.slice(0, 101)
 }
 
 Delegates.prototype.getBookkeeperAddresses = function () {
