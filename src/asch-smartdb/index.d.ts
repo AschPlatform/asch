@@ -1,5 +1,55 @@
 export namespace AschCore
 {
+	//declarations/Block.d.ts
+	/// <reference types="node" />
+	export interface BlockHeader extends Entity {
+	    height: number;
+	    id?: string;
+	    timestamp?: number;
+	    payloadLength?: number;
+	    payloadHash?: string;
+	    prevBlockId?: string;
+	    pointId?: string;
+	    pointHeight?: number;
+	    delegate?: string;
+	    signature?: string;
+	    count?: number;
+	}
+	export type BigNumber = number;
+	export interface Transaction extends Entity {
+	    id: string;
+	    blockId: string;
+	    type: number;
+	    timestamp: number;
+	    senderPublicKey: Buffer;
+	    senderId: string;
+	    recipientId: string;
+	    amount: BigNumber;
+	    fee: BigNumber;
+	    signature?: Buffer;
+	    signSignature?: Buffer;
+	    signatures?: string;
+	    args?: string;
+	    message?: string;
+	}
+	export interface Block extends BlockHeader {
+	    transactions?: Array<Transaction>;
+	}
+
+	//declarations/BlockCache.d.ts
+	export class BlockCache {
+	    constructor(maxCachedCount: number);
+	    isCached(height: number): boolean;
+	    readonly cachedHeightRange: {
+	        min: number;
+	        max: number;
+	    };
+	    put(block: Block): void;
+	    get(height: number): MaybeUndefined<Block>;
+	    getById(id: string): MaybeUndefined<Block>;
+	    evit(fromHeight: number, toHeight: number): void;
+	}
+
 	//declarations/Common.d.ts
 	export interface ObjectLiteral {
 	    [key: string]: any;
@@ -17,19 +67,7 @@ export namespace AschCore
 	export type ReadonlyPartial<T> = {
 	    readonly [P in keyof T]: T[P];
 	};
-	export interface BlockHeader {
-	    height: number;
-	    id?: string;
-	    timestamp?: number;
-	    payloadLength?: number;
-	    payloadHash?: string;
-	    prevBlockId?: string;
-	    pointId?: string;
-	    pointHeight?: number;
-	    delegate?: string;
-	    signature?: string;
-	    count?: number;
-	}
+	export type FilterFunction<T> = (e: T) => boolean;
 	export type KeyValuePair = {
 	    key: string;
 	    value: any;
@@ -67,10 +105,10 @@ export namespace AschCore
 	    registerSchema(...schemas: Array<ModelSchema>): void;
 	    close(): Promise<void>;
 	    attachHistory(history: Map<number, Array<EntityChangesItem>>): void;
-	    getAllCached<TEntity>(model: ModelNameOrType<TEntity>, track?: boolean): Array<TEntity>;
+	    getAllCached<TEntity>(model: ModelNameOrType<TEntity>, filter?: FilterFunction<TEntity>, track?: boolean): Array<TEntity>;
 	    findAll<TEntity>(model: ModelNameOrType<TEntity>, track?: boolean): Promise<Array<TEntity>>;
 	    findMany<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean): Promise<Array<TEntity>>;
-	    query<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, fields?: Array<string>, limit?: number, offset?: number, sort?: JsonObject, join?: JsonObject): Promise<Array<Entity>>;
+	    query<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, fields?: Array<string>, limit?: number, offset?: number, sort?: JsonObject, join?: JsonObject): Promise<Array<TEntity>>;
 	    exists<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<boolean>;
 	    count<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<number>;
 	    create<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey, entity?: TEntity): TEntity;
@@ -109,7 +147,7 @@ export namespace AschCore
 	    models: Array<string>;
 	    clear(modelName?: string): void;
 	    get<TEntity>(modelName: string, key: EntityKey): MaybeUndefined<TEntity>;
-	    getAll<TEntity>(modelName: string): MaybeUndefined<Array<TEntity>>;
+	    getAll<TEntity>(modelName: string, filter?: FilterFunction<TEntity>): MaybeUndefined<Array<TEntity>>;
 	    put(modelName: string, entity: Entity, key: EntityKey): void;
 	    evit(modelName: string, key: EntityKey): void;
 	    exists(modelName: string, key: EntityKey): boolean;
@@ -119,7 +157,7 @@ export namespace AschCore
 	    clear(modelName?: string): void;
 	    readonly models: string[];
 	    get<TEntity>(modelName: string, key: EntityKey): MaybeUndefined<TEntity>;
-	    getAll<TEntity>(modelName: string): MaybeUndefined<Array<TEntity>>;
+	    getAll<TEntity>(modelName: string, filter?: FilterFunction<TEntity>): MaybeUndefined<Array<TEntity>>;
 	    put(modelName: string, entity: Entity, key: EntityKey): void;
 	    evit(modelName: string, key: EntityKey): void;
 	    exists(modelName: string, key: EntityKey): boolean;
@@ -244,6 +282,11 @@ export namespace AschCore
 	     */
 	    autoCleanPersistedHistory?: boolean;
 	    /**
+	     * cached last block count
+	     * @default 10
+	     */
+	    cachedBlockCount?: number;
+	    /**
 	     * max cached entity count, config it per model, LRU
 	     * sample: { User: 200, Trans: 5000 } max cached 200s User ，5000 for Trans
 	     * @default 10000s each model
@@ -281,7 +324,7 @@ export namespace AschCore
 	     * begin a new block
 	     * @param blockHeader
 	     */
-	    beginBlock(blockHeader: BlockHeader): void;
+	    beginBlock(block: Block): void;
 	    /**
 	     * commit block changes
 	     */
@@ -342,7 +385,7 @@ export namespace AschCore
 	     * @param model model name or model type
 	     * @param track track result
 	     */
-	    getAllCached<TEntity>(model: ModelNameOrType<TEntity>, track?: boolean): Array<TEntity>;
+	    getAllCached<TEntity>(model: ModelNameOrType<TEntity>, filter?: FilterFunction<TEntity>, track?: boolean): Array<TEntity>;
 	    /**
 	     * find entities from database
 	     * @param model model name or model type
@@ -360,7 +403,7 @@ export namespace AschCore
 	     * @param sort sort
 	     * @param join join info
 	     */
-	    query<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, fields?: Array<string>, limit?: number, offset?: number, sort?: JsonObject, join?: JsonObject): Promise<Array<Entity>>;
+	    query<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, limit?: number, sort?: JsonObject, fields?: Array<string>, offset?: number, join?: JsonObject): Promise<Array<Entity>>;
 	    /**
 	     * query if exists record by specified condition
 	     * @param model model name or model type
@@ -374,26 +417,30 @@ export namespace AschCore
 	     */
 	    count<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<number>;
 	    /**
+	     * last persisted block height
+	     */
+	    getLastBlockHeight(): Promise<number>;
+	    /**
 	     * get block header by height
 	     * @param height block height
 	     */
-	    getBlockByHeight(height: number): Promise<MaybeUndefined<BlockHeader>>;
+	    getBlockByHeight(height: number, withTransactions?: boolean): Promise<MaybeUndefined<Block>>;
 	    /**
 	     * get block header by block id
 	     * @param blockId block id
 	     */
-	    getBlockById(blockId: string): Promise<MaybeUndefined<BlockHeader>>;
+	    getBlockById(blockId: string, withTransactions?: boolean): Promise<MaybeUndefined<Block>>;
 	    /**
 	     * get block headers by height range
 	     * @param minHeight min height(included)
 	     * @param maxHeight max height(included)
 	     */
-	    getBlocksByHeightRange(minHeight: number, maxHeight: number): Promise<Array<BlockHeader>>;
+	    getBlocksByHeightRange(minHeight: number, maxHeight: number, withTransactions?: boolean): Promise<Array<Block>>;
 	    /**
 	     * get block headers by block id array
 	     * @param blockIds array of block id
 	     */
-	    getBlocksByIds(...blockIds: Array<string>): Promise<Array<BlockHeader>>;
+	    getBlocksByIds(blockIds: Array<string>, withTransactions?: boolean): Promise<Array<Block>>;
 	}
 
 	//declarations/KVDB/LevelDB.d.ts

@@ -15,11 +15,8 @@ var Router = require('./utils/router.js');
 var BalanceManager = require('./smartdb/balance-manager')
 var AutoIncrement = require('./smartdb/auto-increment')
 var FeePool = require('./smartdb/fee-pool')
-<<<<<<< Updated upstream
 var AccountRole = require('./utils/account-role')
-=======
 const AschCore = require('./asch-smartdb').AschCore
->>>>>>> Stashed changes
 
 class RouteWrapper {
   constructor() {

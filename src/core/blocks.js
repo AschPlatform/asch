@@ -1,4 +1,3 @@
-
 var assert = require('assert');
 var crypto = require('crypto');
 var ip = require('ip');
@@ -448,19 +447,9 @@ private.getIdSequence = function (height, cb) {
 private.getIdSequence2 = function (height, cb) {
   (async () => {
     try {
-      let blocks = await app.model.Block.findAll({
-        fields: ['id', 'height'],
-        condition: {
-          height: { $lte: height }
-        },
-        sort: {
-          height: -1
-        },
-        limit: 5
-      })
-      let ids = blocks.map((b) => {
-        return b.id
-      })
+      let maxHeight = Math.max( height, await app.sdb.getLastBlockHeight() )
+      let blocks = await app.sdb.getBlocksByHeightRange( maxHeight - 5, maxHeight )
+      let ids = blocks.map((b) => b.id )
       return cb(null, { ids: ids, firstHeight: blocks[blocks.length-1].height })
     } catch (e) {
       cb(e)
@@ -1119,7 +1108,7 @@ Blocks.prototype.applyRound = async function (block) {
   app.logger.debug('----------------------on round ' + round + ' end-----------------------')
   app.logger.debug('delegate length', delegates.length)
 
-  let forgedBlocks = await app.sdb.getBlocksByHeightRange( app.sdb.lastBlockHeight, )
+  let forgedBlocks = await app.sdb.getBlocksByHeightRange( app.sdb.lastBlockHeight - 100, app.sdb.lastBlockHeight )
   let forgedDelegates = forgedBlocks.map(function (b) {
     return b.delegate
   })
@@ -1150,10 +1139,12 @@ Blocks.prototype.applyRound = async function (block) {
   let rewardFounds = rewards - actualRewards
 
   function updateDelegate(pk, fee, reward) {
-    app.sdb.increment('Delegate', { fees: fee }, { publicKey: pk })
-    app.sdb.increment('Delegate', { rewards: reward }, { publicKey: pk })
-    let delegateInfo = app.sdb.get('Delegate', { publicKey: pk })
-    app.sdb.increment('Account', { xas: fee + reward }, { address: delegateInfo.address })
+    let delegate = app.sdb.get( 'Delegate', pk )
+    delegate.fees += fee
+    delegate.rewards += reward
+    
+    let account = app.sdb.get('Account', delegate.address )
+    account.xas += fee + reward 
   }
   for (let fd of forgedDelegates) {
     updateDelegate(fd, feeAverage, rewardAverage)
@@ -1483,16 +1474,12 @@ Blocks.prototype.onBind = function (scope) {
 
   (async () => {
     try {
-      let count = await app.model.Block.count()
+      let count = await app.sdb.getLastBlockHeight()
       app.logger.info('Blocks found:', count)
       if (count === 0) {
         await self.processBlock(genesisblock.block, {})
       } else {
-        let block = await app.model.Block.findOne({
-          condition: {
-            height: count - 1
-          }
-        })
+        let block = await app.sdb.getBlock( count - 1, true)
         self.setLastBlock(block)
       }
       library.bus.message('blockchainReady')
@@ -1544,13 +1531,13 @@ shared.getBlock = function (req, cb) {
 
     (async function () {
       try {
-        let condition
+        let block
         if (query.id) {
-          condition = { id: query.id }
+          block = await app.getBlockById( query.id )
         } else if (query.height) {
-          condition = { height: query.height }
+          block = await app.getBlock( query.height )
         }
-        let block = await app.model.Block.findOne({ condition })
+  
         if (!block) {
           return cb('Block not found')
         }
@@ -1587,16 +1574,14 @@ shared.getFullBlock = function (req, cb) {
 
     (async function () {
       try {
-        let condition
+        let block
         if (query.id) {
-          condition = { id: query.id }
+          block = await app.getBlockById( query.id, true )
         } else if (query.height) {
-          condition = { height: query.height }
+          block = await app.getBlock( query.height, true )
         }
-        let block = await app.model.Block.findOne({ condition })
+
         if (!block) return cb('Block not found')
-        let transactions = await app.model.Transaction.findAll({ condition: { height: block.height } })
-        block.transactions = transactions
         return cb(null, { block: block })
       } catch (e) {
         library.logger.error('Failed to find block', e)
@@ -1634,6 +1619,9 @@ shared.getBlocks = function (req, cb) {
       return cb(err[0].message);
     }
 
+    //FIXME get blocks from db 
+    return cb(null, { count : 0, blocks : [] })
+    /*
     (async function () {
       try {
         let offset = query.offset ? Number(query.offset) : 0
@@ -1651,6 +1639,8 @@ shared.getBlocks = function (req, cb) {
           }
           sort = { height: 1 }
         }
+
+        //TODO: get by delegate ??
         if (query.generatorPublicKey) {
           condition.delegate = query.generatorPublicKey
         }
@@ -1668,7 +1658,7 @@ shared.getBlocks = function (req, cb) {
         return cb('Server error')
       }
     })()
-
+    */
   });
 }
 
