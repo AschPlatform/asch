@@ -371,7 +371,7 @@ export namespace AschCore
 	    /**
 	     * load entity from database by condition
 	     * @param model model name or model type
-	     * @param condition see @type SqlCondition
+	     * @param condition see type SqlCondition
 	     */
 	    getBy<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<MaybeUndefined<TEntity>>;
 	    /**
@@ -389,31 +389,31 @@ export namespace AschCore
 	    /**
 	     * find entities from database
 	     * @param model model name or model type
-	     * @param condition find condition see @type SqlCondition
+	     * @param condition find condition, see type SqlCondition
 	     * @param track track and cache result if true
 	     */
 	    findMany<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean): Promise<Array<TEntity>>;
 	    /**
 	     * query entities from database
 	     * @param model model name or model type
-	     * @param condition query condition see @type SqlCondition
-	     * @param fields result fields, default is all fields
+	     * @param condition query condition, see type SqlCondition
 	     * @param limit limit of result count
-	     * @param offset offset of result set
 	     * @param sort sort
+	     * @param fields result fields, default is all fields
+	     * @param offset offset of result set
 	     * @param join join info
 	     */
 	    query<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, limit?: number, sort?: JsonObject, fields?: Array<string>, offset?: number, join?: JsonObject): Promise<Array<Entity>>;
 	    /**
 	     * query if exists record by specified condition
 	     * @param model model name or model type
-	     * @param condition query condition see @type SqlCondition
+	     * @param condition query condition, see type SqlCondition
 	     */
 	    exists<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<boolean>;
 	    /**
 	     * count records count by specified condition
 	     * @param model model name or model type
-	     * @param condition query condition see @type SqlCondition
+	     * @param condition query condition, see type SqlCondition
 	     */
 	    count<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<number>;
 	    /**

@@ -927,7 +927,7 @@ shared.setReady = function (req, cb) {
 shared.getLastWithdrawal = function (req, cb) {
   (async function () {
     try {      
-      let withdrawals = await app.sdb.query('Withdrawal', { chain: req.chain }, null, 1, 0, { seq: -1 } )
+      let withdrawals = await app.sdb.query('Withdrawal', { chain: req.chain }, 1, { seq: -1 } )
       if (!withdrawals || !withdrawals.length) {
         return cb(null, null)
       } else {

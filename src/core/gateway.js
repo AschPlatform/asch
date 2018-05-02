@@ -70,7 +70,7 @@ Gateway.prototype.importAccounts = async function () {
     app.sdb.create('GatewayLog', GATEWAY ,{ gateway: GATEWAY, type: GatewayLogType.IMPORT_ADDRESS, seq: 0 })
   }
   //query( model, condition, fields, limit, offset, sort, join )
-  let gatewayAccounts = await app.sdb.query('GatewayAccount', { gateway: GATEWAY, seq: { $gt: lastSeq } }, null,  100, null, { seq: 1 } )
+  let gatewayAccounts = await app.sdb.query('GatewayAccount', { gateway: GATEWAY, seq: { $gt: lastSeq } }, 100, { seq: 1 } )
   library.logger.debug('find gateway account', gatewayAccounts)
   let len = gatewayAccounts.length
   if (len > 0) {
@@ -171,7 +171,7 @@ Gateway.prototype.processWithdrawals = async function () {
   
   let lastSeq = lastWithdrawalLog.seq
 
-  let withdrawals = await app.sdb.query('GatewayWithdrawal', { gateway: GATEWAY, seq: { $gt: lastSeq }  }, null, PAGE_SIZE )
+  let withdrawals = await app.sdb.query('GatewayWithdrawal', { gateway: GATEWAY, seq: { $gt: lastSeq }  }, PAGE_SIZE )
   library.logger.debug('get gateway withdrawals', withdrawals)
   if (!withdrawals || !withdrawals.length) {
     return
@@ -226,6 +226,7 @@ Gateway.prototype.processWithdrawals = async function () {
     }
   }
   lastWithdrawalLog.seq = withdrawals[withdrawals.length - 1].seq
+  app.sdb.saveLocalChanges()
 }
 
 Gateway.prototype.sendWithdrawals = async function () {
