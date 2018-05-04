@@ -410,14 +410,14 @@ private.getKeysSortByVote = function (cb) {
   (async function () {
     try {
       let delegates = await app.sdb.getAllCached('Delegate')
-      delegates.sort( (d1, d2) => ( d1.votes === d2.votes ) ? d1.publicKey - d2.publicKey : d1.votes - d2.votes )
+      delegates.sort((d1, d2) => (d1.votes === d2.votes) ? d1.publicKey - d2.publicKey : d1.votes - d2.votes)
       delegates = delegates.slice(0, 101)
-      
+
       //TODO: validate delegates length = 101 ??
       if (!delegates || !delegates.length) {
         cb('No active delegates found')
       }
-      let keys = delegates.map( d => d.publicKey ).sort( (l, r) => l < r )
+      let keys = delegates.map(d => d.publicKey).sort((l, r) => l < r)
       cb(null, keys)
     } catch (e) {
       cb('Database error: ' + e)
@@ -811,11 +811,10 @@ Delegates.prototype.getTopDelegates = function () {
   for (let d of app.sdb.getAllCached('Delegate')) {
     delegatesMap.set(d.name, d)
   }
-  
-  return [...delegateMap.values()].sort(　(l, r) =>   
-    (l.votes !== r.votes) ?  r.votes - l.votes : l.publicKey < r.publicKey
-  )
-  .map( d => d.publicKey )
+
+  return [...delegateMap.values()].sort((l, r) =>
+    (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey
+  ).map(d => d.publicKey).slice(0, 101)
 }
 
 Delegates.prototype.getBookkeeperAddresses = function () {
@@ -829,7 +828,7 @@ Delegates.prototype.getBookkeeperAddresses = function () {
 }
 
 Delegates.prototype.getBookkeeper = function () {
-  let item = app.sdb.getCached('Variable', BOOK_KEEPER_NAME )
+  let item = app.sdb.getCached('Variable', BOOK_KEEPER_NAME)
   if (!item) throw new Error('Bookkeeper variable not found')
   return JSON.parse(item.value)
 }
@@ -837,7 +836,7 @@ Delegates.prototype.getBookkeeper = function () {
 Delegates.prototype.updateBookkeeper = function () {
   let delegates = this.getTopDelegates()
   let value = JSON.stringify(delegates)
-  let bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME ) || 
+  let bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME) ||
     app.sdb.create('Variable', BOOK_KEEPER_NAME, { key: BOOK_KEEPER_NAME, value: value })
 
   bookKeeper.value = value
@@ -920,11 +919,11 @@ shared.getVoters = function (req, cb) {
 
     (async function () {
       try {
-        let votes = await app.sdb.findMany('Vote', { delegate: query.name } )
+        let votes = await app.sdb.findMany('Vote', { delegate: query.name })
         if (!votes || !votes.length) return cb(null, { accounts: [] })
 
         let addresses = votes.map((v) => v.address)
-        let accounts = await app.sdb.findMany('Account', { address: { $in: addresses } } )
+        let accounts = await app.sdb.findMany('Account', { address: { $in: addresses } })
         let lastBlock = modules.blocks.getLastBlock();
         let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
         for (let a of accounts) {

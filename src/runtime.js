@@ -247,10 +247,11 @@ module.exports = async function (options) {
   }
 
   app.AccountRole = AccountRole
-  
 
-  const BLOCK_HEADER_DIR = path.get( __dirname , options.dbFile || 'block_db/blockHeader' )
-  const BLOCK_DB_PATH = path.get( __dirname, options.blockHeaderDir || 'block_db/blockchain.db')
+  let baseDir = options.appConfig.baseDir
+
+  const BLOCK_HEADER_DIR = path.join(baseDir, options.blockHeaderDir || 'data/blockHeader')
+  const BLOCK_DB_PATH = path.join(baseDir, options.dbFile || 'data/blockchain.db')
 
   app.sdb = new AschCore.SmartDB(BLOCK_DB_PATH, BLOCK_HEADER_DIR)
   app.balances = new BalanceManager(app.sdb)
@@ -262,8 +263,7 @@ module.exports = async function (options) {
     address: require('./utils/address.js')
   }
 
-  let rootDir = options.appConfig.baseDir
-  let builtinModelDir = path.join(rootDir, 'builtin')
+  let builtinModelDir = path.join(baseDir, 'builtin')
   await loadModels(path.join(builtinModelDir, 'model'))
   await loadContracts(path.join(builtinModelDir, 'contract'))
   await loadInterfaces(path.join(builtinModelDir, 'interface'), options.library.network.app)

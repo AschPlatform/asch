@@ -27,6 +27,19 @@ async function getAssetMap(assetNames) {
   return assetMap
 }
 
+async function getTransactionMap(tids) {
+  let trsMap = new Map
+  let trs = await app.model.Transaction.findAll({
+    condition: {
+      id: { $in: tids }
+    }
+  })
+  for (let t of trs) {
+    trsMap.set(t.id, t)
+  }
+  return trsMap
+}
+
 module.exports = function (router) {
   router.get('/', async (req) => {
     let ownerId = req.query.ownerId
@@ -89,10 +102,13 @@ module.exports = function (router) {
         }
       }
       let assetMap = await getAssetMap(assetNames)
+      let tids = transfers.map((t) => t.tid)
+      let trsMap = await getTransactionMap(tids)
       for (let t of transfers) {
         if (t.currency !== 'XAS') {
           t.asset = assetMap.get(t.currency)
         }
+        t.transaction = trsMap.get(t.tid)
       }
     }
     return { count, transfers }

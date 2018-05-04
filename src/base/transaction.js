@@ -681,11 +681,11 @@ Transaction.prototype.objectNormalize = function (trs) {
       height: { type: "integer" },
       type: { type: "integer" },
       timestamp: { type: "integer" },
-      senderPublicKey: { type: "string", format: "publicKey" },
+      // senderPublicKey: { type: "string", format: "publicKey" },
       fee: { type: "integer", minimum: 0, maximum: constants.totalAmount },
       secondSignature: { type: "string", format: "signature" },
       signatures: { type: "array" },
-      args: { type: "array" },
+      // args: { type: "array" },
       message: { type: "string", maxLength: 256 }
     },
     required: ['type', 'timestamp', 'senderPublicKey', 'signatures']
