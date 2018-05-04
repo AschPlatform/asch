@@ -56,10 +56,10 @@ export namespace AschCore
 	}
 	export type JsonObject = ObjectLiteral;
 	export type Entity = ObjectLiteral;
-	export type KeyObject = {
+	export interface KeyObject {
 	    key: string;
-	    keyPart(name: string): string | number;
-	};
+	    keyJson: JsonObject;
+	}
 	export type EntityKey = string | number | KeyObject;
 	export type Partial<T> = {
 	    [P in keyof T]?: T[P];
@@ -73,8 +73,10 @@ export namespace AschCore
 	    value: any;
 	};
 	export type Callback<TResult> = (err: Error | null, data: TResult) => void;
-	export function makeJsonObject<T>(iterable: Iterable<T>, getKey: (t: T) => string, getValue: (t: T) => any): {};
+	export function makeJsonObject<T>(iterable: Iterable<T>, getKey: (t: T) => string, getValue: (t: T) => any): JsonObject;
 	export function deepCopy<T>(src: T): T;
+	export function partial<T>(src: T, ...keys: Array<string>): Partial<T>;
+	export function isPrimitiveKey(key: any): boolean;
 	export class CodeContractError extends Error {
 	    constructor(message: string);
 	}
@@ -106,9 +108,9 @@ export namespace AschCore
 	    close(): Promise<void>;
 	    attachHistory(history: Map<number, Array<EntityChangesItem>>): void;
 	    getAllCached<TEntity>(model: ModelNameOrType<TEntity>, filter?: FilterFunction<TEntity>, track?: boolean): Array<TEntity>;
-	    attach<TEntity>(schema: ModelSchema, entity: TEntity): MaybeUndefined<TEntity>;
-	    findAll<TEntity>(model: ModelNameOrType<TEntity>, track?: boolean): Promise<Array<TEntity>>;
-	    findMany<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean, cache?: boolean): Promise<Array<TEntity>>;
+	    attach<TEntity>(schema: ModelSchema, key: EntityKey): MaybeUndefined<TEntity>;
+	    getAll<TEntity>(model: ModelNameOrType<TEntity>, track?: boolean): Promise<Array<TEntity>>;
+	    getMany<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean, cache?: boolean): Promise<Array<TEntity>>;
 	    query<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, resultRange?: SqlResultRange, sort?: SqlOrder, fields?: Array<string>, join?: JsonObject): Promise<Array<TEntity>>;
 	    queryByJson<TEntity>(model: ModelNameOrType<TEntity>, params: JsonObject): Promise<Array<TEntity>>;
 	    exists<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<boolean>;
@@ -116,7 +118,7 @@ export namespace AschCore
 	    create<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey, entity?: TEntity): TEntity;
 	    load<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey): Promise<MaybeUndefined<TEntity>>;
 	    getChanges(): Array<EntityChangesItem>;
-	    loadCached<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey): MaybeUndefined<TEntity>;
+	    loadCached<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey, track?: boolean): MaybeUndefined<TEntity>;
 	    /**
 	     * Save changes to database
 	     * @returns serial number for saveChanges
@@ -153,6 +155,7 @@ export namespace AschCore
 	    put(modelName: string, key: EntityKey, entity: Entity): void;
 	    evit(modelName: string, key: EntityKey): void;
 	    exists(modelName: string, key: EntityKey): boolean;
+	    existsModel(modelName: string): boolean;
 	}
 	export class LRUEntityCache implements EntityCache {
 	    constructor(options?: EntityCacheOptions);
@@ -163,6 +166,7 @@ export namespace AschCore
 	    put(modelName: string, key: EntityKey, entity: Entity): void;
 	    evit(modelName: string, key: EntityKey): void;
 	    exists(modelName: string, key: EntityKey): boolean;
+	    existsModel(modelName: string): boolean;
 	    dumpCache(): string;
 	}
 
@@ -171,14 +175,14 @@ export namespace AschCore
 	    constructor(dir: string, levelOptions?: {});
 	    open(): Promise<void>;
 	    close(): Promise<void>;
-	    getLastBlockHeight(): number;
+	    readonly lastBlockHeight: number;
 	    appendBlock(block: BlockHeader, changes: Array<EntityChangesItem>): Promise<void>;
 	    getBlock(height: number): Promise<MaybeUndefined<BlockHeader>>;
 	    getHistoryChanges(minHeight: number, maxHeight: number): Promise<Map<number, Array<EntityChangesItem>>>;
 	    deleteLastBlock(height: number): Promise<void>;
 	    getBlockById(blockId: string): Promise<MaybeUndefined<BlockHeader>>;
 	    getBlocksByHeightRange(minHeight: number, maxHeight: number): Promise<Array<BlockHeader>>;
-	    getBlocksByIds(...blockIds: Array<string>): Promise<Array<BlockHeader>>;
+	    getBlocksByIds(blockIds: Array<string>): Promise<Array<BlockHeader>>;
 	}
 
 	//declarations/Log.d.ts
@@ -246,18 +250,21 @@ export namespace AschCore
 	    tableFields: Array<Field>;
 	}
 	export class CompositeKey implements KeyObject {
-	    constructor(entity: Entity, ...fields: Array<string>);
-	    static makeKey(...values: Array<string | number>): string;
+	    constructor(keyObject: JsonObject);
+	    static make<TEntity>(schema: ModelSchema, entity: TEntity): CompositeKey;
+	    static fromString(keyJsonString: string): CompositeKey;
+	    readonly keyJson: JsonObject;
 	    readonly key: string;
-	    keyPart(name: string): string | number;
+	    toString(): string;
 	}
+	export function isCompositeKey(key: any): boolean;
 	export class ModelSchema {
 	    constructor(schema: Schema, name: string);
 	    getFieldTypes(schema: Schema): Map<string, string>;
 	    readonly schemaObject: Schema;
 	    readonly isCompsiteKey: boolean;
-	    readonly primaryKey: string;
-	    readonly keyFields: string[];
+	    readonly primaryKey: MaybeUndefined<string>;
+	    readonly compositeKeys: string[];
 	    readonly fieldNames: Array<string>;
 	    readonly indexes: Array<string>;
 	    readonly modelName: string;
@@ -352,12 +359,18 @@ export namespace AschCore
 	     */
 	    rollbackLocalChanges(serial: number): Promise<void>;
 	    /**
-	     * refresh entity and tracking given entity, WARN: entity may be changed
+	     * get entity key
 	     * @param model model modelName or model type
 	     * @param entity entity
+	     */
+	    getEntityKey<TEntity>(model: ModelNameOrType<TEntity>, entity: TEntity): MaybeUndefined<EntityKey>;
+	    /**
+	     * get tracking entity by key
+	     * @param model model modelName or model type
+	     * @param key entity key
 	     * @returns tracked entity or undefined
 	     */
-	    attach<TEntity>(model: ModelNameOrType<TEntity>, entity: TEntity): MaybeUndefined<TEntity>;
+	    attach<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey): MaybeUndefined<TEntity>;
 	    /**
 	     * create a new entity which change will be tracked and persistented (by saveChanges) automatically
 	     * @param model modelName or model type
@@ -365,7 +378,7 @@ export namespace AschCore
 	     * @param entity prototype entity which properties will copy to result entity
 	     * @returns tracking entity
 	     */
-	    create<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey, entity?: TEntity): TEntity;
+	    create<TEntity>(model: ModelNameOrType<TEntity>, keyOrEntity: EntityKey | TEntity): TEntity;
 	    /**
 	     * update a entity
 	     * @param model modelName or model type
@@ -400,8 +413,10 @@ export namespace AschCore
 	     * load entity from cache only
 	     * @param model model name or model type
 	     * @param key key of entity
+	     * @param track track result
+	     * @returns tracked entity from cache
 	     */
-	    getCached<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey): MaybeUndefined<TEntity>;
+	    getCached<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey, track?: boolean): MaybeUndefined<TEntity>;
 	    /**
 	     * get all cached entities
 	     * @param model model name or model type
@@ -539,7 +554,7 @@ export namespace AschCore
 	}
 
 	//declarations/SQLDB/SqlBuilder.d.ts
-	export const MULTI_SQL_SEPARATOR = "//;//";
+	export const MULTI_SQL_SEPARATOR = ";";
 	export enum SqlType {
 	    Schema = 0,
 	    Select = 1,
@@ -711,7 +726,7 @@ export namespace AschCore
 	    static isProxied(entity: Entity): boolean;
 	    static convertToProxied<TEntity>(entity: Entity): Proxied<TEntity>;
 	    static proxyToEntity(proxied: Proxied<Entity>): Entity;
-	    static isNormalProperty(propertyName: string): boolean | "";
+	    static isNormalProperty(propertyName: string): boolean;
 	    static isDirty(entity: Entity): boolean;
 	    /**
 	     * Make entity wrapped by proxy so that state changes can be detected and collected
@@ -731,7 +746,7 @@ export namespace AschCore
 	export type EntityTrackerAction = (model: string, entity: Entity, changes: EntityChanges) => void;
 	export interface EntityTracker {
 	    readonly trackingEntities: Iterable<Entity>;
-	    isTracking(schema: ModelSchema, entity: Entity): boolean;
+	    isTracking(schema: ModelSchema, key: EntityKey): boolean;
 	    trackNew(schema: ModelSchema, entity: Entity): Entity;
 	    trackPersistent(schema: ModelSchema, entity: Entity): Entity;
 	    trackDelete(schema: ModelSchema, entity: Entity): void;
@@ -750,7 +765,7 @@ export namespace AschCore
 	    constructor(cache: EntityCache);
 	    splitModelAndKey(modelAndKey: ModelAndKey): {
 	        model: string;
-	        key: any;
+	        key: EntityKey;
 	    };
 	    attachHistory(history: Map<number, Array<EntityChangesItem>>): void;
 	    readonly historyVersion: {
@@ -761,7 +776,7 @@ export namespace AschCore
 	    getLastChanges(pe: Proxied<any>): MaybeUndefined<EntityChanges>;
 	    getChangesUntil(historyVersion: number): Array<Map<ModelAndKey, EntityChanges>>;
 	    readonly trackingEntities: Iterable<Entity>;
-	    isTracking(schema: ModelSchema, entity: Entity): boolean;
+	    isTracking(schema: ModelSchema, key: EntityKey): boolean;
 	    getTrackingEntity<TEntity>(schema: ModelSchema, key: EntityKey): MaybeUndefined<Proxied<TEntity>>;
 	    trackNew<TEntity>(schema: ModelSchema, entity: TEntity): TEntity;
 	    trackDelete(schema: ModelSchema, entity: Entity): void;
