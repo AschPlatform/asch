@@ -106,9 +106,11 @@ export namespace AschCore
 	    close(): Promise<void>;
 	    attachHistory(history: Map<number, Array<EntityChangesItem>>): void;
 	    getAllCached<TEntity>(model: ModelNameOrType<TEntity>, filter?: FilterFunction<TEntity>, track?: boolean): Array<TEntity>;
+	    attach<TEntity>(schema: ModelSchema, entity: TEntity): MaybeUndefined<TEntity>;
 	    findAll<TEntity>(model: ModelNameOrType<TEntity>, track?: boolean): Promise<Array<TEntity>>;
-	    findMany<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean): Promise<Array<TEntity>>;
-	    query<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, fields?: Array<string>, limit?: number, offset?: number, sort?: JsonObject, join?: JsonObject): Promise<Array<TEntity>>;
+	    findMany<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean, cache?: boolean): Promise<Array<TEntity>>;
+	    query<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, resultRange?: SqlResultRange, sort?: SqlOrder, fields?: Array<string>, join?: JsonObject): Promise<Array<TEntity>>;
+	    queryByJson<TEntity>(model: ModelNameOrType<TEntity>, params: JsonObject): Promise<Array<TEntity>>;
 	    exists<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<boolean>;
 	    count<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<number>;
 	    create<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey, entity?: TEntity): TEntity;
@@ -148,7 +150,7 @@ export namespace AschCore
 	    clear(modelName?: string): void;
 	    get<TEntity>(modelName: string, key: EntityKey): MaybeUndefined<TEntity>;
 	    getAll<TEntity>(modelName: string, filter?: FilterFunction<TEntity>): MaybeUndefined<Array<TEntity>>;
-	    put(modelName: string, entity: Entity, key: EntityKey): void;
+	    put(modelName: string, key: EntityKey, entity: Entity): void;
 	    evit(modelName: string, key: EntityKey): void;
 	    exists(modelName: string, key: EntityKey): boolean;
 	}
@@ -158,7 +160,7 @@ export namespace AschCore
 	    readonly models: string[];
 	    get<TEntity>(modelName: string, key: EntityKey): MaybeUndefined<TEntity>;
 	    getAll<TEntity>(modelName: string, filter?: FilterFunction<TEntity>): MaybeUndefined<Array<TEntity>>;
-	    put(modelName: string, entity: Entity, key: EntityKey): void;
+	    put(modelName: string, key: EntityKey, entity: Entity): void;
 	    evit(modelName: string, key: EntityKey): void;
 	    exists(modelName: string, key: EntityKey): boolean;
 	    dumpCache(): string;
@@ -231,8 +233,9 @@ export namespace AschCore
 	    type: FieldType;
 	    length?: number;
 	    index?: boolean;
-	    primary_key?: boolean;
 	    not_null?: boolean;
+	    primary_key?: boolean;
+	    composite_key?: boolean;
 	    default?: number | string | null;
 	}
 	export interface Schema {
@@ -289,7 +292,7 @@ export namespace AschCore
 	    /**
 	     * max cached entity count, config it per model, LRU
 	     * sample: { User: 200, Trans: 5000 } max cached 200s User ，5000 for Trans
-	     * @default 10000s each model
+	     * @default 5000 each model
 	     */
 	    entityCacheOptions?: EntityCacheOptions;
 	};
@@ -311,7 +314,7 @@ export namespace AschCore
 	     * initialize SmartDB , you need call this before use SmartDB
 	     * @param schemas table schemas in Database
 	     */
-	    init(...schemas: Array<ModelSchema>): Promise<void>;
+	    init(schemas: Array<ModelSchema>): Promise<void>;
 	    /**
 	     * free resources
 	     */
@@ -320,6 +323,10 @@ export namespace AschCore
 	     * height of last block
 	     */
 	    readonly lastBlockHeight: number;
+	    /**
+	     * blocks count
+	     */
+	    readonly blocksCount: number;
 	    /**
 	     * begin a new block
 	     * @param blockHeader
@@ -345,10 +352,18 @@ export namespace AschCore
 	     */
 	    rollbackLocalChanges(serial: number): Promise<void>;
 	    /**
+	     * refresh entity and tracking given entity, WARN: entity may be changed
+	     * @param model model modelName or model type
+	     * @param entity entity
+	     * @returns tracked entity or undefined
+	     */
+	    attach<TEntity>(model: ModelNameOrType<TEntity>, entity: TEntity): MaybeUndefined<TEntity>;
+	    /**
 	     * create a new entity which change will be tracked and persistented (by saveChanges) automatically
 	     * @param model modelName or model type
 	     * @param key entity key which uniqued in database
 	     * @param entity prototype entity which properties will copy to result entity
+	     * @returns tracking entity
 	     */
 	    create<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey, entity?: TEntity): TEntity;
 	    /**
@@ -375,6 +390,13 @@ export namespace AschCore
 	     */
 	    getBy<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<MaybeUndefined<TEntity>>;
 	    /**
+	   * get entities from database
+	   * @param model model name or model type
+	   * @param condition find condition, see type SqlCondition
+	   * @param track track and cache result if true
+	   */
+	    getMany<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean): Promise<Array<TEntity>>;
+	    /**
 	     * load entity from cache only
 	     * @param model model name or model type
 	     * @param key key of entity
@@ -389,21 +411,26 @@ export namespace AschCore
 	    /**
 	     * find entities from database
 	     * @param model model name or model type
-	     * @param condition find condition, see type SqlCondition
-	     * @param track track and cache result if true
-	     */
-	    findMany<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean): Promise<Array<TEntity>>;
-	    /**
-	     * query entities from database
-	     * @param model model name or model type
 	     * @param condition query condition, see type SqlCondition
-	     * @param limit limit of result count
-	     * @param sort sort
+	     * @param resultRange limit and offset of results number or json, eg: 10 or { limit : 10, offset : 1 }
+	     * @param sort json { fieldName : 'ASC' | 'DESC' } , eg: { name : 'ASC', age : 'DESC' }
 	     * @param fields result fields, default is all fields
 	     * @param offset offset of result set
 	     * @param join join info
 	     */
-	    query<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, limit?: number, sort?: JsonObject, fields?: Array<string>, offset?: number, join?: JsonObject): Promise<Array<Entity>>;
+	    find<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, resultRange?: SqlResultRange, sort?: SqlOrder, fields?: Array<string>, join?: JsonObject): Promise<Array<Entity>>;
+	    /**
+	     * find entities from database
+	     * @param model model name or model type
+	     * @param params mango like query params object
+	     */
+	    findOne<TEntity>(model: ModelNameOrType<TEntity>, params: JsonObject): Promise<MaybeUndefined<Entity>>;
+	    /**
+	   * find entities from database
+	   * @param model model name or model type
+	   * @param params mango like query params object
+	   */
+	    findAll<TEntity>(model: ModelNameOrType<TEntity>, params: JsonObject): Promise<Array<Entity>>;
 	    /**
 	     * query if exists record by specified condition
 	     * @param model model name or model type
@@ -416,10 +443,6 @@ export namespace AschCore
 	     * @param condition query condition, see type SqlCondition
 	     */
 	    count<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<number>;
-	    /**
-	     * last persisted block height
-	     */
-	    getLastBlockHeight(): Promise<number>;
 	    /**
 	     * get block header by height
 	     * @param height block height
@@ -506,8 +529,8 @@ export namespace AschCore
 	    querySync(sql: string, parameters?: SqlParameters): Array<any>;
 	    execute(sql: string, parameters?: SqlParameters, throwIfNoneEffected?: boolean): Promise<SqlExecuteResult>;
 	    executeSync(sql: string, parameters?: SqlParameters, throwIfNoneEffected?: boolean): SqlExecuteResult;
-	    executeBatchSync(...sqls: Array<SqlAndParameters>): Array<SqlExecuteResult>;
-	    executeBatch(...sqls: Array<SqlAndParameters>): Promise<Array<SqlExecuteResult>>;
+	    executeBatchSync(sqls: Array<SqlAndParameters>): Array<SqlExecuteResult>;
+	    executeBatch(sqls: Array<SqlAndParameters>): Promise<Array<SqlExecuteResult>>;
 	    beginTrans(): Promise<DBTransaction>;
 	}
 	export interface DBTransaction {
@@ -543,10 +566,11 @@ export namespace AschCore
 	        [key: string]: any;
 	    };
 	};
+	export type ValueExpression = string | number;
 	export type FieldValueExpression = {
 	    [field: string]: string | number;
 	};
-	export type ArrayValueExpression = {
+	export type FieldArrayValueExpression = {
 	    [field: string]: Array<string | number>;
 	};
 	export type NullCompareExpression = {
@@ -556,15 +580,19 @@ export namespace AschCore
 	        [field: string]: null;
 	    };
 	};
-	export type ValueCompareExpression = {
-	    [oper in '$eq' | '$ne' | '$gt' | '$lt' | '$gte' | '$lte']?: FieldValueExpression | SelectExpression;
-	} | FieldValueExpression;
-	export type ArrayCompareExpression = {
-	    [oper in '$between' | '$in' | '$nin']?: ArrayValueExpression | SelectExpression;
+	export type ValueCompareExpression = FieldValueExpression | {
+	    [field: string]: {
+	        [oper in '$eq' | '$ne' | '$gt' | '$lt' | '$gte' | '$lte']?: ValueExpression | SelectExpression;
+	    };
+	};
+	export type ArrayCompareExpression = FieldArrayValueExpression | {
+	    [field: string]: {
+	        [oper in '$between' | '$in' | '$nin']?: Array<ValueExpression> | SelectExpression;
+	    };
 	};
 	export type LikeExpression = {
-	    $like: {
-	        [key: string]: string;
+	    [key: string]: {
+	        $like: string;
 	    };
 	};
 	export type CompareExpression = ValueCompareExpression | ArrayCompareExpression | LikeExpression | NullCompareExpression;
@@ -574,19 +602,29 @@ export namespace AschCore
 	    [oper in '$and' | '$or']?: Array<CompareExpression> | Array<RelationExpression>;
 	};
 	export type SqlCondition = CompareExpression | RelationExpression;
+	export type LimitAndOffset = {
+	    limit?: number;
+	    offset?: number;
+	};
+	export type SqlResultRange = number | LimitAndOffset;
+	export type SqlOrderItem = {
+	    [field: string]: 'ASC' | 'DESC' | 1 | -1;
+	};
+	export type SqlOrder = SqlOrderItem | Array<SqlOrderItem>;
 	export interface SqlBuilder {
-	    buildSchema: (schema: ModelSchema) => string;
-	    buildInsert: (schema: ModelSchema, fieldValues: JsonObject) => SqlAndParameters;
-	    buildDelete: (schema: ModelSchema, key: any) => SqlAndParameters;
-	    buildUpdate: (schema: ModelSchema, key: any, fieldValues: JsonObject, version: number) => SqlAndParameters;
-	    buildSelect: (schema: ModelSchema, fields: Array<string>, where: SqlCondition, limit?: number, offset?: number, sort?: Array<JsonObject> | JsonObject, join?: JsonObject) => SqlAndParameters;
+	    buildSchema(schema: ModelSchema): string;
+	    buildInsert(schema: ModelSchema, fieldValues: JsonObject): SqlAndParameters;
+	    buildDelete(schema: ModelSchema, key: EntityKey): SqlAndParameters;
+	    buildUpdate(schema: ModelSchema, key: EntityKey, fieldValues: JsonObject, version: number): SqlAndParameters;
+	    buildSelect(schema: ModelSchema, params: JsonObject): SqlAndParameters;
+	    buildSelect(schema: ModelSchema, fields: Array<string>, where: SqlCondition, resultRange?: SqlResultRange, sort?: SqlOrder, join?: JsonObject): SqlAndParameters;
 	}
 	export class JsonSqlBuilder implements SqlBuilder {
 	    buildSchema(schema: ModelSchema): string;
 	    buildInsert(schema: ModelSchema, fieldValues: JsonObject): SqlAndParameters;
 	    buildDelete(schema: ModelSchema, key: EntityKey): SqlAndParameters;
 	    buildUpdate(schema: ModelSchema, key: EntityKey, fieldValues: JsonObject, version: number): SqlAndParameters;
-	    buildSelect(schema: ModelSchema, fields: Array<string>, where?: SqlCondition, limit?: number, offset?: number, sort?: Array<JsonObject> | JsonObject, join?: JsonObject): SqlAndParameters;
+	    buildSelect(schema: ModelSchema, fieldsOrParams: Array<string> | JsonObject, where?: SqlCondition, resultRange?: SqlResultRange, sort?: SqlOrder, join?: JsonObject): SqlAndParameters;
 	}
 
 	//declarations/SQLDB/SqliteConnection.d.ts
@@ -598,8 +636,8 @@ export namespace AschCore
 	    disconnect(): Promise<boolean>;
 	    query(sql: string, parameters?: SqlParameters): Promise<Array<any>>;
 	    querySync(sql: string, parameters?: SqlParameters): Array<any>;
-	    executeBatchSync(...sqls: Array<SqlAndParameters>): Array<SqlExecuteResult>;
-	    executeBatch(...sqls: Array<SqlAndParameters>): Promise<Array<SqlExecuteResult>>;
+	    executeBatchSync(sqls: Array<SqlAndParameters>): Array<SqlExecuteResult>;
+	    executeBatch(sqls: Array<SqlAndParameters>): Promise<Array<SqlExecuteResult>>;
 	    executeSync(sql: string, parameters?: SqlParameters, throwIfNoneEffected?: boolean): SqlExecuteResult;
 	    execute(sql: string, parameters?: SqlParameters, throwIfNoneEffected?: boolean): Promise<SqlExecuteResult>;
 	    runScript(sql: string): Promise<void>;
