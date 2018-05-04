@@ -2,6 +2,7 @@ const bignum = require('bignumber')
 
 module.exports = {
   openAccount: async function (gateway) {
+    app.sdb.lock('gateway.openAccount@' + this.trs.senderId)
     let exists = await app.model.GatewayAccount.exists({ address: this.trs.senderId })
     if (exists) return 'Account already opened'
     let validators = await app.model.GatewayMember.findAll({ condition: { gateway: gateway, elected: 1 } })
