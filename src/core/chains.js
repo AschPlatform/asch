@@ -897,7 +897,7 @@ Chains.prototype.onNewBlock = function (block, votes, broadcast) {
 }
 
 private.getChainByName = async function (name) {
-  let chains = await app.sdb.getAllCached('Chain', c => c.name === name)
+  let chains = app.sdb.getAllCached('Chain', c => c.name === name)
   return chains !== undefined ? chains[0] : undefined
 }
 
@@ -906,7 +906,7 @@ shared.getChain = function (req, cb) {
     try {
       let chain = await private.getChainByName(req.name)
       if (!chain) return cb('Not found')
-      let delegates = await app.sdb.findMany('ChainDelegate', { chain: req.chain })
+      let delegates = await app.sdb.findAll('ChainDelegate', { condition: { chain: req.chain } })
       if (delegates && delegates.length) {
         chain.delegates = delegates.map((d) => d.delegate)
       }
@@ -927,7 +927,7 @@ shared.setReady = function (req, cb) {
 shared.getLastWithdrawal = function (req, cb) {
   (async function () {
     try {
-      let withdrawals = await app.sdb.query('Withdrawal', { chain: req.chain }, 1, { seq: -1 })
+      let withdrawals = await app.sdb.find('Withdrawal', { chain: req.chain }, 1, { seq: -1 })
       if (!withdrawals || !withdrawals.length) {
         return cb(null, null)
       } else {

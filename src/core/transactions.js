@@ -608,12 +608,8 @@ Transactions.prototype.getTransactions = function (req, cb) {
 
   (async () => {
     try {
-      let count = await app.model.Transaction.count(condition)
-      let transactions = await app.model.Transaction.findAll({
-        condition: condition,
-        limit: limit,
-        offset: offset
-      })
+      let count = await app.sdb.count('Transaction', condition)
+      let transactions = await app.sdb.find('Transaction', condition, { limit, offset })
       if (!transactions) transactions = []
       return cb(null, { transactions: transactions, count: count })
     } catch (e) {
@@ -628,12 +624,8 @@ Transactions.prototype.getTransaction = function (req, cb) {
     try {
       if (!req.params || !req.params.id) return cb('Invalid transaction id')
       let id = req.params.id
-      let trs = await app.model.Transaction.findOne({
-        condition: {
-          id: id
-        }
-      })
-      if (!trs) return cb('Transaction not found')
+      let trs = await app.sdb.query('Transaction', { id: id })
+      if (!trs || !trs.length) return cb('Transaction not found')
       return cb(null, { transaction: trs })
     } catch (e) {
       return cb('System error: ' + e)
@@ -674,7 +666,7 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
   }
   let height = modules.blocks.getLastBlock().height
 
-  let sender = await app.model.Account.findOne({ condition: { address: transaction.senderId } })
+  let sender = await app.sdb.get('Account', transaction.senderId)
   if (!sender) throw new Error('Sender account not found')
 
   if (height > 0) {
@@ -682,7 +674,7 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
     if (error) throw new Error(error)
   }
 
-  let exists = await app.model.Transaction.exists({ id: transaction.id })
+  let exists = await app.sdb.exists('Transaction', { id: transaction.id })
   if (exists) {
     throw new Error('Transaction already confirmed')
   }
@@ -803,7 +795,7 @@ shared.getTransactions = function (req, cb) {
     }
 
     (async function () {
-      let transactions = await app.model.Transaction.findAll({ limit: 20 })
+      let transactions = await app.sdb.findAll('Transaction', { limit: 20 })
     })()
     private.list(query, function (err, data) {
       if (err) {

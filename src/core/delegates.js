@@ -409,8 +409,8 @@ private.attachApi = function () {
 private.getKeysSortByVote = function (cb) {
   (async function () {
     try {
-      let delegates = await app.sdb.getAllCached('Delegate')
-      delegates.sort((d1, d2) => (d1.votes === d2.votes) ? d1.publicKey - d2.publicKey : d1.votes - d2.votes)
+      let delegates = app.sdb.getAllCached('Delegate')
+      delegates.sort((d1, d2) => (d1.votes === d2.votes) ? d1.publicKey < d2.publicKey : d1.votes - d2.votes)
       delegates = delegates.slice(0, 101)
 
       //TODO: validate delegates length = 101 ??
@@ -738,7 +738,7 @@ Delegates.prototype.validateBlockSlot = function (block, cb) {
 Delegates.prototype.getDelegates = function (query, cb) {
   (async function () {
     try {
-      let delegates = await app.sdb.getAllCached('Delegate')
+      let delegates = app.sdb.getAllCached('Delegate')
       if (!delegates || !delegates.length) return cb('No delegates')
 
       delegates = delegates.sort(function (l, r) {
@@ -892,7 +892,7 @@ shared.getDelegate = function (req, cb) {
 shared.count = function (req, cb) {
   (async function () {
     try {
-      let count = await app.sdb.count('Delegate')
+      let count = app.sdb.getAllCached('Delegate').length
       return cb(null, { count })
     } catch (e) {
       library.logger.error('get delegate count error', e)
@@ -919,11 +919,11 @@ shared.getVoters = function (req, cb) {
 
     (async function () {
       try {
-        let votes = await app.sdb.findMany('Vote', { delegate: query.name })
+        let votes = await app.sdb.findAll('Vote', { condition: { delegate: query.name } })
         if (!votes || !votes.length) return cb(null, { accounts: [] })
 
         let addresses = votes.map((v) => v.address)
-        let accounts = await app.sdb.findMany('Account', { address: { $in: addresses } })
+        let accounts = await app.sdb.findAll('Account', { condition: { address: { $in: addresses } } })
         let lastBlock = modules.blocks.getLastBlock();
         let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
         for (let a of accounts) {

@@ -447,7 +447,7 @@ private.getIdSequence = function (height, cb) {
 private.getIdSequence2 = function (height, cb) {
   (async () => {
     try {
-      let maxHeight = Math.max(height, await app.sdb.getLastBlockHeight())
+      let maxHeight = Math.max(height, private.lastBlock.height)
       let blocks = await app.sdb.getBlocksByHeightRange(maxHeight - 5, maxHeight)
       let ids = blocks.map((b) => b.id)
       return cb(null, { ids: ids, firstHeight: blocks[blocks.length - 1].height })
@@ -1067,7 +1067,7 @@ Blocks.prototype.saveBlockTransactions = function (block) {
     trs.height = block.height
     trs.args = JSON.stringify(trs.args)
     trs.signatures = JSON.stringify(trs.signatures)
-    app.sdb.create('Transaction', trs.id, trs)
+    app.sdb.create('Transaction', trs)
   }
   app.logger.trace('Blocks#save transactions')
 }
@@ -1086,17 +1086,16 @@ Blocks.prototype.applyRound = async function (block) {
     return
   }
 
-  //TODO : TEST...
-  let delegate = app.sdb.getCached('Delegate', modules.accounts.generateAddressByPublicKey(block.delegate))
-  deletage.producedBlocks = deletage.producedBlocks + 1
+  let delegate = app.sdb.getCached('Delegate', modules.accounts.generateAddressByPublicKey(block.delegate), true)
+  deletage.producedBlocks += 1
 
   let delegates = await PIFY(modules.delegates.generateDelegateList)(block.height)
 
   // process fee
   let roundNumber = Math.floor((block.height + delegates.length - 1) / delegates.length)
 
-  let round = app.sdb.load('Round', roundNumber) ||
-    app.sdb.create('Round', round, { fees: 0, rewards: 0, round: roundNumber })
+  let round = app.sdb.get('Round', roundNumber) ||
+    app.sdb.create('Round', { fees: 0, rewards: 0, round: roundNumber })
 
   let transFee = 0
   for (let t of block.transactions) {
@@ -1108,7 +1107,7 @@ Blocks.prototype.applyRound = async function (block) {
 
   if (block.height % 101 !== 0) return
 
-  app.logger.debug('----------------------on round ' + round + ' end-----------------------')
+  app.logger.debug('----------------------on round ' + roundNumber + ' end-----------------------')
   app.logger.debug('delegate length', delegates.length)
 
   let forgedBlocks = await app.sdb.getBlocksByHeightRange(app.sdb.lastBlockHeight - 100, app.sdb.lastBlockHeight)
@@ -1123,12 +1122,12 @@ Blocks.prototype.applyRound = async function (block) {
     }
   }
   for (let md of missedDelegates) {
-    app.sdb.increment('Delegate', { missedBlocks: 1 }, { publicKey: md })
+    let addr = modules.accounts.generateAddressByPublicKey(md)
+    app.sdb.getCached('Delegate', addr, true).missedBlocks += 1
   }
 
-  let roundStat = app.sdb.get('Round', { round: round })
-  let fees = roundStat.fees
-  let rewards = roundStat.rewards
+  let fees = round.fees
+  let rewards = round.rewards
   let ratio = 0.8
 
   let actualFees = Math.floor(fees * ratio)
@@ -1142,12 +1141,13 @@ Blocks.prototype.applyRound = async function (block) {
   let rewardFounds = rewards - actualRewards
 
   function updateDelegate(pk, fee, reward) {
-    let delegate = app.sdb.get('Delegate', pk)
+    let addr = modules.accounts.generateAddressByPublicKey(pk)
+    let delegate = app.sdb.getCached('Delegate', addr, true)
     delegate.fees += fee
     delegate.rewards += reward
 
-    let account = app.sdb.get('Account', delegate.address)
-    account.xas += fee + reward
+    let account = await app.sdb.get('Account', delegate.address)
+    account.xas += (fee + reward)
   }
   for (let fd of forgedDelegates) {
     updateDelegate(fd, feeAverage, rewardAverage)
@@ -1477,13 +1477,12 @@ Blocks.prototype.onBind = function (scope) {
 
   (async () => {
     try {
-      // FIXME
-      let count = await app.sdb.getLastBlockHeight()
+      let count = app.sdb.blocksCount
       app.logger.info('Blocks found:', count)
       if (!count) {
         await self.processBlock(genesisblock.block, {})
       } else {
-        let block = await app.sdb.getBlock(count - 1, true)
+        let block = await app.sdb.getBlockByHeight(count - 1)
         self.setLastBlock(block)
       }
       library.bus.message('blockchainReady')
@@ -1641,7 +1640,7 @@ shared.getBlocks = function (req, cb) {
         // if (query.generatorPublicKey) {
         //   condition.delegate = query.generatorPublicKey
         // }
-        let count = await app.sdb.getLastBlockHeight()
+        let count = app.sdb.blocksCount
         if (!count) throw new Error('Failed to get blocks count')
 
         let blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
