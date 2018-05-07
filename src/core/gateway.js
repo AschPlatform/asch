@@ -313,7 +313,7 @@ Gateway.prototype.sendWithdrawals = async function () {
   for (let w of withdrawals) {
     if (!w.outTransaction) {
       library.logger.debug('out transaction not created')
-      return
+      continue
     }
     let preps = await app.model.GatewayWithdrawalPrep.findAll({ condition: { wid: w.tid } })
     if (preps.length < unlockNumber) {
