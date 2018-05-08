@@ -812,7 +812,7 @@ Delegates.prototype.getTopDelegates = function () {
     delegatesMap.set(d.name, d)
   }
 
-  return [...delegateMap.values()].sort((l, r) =>
+  return [...delegatesMap.values()].sort((l, r) =>
     (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey
   ).map(d => d.publicKey).slice(0, 101)
 }
@@ -828,15 +828,15 @@ Delegates.prototype.getBookkeeperAddresses = function () {
 }
 
 Delegates.prototype.getBookkeeper = function () {
-  let item = app.sdb.getCached('Variable', BOOK_KEEPER_NAME)
+  let item = app.sdb.getCached('Variable', BOOK_KEEPER_NAME, true)
   if (!item) throw new Error('Bookkeeper variable not found')
   return JSON.parse(item.value)
 }
 
-Delegates.prototype.updateBookkeeper = function () {
-  let delegates = this.getTopDelegates()
+Delegates.prototype.updateBookkeeper = function ( delegates ) {
+  delegates = delegates || this.getTopDelegates()
   let value = JSON.stringify(delegates)
-  let bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME) ||
+  let bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME, true) ||
     app.sdb.create('Variable', BOOK_KEEPER_NAME, { key: BOOK_KEEPER_NAME, value: value })
 
   bookKeeper.value = value

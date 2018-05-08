@@ -7,7 +7,7 @@ class BalanceManager {
   }
 
   _getBalanceId(address, currency){
-    return AschCore.CompositeKey.makeKey( address, currency)
+    return app.sdb.getEntityKey('Balance', { address, currency } )
   }
 
   get(address, currency) {

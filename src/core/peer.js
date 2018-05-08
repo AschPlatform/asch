@@ -228,6 +228,7 @@ private.getByFilter = function (filter, cb) {
 // Public methods
 Peer.prototype.list = function (options, cb) {
   options.limit = options.limit || 100;
+  return cb (null, [])
 
   app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.chain ? " inner join peer_chains pd on p.id = pd.peerId and pd.chain = $chain " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
     "ip": String,
@@ -396,6 +397,7 @@ Peer.prototype.onBind = function (scope) {
   modules = scope;
 }
 
+/*
 Peer.prototype.onBlockchainReady = function () {
   let initSqls = [
     'CREATE UNIQUE INDEX IF NOT EXISTS peers_unique ON peers(ip, port)',
@@ -427,7 +429,7 @@ Peer.prototype.onBlockchainReady = function () {
     });
   })
 }
-
+*/
 Peer.prototype.onPeerReady = function () {
   setImmediate(function nextUpdatePeerList() {
     private.updatePeerList(function (err) {

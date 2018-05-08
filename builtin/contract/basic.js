@@ -33,7 +33,22 @@ function isUniq(arr) {
 }
 
 module.exports = {
-  transfer: async function (amount, recipient) {
+  transfer: async function ( amount, recipient ) {
+    async function getRecipientAccount ( nameOrAddress ) {
+      if ( app.util.address.isNormalAddress(nameOrAddress)) {
+        // address 
+        let recipientAccount = await app.sdb.get('Account', nameOrAddress) 
+        // FIXME recipient public key
+        return { recipientAccount: recipientAccount || app.sdb.create('Account', { 
+          address: nameOrAddress,
+          xas: amount,
+          name: '' }), err : null }
+      }
+      // account name
+      let recipientAccount = await app.sdb.getBy('Account', { name: recipient } )
+      return { recipientAccount, err: recipientAccount ? null : 'Recipient name not exist' }
+    }
+
     // FIXME validate recipient is valid address
     if (!recipient) return 'Invalid recipient'
     app.validate('amount', String(amount))
@@ -44,37 +59,21 @@ module.exports = {
 
     let senderId = this.trs.senderId
     amount = Number(amount)
-    let sender = app.sdb.get('Account', { address: senderId })
+    let sender = await app.sdb.get('Account', senderId)
     if ((!sender || !sender.xas || sender.xas < amount) && this.block.height > 0) return 'Insufficient balance'
 
-    app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
+    let { recipientAccount, err } = await getRecipientAccount(recipient)
+    if ( err ) return err 
 
-    let recipientAddress
-    let recipientName = ''
-    if (app.util.address.isNormalAddress(recipient)) {
-      recipientAddress = recipient
-    } else {
-      recipientName = recipient
-      let recipientAccount = await app.model.Account.findOne({ condition: { name: recipient } })
-      if (!recipientAccount) return 'Recipient name not exist'
-      recipientAddress = recipientAccount.address
-    }
+    // TODO: check it
+    if ( sender ) sender.xas -= amount
+    recipientAccount.xas += amount
 
-    let condition = { address: recipientAddress }
-    if (!app.sdb.get('Account', condition)) {
-      app.sdb.create('Account', {
-        address: recipientAddress,
-        xas: amount,
-        name: ''
-      })
-    } else {
-      app.sdb.increment('Account', { xas: amount }, condition)
-    }
     app.sdb.create('Transfer', {
       tid: this.trs.id,
       senderId: senderId,
-      recipientId: recipientAddress,
-      recipientName: recipientName,
+      recipientId: recipientAccount.address,
+      recipientName: recipientAccount.name,
       currency: 'XAS',
       amount: amount,
       timestamp: this.trs.timestamp
@@ -95,14 +94,13 @@ module.exports = {
         name: name
       })
     } else {
-      let exists = await app.model.Account.exists({ name: name })
+      let exists = await app.sdb.exists('Account', { name: name })
       if (exists) return 'Name already registered'
 
-      let condition = { address: senderId }
-      let account = await app.model.Account.findOne({ condition: condition })
+      let account = await app.sdb.get('Account', senderId )
       if (account && !!account.name) return 'Name already set'
 
-      app.sdb.update('Account', { name: name }, { address: senderId })
+      account.name = name
     }
   },
 
@@ -268,12 +266,12 @@ module.exports = {
     app.sdb.lock('basic.registerDelegate@' + senderId)
     let sender
     if (this.block.height > 0) {
-      sender = await app.model.Account.findOne({ condition: { address: senderId } })
+      sender = await app.sdb.get('Account', senderId )
       if (!sender) return 'Account not found'
       if (!sender.name) return 'Account has not a name'
       if (sender.role) return 'Account already have a role'
     } else {
-      sender = app.sdb.get('Account', { address: senderId })
+      sender = await app.sdb.get('Account', senderId ) 
     }
     app.sdb.create('Delegate', {
       address: senderId,
@@ -286,8 +284,8 @@ module.exports = {
       fees: 0,
       rewards: 0
     })
-    app.sdb.update('Account', { isDelegate: 1 }, { address: senderId })
-    app.sdb.update('Account', { role: app.AccountRole.DELEGATE }, { address: senderId })
+    sender.isDelegate = 1
+    sender.role =  app.AccountRole.DELEGATE
   },
 
   vote: async function (delegates) {

@@ -497,7 +497,7 @@ Transaction.prototype.apply = async function (transaction, block) {
     if (!sender) throw new Error('Sender account not found')
     if (!sender.xas || sender.xas < transaction.fee) throw new Error('Insufficient balance')
 
-    app.sdb.increment('Account', { xas: -1 * transaction.fee }, { address: transaction.senderId })
+    sender.xas += -1 * transaction.fee
   }
 
   let name = app.getContractName(transaction.type)
@@ -517,13 +517,13 @@ Transaction.prototype.apply = async function (transaction, block) {
     block: block
   }
 
-  app.sdb.beginTransaction()
+  //app.sdb.beginTransaction()
   let error = await fn.apply(bind, transaction.args)
   if (error) {
     throw new Error(error)
   }
 
-  app.sdb.commitTransaction()
+  //app.sdb.commitTransaction()
 }
 
 Transaction.prototype.undo = function (trs, block, sender, cb) {
