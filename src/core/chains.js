@@ -943,7 +943,7 @@ shared.getLastWithdrawal = function (req, cb) {
 shared.getDeposits = function (req, cb) {
   (async function () {
     try {
-      let deposits = await app.sdb.findMany('Deposit', { seq: { $gt: req.body.seq }, chain: req.chain }, 100)
+      let deposits = await app.sdb.getMany('Deposit', { seq: { $gt: req.body.seq }, chain: req.chain }, 100)
       return cb(null, deposits)
     } catch (e) {
       library.logger.error(e)

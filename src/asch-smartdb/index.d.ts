@@ -280,6 +280,8 @@ export namespace AschCore
 	//declarations/SmartDB.d.ts
 	/// <reference types="node" />
 	import { EventEmitter } from 'events';
+	export type CommitBlockHook = (block: Block) => void;
+	export type RollbackBlockHook = (fromHeight: number, toHeight: number) => void;
 	export type SmartDBOptions = {
 	    /**
 	     * cached history count(block count), used to rollback block
@@ -318,6 +320,28 @@ export namespace AschCore
 	     */
 	    constructor(dbPath: string, levelBlockDir: string, options?: SmartDBOptions);
 	    /**
+	     * register commit block hook, which will be called before commit block
+	     * @param name hook name
+	     * @param hookFunc hook function , ( block ) => void
+	     */
+	    registerCommitBlockHook(name: string, hookFunc: CommitBlockHook): void;
+	    /**
+	     * unregister commit block hook
+	     * @param name hook name
+	     */
+	    unregisterCommitBlockHook(name: string): void;
+	    /**
+	     * register rollback block hook, which will be called before commit block
+	     * @param name hook name
+	     * @param hookFunc hook function , ( fromHeight, toHeight ) => void
+	     */
+	    registerRollbackBlockHook(name: string, hookFunc: RollbackBlockHook): void;
+	    /**
+	     * unregister rollback block hook
+	     * @param name hook name
+	     */
+	    unregisterRollbackBlockHook(name: string): void;
+	    /**
 	     * initialize SmartDB , you need call this before use SmartDB
 	     * @param schemas table schemas in Database
 	     */
@@ -334,6 +358,16 @@ export namespace AschCore
 	     * blocks count
 	     */
 	    readonly blocksCount: number;
+	    /**
+	     * last commited block
+	     */
+	    readonly lastBlock: MaybeUndefined<Block>;
+	    /**
+	     * hold a lock name which only succeed in first time of each block.
+	     * @param lockName lock name
+	     * @param notThrow do not throw exception if lock failed
+	     */
+	    lockInCurrentBlock(lockName: string, notThrow?: boolean): boolean;
 	    /**
 	     * begin a new block
 	     * @param blockHeader

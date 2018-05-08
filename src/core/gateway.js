@@ -78,7 +78,8 @@ Gateway.prototype.importAccounts = async function () {
       await PIFY(gatewayLib.bitcoin.importAddress)(a.outAddress)
     }
 
-    let log = await app.sdb.get( AschCore.CompositeKey.makeKey( GATEWAY, GatewayLogType.IMPORT_ADDRESS) )
+    let key = app.sdb.getEntityKey('GatewayLog', { gateway : GATEWAY, type :GatewayLogType.IMPORT_ADDRESS })
+    let log = await app.sdb.get( key )
     log.seq = gatewayAccounts[len - 1].seq 
   }
 }
@@ -90,7 +91,7 @@ Gateway.prototype.processDeposits = async function () {
   const GATEWAY = global.Config.gateway.name
   const CURRENCY = 'BTC'
 
-  let validators = await app.sdb.findMany('GatewayMember', { gateway: GATEWAY,  elected: 1 })
+  let validators = await app.sdb.getMany('GatewayMember', { gateway: GATEWAY,  elected: 1 })
   if (!validators || !validators.length) {
     library.logger.error('Validators not found')
     return
@@ -101,12 +102,12 @@ Gateway.prototype.processDeposits = async function () {
     return
   }
 
-  const gatewayLogKey = AschCore.CompositeKey.makeKey( GATEWAY, GatewayLogType.DEPOSIT )
+  const gatewayLogKey = app.sdb.getEntityKey( 'GatewayAccount', { gateway: GATEWAY, type:GatewayLogType.DEPOSIT } )
   let lastDepositLog = await app.sdb.get('GatewayLog', gatewayLogKey )
   library.logger.debug('find DEPOSIT log', lastDepositLog)
 
   lastDepositLog = lastDepositLog || 
-    await app.sdb.create('GatewayLog', gatewayLogKey, { gateway: GATEWAY, type: GatewayLogType.DEPOSIT, seq: 0 } )
+    await app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.DEPOSIT, seq: 0 } )
   
   let lastSeq = lastDepositLog.seq
   let ret = await PIFY(gatewayLib.bitcoin.getTransactionsFromBlockHeight)(lastSeq)
@@ -149,7 +150,7 @@ Gateway.prototype.processWithdrawals = async function () {
   }
   let GATEWAY = global.Config.gateway.name
   let PAGE_SIZE = 25
-  let validators = await app.sdb.findMany('GatewayMember', { gateway: GATEWAY, elected: 1 } )
+  let validators = await app.sdb.getMany('GatewayMember', { gateway: GATEWAY, elected: 1 } )
   if (!validators || !validators.length) {
     library.logger.error('Validators not found')
     return
@@ -161,8 +162,7 @@ Gateway.prototype.processWithdrawals = async function () {
   let multiAccount = app.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
   library.logger.debug('gateway validators cold account', multiAccount)
 
-  let withdrawalLogKey = AschCore.CompositeKey.makeKey( GATEWAY, GatewayLogType.WITHDRAWAL )
-  
+  let withdrawalLogKey = app.sdb.getEntityKey( 'GatewayLog', { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL } )
   let lastWithdrawalLog = await app.sdb.get('GatewayLog', withdrawalLogKey )
   library.logger.debug('find ==========WITHDRAWAL============ log', lastWithdrawalLog)
 

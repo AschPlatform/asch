@@ -822,8 +822,8 @@ Blocks.prototype.applyBlock = async function (block, options) {
   app.logger.trace('enter applyblock')
   let appliedTransactions = {}
 
+  app.sdb.beginBlock(block)
   try {
-    app.sdb.beginBlock(block)
     for (let i in block.transactions) {
       let transaction = block.transactions[i]
       transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
@@ -1026,7 +1026,8 @@ Blocks.prototype.processBlock = async function (block, options) {
 
   try {
     // self.processFee(block)
-    self.saveBlock(block)
+    //self.saveBlock(block)
+    self.saveBlockTransactions(block)
     await self.applyRound(block)
     await app.sdb.commitBlock()
   } catch (e) {
@@ -1091,14 +1092,14 @@ Blocks.prototype.applyRound = async function (block) {
   }
 
   let delegate = app.sdb.getCached('Delegate', modules.accounts.generateAddressByPublicKey(block.delegate), true)
-  deletage.producedBlocks += 1
+  delegate.producedBlocks += 1
 
   let delegates = await PIFY(modules.delegates.generateDelegateList)(block.height)
 
   // process fee
   let roundNumber = Math.floor((block.height + delegates.length - 1) / delegates.length)
 
-  let round = app.sdb.get('Round', roundNumber) ||
+  let round = await app.sdb.get('Round', roundNumber) ||
     app.sdb.create('Round', { fees: 0, rewards: 0, round: roundNumber })
 
   let transFee = 0
@@ -1150,9 +1151,10 @@ Blocks.prototype.applyRound = async function (block) {
     delegate.fees += fee
     delegate.rewards += reward
 
-    let account = await app.sdb.get('Account', delegate.address)
+    let account = app.sdb.getCached('Account', delegate.address, true)
     account.xas += (fee + reward)
   }
+
   for (let fd of forgedDelegates) {
     updateDelegate(fd, feeAverage, rewardAverage)
   }
@@ -1287,6 +1289,7 @@ Blocks.prototype.generateBlock = async function (keypair, timestamp) {
   library.logger.info("get active delegate keypairs len: " + activeKeypairs.length);
   var localVotes = library.base.consensus.createVotes(activeKeypairs, block);
   if (library.base.consensus.hasEnoughVotes(localVotes)) {
+    app.sdb.beginBlock( block )
     await this.processBlock(block, { local: true, broadcast: true, votes: localVotes })
     library.logger.log('Forged new block id: ' + id +
       ' height: ' + height +
@@ -1488,7 +1491,13 @@ Blocks.prototype.onBind = function (scope) {
       let count = app.sdb.blocksCount
       app.logger.info('Blocks found:', count)
       if (!count) {
+        let hookName = 'hook_for_updateBookkeeper' 
+        app.sdb.registerCommitBlockHook( hookName, (block) => 
+          modules.delegates.updateBookkeeper( genesisblock.block.transactions.filter( t=> t.type === 10 ).map( t => t.senderPublicKey ) ) 
+        )
         await self.processBlock(genesisblock.block, {})
+        app.sdb.unregisterCommitBlockHook(hookName)
+        
       } else {
         let block = await app.sdb.getBlockByHeight(count - 1)
         self.setLastBlock(block)

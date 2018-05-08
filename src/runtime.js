@@ -65,6 +65,7 @@ async function loadModels(dir) {
     let schema = require(fullpath)
     schemas.push(new AschCore.ModelSchema(schema, modelName))
   }
+  app.sdb.lock = ( name ) => app.sdb.lockInCurrentBlock(name)
   await app.sdb.init(schemas)
 }
 
@@ -250,8 +251,8 @@ module.exports = async function (options) {
 
   let baseDir = options.appConfig.baseDir
 
-  const BLOCK_HEADER_DIR = path.join(baseDir, options.blockHeaderDir || 'data/blockHeader')
-  const BLOCK_DB_PATH = path.join(baseDir, options.dbFile || 'data/blockchain.db')
+  const BLOCK_HEADER_DIR = path.resolve(baseDir, options.blockHeaderDir || 'data/blockHeader')
+  const BLOCK_DB_PATH = path.resolve(baseDir, options.dbFile || 'data/blockchain.db')
 
   app.sdb = new AschCore.SmartDB(BLOCK_DB_PATH, BLOCK_HEADER_DIR)
   app.balances = new BalanceManager(app.sdb)
