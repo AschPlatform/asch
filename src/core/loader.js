@@ -73,7 +73,8 @@ private.loadFullDb = function (peer, cb) {
 }
 
 private.findUpdate = function (lastBlock, peer, cb) {
-  var peerStr = peer ? ip.fromLong(peer.ip) + ":" + peer.port : 'unknown';
+  const contact = peer[1]
+  const peerStr = contact.hostname + ':' + contact.port
 
   library.logger.info("Looking for common block with " + peerStr);
 
@@ -87,8 +88,7 @@ private.findUpdate = function (lastBlock, peer, cb) {
     var toRemove = lastBlock.height - commonBlock.height;
 
     if (toRemove >= 5) {
-      library.logger.error("long fork, ban 60 min", peerStr);
-      modules.peer.state(peer.ip, peer.port, 0, 3600);
+      library.logger.error("long fork with peer " + peerStr);
       return cb();
     }
 
@@ -111,7 +111,6 @@ private.findUpdate = function (lastBlock, peer, cb) {
       modules.blocks.loadBlocksFromPeer(peer, commonBlock.id, function (err, lastValidBlock) {
         if (err) {
           library.logger.error("Failed to load blocks, ban 60 min: " + peerStr, err);
-          modules.peer.state(peer.ip, peer.port, 0, 3600);
         }
         cb();
       });
@@ -120,21 +119,19 @@ private.findUpdate = function (lastBlock, peer, cb) {
 }
 
 private.loadBlocks = function (lastBlock, cb) {
-  modules.transport.getFromRandomPeer({
-    api: '/height',
-    method: 'GET'
-  }, function (err, data) {
-    var peerStr = data && data.peer ? ip.fromLong(data.peer.ip) + ":" + data.peer.port : 'unknown';
-    if (err || !data.body) {
-      library.logger.log("Failed to get height from peer: " + peerStr);
+  modules.peer.randomRequest('height', {}, function (err, ret, peer) {
+    if (err) {
+      library.logger.error("Failed to request form random peer", { err: err, peer: peer });
       return cb();
     }
 
+    const contact = peer[1]
+    let peerStr = contact.hostname + ':' + contact.port
     library.logger.info("Check blockchain on " + peerStr);
 
-    data.body.height = parseInt(data.body.height);
+    ret.height = parseInt(ret.height);
 
-    var report = library.scheme.validate(data.body, {
+    var report = library.scheme.validate(ret, {
       type: "object",
       properties: {
         "height": {
@@ -149,13 +146,13 @@ private.loadBlocks = function (lastBlock, cb) {
       return cb();
     }
 
-    if (bignum(modules.blocks.getLastBlock().height).lt(data.body.height)) {
-      private.blocksToSync = data.body.height;
+    if (bignum(lastBlock.height).lt(ret.height)) {
+      private.blocksToSync = ret.height;
 
       if (lastBlock.id != private.genesisBlock.block.id) {
-        private.findUpdate(lastBlock, data.peer, cb);
+        private.findUpdate(lastBlock, peer, cb);
       } else {
-        private.loadFullDb(data.peer, cb);
+        private.loadFullDb(peer, cb);
       }
     } else {
       cb();
@@ -163,51 +160,8 @@ private.loadBlocks = function (lastBlock, cb) {
   });
 }
 
-private.loadSignatures = function (cb) {
-  modules.transport.getFromRandomPeer({
-    api: '/signatures',
-    method: 'GET',
-    not_ban: true
-  }, function (err, data) {
-    if (err) {
-      return cb();
-    }
-
-    library.scheme.validate(data.body, {
-      type: "object",
-      properties: {
-        signatures: {
-          type: "array",
-          uniqueItems: true
-        }
-      },
-      required: ['signatures']
-    }, function (err) {
-      if (err) {
-        return cb();
-      }
-
-      library.sequence.add(function loadSignatures(cb) {
-        async.eachSeries(data.body.signatures, function (signature, cb) {
-          async.eachSeries(signature.signatures, function (s, cb) {
-            modules.multisignatures.processSignature({
-              signature: s,
-              transaction: signature.transaction
-            }, function (err) {
-              setImmediate(cb);
-            });
-          }, cb);
-        }, cb);
-      }, cb);
-    });
-  });
-}
-
 private.loadUnconfirmedTransactions = function (cb) {
-  modules.transport.getFromRandomPeer({
-    api: '/transactions',
-    method: 'GET'
-  }, function (err, data) {
+  modules.peer.randomRequest('transactions', {}, function (err, data, peer) {
     if (err) {
       return cb()
     }
@@ -233,10 +187,10 @@ private.loadUnconfirmedTransactions = function (cb) {
       try {
         transactions[i] = library.base.transaction.objectNormalize(transactions[i]);
       } catch (e) {
-        var peerStr = data.peer ? ip.fromLong(data.peer.ip) + ":" + data.peer.port : 'unknown';
+        const contact = peer[1]
+        var peerStr = contact.hostname + ':' + contact.port
         library.logger.log('Transaction ' + (transactions[i] ? transactions[i].id : 'null') + ' is not valid, ban 60 min', peerStr);
-        modules.peer.state(data.peer.ip, data.peer.port, 0, 3600);
-        return setImmediate(cb);
+        return cb()
       }
     }
 
@@ -250,147 +204,6 @@ private.loadUnconfirmedTransactions = function (cb) {
       modules.transactions.receiveTransactions(trs, cb);
     }, cb);
   });
-}
-
-private.loadBalances = function (cb) {
-  library.model.getAllNativeBalances(function (err, results) {
-    if (err) return cb('Failed to load native balances: ' + err)
-    for (let i = 0; i < results.length; ++i) {
-      let { address, balance } = results[i]
-      library.balanceCache.setNativeBalance(address, balance)
-    }
-    library.balanceCache.commit()
-    cb(null)
-  })
-}
-
-private.loadBlockChain = function (cb) {
-  var offset = 0, limit = Number(library.config.loading.loadPerIteration) || 1000;
-  var verify = library.config.loading.verifyOnLoading;
-
-  function load(count) {
-    verify = true;
-    private.total = count;
-
-    library.base.account.removeTables(function (err) {
-      if (err) {
-        throw err;
-      } else {
-        library.base.account.createTables(function (err) {
-          if (err) {
-            throw err;
-          } else {
-            async.until(
-              function () {
-                return count < offset
-              }, function (cb) {
-                if (count > 1) {
-                  library.logger.info("Rebuilding blockchain, current block height:" + offset);
-                }
-                setImmediate(function () {
-                  modules.blocks.loadBlocksOffset(limit, offset, verify, function (err, lastBlockOffset) {
-                    if (err) {
-                      return cb(err);
-                    }
-
-                    offset = offset + limit;
-                    private.loadingLastBlock = lastBlockOffset;
-
-                    cb();
-                  });
-                })
-              }, function (err) {
-                if (err) {
-                  library.logger.error('loadBlocksOffset', err);
-                  if (err.block) {
-                    library.logger.error('Blockchain failed at ', err.block.height)
-                    modules.blocks.simpleDeleteAfterBlock(err.block.id, function (err, res) {
-                      if (err) return cb(err)
-                      library.logger.error('Blockchain clipped');
-                      private.loadBalances(cb);
-                    })
-                  } else {
-                    cb(err);
-                  }
-                } else {
-                  library.logger.info('Blockchain ready');
-                  private.loadBalances(cb);
-                }
-              }
-            )
-          }
-        });
-      }
-    });
-  }
-
-  library.base.account.createTables(function (err) {
-    if (err) {
-      throw err;
-    } else {
-      library.dbLite.query("select count(*) from mem_accounts where blockId = (select id from blocks where numberOfTransactions > 0 order by height desc limit 1)", { 'count': Number }, function (err, rows) {
-        if (err) {
-          throw err;
-        }
-
-        var reject = !(rows[0].count);
-
-        modules.blocks.count(function (err, count) {
-          if (err) {
-            return library.logger.error('Failed to count blocks', err)
-          }
-
-          library.logger.info('Blocks ' + count);
-
-          // Check if previous loading missed
-          // if (reject || verify || count == 1) {
-          if (verify || count == 1) {
-            load(count);
-          } else {
-            library.dbLite.query(
-              "UPDATE mem_accounts SET u_isDelegate=isDelegate,u_secondSignature=secondSignature,u_username=username,u_balance=balance,u_delegates=delegates,u_multisignatures=multisignatures"
-              , function (err, updated) {
-                if (err) {
-                  library.logger.error(err);
-                  library.logger.info("Failed to verify db integrity 1");
-                  load(count);
-                } else {
-                  library.dbLite.query("select a.blockId, b.id from mem_accounts a left outer join blocks b on b.id = a.blockId where b.id is null", {}, ['a_blockId', 'b_id'], function (err, rows) {
-                    if (err || rows.length > 0) {
-                      library.logger.error(err || "Encountered missing block, looks like node went down during block processing");
-                      library.logger.info("Failed to verify db integrity 2");
-                      load(count);
-                    } else {
-                      // Load delegates
-                      library.dbLite.query("SELECT lower(hex(publicKey)) FROM mem_accounts WHERE isDelegate=1", ['publicKey'], function (err, delegates) {
-                        if (err || delegates.length == 0) {
-                          library.logger.error(err || "No delegates, reload database");
-                          library.logger.info("Failed to verify db integrity 3");
-                          load(count);
-                        } else {
-                          modules.blocks.loadBlocksOffset(1, count, verify, function (err, lastBlock) {
-                            if (err) {
-                              library.logger.error(err || "Unable to load last block");
-                              library.logger.info("Failed to verify db integrity 4");
-                              load(count);
-                            } else {
-                              library.logger.info('Blockchain ready');
-                              private.loadBalances(cb);
-                            }
-                          });
-                        }
-                      });
-                    }
-                  });
-                }
-              });
-          }
-
-        });
-      });
-    }
-  });
-
 }
 
 // Public methods
@@ -440,27 +253,10 @@ Loader.prototype.onPeerReady = function () {
     });
 
   });
-
-  // setImmediate(function nextLoadSignatures() {
-  //   if (!private.loaded) return;
-  //   private.loadSignatures(function (err) {
-  //     err && library.logger.error('loadSignatures timer:', err);
-
-  //     //setTimeout(nextLoadSignatures, 14 * 1000)
-  //   });
-  // });
 }
 
 Loader.prototype.onBind = function (scope) {
   modules = scope;
-
-  // private.loadBlockChain(function (err) {
-  //   if (err) {
-  //     library.logger.error('Failed to load blockchain', err)
-  //     return process.exit(1)
-  //   }
-  //   library.bus.message('blockchainReady');
-  // });
 }
 
 Loader.prototype.onBlockchainReady = function () {

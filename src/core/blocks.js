@@ -528,18 +528,22 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
     library.logger.debug('getIdSequence=========', data)
     var max = lastBlockHeight;
     lastBlockHeight = data.firstHeight;
-    modules.transport.getFromPeer(peer, {
-      api: "/blocks/common?ids=" + data.ids.join(',') + '&max=' + max + '&min=' + lastBlockHeight,
-      method: "GET"
-    }, function (err, data) {
-      if (err || data.body.error) {
-        return cb(err || data.body.error.toString());
+    const params = {
+      body: {
+        max: max,
+        min: lastBlockHeight,
+        ids: data.ids
+      }
+    }
+    modules.peer.request('commonBlock', params, peer, function (err, ret) {
+      if (err || ret.error) {
+        return cb(err || ret.error.toString());
       }
 
-      if (!data.body.common) {
+      if (!ret.common) {
         return cb('Common block not found');
       }
-      cb(null, data.body.common)
+      cb(null, ret.common)
     });
   });
 }
@@ -1175,21 +1179,25 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
     },
     function (next) {
       count++;
-      modules.transport.getFromPeer(peer, {
-        method: "GET",
-        api: '/blocks?lastBlockId=' + lastCommonBlockId + '&limit=200'
-      }, function (err, data) {
-        if (err || data.body.error) {
-          return next(err || data.body.error.toString());
+      const params = {
+        body: {
+          lastBlockId: lastCommonBlockId,
+          limit: 200
+        }
+      }
+      modules.peer.request('blocks', params, peer, function (err, ret) {
+        if (err || ret.error) {
+          return next(err || ret.error.toString());
         }
 
-        var blocks = data.body.blocks;
+        var blocks = ret.blocks;
 
         if (blocks.length == 0) {
           loaded = true;
           next();
         } else {
-          var peerStr = data.peer ? ip.fromLong(data.peer.ip) + ":" + data.peer.port : 'unknown';
+          const contact = peer[1]
+          const peerStr = contact.hostname + ':' + contact.port
           library.logger.log('Loading ' + blocks.length + ' blocks from', peerStr);
 
           (async function () {
