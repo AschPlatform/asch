@@ -32,7 +32,7 @@
     "ip": "1.1.3",
     "jshint": "^2.9.5",
     "json-sql": "https://github.com/AschPlatform/json-sql/tarball/master",
-    "kadence": "git+https://github.com/sqfasd/hsv3.git",
+    "kadence": "git+https://github.com/AschPlatform/kadence.git",
     "level": "^3.0.0",
     "level-secondary": "^1.1.1",
     "level-sublevel": "^6.6.1",
