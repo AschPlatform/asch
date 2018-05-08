@@ -1,14 +1,18 @@
-var async = require('async');
-var util = require('util');
-var fs = require('fs');
-var path = require('path');
-var ip = require('ip');
-var extend = require('extend');
-var crypto = require('crypto');
-var kadence = require('kadence')
-var Router = require('../utils/router.js');
-var sandboxHelper = require('../utils/sandbox.js');
-var loop = require('../utils/loop.js')
+const async = require('async');
+const util = require('util');
+const fs = require('fs');
+const path = require('path');
+const ip = require('ip');
+const extend = require('extend');
+const crypto = require('crypto');
+const kadence = require('kadence');
+const { knuthShuffle } = require('knuth-shuffle');
+const levelup = require('../..//node_modules/kadence/node_modules/levelup/lib/levelup.js');
+const leveldown = require('../../node_modules/kadence/node_modules/leveldown/leveldown.js');
+const encoding = require('../../node_modules/kadence/node_modules/encoding-down');
+const Router = require('../utils/router.js');
+const sandboxHelper = require('../utils/sandbox.js');
+const loop = require('../utils/loop.js')
 
 require('array.prototype.find'); // Old node fix
 
@@ -57,14 +61,14 @@ private.attachApi = function () {
 }
 
 private.initNode = function () {
-  const storagePath = path.join(global.Config.baseDir, 'data', 'dht')
   const protocol = private.protocol
-  const host = global.Config.publicIp || global.Config.address
+  const hostname = global.Config.publicIp || global.Config.address
   const port = global.Config.port
   const contact = { hostname, port, protocol }
   const identity = self.getIdentity(contact)
   const transport = new kadence.HTTPTransport()
-  const storage = levelup(encoding(leveldown(STORAGE_PATH)))
+  const storageDir = path.resolve(global.Config.baseDir, 'data', 'dht')
+  const storage = levelup(encoding(leveldown(storageDir)))
   private.mainNode = new kadence.KademliaNode({
     transport,
     storage,
@@ -72,7 +76,8 @@ private.initNode = function () {
     contact
   })
   const node = private.mainNode
-  node.rolodex = node.plugin(kadence.rolodex(path.join(STORAGE_PATH, 'peer')))
+  const peerCacheDir = path.join(global.Config.baseDir, 'data', 'peer')
+  node.rolodex = node.plugin(kadence.rolodex(peerCacheDir))
   node.plugin(kadence.quasar())
 }
 
@@ -207,7 +212,7 @@ Peer.prototype.request = function (method, params, contact, cb) {
 
 Peer.prototype.randomRequest = function (method, params, cb) {
   const node = private.mainNode
-  const randomContact = knuthShuffle([...this.node.router.getClosestContactsToKey(
+  const randomContact = knuthShuffle([...node.router.getClosestContactsToKey(
     node.identity.toString('hex'),
     node.router.size
   ).entries()]).shift();
@@ -227,7 +232,7 @@ Peer.prototype.onBind = function (scope) {
 }
 
 Peer.prototype.onBlockchainReady = function () {
-  for (let seed of global.Config.peer.list) {
+  for (let seed of global.Config.peers.list) {
     let contact = {
       hostname: seed.ip,
       port: seed.port,
@@ -259,7 +264,7 @@ Peer.prototype.joinNetwork = async function () {
 }
 
 Peer.prototype.onPeerReady = function () {
-  loop.runAsync(this.joinNetwork.bind(this), 10000)
+  loop.runAsync(self.joinNetwork.bind(this), 10000)
 }
 
 // Shared

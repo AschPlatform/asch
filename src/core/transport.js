@@ -31,85 +31,45 @@ function Transport(cb, scope) {
 
 // Private methods
 private.attachApi = function () {
-  var router = new Router();
+  
+}
 
-  router.use(function (req, res, next) {
-    if (modules && private.loaded && !modules.loader.syncing()) return next();
-    res.status(500).send({ success: false, error: "Blockchain is loading" });
-  });
+private.hashsum = function (obj) {
+  var buf = new Buffer(JSON.stringify(obj), 'utf8');
+  var hashdig = crypto.createHash('sha256').update(buf).digest();
+  var temp = new Buffer(8);
+  for (var i = 0; i < 8; i++) {
+    temp[i] = hashdig[7 - i];
+  }
 
-  router.use(function (req, res, next) {
-    var peerIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  return bignum.fromBuffer(temp).toString();
+}
 
-    if (!peerIp) {
-      return res.status(500).send({ success: false, error: "Wrong header data" });
-    }
+Transport.prototype.broadcast = function (topic, message) {
+  modules.peer.publish(topic, message)
+}
 
-    req.headers['port'] = parseInt(req.headers['port']);
+Transport.prototype.sandboxApi = function (call, args, cb) {
+  sandboxHelper.callMethod(shared, call, args, cb);
+}
 
-    req.sanitize(req.headers, {
-      type: "object",
-      properties: {
-        os: {
-          type: "string",
-          maxLength: 64
-        },
-        'magic': {
-          type: 'string',
-          maxLength: 8
-        },
-        'version': {
-          type: 'string',
-          maxLength: 11
-        }
-      },
-      required: ['magic', 'version']
-    }, function (err, report, headers) {
-      if (err) return next(err);
-      if (!report.isValid) return res.status(500).send({ success: false, error: report.issues });
+// Events
+Transport.prototype.onBind = function (scope) {
+  modules = scope;
 
-      if (req.headers['magic'] !== library.config.magic) {
-        return res.status(500).send({
-          success: false,
-          error: "Request is made on the wrong network",
-          expected: library.config.magic,
-          received: req.headers['magic']
-        });
-      }
-      // if (peerIp == "127.0.0.1") {
-      //   return next();
-      // }
-      if (!req.headers.version) {
-        return next();
-      }
-      var peer = {
-        ip: ip.toLong(peerIp),
-        port: headers.port,
-        state: 2,
-        os: headers.os,
-        version: headers.version
-      };
+  private.headers = {
+    os: modules.system.getOS(),
+    version: modules.system.getVersion(),
+    port: modules.system.getPort(),
+    magic: modules.system.getMagic()
+  }
+}
 
-      if (req.body && req.body.chain) {
-        peer.chain = req.body.chain;
-      }
+Transport.prototype.onBlockchainReady = function () {
+  private.loaded = true;
+}
 
-      if (peer.port && peer.port > 0 && peer.port <= 65535) {
-        if (modules.peer.isCompatible(peer.version)) {
-          peer.version && modules.peer.update(peer);
-        } else {
-          return res.status(500).send({
-            success: false,
-            error: "Version is not comtibleVersion"
-          });
-        }
-      }
-
-      next();
-    });
-
-  });
-
+Transport.prototype.onPeerReady = function () {
   modules.peer.handle('commonBlock', function (req, res, next) {
     const query = req.params.body
     if (!Number.isInteger(query.max)) return res.send({ error: 'Field max must be integer' })
@@ -381,41 +341,6 @@ private.attachApi = function () {
       library.bus.message('message', req.body, true);
     });
   });
-}
-
-private.hashsum = function (obj) {
-  var buf = new Buffer(JSON.stringify(obj), 'utf8');
-  var hashdig = crypto.createHash('sha256').update(buf).digest();
-  var temp = new Buffer(8);
-  for (var i = 0; i < 8; i++) {
-    temp[i] = hashdig[7 - i];
-  }
-
-  return bignum.fromBuffer(temp).toString();
-}
-
-Transport.prototype.broadcast = function (topic, message) {
-  modules.peer.publish(topic, message)
-}
-
-Transport.prototype.sandboxApi = function (call, args, cb) {
-  sandboxHelper.callMethod(shared, call, args, cb);
-}
-
-// Events
-Transport.prototype.onBind = function (scope) {
-  modules = scope;
-
-  private.headers = {
-    os: modules.system.getOS(),
-    version: modules.system.getVersion(),
-    port: modules.system.getPort(),
-    magic: modules.system.getMagic()
-  }
-}
-
-Transport.prototype.onBlockchainReady = function () {
-  private.loaded = true;
 }
 
 Transport.prototype.onUnconfirmedTransaction = function (transaction) {
