@@ -63,11 +63,11 @@ private.attachApi = function () {
 private.initNode = function () {
   const protocol = private.protocol
   const hostname = global.Config.publicIp || global.Config.address
-  const port = global.Config.port
+  const port = global.Config.peerPort
   const contact = { hostname, port, protocol }
   const identity = self.getIdentity(contact)
   const transport = new kadence.HTTPTransport()
-  const storageDir = path.resolve(global.Config.baseDir, 'data', 'dht')
+  const storageDir = path.resolve(global.Config.dataDir, 'dht')
   const storage = levelup(encoding(leveldown(storageDir)))
   private.mainNode = new kadence.KademliaNode({
     transport,
@@ -76,9 +76,10 @@ private.initNode = function () {
     contact
   })
   const node = private.mainNode
-  const peerCacheDir = path.join(global.Config.baseDir, 'data', 'peer')
+  const peerCacheDir = path.join(global.Config.dataDir, 'peer')
   node.rolodex = node.plugin(kadence.rolodex(peerCacheDir))
   node.plugin(kadence.quasar())
+  node.listen(global.Config.peerPort)
 }
 
 private.count = function (cb) {
@@ -95,7 +96,7 @@ private.count = function (cb) {
 // Public methods
 Peer.prototype.list = function (options, cb) {
   options.limit = options.limit || 100;
-  return cb (null, [])
+  return cb(null, [])
 
   app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.chain ? " inner join peer_chains pd on p.id = pd.peerId and pd.chain = $chain " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
     "ip": String,
@@ -217,7 +218,16 @@ Peer.prototype.randomRequest = function (method, params, cb) {
     node.router.size
   ).entries()]).shift();
   if (!randomContact) return cb('No contact')
+
+  let isCallbacked = false
+  setTimeout(function () {
+    if (isCallbacked) return
+    isCallbacked = true
+    cb('Timeout')
+  }, 2000)
   private.mainNode.send(method, params, randomContact, function (err, result) {
+    if (isCallbacked) return
+    isCallbacked = true
     cb(err, result, randomContact)
   })
 }
@@ -232,6 +242,7 @@ Peer.prototype.onBind = function (scope) {
 }
 
 Peer.prototype.onBlockchainReady = function () {
+  const node = private.mainNode
   for (let seed of global.Config.peers.list) {
     let contact = {
       hostname: seed.ip,
@@ -239,13 +250,13 @@ Peer.prototype.onBlockchainReady = function () {
       protocol: private.protocol
     }
     let identity = self.getIdentity(contact)
-    private.mainNode.join([identity, contact])
+    node.join([identity, contact])
   }
-  private.mainNode.once('join', function () {
+  node.once('join', function () {
     library.logger.info(`connected to ${node.router.size} peers`)
     library.logger.debug('connected nodes', node.router.getClosestContactsToKey(node.identity).entries())
   })
-  private.mainNode.once('error', function (err) {
+  node.once('error', function (err) {
     library.logger.error('failed to join network', err)
   })
   library.bus.message('peerReady')

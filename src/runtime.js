@@ -250,9 +250,10 @@ module.exports = async function (options) {
   app.AccountRole = AccountRole
 
   let baseDir = options.appConfig.baseDir
+  let dataDir = options.appConfig.dataDir
 
-  const BLOCK_HEADER_DIR = path.resolve(baseDir, options.blockHeaderDir || 'data/blockHeader')
-  const BLOCK_DB_PATH = path.resolve(baseDir, options.dbFile || 'data/blockchain.db')
+  const BLOCK_HEADER_DIR = path.resolve(dataDir, 'blocks')
+  const BLOCK_DB_PATH = path.resolve(dataDir, 'blockchain.db')
 
   app.sdb = new AschCore.SmartDB(BLOCK_DB_PATH, BLOCK_HEADER_DIR)
   app.balances = new BalanceManager(app.sdb)

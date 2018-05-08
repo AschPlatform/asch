@@ -1481,8 +1481,8 @@ class SqliteConnection {
         return this.sqlite.query(sql, parameters);
     }
     ensureExecuteEffected(result) {
-        if (result.rowsEffected === 0)
-            throw new Error('None row effected');
+        // if (result.rowsEffected === 0)
+        //     throw new Error('None row effected');
     }
     executeBatchSync(sqls) {
         return this.sqlite.executeBatch(sqls || [], this.ensureExecuteEffected);

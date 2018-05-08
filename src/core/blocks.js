@@ -1115,9 +1115,10 @@ Blocks.prototype.applyRound = async function (block) {
   app.logger.debug('----------------------on round ' + roundNumber + ' end-----------------------')
   app.logger.debug('delegate length', delegates.length)
 
-  let forgedBlocks = await app.sdb.getBlocksByHeightRange(app.sdb.lastBlockHeight - 100, app.sdb.lastBlockHeight)
+  let forgedBlocks = await app.sdb.getBlocksByHeightRange(block.height - 100, block.height - 1)
   let forgedDelegates = forgedBlocks.map(function (b) {
-    return b.delegate
+    // FIXME getBlocksByHeight should return clean object
+    return b.value.delegate
   })
   forgedDelegates.push(block.delegate)
   let missedDelegates = []
@@ -1145,20 +1146,20 @@ Blocks.prototype.applyRound = async function (block) {
   let rewardRemainder = actualRewards - rewardAverage * delegates.length
   let rewardFounds = rewards - actualRewards
 
-  function updateDelegate(pk, fee, reward) {
+  async function updateDelegate(pk, fee, reward) {
     let addr = modules.accounts.generateAddressByPublicKey(pk)
     let delegate = app.sdb.getCached('Delegate', addr, true)
     delegate.fees += fee
     delegate.rewards += reward
-
-    let account = app.sdb.getCached('Account', delegate.address, true)
+    // TODO should account be all cached?
+    let account = await app.sdb.get('Account', delegate.address)
     account.xas += (fee + reward)
   }
 
   for (let fd of forgedDelegates) {
-    updateDelegate(fd, feeAverage, rewardAverage)
+    await updateDelegate(fd, feeAverage, rewardAverage)
   }
-  updateDelegate(block.delegate, feeRemainder, rewardRemainder)
+  await updateDelegate(block.delegate, feeRemainder, rewardRemainder)
 
   let totalClubFounds = feeFounds + rewardFounds
   app.logger.info('Asch witness club get new founds: ' + totalClubFounds)
@@ -1191,17 +1192,14 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
         if (err || ret.error) {
           return next(err || ret.error.toString());
         }
-
-        var blocks = ret.blocks;
-
+        const contact = peer[1]
+        const peerStr = contact.hostname + ':' + contact.port
+        const blocks = ret.blocks;
+        library.logger.log('Loading ' + blocks.length + ' blocks from', peerStr);
         if (blocks.length == 0) {
           loaded = true;
           next();
         } else {
-          const contact = peer[1]
-          const peerStr = contact.hostname + ':' + contact.port
-          library.logger.log('Loading ' + blocks.length + ' blocks from', peerStr);
-
           (async function () {
             try {
               for (let block of blocks) {
@@ -1660,6 +1658,7 @@ shared.getBlocks = function (req, cb) {
         let count = app.sdb.blocksCount
         if (!count) throw new Error('Failed to get blocks count')
 
+        console.log('-----------', minHeight, maxHeight)
         let blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
         if (!blocks || !blocks.length) return cb('No blocks')
         return cb(null, { count, blocks })

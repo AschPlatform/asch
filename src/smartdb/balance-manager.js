@@ -32,9 +32,10 @@ class BalanceManager {
     if (bignum(amount).eq(0)) return
 
     let balanceId = this._getBalanceId(address, currency)
-    let item = this.sdb.getCached('Balance', balanceId)
+    let item = this.sdb.getCached('Balance', balanceId, true)
+      || this.sdb.create('Balance', {address, currency, balance: '0'})
     if (item !== null) {
-      item.balance = bignum(item.balance).plus(amount)
+      item.balance = bignum(item.balance).plus(amount).toString()
     } else {
       item = this.sdb.create('Balance', balanceId)
       item.address = address

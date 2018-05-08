@@ -31,7 +31,7 @@ function Transport(cb, scope) {
 
 // Private methods
 private.attachApi = function () {
-  
+
 }
 
 private.hashsum = function (obj) {
@@ -77,10 +77,10 @@ Transport.prototype.onPeerReady = function () {
     // TODO validate query.ids
     const max = query.max;
     const min = query.min;
-    const ids = query.ids
+    const ids = query.ids;
     (async () => {
       try {
-        let blocks = await app.model.Block.findAll({
+        let blocks = await app.sdb.findAll('Block', {
           condition: {
             id: {
               $in: ids
@@ -105,29 +105,30 @@ Transport.prototype.onPeerReady = function () {
 
   modules.peer.handle('blocks', function (req, res, next) {
     // TODO validate req.query.lastBlockId
-    const query = req.params.body
-    const blocksLimit = 200;
+    let query = req.params.body
+    let blocksLimit = 200;
     if (query.limit) {
       blocksLimit = Math.min(blocksLimit, Number(query.limit))
     }
 
     (async function () {
-      const lastBlockId = req.query.lastBlockId
+      let lastBlockId = query.lastBlockId
       try {
-        let lastBlock = await app.model.Block.findOne({ condition: { id: lastBlockId } })
+        let lastBlock = await app.sdb.findOne('Block', { condition: { id: lastBlockId } })
         if (!lastBlock) throw new Error('Last block not found: ' + lastBlockId)
 
-        let blocks = await app.model.Block.findAll({
+        let blocks = await app.sdb.findAll('Block', {
           condition: {
             height: { $gt: lastBlock.height }
           },
           limit: blocksLimit,
           sort: { height: 1 }
         })
-        if (!blocks || !blocks.length) return res.send({ blocks: [] })
+
+        if (!blocks || !blocks.length) throw new Error('No blocks')
 
         let maxHeight = blocks[blocks.length - 1].height
-        let transactions = await app.model.Transaction.findAll({
+        let transactions = await app.sdb.findAll('Transaction', {
           condition: {
             height: { $gt: lastBlock.height, $lte: maxHeight }
           }
@@ -422,7 +423,7 @@ shared.request = function (req, cb) {
   } else {
     modules.peer.randomRequest('chainRequest', req, cb)
   }
-  
+
 }
 
 // Export

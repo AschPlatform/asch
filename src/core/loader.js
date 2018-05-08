@@ -63,9 +63,10 @@ private.syncTrigger = function (turnOn) {
 }
 
 private.loadFullDb = function (peer, cb) {
-  var peerStr = peer ? ip.fromLong(peer.ip) + ":" + peer.port : 'unknown';
+  const contact = peer[1]
+  const peerStr = contact.hostname + ':' + contact.port
 
-  var commonBlockId = private.genesisBlock.block.id;
+  let commonBlockId = private.genesisBlock.block.id;
 
   library.logger.debug("Loading blocks from genesis from " + peerStr);
 
@@ -126,7 +127,7 @@ private.loadBlocks = function (lastBlock, cb) {
     }
 
     const contact = peer[1]
-    let peerStr = contact.hostname + ':' + contact.port
+    const peerStr = contact.hostname + ':' + contact.port
     library.logger.info("Check blockchain on " + peerStr);
 
     ret.height = parseInt(ret.height);

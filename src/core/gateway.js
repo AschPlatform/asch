@@ -306,7 +306,7 @@ Gateway.prototype.sendWithdrawals = async function () {
 }
 
 Gateway.prototype.onBlockchainReady = function () {
-  if (global.Config.gateway) {
+  if (0 && global.Config.gateway) {
     loopAsyncFunc(self.importAccounts.bind(self), 10 * 1000)
     loopAsyncFunc(self.processDeposits.bind(self), 10 * 1000)
     loopAsyncFunc(self.processWithdrawals.bind(self), 10 * 1000)
