@@ -1118,7 +1118,7 @@ Blocks.prototype.applyRound = async function (block) {
   let forgedBlocks = await app.sdb.getBlocksByHeightRange(block.height - 100, block.height - 1)
   let forgedDelegates = forgedBlocks.map(function (b) {
     // FIXME getBlocksByHeight should return clean object
-    return b.value.delegate
+    return b.delegate
   })
   forgedDelegates.push(block.delegate)
   let missedDelegates = []
@@ -1490,10 +1490,11 @@ Blocks.prototype.onBind = function (scope) {
       app.logger.info('Blocks found:', count)
       if (!count) {
         let hookName = 'hook_for_updateBookkeeper' 
-        app.sdb.registerCommitBlockHook( hookName, (block) => 
-          modules.delegates.updateBookkeeper( genesisblock.block.transactions.filter( t=> t.type === 10 ).map( t => t.senderPublicKey ) ) 
-        )
+        let delegates = genesisblock.block.transactions.filter( t=> t.type === 10 ).map( t => t.senderPublicKey )
+        app.sdb.registerCommitBlockHook( hookName, block => modules.delegates.updateBookkeeper(delegates))
+
         await self.processBlock(genesisblock.block, {})
+
         app.sdb.unregisterCommitBlockHook(hookName)
         
       } else {

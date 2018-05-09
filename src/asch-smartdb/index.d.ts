@@ -103,7 +103,7 @@ export namespace AschCore
 	    constructor(connection: DbConnection, cacheOptions?: EntityCacheOptions, sessionName?: string);
 	    readonly isOpen: boolean;
 	    readonly entityCache: EntityCache;
-	    syncSchema(schema: ModelSchema): Promise<void>;
+	    syncSchema(schema: ModelSchema): void;
 	    registerSchema(...schemas: Array<ModelSchema>): void;
 	    close(): Promise<void>;
 	    attachHistory(history: Map<number, Array<EntityChangesItem>>): void;
@@ -661,7 +661,7 @@ export namespace AschCore
 	};
 	export type SqlOrder = SqlOrderItem | Array<SqlOrderItem>;
 	export interface SqlBuilder {
-	    buildSchema(schema: ModelSchema): string;
+	    buildSchema(schema: ModelSchema): Array<string>;
 	    buildInsert(schema: ModelSchema, fieldValues: JsonObject): SqlAndParameters;
 	    buildDelete(schema: ModelSchema, key: EntityKey): SqlAndParameters;
 	    buildUpdate(schema: ModelSchema, key: EntityKey, fieldValues: JsonObject, version: number): SqlAndParameters;
@@ -669,7 +669,7 @@ export namespace AschCore
 	    buildSelect(schema: ModelSchema, fields: Array<string>, where: SqlCondition, resultRange?: SqlResultRange, sort?: SqlOrder, join?: JsonObject): SqlAndParameters;
 	}
 	export class JsonSqlBuilder implements SqlBuilder {
-	    buildSchema(schema: ModelSchema): string;
+	    buildSchema(schema: ModelSchema): Array<string>;
 	    buildInsert(schema: ModelSchema, fieldValues: JsonObject): SqlAndParameters;
 	    buildDelete(schema: ModelSchema, key: EntityKey): SqlAndParameters;
 	    buildUpdate(schema: ModelSchema, key: EntityKey, fieldValues: JsonObject, version: number): SqlAndParameters;
