@@ -114,20 +114,16 @@ Transport.prototype.onPeerReady = function () {
     (async function () {
       let lastBlockId = query.lastBlockId
       try {
-        let lastBlock = await app.sdb.findOne('Block', { condition: { id: lastBlockId } })
+        let lastBlock = await app.sdb.getBlockById(lastBlockId)
         if (!lastBlock) throw new Error('Last block not found: ' + lastBlockId)
 
-        let blocks = await app.sdb.findAll('Block', {
-          condition: {
-            height: { $gt: lastBlock.height }
-          },
-          limit: blocksLimit,
-          sort: { height: 1 }
-        })
+        let minHeight = lastBlock.height + 1
+        let maxHeight = minHeight + blocksLimit - 1
+        let blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
 
         if (!blocks || !blocks.length) throw new Error('No blocks')
 
-        let maxHeight = blocks[blocks.length - 1].height
+        maxHeight = blocks[blocks.length - 1].height
         let transactions = await app.sdb.findAll('Transaction', {
           condition: {
             height: { $gt: lastBlock.height, $lte: maxHeight }

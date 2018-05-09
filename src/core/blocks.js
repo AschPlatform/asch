@@ -1552,9 +1552,9 @@ shared.getBlock = function (req, cb) {
       try {
         let block
         if (query.id) {
-          block = await app.getBlockById(query.id)
+          block = await app.sdb.getBlockById(query.id)
         } else if (query.height) {
-          block = await app.getBlock(query.height)
+          block = await app.sdb.getBlockByHeight(query.height)
         }
 
         if (!block) {
@@ -1563,7 +1563,8 @@ shared.getBlock = function (req, cb) {
         block.reward = private.blockStatus.calcReward(block.height)
         return cb(null, { block })
       } catch (e) {
-
+        library.logger.error(e)
+        return cb('Server error')
       }
     })()
   });
@@ -1659,7 +1660,6 @@ shared.getBlocks = function (req, cb) {
         let count = app.sdb.blocksCount
         if (!count) throw new Error('Failed to get blocks count')
 
-        console.log('-----------', minHeight, maxHeight)
         let blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
         if (!blocks || !blocks.length) return cb('No blocks')
         return cb(null, { count, blocks })
