@@ -548,7 +548,7 @@ export namespace AschCore
 	    name: string;
 	    indexes: Array<IndexField>;
 	    byIndex(indexField: string): LevelGet;
-	    getBy(indexField: string, key: any, getCallback?: Callback<JsonObject>): Promise<JsonObject>;
+	    getBy<T>(indexField: string, key: any, getCallback?: Callback<T>): Promise<T>;
 	}
 	export class LevelDB {
 	    constructor(dbDir: string, meta: Array<SubLevelMeta>, options?: {});
@@ -558,6 +558,7 @@ export namespace AschCore
 	    close(closeCallback?: Callback<any>): Promise<void> | null;
 	    readonly isOpen: any;
 	    readonly isClosed: any;
+	    dump(): Promise<string>;
 	}
 
 	//declarations/SQLDB/DbConnection.d.ts
