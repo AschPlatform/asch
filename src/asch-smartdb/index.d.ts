@@ -434,8 +434,9 @@ export namespace AschCore
 	     * load entity from database by condition
 	     * @param model model name or model type
 	     * @param condition see type SqlCondition
+	     * @param track track and cache result if true
 	     */
-	    getBy<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<MaybeUndefined<TEntity>>;
+	    getBy<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean): Promise<MaybeUndefined<TEntity>>;
 	    /**
 	   * get entities from database
 	   * @param model model name or model type
@@ -534,7 +535,7 @@ export namespace AschCore
 	    on(eventName: string, callback: Function): LevelReadableStream;
 	}
 	export interface LevelGet {
-	    get<T>(key: any, options?: JsonObject, getCallback?: Callback<T>): Promise<T>;
+	    get<T>(key: any, options?: JsonObject, getCallback?: Callback<MaybeUndefined<T>>): Promise<MaybeUndefined<T>>;
 	    createReadStream(options?: JsonObject): LevelReadableStream;
 	    createKeyStream(options?: JsonObject): LevelReadableStream;
 	    createValueStream(options?: JsonObject): LevelReadableStream;
@@ -548,10 +549,11 @@ export namespace AschCore
 	    name: string;
 	    indexes: Array<IndexField>;
 	    byIndex(indexField: string): LevelGet;
-	    getBy<T>(indexField: string, key: any, getCallback?: Callback<T>): Promise<T>;
+	    getBy<T>(indexField: string, key: any, getCallback?: Callback<MaybeUndefined<T>>): Promise<MaybeUndefined<T>>;
 	}
 	export class LevelDB {
 	    constructor(dbDir: string, meta: Array<SubLevelMeta>, options?: {});
+	    static isKeyNotFoundError(err: Error): boolean;
 	    readonly level: any;
 	    getSubLevel(subName: string): IndexedLevel;
 	    open(openCallback?: Callback<any>): Promise<void> | null;
