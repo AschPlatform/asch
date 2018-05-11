@@ -3,13 +3,13 @@ const bignum = require('bignumber')
 module.exports = {
   openAccount: async function (gateway) {
     app.sdb.lock('gateway.openAccount@' + this.trs.senderId)
-    let exists = await app.model.GatewayAccount.exists({ address: this.trs.senderId })
+    let exists = await app.sdb.exists('GatewayAccount', { address: this.trs.senderId })
     if (exists) return 'Account already opened'
-    let validators = await app.model.GatewayMember.findAll({ condition: { gateway: gateway, elected: 1 } })
+    let validators = await app.sdb.findAll('GatewayMember', { condition: { gateway: gateway, elected: 1 } })
     if (!validators || !validators.length) return 'Gateway validators not found'
 
     // FIXME process gateway revoke
-    let gw = await app.model.Gateway.findOne({ condition: { name: gateway } })
+    let gw = await app.sdb.findOne('Gateway', { condition: { name: gateway } })
     if (!gw) return 'Gateway not found'
     let outPublicKeys = validators.map(function (v) { return v.outPublicKey })
     let unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
@@ -30,13 +30,14 @@ module.exports = {
   registerMember: async function (gateway, publicKey, desc) {
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + this.trs.senderId)
-    let sender = await app.model.Account.findOne({ condition: { address: senderId } })
+    let sender = await app.sdb.findOne('Account', { condition: { address: senderId } })
     if (!sender.name) return 'Account have not a name'
     if (sender.role) return 'Account already have a role'
-    if (!await app.model.Gateway.exists({name: gateway})) return 'Gateway not found'
-    let exists = await app.model.GatewayMember.exists({ address: senderId })
+    if (!await app.sdb.exists('Gateway', { name: gateway })) return 'Gateway not found'
+    let exists = await app.sdb.exists('GatewayMember', { address: senderId })
     if (exists) return 'Account already is a gateway member'
-    app.sdb.update('Account', { role: app.AccountRole.GATEWAY_VALIDATOR }, { address: senderId })
+
+    sender.role = app.AccountRole.GATEWAY_VALIDATOR
     app.sdb.create('GatewayMember', {
       address: this.trs.senderId,
       gateway: gateway,
@@ -47,8 +48,9 @@ module.exports = {
   },
 
   deposit: async function (gateway, address, currency, amount, oid) {
-    if (! await app.model.GatewayCurrency.exists({ symbol: currency })) return 'Currency not supported'
-    let validator = await app.model.GatewayMember.findOne({
+    if (! await app.sdb.exists('GatewayCurrency', { symbol: currency })) return 'Currency not supported'
+
+    let validator = await app.sdb.findOne('GatewayMember', {
       condition: {
         address: this.trs.senderId,
       }
@@ -58,19 +60,18 @@ module.exports = {
     let depositKey = 'gateway.deposit@' + [this.trs.senderId, currency, oid].join(':')
     app.sdb.lock(depositKey)
 
-
-    let gatewayAccount = await app.model.GatewayAccount.findOne({ condition: { outAddress: address } })
+    let gatewayAccount = await app.sdb.findOne('GatewayAccount', { condition: { outAddress: address } })
     if (!gatewayAccount) return 'Gateway account not exist'
 
-    let gw = await app.model.Gateway.findOne({ condition: { name: gatewayAccount.gateway } })
+    let gw = await app.sdb.findOne('Gateway', { condition: { name: gatewayAccount.gateway } })
     if (!gw) return 'Gateway not found'
     if (gatewayAccount.version !== gw.version) return 'Gateway account version expired'
 
-    if (await app.model.GatewayDepositSigner.exists({ key: depositKey })) return 'Already submitted'
+    if (await app.sdb.exists('GatewayDepositSigner', { key: depositKey })) return 'Already submitted'
     app.sdb.create('GatewayDepositSigner', { key: depositKey })
 
     let cond = { currency: currency, oid: oid }
-    let deposit = app.sdb.get('GatewayDeposit', cond)
+    let deposit = await app.sdb.getBy('GatewayDeposit', cond)
     if (!deposit) {
       deposit = app.sdb.create('GatewayDeposit', {
         tid: this.trs.id,
@@ -82,15 +83,15 @@ module.exports = {
         processed: 0
       })
     } else {
-      let confirmedDeposit = await app.model.GatewayDeposit.findOne({ condition: cond })
+      let confirmedDeposit = await app.sdb.findOne('GatewayDeposit', { condition: cond })
       if (!confirmedDeposit) return 'Gateway deposit not found'
       if (amount !== confirmedDeposit.amount || address !== confirmedDeposit.address) {
         return 'Invalid deposit params'
       }
-      app.sdb.increment('GatewayDeposit', { confirmations: 1 }, cond)
-      let count = await app.model.GatewayMember.count({ gateway: currency, elected: 1 })
+      confirmedDeposit.confirmations += 1
+      let count = await app.sdb.count('GatewayMember', { gateway: currency, elected: 1 })
       if (deposit.confirmations > count / 2 && !deposit.processed) {
-        app.sdb.update('GatewayDeposit', { processed: 1 }, cond)
+        confirmedDeposit.processed = 1
         app.balances.increase(gatewayAccount.address, currency, amount)
       }
     }
@@ -107,7 +108,7 @@ module.exports = {
     app.balances.decrease(this.trs.senderId, currency, amount)
     let seq = Number(app.autoID.increment('gate_withdrawal_seq'))
 
-    
+
     app.sdb.create('GatewayWithdrawal', {
       tid: this.trs.id,
       seq: seq,
@@ -125,18 +126,18 @@ module.exports = {
 
   submitWithdrawalTransaction: async function (wid, ot, ots) {
     app.sdb.lock('gateway.submitWithdrawalTransaction@' + this.trs.senderId)
-    let withdrawal = await app.model.GatewayWithdrawal.findOne({ condition: { tid: wid } })
+    let withdrawal = await app.sdb.findOne('GatewayWithdrawal', { condition: { tid: wid } })
     if (!withdrawal) return 'Gateway withdrawal not exist'
     if (withdrawal.outTransaction) return 'Out transaction already exist'
 
-    let validator = await app.model.GatewayMember.findOne({
+    let validator = await app.sdb.findOne('GatewayMember', {
       condition: {
         address: this.trs.senderId,
       }
     })
     if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
 
-    app.sdb.update('GatewayWithdrawal', { outTransaction: ot }, { tid: wid })
+    withdrawal.outTransaction = ot
     app.sdb.create('GatewayWithdrawalPrep', {
       wid: wid,
       signer: this.trs.senderId,
@@ -146,19 +147,19 @@ module.exports = {
 
   submitWithdrawalSignature: async function (wid, signature) {
     app.sdb.lock('gateway.submitWithdrawalSignature@' + this.trs.senderId)
-    let withdrawal = await app.model.GatewayWithdrawal.findOne({ condition: { tid: wid } })
+    let withdrawal = await app.sdb.findOne('GatewayWithdrawal', { condition: { tid: wid } })
     if (!withdrawal) return 'Gateway withdrawal not exist'
     if (!withdrawal.outTransaction) return 'Out transaction not exist'
     // TODO validate signature
 
-    let validator = await app.model.GatewayMember.findOne({
+    let validator = await app.sdb.findOne('GatewayMember', {
       condition: {
         address: this.trs.senderId,
       }
     })
     if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
-    
-    if (await app.model.GatewayWithdrawalPrep.exists({wid: wid, signer: this.trs.senderId})) {
+
+    if (await app.sdb.exists('GatewayWithdrawalPrep', { wid: wid, signer: this.trs.senderId })) {
       return 'Duplicated withdrawal signature'
     }
 

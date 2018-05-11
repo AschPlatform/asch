@@ -6,10 +6,10 @@ module.exports = function (router) {
     if (req.query.flag) {
       condition.flag = Number(req.query.flag)
     }
-    let count = await app.model.Balance.count(condition)
+    let count = await app.sdb.count('Balance', condition)
     let balances = []
     if (count > 0) {
-      balances = await app.model.Balance.findAll({ condition, limit, offset })
+      balances = await app.sdb.findAll('Balance', { condition, limit, offset })
       let currencyMap = new Map
       for (let b of balances) {
         currencyMap.set(b.currency, 1)
@@ -19,7 +19,7 @@ module.exports = function (router) {
       let gaNameList = assetNameList.filter((n) => n.indexOf('.') === -1)
 
       if (uiaNameList && uiaNameList.length) {
-        let assets = await app.model.Asset.findAll({
+        let assets = await app.sdb.findAll('Asset', {
           condition: {
             name: { $in: uiaNameList }
           }
@@ -29,7 +29,7 @@ module.exports = function (router) {
         }
       }
       if (gaNameList && gaNameList.length) {
-        let gatewayAssets = await app.model.GatewayCurrency.findAll({
+        let gatewayAssets = await app.sdb.findAll('GatewayCurrency', {
           condition: {
             symbol: { $in: gaNameList }
           }
@@ -56,14 +56,14 @@ module.exports = function (router) {
       address: req.params.address,
       currency: currency
     }
-    let balance = await app.model.Balance.findOne({ condition })
+    let balance = await app.sdb.findOne('Balance', { condition })
     if (!balance) return 'No balance'
     if (currency.indexOf('.') !== -1) {
-      balance.asset = await app.model.Asset.findOne({ condition: { name: balance.currency } })
+      balance.asset = await app.sdb.findOne('Asset', { condition: { name: balance.currency } })
     } else {
-      balance.asset = await app.model.GatewayCurrency.findOne({ condition: { symbol: balance.currency } })
+      balance.asset = await app.sdb.findOne('GatewayCurrency', { condition: { symbol: balance.currency } })
     }
-    
+
     return { balance: balance }
   })
 }

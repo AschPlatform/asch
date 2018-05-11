@@ -1210,7 +1210,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
               }
               next()
             } catch (e) {
-              library.logger.error('Failed to process block', err)
+              library.logger.error('Failed to process synced block', e)
               return cb(e)
             }
           })()

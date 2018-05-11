@@ -493,7 +493,7 @@ Transaction.prototype.apply0 = function (trs, block, sender, cb) {
 
 Transaction.prototype.apply = async function (transaction, block) {
   if (block.height !== 0) {
-    let sender = app.sdb.get('Account', { address: transaction.senderId })
+    let sender = await app.sdb.get('Account', transaction.senderId)
     if (!sender) throw new Error('Sender account not found')
     if (!sender.xas || sender.xas < transaction.fee) throw new Error('Insufficient balance')
 

@@ -5,7 +5,7 @@ async function getAssetMap(assetNames) {
   let gaNameList = assetNameList.filter((n) => n.indexOf('.') === -1)
 
   if (uiaNameList && uiaNameList.length) {
-    let assets = await app.model.Asset.findAll({
+    let assets = await app.sdb.findAll('Asset', {
       condition: {
         name: { $in: uiaNameList }
       }
@@ -15,7 +15,7 @@ async function getAssetMap(assetNames) {
     }
   }
   if (gaNameList && gaNameList.length) {
-    let gatewayAssets = await app.model.GatewayCurrency.findAll({
+    let gatewayAssets = await app.sdb.findAll('GatewayCurrency', {
       condition: {
         symbol: { $in: gaNameList }
       }
@@ -29,7 +29,7 @@ async function getAssetMap(assetNames) {
 
 async function getTransactionMap(tids) {
   let trsMap = new Map
-  let trs = await app.model.Transaction.findAll({
+  let trs = await app.sdb.findAll('Transaction', {
     condition: {
       id: { $in: tids }
     }
@@ -68,22 +68,22 @@ module.exports = function (router) {
     let count = 0
     let transfers
     if (condition1 === null || condition1 === condition2) {
-      count = await app.model.Transfer.count(condition1)
-      transfers = await app.model.Transfer.findAll({
+      count = await app.sdb.count('Transfer', condition1)
+      transfers = await app.sdb.findAll('Transfer', {
         condition: condition1,
         limit: limit,
         offset: offset,
       })
     } else {
-      let count1 = await app.model.Transfer.count(condition1)
-      let count2 = await app.model.Transfer.count(condition2)
-      let t1 = await app.model.Transfer.findAll({
+      let count1 = await app.sdb.count('Transfer', condition1)
+      let count2 = await app.sdb.count('Transfer', condition2)
+      let t1 = await app.sdb.findAll('Transfer', {
         condition: condition1,
         limit: limit,
         offset: offset,
         sort: { timestamp: -1 }
       })
-      let t2 = await app.model.Transfer.findAll({
+      let t2 = await app.sdb.findAll('Transfer', {
         condition: condition2,
         limit: limit,
         offset: offset,

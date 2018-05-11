@@ -8,7 +8,7 @@ const VALID_TOPICS = [
 async function doGatewayRegister(params, context) {
   let name = params.name
   app.sdb.lock('gateway@' + name)
-  let exists = await app.model.Gateway.exists({ name: name })
+  let exists = await app.sdb.exists('Gateway', { name: name })
   if (exists) return 'Gateway already exists'
 
   app.sdb.create('Gateway', {
@@ -32,29 +32,48 @@ async function doGatewayRegister(params, context) {
 
 async function doGatewayInit(params) {
   for (let m of params.members) {
-    app.sdb.update('GatewayMember', { elected: 1 }, { gateway: params.gateway, address: m })
+    let dbItem = await app.sdb.findOne('GatewayMember', {
+      condition: {
+        gateway: params.gateway,
+        address: m
+      }
+    })
+    dbItem.elected = 1
   }
 }
 
 async function doGatewayUpdateMember(params) {
   app.sdb.lock('gateway@' + params.gateway)
-  let gateway = await app.model.Gateway.findOne({ condition: { name: params.gateway } })
+  let gateway = await app.sdb.findOne('Gateway', { condition: { name: params.gateway } })
   if (!gateway) throw new Error('Gateway not found')
 
   if (this.block.height - gateway.lastUpdateHeight < gateway.updateInterval) {
     throw new Error('Time not arrived')
   }
-  app.sdb.update('GatewayMember', { elected: 0 }, { gateway: params.gateway, address: params.from })
-  app.sdb.update('GatewayMember', { elected: 1 }, { gateway: params.gateway, address: params.to })
-  app.sdb.increment('Gateway', { version: 1 }, { name: params.gateway })
+  gateway.version += 1
+  let fromValidator = await app.sdb.findOne('GatewayMember', {
+    condition: {
+      gateway: params.gateway,
+      address: params.from
+    }
+  })
+  fromValidator.elected = 0
+
+  let toValidator = await app.sdb.findOne('GatewayMember', {
+    condition: {
+      gateway: params.gateway,
+      address: params.to
+    }
+  })
+  toValidator.elected = 1
 }
 
 async function doGatewayRevoke(params) {
   app.sdb.lock('gateway@' + params.gateway)
-  let gateway = await app.model.Gateway.findOne({ condition: { name: params.gateway } })
+  let gateway = await app.sdb.findOne('Gateway', { condition: { name: params.gateway } })
   if (!gateway) return 'Gateway not found'
 
-  app.sdb.update('Gateway', { revoked: 1 }, { name: params.gateway })
+  gateway.revoked = 1
 }
 
 async function validateGatewayRegister(content, context) {
@@ -70,7 +89,7 @@ async function validateGatewayRegister(content, context) {
   if (!Number.isInteger(content.updateInterval) || content.updateInterval < 8640) {
     throw new Error('Invalid gateway update interval')
   }
-  let {symbol, desc, precision} = content.currency
+  let { symbol, desc, precision } = content.currency
   if (!/^[A-Z]{3,6}$/.test(symbol)) throw new Error('Invalid default currency symbol')
   if (!desc || desc.length === 0 || desc.length > 4096) {
     throw new Error('Invalid default currency description')
@@ -81,12 +100,12 @@ async function validateGatewayRegister(content, context) {
 }
 
 async function validateGatewayInit(content, context) {
-  let gateway = await app.model.Gateway.findOne({ condition: { name: content.gateway } })
+  let gateway = await app.sdb.findOne('Gateway', { condition: { name: content.gateway } })
   if (!gateway) throw new Error('Gateway not found')
 
   if (content.members.length < gateway.minimumMembers) throw new Error('Invalid gateway member number')
   for (let m of content.members) {
-    let validator = await app.model.GatewayMember.findOne({ condition: { address: m } })
+    let validator = await app.sdb.findOne('GatewayMember', { condition: { address: m } })
     if (!validator) throw new Error("Unknow gateway validator address")
     if (validator.gateway !== gateway.name) throw new Error('Invalid validator')
     if (validator.elected) throw new Error('Validator already elected')
@@ -94,10 +113,10 @@ async function validateGatewayInit(content, context) {
 }
 
 async function validateGatewayUpdateMember(content, context) {
-  let gateway = await app.model.Gateway.findOne({ condition: { name: content.gateway } })
+  let gateway = await app.sdb.findOne('Gateway', { condition: { name: content.gateway } })
   if (!gateway) throw new Error('Gateway not found')
 
-  let fromValidator = await app.model.GatewayMember.findOne({
+  let fromValidator = await app.sdb.findOne('GatewayMember', {
     condition: {
       address: content.from
     }
@@ -106,7 +125,7 @@ async function validateGatewayUpdateMember(content, context) {
     throw new Error('Invalid from validator')
   }
 
-  let toValidator = await app.model.GatewayMember.findOne({
+  let toValidator = await app.sdb.findOne('GatewayMember', {
     condition: {
       address: content.to
     }
@@ -117,7 +136,7 @@ async function validateGatewayUpdateMember(content, context) {
 }
 
 async function validateGatewayContent(content, context) {
-  let gateway = await app.model.Gateway.findOne({ condition: { name: content.gateway } })
+  let gateway = await app.sdb.findOne('Gateway', { condition: { name: content.gateway } })
   if (!gateway) throw new Error('Gateway not found')
   if (!gateway.revoke) throw new Error('Gateway is already revoked')
 }
@@ -154,10 +173,10 @@ module.exports = {
 
   vote: async function (pid) {
     if (!app.isCurrentBookkeeper(this.trs.senderId)) return 'Permission denied'
-    let proposal = await app.model.Proposal.findOne({ condition: { tid: pid } })
+    let proposal = await app.sdb.findOne('Proposal', { condition: { tid: pid } })
     if (!proposal) return 'Proposal not found'
     if (this.block.height - proposal.height > 8640 * 30) return 'Proposal expired'
-    let exists = await app.model.ProposalVote.exists({ voter: this.trs.senderId, pid: pid })
+    let exists = await app.sdb.exists('ProposalVote', { voter: this.trs.senderId, pid: pid })
     if (exists) return 'Already voted'
     app.sdb.create('ProposalVote', {
       tid: this.trs.id,
@@ -167,12 +186,12 @@ module.exports = {
   },
 
   activate: async function (pid) {
-    let proposal = await app.model.Proposal.findOne({ condition: { tid: pid } })
+    let proposal = await app.sdb.findOne('Proposal', { condition: { tid: pid } })
     if (!proposal) return 'Proposal not found'
 
     if (proposal.activated) return 'Already activated'
 
-    let votes = await app.model.ProposalVote.findAll({ condition: { pid: pid } })
+    let votes = await app.sdb.findAll('ProposalVote', { condition: { pid: pid } })
     let validVoteCount = 0
     for (let v of votes) {
       if (app.isCurrentBookkeeper(v.voter)) {
@@ -199,7 +218,7 @@ module.exports = {
     if (unknownTopic) {
       return 'Unknown propose topic'
     } else {
-      app.sdb.update('Proposal', { activated: 1 }, { tid: pid })
+      proposal.activated = 1
     }
   }
 }

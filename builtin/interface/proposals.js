@@ -26,27 +26,27 @@ module.exports = function (router) {
     } else {
       condition = {}
     }
-    let count = await app.model.Proposal.count(condition)
+    let count = await app.sdb.count('Proposal', condition)
     let proposals = []
     if (count > 0) {
-      proposals = await app.model.Proposal.findAll({ condition, limit, offset })
+      proposals = await app.sdb.findAll('Proposal', { condition, limit, offset })
     }
     return { count: count, proposals: proposals }
   })
 
   router.get('/:pid', async function (req) {
-    let proposal = await app.model.Proposal.findOne({ condition: { tid: req.params.pid } })
+    let proposal = await app.sdb.findOne('Proposal', { condition: { tid: req.params.pid } })
     if (!proposal) return 'Proposal not found'
     return { proposal: proposal }
   })
 
   router.get('/:pid/votes', async function (req) {
-    let votes = await app.model.ProposalVote.findAll({ condition: { pid: req.params.pid } })
+    let votes = await app.sdb.findAll('ProposalVote', { condition: { pid: req.params.pid } })
     let totalCount = votes.length
     let validCount = votes.filter((v) => app.isCurrentBookkeeper(v.voter)).length
     if (totalCount > 0) {
       let voterAddresses = votes.map((v) => v.voter)
-      let accounts = await app.model.Account.findAll({ condition: { address: { $in: voterAddresses } } })
+      let accounts = await app.sdb.findAll('Account', { condition: { address: { $in: voterAddresses } } })
       let accountMap = new Map
       for (let a of accounts) {
         accountMap.set(a.address, a)
