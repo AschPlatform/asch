@@ -1,8 +1,9 @@
-var sandboxHelper = require('../utils/sandbox.js');
-var slots = require('../utils/slots.js');
-var Router = require('../utils/router.js');
-var PIFY = require('../utils/pify.js')
-var gatewayLib = require('gateway-lib')
+const sandboxHelper = require('../utils/sandbox.js')
+const slots = require('../utils/slots.js')
+const Router = require('../utils/router.js')
+const PIFY = require('../utils/pify.js')
+const loop = require('../utils/loop.js')
+const gatewayLib = require('gateway-lib')
 
 const AschCore = require('../asch-smartdb').AschCore
 
@@ -17,19 +18,6 @@ const GatewayLogType = {
   SEND_WITHDRAWAL: 4
 }
 
-function loopAsyncFunc(asyncFunc, interval) {
-  setImmediate(function next() {
-    (async function () {
-      try {
-        await asyncFunc()
-      } catch (e) {
-        library.logger.error('Failed to run ' + asyncFunc.name, e)
-      }
-      setTimeout(next, interval)
-    })()
-  })
-}
-
 async function getGatewayAccountByOutAddress(addresses, coldAccount) {
   let accountMap = {}
   for (let i of addresses) {
@@ -37,7 +25,7 @@ async function getGatewayAccountByOutAddress(addresses, coldAccount) {
     if (coldAccount.address === i) {
       account = coldAccount.accountExtrsInfo.redeemScript
     } else {
-      let gatewayAccount = await app.sdb.getBy('GatewayAccount', { outAddress: i } )
+      let gatewayAccount = await app.sdb.findOne('GatewayAccount', { condition: { outAddress: i } })
       if (!gatewayAccount) throw new Error('Input address have no gateway account')
       account = JSON.parse(gatewayAccount.attachment).redeemScript
     }
@@ -59,18 +47,18 @@ Gateway.prototype.importAccounts = async function () {
     return
   }
   const GATEWAY = global.Config.gateway.name
-  let lastImportAddressLog = await app.sdb.getBy('GatewayLog',  
-    { gateway: GATEWAY,  type: GatewayLogType.IMPORT_ADDRESS } )
+  const key = app.sdb.getEntityKey('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.IMPORT_ADDRESS })
+  let lastImportAddressLog = app.sdb.getCached('GatewayLog', key)
 
   library.logger.debug('find last import address log', lastImportAddressLog)
   let lastSeq = 0
   if (lastImportAddressLog) {
     lastSeq = lastImportAddressLog.seq
   } else {
-    app.sdb.create('GatewayLog', GATEWAY ,{ gateway: GATEWAY, type: GatewayLogType.IMPORT_ADDRESS, seq: 0 })
+    lastImportAddressLog = app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.IMPORT_ADDRESS, seq: 0 })
   }
   //query( model, condition, fields, limit, offset, sort, join )
-  let gatewayAccounts = await app.sdb.query('GatewayAccount', { gateway: GATEWAY, seq: { $gt: lastSeq } }, 100, { seq: 1 } )
+  let gatewayAccounts = await app.sdb.find('GatewayAccount', { gateway: GATEWAY, seq: { $gt: lastSeq } }, 100, { seq: 1 })
   library.logger.debug('find gateway account', gatewayAccounts)
   let len = gatewayAccounts.length
   if (len > 0) {
@@ -78,9 +66,8 @@ Gateway.prototype.importAccounts = async function () {
       await PIFY(gatewayLib.bitcoin.importAddress)(a.outAddress)
     }
 
-    let key = app.sdb.getEntityKey('GatewayLog', { gateway : GATEWAY, type :GatewayLogType.IMPORT_ADDRESS })
-    let log = await app.sdb.get( key )
-    log.seq = gatewayAccounts[len - 1].seq 
+    lastImportAddressLog.seq = gatewayAccounts[len - 1].seq
+    app.sdb.saveLocalChanges()
   }
 }
 
@@ -91,24 +78,24 @@ Gateway.prototype.processDeposits = async function () {
   const GATEWAY = global.Config.gateway.name
   const CURRENCY = 'BTC'
 
-  let validators = await app.sdb.getMany('GatewayMember', { gateway: GATEWAY,  elected: 1 })
+  let validators = await app.sdb.findAll('GatewayMember', { gateway: GATEWAY, elected: 1 })
   if (!validators || !validators.length) {
     library.logger.error('Validators not found')
     return
   }
 
-  if (await app.sdb.count('GatewayAccount', { gateway: GATEWAY } ) == 0) {
+  if (await app.sdb.count('GatewayAccount', { gateway: GATEWAY }) == 0) {
     library.logger.error('No gateway accounts')
     return
   }
 
-  const gatewayLogKey = app.sdb.getEntityKey( 'GatewayAccount', { gateway: GATEWAY, type:GatewayLogType.DEPOSIT } )
-  let lastDepositLog = await app.sdb.get('GatewayLog', gatewayLogKey )
-  library.logger.debug('find DEPOSIT log', lastDepositLog)
+  const gatewayLogKey = app.sdb.getEntityKey('GatewayAccount', { gateway: GATEWAY, type: GatewayLogType.DEPOSIT })
+  let lastDepositLog = app.sdb.getCached('GatewayLog', gatewayLogKey)
+  library.logger.debug('==========find DEPOSIT log============', lastDepositLog)
 
-  lastDepositLog = lastDepositLog || 
-    await app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.DEPOSIT, seq: 0 } )
-  
+  lastDepositLog = lastDepositLog ||
+    app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.DEPOSIT, seq: 0 })
+
   let lastSeq = lastDepositLog.seq
   let ret = await PIFY(gatewayLib.bitcoin.getTransactionsFromBlockHeight)(lastSeq)
   if (!ret || !ret.transactions) {
@@ -116,8 +103,8 @@ Gateway.prototype.processDeposits = async function () {
     return
   }
 
-  let outTransactions = ret.transactions.filter( ot => ot.category === 'receive' && ot.confirmations >= 1 )
-    .sort((l, r) =>   l.height - r.height )
+  let outTransactions = ret.transactions.filter(ot => ot.category === 'receive' && ot.confirmations >= 1)
+    .sort((l, r) => l.height - r.height)
 
   library.logger.debug('get gateway transactions', outTransactions)
   let len = outTransactions.length
@@ -141,6 +128,7 @@ Gateway.prototype.processDeposits = async function () {
       }
     }
     lastDepositLog.seq = outTransactions[len - 1].height
+    app.sdb.saveLocalChanges()
   }
 }
 
@@ -150,7 +138,7 @@ Gateway.prototype.processWithdrawals = async function () {
   }
   let GATEWAY = global.Config.gateway.name
   let PAGE_SIZE = 25
-  let validators = await app.sdb.getMany('GatewayMember', { gateway: GATEWAY, elected: 1 } )
+  let validators = await app.sdb.findAll('GatewayMember', { gateway: GATEWAY, elected: 1 })
   if (!validators || !validators.length) {
     library.logger.error('Validators not found')
     return
@@ -162,16 +150,16 @@ Gateway.prototype.processWithdrawals = async function () {
   let multiAccount = app.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
   library.logger.debug('gateway validators cold account', multiAccount)
 
-  let withdrawalLogKey = app.sdb.getEntityKey( 'GatewayLog', { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL } )
-  let lastWithdrawalLog = await app.sdb.get('GatewayLog', withdrawalLogKey )
+  let withdrawalLogKey = app.sdb.getEntityKey('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL })
+  let lastWithdrawalLog = await app.sdb.get('GatewayLog', withdrawalLogKey)
   library.logger.debug('find ==========WITHDRAWAL============ log', lastWithdrawalLog)
 
   lastWithdrawalLog = lastWithdrawalLog ||
-    await app.sdb.create('GatewayLog', withdrawalLogKey, { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL, seq: 0 })
-  
+    app.sdb.create('GatewayLog', withdrawalLogKey, { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL, seq: 0 })
+
   let lastSeq = lastWithdrawalLog.seq
 
-  let withdrawals = await app.sdb.query('GatewayWithdrawal', { gateway: GATEWAY, seq: { $gt: lastSeq }  }, PAGE_SIZE )
+  let withdrawals = await app.sdb.query('GatewayWithdrawal', { gateway: GATEWAY, seq: { $gt: lastSeq } }, PAGE_SIZE)
   library.logger.debug('get gateway withdrawals', withdrawals)
   if (!withdrawals || !withdrawals.length) {
     return
@@ -235,19 +223,19 @@ Gateway.prototype.sendWithdrawals = async function () {
   }
   let GATEWAY = global.Config.gateway.name
   const PAGE_SIZE = 25
-  let logCond = {
+  let lastSeq = 0
+  let logKey = app.sdb.getEntityKey('GatewayLog', {
     gateway: GATEWAY,
     type: GatewayLogType.SEND_WITHDRAWAL
-  }
-  let lastSeq = 0
-  let lastLog = await app.model.GatewayLog.findOne({ condition: logCond })
+  })
+  let lastLog = app.sdb.getCached('GatewayLog', logKey)
   library.logger.debug('find ======SEND_WITHDRAWAL====== log', lastLog)
   if (lastLog) {
     lastSeq = lastLog.seq
   } else {
-    await app.model.GatewayLog.create({ gateway: GATEWAY, type: GatewayLogType.SEND_WITHDRAWAL, seq: 0 })
+    lastLog = app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.SEND_WITHDRAWAL, seq: 0 })
   }
-  let withdrawals = await app.model.GatewayWithdrawal.findAll({
+  let withdrawals = await app.sdb.findAll('GatewayWithdrawal', {
     condition: {
       gateway: GATEWAY,
       seq: { $gt: lastSeq }
@@ -258,7 +246,7 @@ Gateway.prototype.sendWithdrawals = async function () {
   if (!withdrawals || !withdrawals.length) {
     return
   }
-  let validators = await app.model.GatewayMember.findAll({
+  let validators = await app.sdb.findAll('GatewayMember', {
     condition: {
       gateway: GATEWAY,
       elected: 1
@@ -280,7 +268,7 @@ Gateway.prototype.sendWithdrawals = async function () {
       library.logger.debug('out transaction not created')
       return
     }
-    let preps = await app.model.GatewayWithdrawalPrep.findAll({ condition: { wid: w.tid } })
+    let preps = await app.sdb.findAll('GatewayWithdrawalPrep', { condition: { wid: w.tid } })
     if (preps.length < unlockNumber) {
       library.logger.debug('not enough signature')
       return
@@ -302,16 +290,16 @@ Gateway.prototype.sendWithdrawals = async function () {
     }
   }
   let len = withdrawals.length
-  await app.model.GatewayLog.update({ seq: withdrawals[len - 1].seq }, logCond)
+  lastLog.seq = withdrawals[len - 1].seq
 }
 
 Gateway.prototype.onBlockchainReady = function () {
   if (0 && global.Config.gateway) {
-    loopAsyncFunc(self.importAccounts.bind(self), 10 * 1000)
-    loopAsyncFunc(self.processDeposits.bind(self), 10 * 1000)
-    loopAsyncFunc(self.processWithdrawals.bind(self), 10 * 1000)
+    loop.runAsync(self.importAccounts.bind(self), 10 * 1000)
+    loop.runAsync(self.processDeposits.bind(self), 10 * 1000)
+    loop.runAsync(self.processWithdrawals.bind(self), 10 * 1000)
     if (global.Config.gateway.sendWithdrawal) {
-      loopAsyncFunc(self.sendWithdrawals.bind(self), 10 * 1000)
+      loop.runAsync(self.sendWithdrawals.bind(self), 10 * 1000)
     }
   }
 }
