@@ -29,7 +29,12 @@ module.exports = async function (router) {
   })
   router.get('/currencies', async function (req) {
     let currencies = await app.sdb.findAll('GatewayCurrency', {})
-    return { count: currencies.length, currencies }
+    let filtered = []
+    for (let c of currencies) {
+      let gateway = await app.sdb.findOne('Gateway', {condition: {name: c.gateway}})
+      if (gateway && gateway.activated) filtered.push(c)
+    }
+    return { count: filtered.length, currencies: filtered }
   })
 
   router.get('/:name/currencies', async function (req) {
