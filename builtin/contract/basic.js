@@ -65,15 +65,38 @@ module.exports = {
 
     let senderId = this.trs.senderId
     amount = Number(amount)
-    let sender = await app.sdb.get('Account', senderId)
-    if ((!sender || !sender.xas || sender.xas < amount) && this.block.height > 0) return 'Insufficient balance'
 
-    let { recipientAccount, err } = await getRecipientAccount(recipient)
-    if (err) return err
+    let sender
+    if (this.block.height === 0) {
+      sender = app.sdb.create('Account', {
+        address: senderId,
+        xas: 0,
+        name: ''
+      })
+    } else {
+      sender = await app.sdb.get('Account', senderId)
+      if (!sender || !sender.xas || sender.xas < amount) return 'Insufficient balance'
+    }
+    sender.xas -= amount
 
-    // TODO: check it
-    if (sender) sender.xas -= amount
-    recipientAccount.xas += amount
+    let recipientAccount
+    if (app.util.address.isNormalAddress(recipient)) {
+      recipientAccount = await app.sdb.get('Account', recipient)
+      if (recipientAccount) {
+        recipientAccount.xas += amount
+      } else {
+        recipientAccount = app.sdb.create('Account', {
+          address: recipient,
+          xas: amount,
+          name: ''
+        })
+      }
+    } else {
+      recipientAccount = await app.sdb.findOne('Account', { condition: { name: recipient } })
+      if (!recipientAccount) return 'Recipient name not exist'
+      recipientAccount = app.sdb.attach('Account', recipientAccount.address)
+      recipientAccount.xas += amount
+    }
 
     app.sdb.create('Transfer', {
       tid: this.trs.id,
