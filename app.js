@@ -188,7 +188,14 @@ function main() {
         } else {
           scope.logger.info('Cleaned up successfully');
         }
-        app.db.close()
+        (async function () {
+          try {
+            await app.sdb.close()
+          } catch (e) {
+            scope.logger.error('failed to close sdb', e)
+          }
+        })()
+        
         if (fs.existsSync(pidFile)) {
           fs.unlinkSync(pidFile);
         }
