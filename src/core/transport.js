@@ -31,7 +31,73 @@ function Transport(cb, scope) {
 
 // Private methods
 private.attachApi = function () {
+  var router = new Router();
 
+  router.use(function (req, res, next) {
+    if (modules) return next();
+    res.status(500).send({ success: false, error: "Blockchain is loading" });
+  });
+
+  router.post("/transactions", function (req, res) {
+    var lastBlock = modules.blocks.getLastBlock();
+    var lastSlot = slots.getSlotNumber(lastBlock.timestamp);
+    if (slots.getNextSlot() - lastSlot >= 12) {
+      library.logger.error("OS INFO", shell.getInfo())
+      library.logger.error("Blockchain is not ready", { getNextSlot: slots.getNextSlot(), lastSlot: lastSlot, lastBlockHeight: lastBlock.height })
+      return res.status(200).json({ success: false, error: "Blockchain is not ready" });
+    }
+
+    res.set(private.headers);
+
+    if (req.headers['magic'] !== library.config.magic) {
+      return res.status(500).send({
+        success: false,
+        error: "Request is made on the wrong network",
+        expected: library.config.magic,
+        received: req.headers['magic']
+      });
+    }
+
+    try {
+      var transaction = library.base.transaction.objectNormalize(req.body.transaction);
+      // transaction.asset = transaction.asset || {}
+    } catch (e) {
+      library.logger.error("Received transaction parse error", {
+        raw: req.body,
+        trs: transaction,
+        error: e.toString()
+      });
+      return res.status(200).json({ success: false, error: "Invalid transaction body" });
+    }
+
+    if (private.processedTrsCache.has(transaction.id)) {
+      return res.status(200).json({ success: false, error: "Already processed transaction" + transaction.id });
+    }
+
+    library.sequence.add(function (cb) {
+      if (modules.transactions.hasUnconfirmed(transaction)) {
+        return cb('Already exists');
+      }
+      library.logger.log('Received transaction ' + transaction.id + ' from http client');
+      modules.transactions.receiveTransactions([transaction], cb);
+    }, function (err, transactions) {
+      private.processedTrsCache.set(transaction.id, true)
+      if (err) {
+        library.logger.warn('Receive invalid transaction,id is ' + transaction.id, err);
+        let errMsg = err.message ? err.message : err.toString()
+        res.status(200).json({ success: false, error: errMsg });
+      } else {
+        library.bus.message('unconfirmedTransaction', transaction, true);
+        res.status(200).json({ success: true, transactionId: transactions[0].id });
+      }
+    });
+  })
+
+  router.use(function (req, res, next) {
+    res.status(500).send({ success: false, error: "API endpoint not found" });
+  });
+
+  library.network.app.use('/peer', router);
 }
 
 private.hashsum = function (obj) {
@@ -209,7 +275,6 @@ Transport.prototype.onPeerReady = function () {
       votes = library.base.consensus.normalizeVotes(votes);
     } catch (e) {
       library.logger.log('normalize block or votes object error: ' + e.toString());
-      library.logger.log('Block ' + (block ? block.id : 'null') + ' is not valid, ban 60 min', peerStr);
     }
     library.bus.message('receiveBlock', block, votes);
   })
@@ -274,12 +339,11 @@ Transport.prototype.onPeerReady = function () {
       var transaction = library.base.transaction.objectNormalize(message.body.transaction);
       // transaction.asset = transaction.asset || {}
     } catch (e) {
-      library.logger.error("transaction parse error", {
+      library.logger.error("Received transaction parse error", {
         message: message,
         trs: transaction,
         error: e.toString()
       });
-      library.logger.log('Received transaction ' + (transaction ? transaction.id : 'null') + ' is not valid, ban 60 min', peerStr);
       return
     }
 
@@ -291,7 +355,7 @@ Transport.prototype.onPeerReady = function () {
       if (modules.transactions.hasUnconfirmed(transaction)) {
         return cb('Already exists')
       }
-      library.logger.log('Received transaction ' + transaction.id + ' from peer ' + peerStr)
+      library.logger.log('Receive transaction ' + transaction.id)
       modules.transactions.receiveTransactions([transaction], cb)
     }, function (err, transactions) {
       private.processedTrsCache.set(transaction.id, true)
