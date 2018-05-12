@@ -11,6 +11,23 @@ module.exports = function (router) {
     let unconfirmedAccount = null
     if (account) {
       unconfirmedAccount = await app.sdb.get('Account', account.address)
+      if (unconfirmedAccount) {
+        unconfirmedAccount = {
+          address: unconfirmedAccount.address,
+          name: unconfirmedAccount.name,
+          xas: unconfirmedAccount.xas,
+          publicKey: unconfirmedAccount.publicKey,
+          secondPublicKey: unconfirmedAccount.secondPublicKey,
+          isLocked: unconfirmedAccount.isLocked,
+          isAgent: unconfirmedAccount.isAgent,
+          isDelegate: unconfirmedAccount.isDelegate,
+          role: unconfirmedAccount.role,
+          lockHeight: unconfirmedAccount.lockHeight,
+          agent: unconfirmedAccount.agent,
+          weight: unconfirmedAccount.weight,
+          agentWeight: unconfirmedAccount.agentWeight
+        }
+      }
     } else {
       unconfirmedAccount = null
     }
