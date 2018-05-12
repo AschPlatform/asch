@@ -210,7 +210,7 @@ module.exports = {
   registerAgent: async function () {
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
-    let account = await app.sdb.findOne('Account', senderId)
+    let account = await app.sdb.get('Account', senderId)
     if (account.role) return 'Agent already have a role'
     if (!account.name) return 'Agent must have a name'
     if (account.isLocked) return 'Locked account cannot be agent'
@@ -303,7 +303,7 @@ module.exports = {
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
 
-    let sender = await app.sdb.findOne('Account', senderId)
+    let sender = await app.sdb.findOne('Account', { condition: { address: senderId } })
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
     if (sender.agent) return 'Account already set agent'
 
@@ -343,7 +343,7 @@ module.exports = {
     let senderId = this.trs.senderId
     app.sdb.lock('account@' + senderId)
 
-    let sender = await app.sdb.get('Account', senderId)
+    let sender = await app.sdb.findOne('Account', { condition: { address: senderId } })
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
     if (sender.agent) return 'Account already set agent'
 

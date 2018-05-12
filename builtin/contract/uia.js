@@ -10,7 +10,7 @@ module.exports = {
     let exists = await app.sdb.exists('Issuer', { name: name })
     if (exists) return 'Issuer name already exists'
 
-    exists = await app.sdb.findOne('Issuer', {condition: {issuerId: senderId}})
+    exists = await app.sdb.exists('Issuer', { issuerId: senderId })
     if (exists) return 'Account is already an issuer'
 
     app.sdb.create('Issuer', {
@@ -50,9 +50,9 @@ module.exports = {
   issue: async function (name, amount) {
     app.sdb.lock('uia.issue@' + name)
 
-    let asset = await app.sdb.findOne('Asset', { condition: { name: name } })
+    let asset = await app.sdb.get('Asset', name)
     if (!asset) return 'Asset not exists'
-    if (asset.issuerId !== this.trs.senderId ) return 'Permission denied'
+    if (asset.issuerId !== this.trs.senderId) return 'Permission denied'
 
     let quantity = bignum(asset.quantity).plus(amount)
     if (quantity.gt(asset.maximum)) return 'Exceed issue limit'

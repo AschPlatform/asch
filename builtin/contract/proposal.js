@@ -9,7 +9,7 @@ async function doGatewayRegister(params, context) {
   let name = params.name
   app.sdb.lock('gateway@' + name)
   let exists = await app.sdb.exists('Gateway', { name: name })
-  if (exists) return 'Gateway already exists'
+  if (exists) throw new Error('Gateway already exists')
 
   app.sdb.create('Gateway', {
     name: name,
@@ -19,6 +19,7 @@ async function doGatewayRegister(params, context) {
     lastUpdateHeight: context.block.height,
     revoked: 0,
     version: 1,
+    activated: 0,
     createTime: context.trs.timestamp
   })
   app.sdb.create('GatewayCurrency', {
@@ -32,46 +33,33 @@ async function doGatewayRegister(params, context) {
 
 async function doGatewayInit(params) {
   for (let m of params.members) {
-    let dbItem = await app.sdb.findOne('GatewayMember', {
-      condition: {
-        gateway: params.gateway,
-        address: m
-      }
-    })
+    let dbItem = await app.sdb.get('GatewayMember', m)
     dbItem.elected = 1
   }
+  let gateway = await app.sdb.get('Gateway', params.gateway)
+  gateway.activated = 1
 }
 
 async function doGatewayUpdateMember(params) {
   app.sdb.lock('gateway@' + params.gateway)
-  let gateway = await app.sdb.findOne('Gateway', { condition: { name: params.gateway } })
+  let gateway = await app.sdb.get('Gateway', params.gateway)
   if (!gateway) throw new Error('Gateway not found')
 
   if (this.block.height - gateway.lastUpdateHeight < gateway.updateInterval) {
     throw new Error('Time not arrived')
   }
   gateway.version += 1
-  let fromValidator = await app.sdb.findOne('GatewayMember', {
-    condition: {
-      gateway: params.gateway,
-      address: params.from
-    }
-  })
+  let fromValidator = await app.sdb.get('GatewayMember', params.from)
   fromValidator.elected = 0
 
-  let toValidator = await app.sdb.findOne('GatewayMember', {
-    condition: {
-      gateway: params.gateway,
-      address: params.to
-    }
-  })
+  let toValidator = await app.sdb.get('GatewayMember', params.to)
   toValidator.elected = 1
 }
 
 async function doGatewayRevoke(params) {
   app.sdb.lock('gateway@' + params.gateway)
-  let gateway = await app.sdb.findOne('Gateway', { condition: { name: params.gateway } })
-  if (!gateway) return 'Gateway not found'
+  let gateway = await app.sdb.get('Gateway', params.gateway)
+  if (!gateway) throw new Error('Gateway not found')
 
   gateway.revoked = 1
 }
@@ -186,7 +174,7 @@ module.exports = {
   },
 
   activate: async function (pid) {
-    let proposal = await app.sdb.findOne('Proposal', { condition: { tid: pid } })
+    let proposal = await app.sdb.get('Proposal', pid)
     if (!proposal) return 'Proposal not found'
 
     if (proposal.activated) return 'Already activated'
