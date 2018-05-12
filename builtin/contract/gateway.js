@@ -97,7 +97,7 @@ module.exports = {
   withdrawal: async function (address, gateway, currency, amount) {
     const FEE = '10000' // FIXME
     let balance = app.balances.get(this.trs.senderId, currency)
-    if (balance.lt(amount) || bignum(amount).lt(FEE)) return 'Insufficient balance'
+    if (balance.lt(amount) || balance.lt(FEE)) return 'Insufficient balance'
 
     let outAmount = bignum(amount).sub(FEE).toString()
 
