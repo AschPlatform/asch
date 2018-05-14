@@ -53,8 +53,8 @@ module.exports = {
       app.balances.transfer(currency, amount, senderId, chain.address)
     } else {
       amount = Number(amount)
-      let sender = await app.sdb.get('Account', senderId)
-      if (!sender || !sender.xas || sender.xas < amount) return 'Insufficient balance'
+      let sender = this.sender
+      if (sender.xas < amount) return 'Insufficient balance'
       sender.xas -= amount
 
       let chainAccount = await app.sdb.get('Account', chain.address)
@@ -99,8 +99,8 @@ module.exports = {
       app.balances.transfer(currency, amount, chain.address, recipient)
     } else {
       amount = Number(amount)
-      let sender = await app.sdb.get('Account', chain.address)
-      if (!sender || !sender.xas || sender.xas < amount) return 'Insufficient balance'
+      let sender = this.sender
+      if (sender.xas < amount) return 'Insufficient balance'
       sender.xas -= amount
       let account = await app.sdb.get('Account', recipient)
       if (!account) {

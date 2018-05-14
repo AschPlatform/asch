@@ -74,8 +74,8 @@ module.exports = {
         name: ''
       })
     } else {
-      sender = await app.sdb.get('Account', senderId)
-      if (!sender || !sender.xas || sender.xas < amount) return 'Insufficient balance'
+      sender = this.sender
+      if (sender.xas < amount) return 'Insufficient balance'
     }
     sender.xas -= amount
 
@@ -125,11 +125,8 @@ module.exports = {
     } else {
       let exists = await app.sdb.exists('Account', { name: name })
       if (exists) return 'Name already registered'
-
-      let account = await app.sdb.get('Account', senderId)
-      if (account && !!account.name) return 'Name already set'
-
-      account.name = name
+      if (!!this.sender.name) return 'Name already set'
+      this.sender.name = name
     }
   },
 
@@ -137,8 +134,8 @@ module.exports = {
     // FIXME validate publicKey
     let senderId = this.trs.senderId
     app.sdb.lock('basic.setPassword@' + senderId)
-    let account = await app.sdb.get('Account', senderId)
-    account.secondPublicKey = publicKey
+    if (!!this.sender.secondPublicKey) return 'Password already set'
+    this.sender.secondPublicKey = publicKey
   },
 
   lock: async function (height, amount) {
@@ -148,7 +145,7 @@ module.exports = {
     app.sdb.lock('basic.account@' + senderId)
 
     const MIN_LOCK_HEIGHT = 8640 * 30
-    let sender = await app.sdb.get('Account', senderId)
+    let sender = this.sender
     if (sender.isAgent) return 'Agent account cannot lock'
     if (sender.xas - 100000000 < amount) return 'Insufficient balance'
     if (sender.isLocked) {
@@ -207,7 +204,7 @@ module.exports = {
     // 自動取消代理
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
-    let sender = await app.sdb.get('Account', senderId)
+    let sender = this.sender
     if (!sender) return 'Account not found'
     if (!sender.isLocked) return 'Account is not locked'
     if (this.block.height <= sender.lockHeight) return 'Account cannot unlock'
@@ -233,16 +230,16 @@ module.exports = {
   registerAgent: async function () {
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
-    let account = await app.sdb.get('Account', senderId)
-    if (account.role) return 'Agent already have a role'
-    if (!account.name) return 'Agent must have a name'
-    if (account.isLocked) return 'Locked account cannot be agent'
+    let sender = this.sender
+    if (sender.role) return 'Agent already have a role'
+    if (!sender.name) return 'Agent must have a name'
+    if (sender.isLocked) return 'Locked account cannot be agent'
 
     let voteExist = await app.sdb.exists('Vote', { address: senderId })
     if (voteExist) return 'Account already voted'
 
-    account.role = app.AccountRole.AGENT
-    account.isAgent = 1
+    sender.role = app.AccountRole.AGENT
+    sender.isAgent = 1
     app.sdb.create('Agent', { name: account.name })
   },
 
@@ -252,7 +249,7 @@ module.exports = {
     // 將自身權重增加到agent的weight，給agent所投人增加權重
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
-    let sender = await app.sdb.get('Account', senderId)
+    let sender = this.sender
     if (sender.isAgent) return 'Agent cannot set agent'
     if (sender.agent) return 'Agent already set'
     if (!sender.isLocked) return 'Account is not locked'
@@ -286,7 +283,7 @@ module.exports = {
     // 獲得agent所投的受託人列表，減去相應權重
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
-    let sender = await app.sdb.get('Account', senderId)
+    let sender = this.sender
     if (!sender.agent) return 'Agent is not set'
 
     let agentAccount = await app.sdb.getBy('Account', { name: sender.agent })
@@ -298,15 +295,11 @@ module.exports = {
   registerDelegate: async function () {
     let senderId = this.trs.senderId
     app.sdb.lock('basic.registerDelegate@' + senderId)
-    let sender
-    if (this.block.height > 0) {
-      sender = await app.sdb.get('Account', senderId)
-      if (!sender) return 'Account not found'
-      if (!sender.name) return 'Account has not a name'
-      if (sender.role) return 'Account already have a role'
-    } else {
-      sender = await app.sdb.get('Account', senderId)
-    }
+    let sender = this.sender
+    if (!sender) return 'Account not found'
+    if (!sender.name) return 'Account has not a name'
+    if (sender.role) return 'Account already have a role'
+
     app.sdb.create('Delegate', {
       address: senderId,
       name: sender.name,
@@ -326,7 +319,7 @@ module.exports = {
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
 
-    let sender = await app.sdb.findOne('Account', { condition: { address: senderId } })
+    let sender = this.sender
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
     if (sender.agent) return 'Account already set agent'
 
@@ -366,7 +359,7 @@ module.exports = {
     let senderId = this.trs.senderId
     app.sdb.lock('account@' + senderId)
 
-    let sender = await app.sdb.findOne('Account', { condition: { address: senderId } })
+    let sender = this.sender
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
     if (sender.agent) return 'Account already set agent'
 

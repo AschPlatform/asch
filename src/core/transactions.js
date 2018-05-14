@@ -683,19 +683,25 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
     height: height,
   }
 
-  try {
-    await library.base.transaction.apply(transaction, block)
-  } catch (e) {
-    library.logger.error(e)
-    app.sdb.rollbackTransaction()
-    throw e
+  let context = {
+    trs: transaction,
+    block,
+    sender
   }
 
+  try {
+    app.sdb.beginContract()
+    await library.base.transaction.apply(context)
+    app.sdb.commitContract()
+  } catch (e) {
+    app.sdb.rollbackContract()
+    library.logger.error(e)
+    throw e
+  }
+  self.pool.add(transaction)
   if (broadcast) {
     library.bus.message('unconfirmedTransaction', transaction, true);
   }
-
-  self.pool.add(transaction)
   return transaction
 }
 

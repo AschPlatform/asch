@@ -31,7 +31,7 @@ module.exports = {
   registerMember: async function (gateway, publicKey, desc) {
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + this.trs.senderId)
-    let sender = await app.sdb.get('Account', senderId)
+    let sender = this.sender
     if (!sender.name) return 'Account have not a name'
     if (sender.role) return 'Account already have a role'
     if (!await app.sdb.exists('Gateway', { name: gateway })) return 'Gateway not found'
