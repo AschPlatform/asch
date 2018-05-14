@@ -37,24 +37,6 @@ function isUniq(arr) {
 
 module.exports = {
   transfer: async function (amount, recipient) {
-    async function getRecipientAccount(nameOrAddress) {
-      if (app.util.address.isNormalAddress(nameOrAddress)) {
-        // address 
-        let recipientAccount = await app.sdb.get('Account', nameOrAddress)
-        // FIXME recipient public key
-        return {
-          recipientAccount: recipientAccount || app.sdb.create('Account', {
-            address: nameOrAddress,
-            xas: amount,
-            name: ''
-          }), err: null
-        }
-      }
-      // account name
-      let recipientAccount = await app.sdb.getBy('Account', { name: recipient })
-      return { recipientAccount, err: recipientAccount ? null : 'Recipient name not exist' }
-    }
-
     // FIXME validate recipient is valid address
     if (!recipient) return 'Invalid recipient'
     app.validate('amount', String(amount))
