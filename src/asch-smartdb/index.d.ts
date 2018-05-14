@@ -75,7 +75,7 @@ export namespace AschCore
 	export type Callback<TResult> = (err: Error | null, data: TResult) => void;
 	export function makeJsonObject<T>(iterable: Iterable<T>, getKey: (t: T) => string, getValue: (t: T) => any): JsonObject;
 	export function deepCopy<T>(src: T): T;
-	export function partial<T>(src: T, ...keys: Array<string>): Partial<T>;
+	export function partial<T>(src: T, keysOrKeyFilter: Array<string> | ((key: string) => boolean)): Partial<T>;
 	export function isPrimitiveKey(key: any): boolean;
 	export class CodeContractError extends Error {
 	    constructor(message: string);
@@ -119,6 +119,7 @@ export namespace AschCore
 	    load<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey): Promise<MaybeUndefined<TEntity>>;
 	    getChanges(): Array<EntityChangesItem>;
 	    loadCached<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey, track?: boolean): MaybeUndefined<TEntity>;
+	    lockInThisSession(lockName: string, notThrow?: boolean): boolean;
 	    /**
 	     * Save changes to database
 	     * @returns serial number for saveChanges
@@ -137,6 +138,9 @@ export namespace AschCore
 	    update<TEntity>(entity: TEntity): void;
 	    delete<TEntity>(entity: TEntity): void;
 	    beginTransaction(): Promise<DBTransaction>;
+	    beginEntityTransaction(): void;
+	    commitEntityTransaction(): void;
+	    rollbackEntityTransaction(): void;
 	}
 
 	//declarations/EntityCache.d.ts
@@ -369,6 +373,18 @@ export namespace AschCore
 	     */
 	    lockInCurrentBlock(lockName: string, notThrow?: boolean): boolean;
 	    /**
+	     * begin a contract transaction which effect entities in memory
+	     */
+	    beginContract(): void;
+	    /**
+	     * commit contract transaction which effect entities in memory
+	     */
+	    commitContract(): void;
+	    /**
+	     * rollback contract transaction which effect entities in memory
+	     */
+	    rollbackContract(): void;
+	    /**
 	     * begin a new block
 	     * @param blockHeader
 	     */
@@ -399,12 +415,12 @@ export namespace AschCore
 	     */
 	    getEntityKey<TEntity>(model: ModelNameOrType<TEntity>, entity: TEntity): MaybeUndefined<EntityKey>;
 	    /**
-	     * get tracking entity by key
+	     * get tracking entity
 	     * @param model model modelName or model type
-	     * @param key entity key
+	     * @param entity entity
 	     * @returns tracked entity or undefined
 	     */
-	    attach<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey): MaybeUndefined<TEntity>;
+	    attach<TEntity>(model: ModelNameOrType<TEntity>, entity: Partial<TEntity>): Promise<MaybeUndefined<TEntity>>;
 	    /**
 	     * create a new entity which change will be tracked and persistented (by saveChanges) automatically
 	     * @param model modelName or model type
@@ -436,7 +452,7 @@ export namespace AschCore
 	     * @param condition see type SqlCondition
 	     * @param track track and cache result if true
 	     */
-	    getBy<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean): Promise<MaybeUndefined<TEntity>>;
+	    getBy<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition): Promise<MaybeUndefined<TEntity>>;
 	    /**
 	   * get entities from database
 	   * @param model model name or model type
@@ -448,10 +464,9 @@ export namespace AschCore
 	     * load entity from cache only
 	     * @param model model name or model type
 	     * @param key key of entity
-	     * @param track track result
 	     * @returns tracked entity from cache
 	     */
-	    getCached<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey, track?: boolean): MaybeUndefined<TEntity>;
+	    getCached<TEntity>(model: ModelNameOrType<TEntity>, key: EntityKey): MaybeUndefined<TEntity>;
 	    /**
 	     * get all cached entities
 	     * @param model model name or model type
@@ -750,10 +765,12 @@ export namespace AschCore
 	    _version_: number;
 	    __detached__: boolean;
 	    __tracking__: boolean;
+	    __confirmed__: boolean;
 	    __schema__: ModelSchema;
 	    __tracker__: EntityTracker;
 	    __state__: EntityState;
-	    __tmpChanges__: Nullable<EntityChanges>;
+	    __changes__: Nullable<EntityChanges>;
+	    __unconfirmedChanges__: Nullable<EntityChanges>;
 	}
 	export interface Proxied<T> extends EntityExtension {
 	}
@@ -762,7 +779,7 @@ export namespace AschCore
 	    static isExtended(entity: Entity): boolean;
 	    static isProxied(entity: Entity): boolean;
 	    static convertToProxied<TEntity>(entity: Entity): Proxied<TEntity>;
-	    static proxyToEntity(proxied: Proxied<Entity>): Entity;
+	    static proxyToEntity(proxied: Proxied<Entity>, containsVersion?: boolean): Entity;
 	    static isNormalProperty(propertyName: string): boolean;
 	    static isDirty(entity: Entity): boolean;
 	    /**
@@ -770,13 +787,15 @@ export namespace AschCore
 	     * @param entity Entity create manual
 	     * @param model Model Name
 	     */
-	    proxyNew<TEntity>(entity: TEntity, schema: ModelSchema): Proxied<TEntity>;
+	    proxyNew<TEntity>(entity: TEntity, schema: ModelSchema, confirmed: boolean): Proxied<TEntity>;
 	    /**
 	     * Make entity wrapped by proxy so that state changes can be detected
 	     * @param entity Entity loaded from database. ATTENSTION: ensure that has property '_version_'
 	     * @param model Model Name
 	     */
-	    proxyPersistent<TEntity>(entity: Entity, schema: ModelSchema): Proxied<TEntity>;
+	    proxyPersistent<TEntity>(entity: Entity, schema: ModelSchema, confirmed: boolean): Proxied<TEntity>;
+	    confirmChanges<TEntity>(pe: Proxied<TEntity>): void;
+	    cancelChanges<TEntity>(pe: Proxied<TEntity>): void;
 	}
 
 	//declarations/StateTracker/EntityTracker.d.ts
@@ -792,10 +811,18 @@ export namespace AschCore
 	    acceptChanges(historyVersion: number): void;
 	    rejectChanges(): void;
 	    rollbackChanges(historyVersion: number): void;
+	    isConfirming: boolean;
+	    beginConfirm(): void;
+	    confirm(): void;
+	    cancelConfirm(): void;
 	}
 	export type ModelAndKey = string;
 	export type EntityChangesItem = {
 	    modelAndKey: ModelAndKey;
+	    changes: MaybeUndefined<EntityChanges>;
+	};
+	export type ProxiedEntityAndChanges = {
+	    entity: Proxied<any>;
 	    changes: MaybeUndefined<EntityChanges>;
 	};
 	export class ProxiedEntityTracker implements EntityTracker {
@@ -814,6 +841,11 @@ export namespace AschCore
 	    getChangesUntil(historyVersion: number): Array<Map<ModelAndKey, EntityChanges>>;
 	    readonly trackingEntities: Iterable<Entity>;
 	    isTracking(schema: ModelSchema, key: EntityKey): boolean;
+	    registerUnconfirmedEntity(pe: Proxied<any>): void;
+	    readonly isConfirming: boolean;
+	    beginConfirm(): void;
+	    confirm(): void;
+	    cancelConfirm(): void;
 	    getTrackingEntity<TEntity>(schema: ModelSchema, key: EntityKey): MaybeUndefined<Proxied<TEntity>>;
 	    trackNew<TEntity>(schema: ModelSchema, entity: TEntity): TEntity;
 	    trackDelete(schema: ModelSchema, entity: Entity): void;
@@ -821,10 +853,7 @@ export namespace AschCore
 	    stopTrack(schema: ModelSchema, entity: Entity): void;
 	    stopTrackAll(): void;
 	    getTrackingChanges(): Array<EntityChangesItem>;
-	    detectChanges(): Array<{
-	        entity: Proxied<any>;
-	        changes: MaybeUndefined<EntityChanges>;
-	    }>;
+	    detectChanges(): Array<ProxiedEntityAndChanges>;
 	    acceptChanges(historyVersion: number): void;
 	    rejectChanges(): void;
 	    rollbackChanges(historyVersion: number): void;
