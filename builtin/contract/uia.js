@@ -57,7 +57,7 @@ module.exports = {
     let quantity = bignum(asset.quantity).plus(amount)
     if (quantity.gt(asset.maximum)) return 'Exceed issue limit'
 
-    asset.quantity = quantity.toString()
+    asset.quantity = quantity.toString(10)
     app.balances.increase(this.trs.senderId, name, amount)
   },
 
