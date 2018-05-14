@@ -651,7 +651,7 @@ Transactions.prototype.receiveTransactionsAsync = async function (transactions) 
 }
 
 Transactions.prototype.processUnconfirmedTransactionAsync = async function (transaction, broadcast) {
-  library.logger.debug('process unconfirmed trs', transaction)
+  // library.logger.debug('process unconfirmed trs', transaction)
   if (!transaction.id) {
     transaction.id = library.base.transaction.getId(transaction);
   }
@@ -669,24 +669,23 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
   let sender = await app.sdb.get('Account', transaction.senderId)
   if (!sender) throw new Error('Sender account not found')
 
-  if (height > 0) {
-    let error = library.base.transaction.verify(transaction, sender)
-    if (error) throw new Error(error)
-  }
-
   let exists = await app.sdb.exists('Transaction', { id: transaction.id })
   if (exists) {
     throw new Error('Transaction already confirmed')
   }
 
   let block = {
-    height: height,
+    height: height + 1,
   }
 
   let context = {
     trs: transaction,
     block,
     sender
+  }
+  if (height > 0) {
+    let error = library.base.transaction.verify(context)
+    if (error) throw new Error(error)
   }
 
   try {

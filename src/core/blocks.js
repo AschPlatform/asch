@@ -831,7 +831,26 @@ Blocks.prototype.applyBlock = async function (block, options) {
       if (appliedTransactions[transaction.id]) {
         throw new Error("Duplicate transaction in block: " + transaction.id)
       }
-      await library.base.transaction.apply(transaction, block)
+
+      let senderId = transaction.senderId
+      let sender = await app.sdb.get('Account', senderId)
+      if (!sender) {
+        if (block.height === 0) {
+          sender = app.sdb.create('Account', {
+            address: senderId,
+            name: '',
+            xas: 0
+          })
+        } else {
+          throw new Error('Sender account not found')
+        }
+      }
+      let context = {
+        trs: transaction,
+        block: block,
+        sender: sender
+      }
+      await library.base.transaction.apply(context)
       // TODO not just remove, should mark as applied
       // modules.blockchain.transactions.removeUnconfirmedTransaction(transaction.id)
       appliedTransactions[transaction.id] = transaction
@@ -1287,7 +1306,7 @@ Blocks.prototype.generateBlock = async function (keypair, timestamp) {
   library.logger.info("get active delegate keypairs len: " + activeKeypairs.length);
   var localVotes = library.base.consensus.createVotes(activeKeypairs, block);
   if (library.base.consensus.hasEnoughVotes(localVotes)) {
-    app.sdb.beginBlock( block )
+    app.sdb.beginBlock(block)
     await this.processBlock(block, { local: true, broadcast: true, votes: localVotes })
     library.logger.log('Forged new block id: ' + id +
       ' height: ' + height +
@@ -1489,14 +1508,14 @@ Blocks.prototype.onBind = function (scope) {
       let count = app.sdb.blocksCount
       app.logger.info('Blocks found:', count)
       if (!count) {
-        let hookName = 'hook_for_updateBookkeeper' 
-        let delegates = genesisblock.block.transactions.filter( t=> t.type === 10 ).map( t => t.senderPublicKey )
-        app.sdb.registerCommitBlockHook( hookName, block => modules.delegates.updateBookkeeper(delegates))
+        let hookName = 'hook_for_updateBookkeeper'
+        let delegates = genesisblock.block.transactions.filter(t => t.type === 10).map(t => t.senderPublicKey)
+        app.sdb.registerCommitBlockHook(hookName, block => modules.delegates.updateBookkeeper(delegates))
 
         await self.processBlock(genesisblock.block, {})
 
         app.sdb.unregisterCommitBlockHook(hookName)
-        
+
       } else {
         let block = await app.sdb.getBlockByHeight(count - 1)
         self.setLastBlock(block)

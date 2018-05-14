@@ -66,17 +66,8 @@ module.exports = {
     let senderId = this.trs.senderId
     amount = Number(amount)
 
-    let sender
-    if (this.block.height === 0) {
-      sender = app.sdb.create('Account', {
-        address: senderId,
-        xas: 0,
-        name: ''
-      })
-    } else {
-      sender = this.sender
-      if (sender.xas < amount) return 'Insufficient balance'
-    }
+    let sender = this.sender
+    if (this.block.height > 0 && sender.xas < amount) return 'Insufficient balance'
     sender.xas -= amount
 
     let recipientAccount
@@ -116,18 +107,10 @@ module.exports = {
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
 
-    if (this.block.height === 0) {
-      app.sdb.create('Account', {
-        address: senderId,
-        xas: 0,
-        name: name
-      })
-    } else {
-      let exists = await app.sdb.exists('Account', { name: name })
-      if (exists) return 'Name already registered'
-      if (!!this.sender.name) return 'Name already set'
-      this.sender.name = name
-    }
+    let exists = await app.sdb.exists('Account', { name: name })
+    if (exists) return 'Name already registered'
+    if (!!this.sender.name) return 'Name already set'
+    this.sender.name = name
   },
 
   setPassword: async function (publicKey) {
