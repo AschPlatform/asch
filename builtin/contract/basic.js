@@ -65,9 +65,8 @@ module.exports = {
         })
       }
     } else {
-      recipientAccount = await app.sdb.findOne('Account', { condition: { name: recipient } })
+      recipientAccount = await app.sdb.getBy('Account',  { name: recipient })
       if (!recipientAccount) return 'Recipient name not exist'
-      recipientAccount = app.sdb.attach('Account', recipientAccount.address)
       recipientAccount.xas += amount
     }
 

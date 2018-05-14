@@ -107,7 +107,7 @@ export namespace AschCore
 	    registerSchema(...schemas: Array<ModelSchema>): void;
 	    close(): Promise<void>;
 	    attachHistory(history: Map<number, Array<EntityChangesItem>>): void;
-	    getAllCached<TEntity>(model: ModelNameOrType<TEntity>, filter?: FilterFunction<TEntity>, track?: boolean): Array<TEntity>;
+	    getAllCached<TEntity>(model: ModelNameOrType<TEntity>, filter?: FilterFunction<TEntity>): Array<TEntity>;
 	    attach<TEntity>(schema: ModelSchema, key: EntityKey): MaybeUndefined<TEntity>;
 	    getAll<TEntity>(model: ModelNameOrType<TEntity>, track?: boolean): Promise<Array<TEntity>>;
 	    getMany<TEntity>(model: ModelNameOrType<TEntity>, condition: SqlCondition, track?: boolean, cache?: boolean): Promise<Array<TEntity>>;
@@ -470,9 +470,9 @@ export namespace AschCore
 	    /**
 	     * get all cached entities
 	     * @param model model name or model type
-	     * @param track track result
+	     * @param filter filter result
 	     */
-	    getAllCached<TEntity>(model: ModelNameOrType<TEntity>, filter?: FilterFunction<TEntity>, track?: boolean): Array<TEntity>;
+	    getAllCached<TEntity>(model: ModelNameOrType<TEntity>, filter?: FilterFunction<TEntity>): Array<TEntity>;
 	    /**
 	     * find entities from database
 	     * @param model model name or model type
@@ -827,10 +827,12 @@ export namespace AschCore
 	};
 	export class ProxiedEntityTracker implements EntityTracker {
 	    constructor(cache: EntityCache);
+	    makeModelAndKey(schema: ModelSchema, key: EntityKey): ModelAndKey;
 	    splitModelAndKey(modelAndKey: ModelAndKey): {
 	        model: string;
 	        key: EntityKey;
 	    };
+	    getModelAndKey(pe: Proxied<any>): ModelAndKey;
 	    attachHistory(history: Map<number, Array<EntityChangesItem>>): void;
 	    readonly historyVersion: {
 	        min: number;

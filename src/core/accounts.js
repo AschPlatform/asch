@@ -613,8 +613,7 @@ shared.getAccount = function (req, cb) {
             lockHeight: 0
           }
         } else {
-          let key = app.sdb.getEntityKey('Account', account)
-          let unconfirmedAccount = app.sdb.attach('Account', key)
+          let unconfirmedAccount = await app.sdb.attach('Account', account)
           accountData = {
             address: account.address,
             unconfirmedBalance: unconfirmedAccount.xas,
