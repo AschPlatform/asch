@@ -216,7 +216,7 @@ async function testGateway() {
       config.proposals[1].desc,
       config.proposals[1].topic,
       config.proposals[1].content,
-      100
+      10000
     ]
   }
   console.log('submit proposal: ', config.proposals[1].title)
