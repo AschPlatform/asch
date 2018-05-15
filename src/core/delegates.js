@@ -717,34 +717,27 @@ Delegates.prototype.validateBlockSlot = function (block, cb) {
 }
 
 Delegates.prototype.getDelegates = function (query, cb) {
-  (async function () {
-    try {
-      let delegates = app.sdb.getAllCached('Delegate')
-      if (!delegates || !delegates.length) return cb('No delegates')
+  let delegates = app.sdb.getAllCached('Delegate').map((d) => Object.assign({}, d))
+  if (!delegates || !delegates.length) return cb('No delegates')
 
-      delegates = delegates.sort(self.sort)
+  delegates = delegates.sort(self.sort)
 
-      let lastBlock = modules.blocks.getLastBlock();
-      let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
-      for (let i = 0; i < delegates.length; ++i) {
-        let d = delegates[i]
-        d.rate = i + 1
-        delegates[i].approval = ((d.votes / totalSupply) * 100).toFixed(2);
+  let lastBlock = modules.blocks.getLastBlock();
+  let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
+  for (let i = 0; i < delegates.length; ++i) {
+    let d = delegates[i]
+    d.rate = i + 1
+    delegates[i].approval = ((d.votes / totalSupply) * 100).toFixed(2);
 
-        var percent = 100 - (d.missedBlocks / (d.producedBlocks + d.missedBlocks) / 100);
-        percent = percent || 0;
-        delegates[i].productivity = parseFloat(Math.floor(percent * 100) / 100).toFixed(2);
+    var percent = 100 - (d.missedBlocks / (d.producedBlocks + d.missedBlocks) / 100);
+    percent = percent || 0;
+    delegates[i].productivity = parseFloat(Math.floor(percent * 100) / 100).toFixed(2);
 
-        delegates[i].vote = delegates[i].votes
-        delegates[i].missedblocks = delegates[i].missedBlocks
-        delegates[i].producedblocks = delegates[i].producedBlocks
-      }
-      return cb(null, delegates)
-    } catch (e) {
-      library.logger.error('Failed to find delegates', e)
-      return cb('Cannot find delegates')
-    }
-  })()
+    delegates[i].vote = delegates[i].votes
+    delegates[i].missedblocks = delegates[i].missedBlocks
+    delegates[i].producedblocks = delegates[i].producedBlocks
+  }
+  return cb(null, delegates)
 }
 
 Delegates.prototype.sandboxApi = function (call, args, cb) {
@@ -813,7 +806,7 @@ Delegates.prototype.getBookkeeper = function () {
   return JSON.parse(item.value)
 }
 
-Delegates.prototype.updateBookkeeper = function ( delegates ) {
+Delegates.prototype.updateBookkeeper = function (delegates) {
   delegates = delegates || this.getTopDelegates()
   let value = JSON.stringify(delegates)
   let bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME) ||

@@ -1044,42 +1044,39 @@ Blocks.prototype.processBlock = async function (block, options) {
   }
 
   try {
-    // self.processFee(block)
-    //self.saveBlock(block)
     self.saveBlockTransactions(block)
     await self.applyRound(block)
     await app.sdb.commitBlock()
+    let trsCount = block.transactions.length
+    app.logger.info('Block applied correctly with ' + trsCount + ' transactions')
+    self.setLastBlock(block);
+
+    if (options.broadcast) {
+      options.votes.signatures = options.votes.signatures.slice(0, 6);
+      library.bus.message('newBlock', block, options.votes, true);
+    }
   } catch (e) {
     app.logger.error('save block error: ', e)
     app.sdb.rollbackBlock()
     throw new Error('Failed to save block: ' + e)
-  }
-  let trsCount = block.transactions.length
-  app.logger.info('Block applied correctly with ' + trsCount + ' transactions')
-  self.setLastBlock(block);
-
-  private.blockCache = {};
-  private.proposeCache = {};
-  private.lastVoteTime = null;
-  library.base.consensus.clearState();
-  if (options.broadcast) {
-    options.votes.signatures = options.votes.signatures.slice(0, 6);
-    library.bus.message('newBlock', block, options.votes, true);
-  }
-
-  // process unconfirmed transactions
-  if (options.local) {
-    modules.transactions.clearUnconfirmed()
-  } else if (!options.syncing) {
-    for (let t of block.transactions) {
-      modules.transactions.removeUnconfirmedTransaction(t.id)
-    }
-    let pendingTrs = modules.transactions.getUnconfirmedTransactionList()
-    modules.transactions.clearUnconfirmed()
-    try {
-      await modules.transactions.receiveTransactionsAsync(pendingTrs)
-    } catch (e) {
-      app.logger.error('Failed to redo pending transactions', e)
+  } finally {
+    private.blockCache = {};
+    private.proposeCache = {};
+    private.lastVoteTime = null;
+    library.base.consensus.clearState();
+    if (options.local) {
+      modules.transactions.clearUnconfirmed()
+    } else if (!options.syncing) {
+      for (let t of block.transactions) {
+        modules.transactions.removeUnconfirmedTransaction(t.id)
+      }
+      let pendingTrs = modules.transactions.getUnconfirmedTransactionList()
+      modules.transactions.clearUnconfirmed()
+      try {
+        await modules.transactions.receiveTransactionsAsync(pendingTrs)
+      } catch (e) {
+        app.logger.error('Failed to redo pending transactions', e)
+      }
     }
   }
 }
@@ -1148,7 +1145,7 @@ Blocks.prototype.applyRound = async function (block) {
   }
   for (let md of missedDelegates) {
     let addr = modules.accounts.generateAddressByPublicKey(md)
-    app.sdb.getCached('Delegate', addr, true).missedBlocks += 1
+    app.sdb.getCached('Delegate', addr).missedBlocks += 1
   }
 
   let fees = round.fees
@@ -1167,7 +1164,7 @@ Blocks.prototype.applyRound = async function (block) {
 
   async function updateDelegate(pk, fee, reward) {
     let addr = modules.accounts.generateAddressByPublicKey(pk)
-    let delegate = app.sdb.getCached('Delegate', addr, true)
+    let delegate = app.sdb.getCached('Delegate', addr)
     delegate.fees += fee
     delegate.rewards += reward
     // TODO should account be all cached?

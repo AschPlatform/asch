@@ -651,7 +651,7 @@ Transactions.prototype.receiveTransactionsAsync = async function (transactions) 
 }
 
 Transactions.prototype.processUnconfirmedTransactionAsync = async function (transaction, broadcast) {
-  // library.logger.debug('process unconfirmed trs', transaction)
+  library.logger.debug('process unconfirmed trs', transaction)
   if (!transaction.id) {
     transaction.id = library.base.transaction.getId(transaction);
   }

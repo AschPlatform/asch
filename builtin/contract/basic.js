@@ -87,6 +87,7 @@ module.exports = {
 
     let senderId = this.trs.senderId
     app.sdb.lock('basic.account@' + senderId)
+    app.sdb.lock('basic.setName@' + name)
 
     let exists = await app.sdb.exists('Account', { name: name })
     if (exists) return 'Name already registered'
@@ -204,7 +205,7 @@ module.exports = {
 
     sender.role = app.AccountRole.AGENT
     sender.isAgent = 1
-    app.sdb.create('Agent', { name: account.name })
+    app.sdb.create('Agent', { name: sender.name })
   },
 
   setAgent: async function (agent) {
