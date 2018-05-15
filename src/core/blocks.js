@@ -527,7 +527,7 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
     if (err) {
       return cb('Failed to get last block id sequence' + err)
     }
-    library.logger.debug('getIdSequence=========', data)
+    library.logger.trace('getIdSequence=========', data)
     const params = {
       body: {
         max: lastBlockHeight,

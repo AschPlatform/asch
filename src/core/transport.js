@@ -147,7 +147,7 @@ Transport.prototype.onPeerReady = function () {
     (async () => {
       try {
         let blocks = await app.sdb.getBlocksByHeightRange(min, max)
-        app.logger.debug('find common blocks in database', blocks)
+        app.logger.trace('find common blocks in database', blocks)
         if (!blocks || !blocks.length) {
           return res.send({ success: false, error: 'Blocks not found' })
         }
