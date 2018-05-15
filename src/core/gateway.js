@@ -89,7 +89,7 @@ Gateway.prototype.processDeposits = async function () {
     return
   }
 
-  const gatewayLogKey = app.sdb.getEntityKey('GatewayAccount', { gateway: GATEWAY, type: GatewayLogType.DEPOSIT })
+  const gatewayLogKey = app.sdb.getEntityKey('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.DEPOSIT })
   let lastDepositLog = app.sdb.getCached('GatewayLog', gatewayLogKey)
   library.logger.debug('==========find DEPOSIT log============', lastDepositLog)
 
