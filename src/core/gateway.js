@@ -159,7 +159,7 @@ Gateway.prototype.processWithdrawals = async function () {
 
   let lastSeq = lastWithdrawalLog.seq
 
-  let withdrawals = await app.sdb.query('GatewayWithdrawal', { gateway: GATEWAY, seq: { $gt: lastSeq } }, PAGE_SIZE)
+  let withdrawals = await app.sdb.find('GatewayWithdrawal', { gateway: GATEWAY, seq: { $gt: lastSeq } }, PAGE_SIZE)
   library.logger.debug('get gateway withdrawals', withdrawals)
   if (!withdrawals || !withdrawals.length) {
     return
