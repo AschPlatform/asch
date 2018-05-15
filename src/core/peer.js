@@ -70,6 +70,7 @@ private.initNode = function () {
   const storageDir = path.resolve(global.Config.dataDir, 'dht')
   const storage = levelup(encoding(leveldown(storageDir)))
   private.mainNode = new kadence.KademliaNode({
+    logger: library.logger,
     transport,
     storage,
     identity,
@@ -212,32 +213,24 @@ Peer.prototype.request = function (method, params, contact, cb) {
 }
 
 Peer.prototype.randomRequest = function (method, params, cb) {
-  (async function () {
-    const node = private.mainNode
-    try {
-      let peers = await node.rolodex.getBootstrapCandidates()
-      if (peers && peers.length > 0) {
-        peers = peers.map(url => kadence.utils.parseContactURL(url))
-      }
-      const randomContact = knuthShuffle(peers).shift();
-      if (!randomContact) return cb('No contact')
-      library.logger.debug('select random contract', randomContact)
-      let isCallbacked = false
-      setTimeout(function () {
-        if (isCallbacked) return
-        isCallbacked = true
-        cb('Timeout', undefined, randomContact)
-      }, 2000)
-      node.send(method, params, randomContact, function (err, result) {
-        if (isCallbacked) return
-        isCallbacked = true
-        cb(err, result, randomContact)
-      })
-    } catch (e) {
-      library.logger.error('Random request exception', e)
-      cb(e.toString())
-    }
-  })()
+  const node = private.mainNode
+  const randomContact = knuthShuffle([...node.router.getClosestContactsToKey(
+    node.identity.toString('hex'),
+    node.router.size
+  ).entries()]).shift();
+  if (!randomContact) return cb('No contact')
+  library.logger.debug('select random contract', randomContact)
+  let isCallbacked = false
+  setTimeout(function () {
+    if (isCallbacked) return
+    isCallbacked = true
+    cb('Timeout', undefined, randomContact)
+  }, 2000)
+  node.send(method, params, randomContact, function (err, result) {
+    if (isCallbacked) return
+    isCallbacked = true
+    cb(err, result, randomContact)
+  })
 }
 
 Peer.prototype.sandboxApi = function (call, args, cb) {
@@ -283,7 +276,7 @@ Peer.prototype.joinNetwork = async function () {
 }
 
 Peer.prototype.onPeerReady = function () {
-  loop.runAsync(self.joinNetwork.bind(this), 10000)
+  loop.runAsync(self.joinNetwork.bind(this), 60 * 1000)
 }
 
 // Shared
