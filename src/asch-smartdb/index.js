@@ -2441,10 +2441,10 @@ class EntityProxy {
     static recordPropertyChanges(ext, key, value) {
         let startConfirm = false;
         if (ext.__tracker__.isConfirming && ext.__confirmed__) {
-            ext.__tracker__.registerUnconfirmedEntity(ext);
             startConfirm = true;
             ext.__confirmed__ = false;
         }
+        ext.__tracker__.isConfirming &&  ext.__tracker__.registerUnconfirmedEntity( ext );
         if (ext.__state__ === EntityState.Persistent) {
             ext._version_++;
             ext.__state__ = EntityState.Modified;
@@ -2495,7 +2495,7 @@ class EntityProxy {
             pe.__changes__.propertiesChanges.push(...tmpChanges.propertiesChanges);
         }
         else if (!pe.__changes__) {
-            pe.__changes__ = Object.assign({}, tmpChanges);
+            pe.__changes__ = deepCopy(tmpChanges);
         }
         else {
             // __unconfirmedChanges__ === null && __changes__ !== null
@@ -2797,7 +2797,7 @@ class ProxiedEntityTracker {
                 pe.__state__ = EntityProxy_1.EntityState.Transient;
                 break;
             case EntityProxy_1.EntityState.Modified:
-                this.log.traceEnabled && this.log.trace(`MODIFIED Version = ${historyVersion} changes = ${JSON.stringify(pe.__changes__)}`);
+                this.log.traceEnabled && this.log.trace(`MODIFIED Version = ${historyVersion} changes = ${JSON.stringify(pe.__changes__)} unconfirmed = ${JSON.stringify(pe.__unconfirmedChanges__)}`);
                 pe.__state__ = EntityProxy_1.EntityState.Persistent;
                 this.saveHistory(pe, pe.__changes__, historyVersion);
                 pe.__changes__ = null;
