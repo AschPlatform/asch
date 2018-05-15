@@ -549,7 +549,7 @@ class DbSession {
     rollbackEntityTransaction() {
         this.entityTracker.cancelConfirm();
         let removeKeys = new Array();
-        this.holdLocks.forEach((v, k) => removeKeys.push(k));
+        this.holdLocks.forEach((v, k) => v && removeKeys.push(k));
         removeKeys.forEach(k => this.holdLocks.delete(k));
     }
 }
