@@ -406,25 +406,6 @@ private.attachApi = function () {
   });
 }
 
-private.getKeysSortByVote = function (cb) {
-  (async function () {
-    try {
-      let delegates = app.sdb.getAllCached('Delegate')
-      delegates.sort((d1, d2) => (d1.votes === d2.votes) ? d1.publicKey < d2.publicKey : d1.votes - d2.votes)
-      delegates = delegates.slice(0, 101)
-
-      //TODO: validate delegates length = 101 ??
-      if (!delegates || !delegates.length) {
-        cb('No active delegates found')
-      }
-      let keys = delegates.map(d => d.publicKey).sort((l, r) => l < r)
-      cb(null, keys)
-    } catch (e) {
-      cb('Database error: ' + e)
-    }
-  })()
-}
-
 private.getBlockSlotData = function (slot, height, cb) {
   self.generateDelegateList(height, function (err, activeDelegates) {
     if (err) {
@@ -741,10 +722,7 @@ Delegates.prototype.getDelegates = function (query, cb) {
       let delegates = app.sdb.getAllCached('Delegate')
       if (!delegates || !delegates.length) return cb('No delegates')
 
-      delegates = delegates.sort(function (l, r) {
-        if (l.votes !== r.votes) return r.votes - l.votes
-        return r.publicKey < l.publicKey
-      })
+      delegates = delegates.sort(self.sort)
 
       let lastBlock = modules.blocks.getLastBlock();
       let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
@@ -801,6 +779,10 @@ Delegates.prototype.onBlockchainReady = function () {
   });
 }
 
+Delegate.prototype.sort = function (l, r) {
+  return (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey
+}
+
 Delegates.prototype.cleanup = function (cb) {
   private.loaded = false;
   cb();
@@ -812,9 +794,7 @@ Delegates.prototype.getTopDelegates = function () {
     delegatesMap.set(d.name, d)
   }
 
-  return [...delegatesMap.values()].sort((l, r) =>
-    (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey
-  ).map(d => d.publicKey).slice(0, 101)
+  return [...delegatesMap.values()].sort(this.sort).map(d => d.publicKey).slice(0, 101)
 }
 
 Delegates.prototype.getBookkeeperAddresses = function () {
@@ -828,7 +808,7 @@ Delegates.prototype.getBookkeeperAddresses = function () {
 }
 
 Delegates.prototype.getBookkeeper = function () {
-  let item = app.sdb.getCached('Variable', BOOK_KEEPER_NAME, true)
+  let item = app.sdb.getCached('Variable', BOOK_KEEPER_NAME)
   if (!item) throw new Error('Bookkeeper variable not found')
   return JSON.parse(item.value)
 }
@@ -836,7 +816,7 @@ Delegates.prototype.getBookkeeper = function () {
 Delegates.prototype.updateBookkeeper = function ( delegates ) {
   delegates = delegates || this.getTopDelegates()
   let value = JSON.stringify(delegates)
-  let bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME, true) ||
+  let bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME) ||
     app.sdb.create('Variable', BOOK_KEEPER_NAME, { key: BOOK_KEEPER_NAME, value: value })
 
   bookKeeper.value = value

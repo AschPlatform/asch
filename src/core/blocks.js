@@ -448,9 +448,11 @@ private.getIdSequence2 = function (height, cb) {
   (async () => {
     try {
       let maxHeight = Math.max(height, private.lastBlock.height)
-      let blocks = await app.sdb.getBlocksByHeightRange(maxHeight - 5, maxHeight)
+      let minHeight = Math.max(0, maxHeight - 4)
+      let blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
+      blocks = blocks.reverse()
       let ids = blocks.map((b) => b.id)
-      return cb(null, { ids: ids, firstHeight: blocks[blocks.length - 1].height })
+      return cb(null, { ids: ids, firstHeight: minHeight })
     } catch (e) {
       cb(e)
     }
@@ -526,12 +528,10 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
       return cb('Failed to get last block id sequence' + err)
     }
     library.logger.debug('getIdSequence=========', data)
-    var max = lastBlockHeight;
-    lastBlockHeight = data.firstHeight;
     const params = {
       body: {
-        max: max,
-        min: lastBlockHeight,
+        max: lastBlockHeight,
+        min: data.firstHeight,
         ids: data.ids
       }
     }
@@ -1110,7 +1110,7 @@ Blocks.prototype.applyRound = async function (block) {
     return
   }
 
-  let delegate = app.sdb.getCached('Delegate', modules.accounts.generateAddressByPublicKey(block.delegate), true)
+  let delegate = app.sdb.getCached('Delegate', modules.accounts.generateAddressByPublicKey(block.delegate))
   delegate.producedBlocks += 1
 
   let delegates = await PIFY(modules.delegates.generateDelegateList)(block.height)
@@ -1508,14 +1508,7 @@ Blocks.prototype.onBind = function (scope) {
       let count = app.sdb.blocksCount
       app.logger.info('Blocks found:', count)
       if (!count) {
-        let hookName = 'hook_for_updateBookkeeper'
-        let delegates = genesisblock.block.transactions.filter(t => t.type === 10).map(t => t.senderPublicKey)
-        app.sdb.registerCommitBlockHook(hookName, block => modules.delegates.updateBookkeeper(delegates))
-
         await self.processBlock(genesisblock.block, {})
-
-        app.sdb.unregisterCommitBlockHook(hookName)
-
       } else {
         let block = await app.sdb.getBlockByHeight(count - 1)
         self.setLastBlock(block)

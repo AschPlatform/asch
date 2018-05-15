@@ -146,22 +146,23 @@ Transport.prototype.onPeerReady = function () {
     const ids = query.ids;
     (async () => {
       try {
-        let blocks = await app.sdb.findAll('Block', {
-          condition: {
-            id: {
-              $in: ids
-            },
-            height: { $between: [query.min, query.max] }
-          },
-          sort: {
-            height: 1
-          },
-        })
+        let blocks = await app.sdb.getBlocksByHeightRange(min, max)
         app.logger.debug('find common blocks in database', blocks)
         if (!blocks || !blocks.length) {
-          return res.send({ success: false, error: 'Common block not found' })
+          return res.send({ success: false, error: 'Blocks not found' })
         }
-        return res.send({ success: true, common: blocks[blocks.length - 1] });
+        blocks = blocks.reverse()
+        let commonBlock = null
+        for (let i in ids) {
+          if (blocks[i].id === ids[i]) {
+            commonBlock = blocks[i]
+            break
+          }
+        }
+        if (!commonBlock) {
+          return res.send({ success: false, error: 'Common block not found'})
+        }
+        return res.send({ success: true, common: commonBlock });
       } catch (e) {
         app.logger.error('Failed to find common block: ' + e)
         return res.send({ success: false, error: 'Failed to find common block' })

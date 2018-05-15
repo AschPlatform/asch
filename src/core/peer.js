@@ -79,7 +79,7 @@ private.initNode = function () {
   const peerCacheDir = path.join(global.Config.dataDir, 'peer')
   node.rolodex = node.plugin(kadence.rolodex(peerCacheDir))
   node.plugin(kadence.quasar())
-  node.listen(global.Config.peerPort)
+  node.listen(port)
 }
 
 private.count = function (cb) {
@@ -212,24 +212,32 @@ Peer.prototype.request = function (method, params, contact, cb) {
 }
 
 Peer.prototype.randomRequest = function (method, params, cb) {
-  const node = private.mainNode
-  const randomContact = knuthShuffle([...node.router.getClosestContactsToKey(
-    node.identity.toString('hex'),
-    node.router.size
-  ).entries()]).shift();
-  if (!randomContact) return cb('No contact')
-
-  let isCallbacked = false
-  setTimeout(function () {
-    if (isCallbacked) return
-    isCallbacked = true
-    cb('Timeout')
-  }, 2000)
-  private.mainNode.send(method, params, randomContact, function (err, result) {
-    if (isCallbacked) return
-    isCallbacked = true
-    cb(err, result, randomContact)
-  })
+  (async function () {
+    const node = private.mainNode
+    try {
+      let peers = await node.rolodex.getBootstrapCandidates()
+      if (peers && peers.length > 0) {
+        peers = peers.map(url => kadence.utils.parseContactURL(url))
+      }
+      const randomContact = knuthShuffle(peers).shift();
+      if (!randomContact) return cb('No contact')
+      library.logger.debug('select random contract', randomContact)
+      let isCallbacked = false
+      setTimeout(function () {
+        if (isCallbacked) return
+        isCallbacked = true
+        cb('Timeout', undefined, randomContact)
+      }, 2000)
+      node.send(method, params, randomContact, function (err, result) {
+        if (isCallbacked) return
+        isCallbacked = true
+        cb(err, result, randomContact)
+      })
+    } catch (e) {
+      library.logger.error('Random request exception', e)
+      cb(e.toString())
+    }
+  })()
 }
 
 Peer.prototype.sandboxApi = function (call, args, cb) {
