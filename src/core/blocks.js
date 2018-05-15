@@ -1150,17 +1150,17 @@ Blocks.prototype.applyRound = async function (block) {
 
   let fees = round.fees
   let rewards = round.rewards
-  let ratio = 0.8
+  let ratio = 1
 
   let actualFees = Math.floor(fees * ratio)
   let feeAverage = Math.floor(actualFees / delegates.length)
   let feeRemainder = actualFees - feeAverage * delegates.length
-  let feeFounds = fees - actualFees
+  //let feeFounds = fees - actualFees
 
   let actualRewards = Math.floor(rewards * ratio)
   let rewardAverage = Math.floor(actualRewards / delegates.length)
   let rewardRemainder = actualRewards - rewardAverage * delegates.length
-  let rewardFounds = rewards - actualRewards
+  //let rewardFounds = rewards - actualRewards
 
   async function updateDelegate(pk, fee, reward) {
     let addr = modules.accounts.generateAddressByPublicKey(pk)
@@ -1177,10 +1177,10 @@ Blocks.prototype.applyRound = async function (block) {
   }
   await updateDelegate(block.delegate, feeRemainder, rewardRemainder)
 
-  let totalClubFounds = feeFounds + rewardFounds
-  app.logger.info('Asch witness club get new founds: ' + totalClubFounds)
-  // FIXME dapp id
-  app.balances.increase('club_dapp_id', 'XAS', totalClubFounds)
+  // let totalClubFounds = feeFounds + rewardFounds
+  // app.logger.info('Asch witness club get new founds: ' + totalClubFounds)
+  // // FIXME dapp id
+  // app.balances.increase('club_dapp_id', 'XAS', totalClubFounds)
 
   if (block.height % 101 === 0) {
     modules.delegates.updateBookkeeper()
