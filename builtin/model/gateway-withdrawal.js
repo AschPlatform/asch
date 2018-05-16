@@ -10,7 +10,8 @@ module.exports = {
     { name: 'amount', type: 'String', length: 50 },
     { name: 'fee', type: 'String', length: 50 },
     { name: 'outTransaction', type: 'Text' },
-    { name: 'processed', type: 'Number', default: 0 },
+    { name: 'signs', type: 'Number', default: 0 },
+    { name: 'ready', type: 'Number', default: 0 },
     { name: 'oid', type: 'String', length: 64 }
   ]
 }

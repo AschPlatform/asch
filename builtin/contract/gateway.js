@@ -86,7 +86,7 @@ module.exports = {
       })
     } else {
       deposit.confirmations += 1
-      let count = await app.sdb.count('GatewayMember', { gateway: currency, elected: 1 })
+      let count = await app.sdb.count('GatewayMember', { gateway: gateway, elected: 1 })
       if (deposit.confirmations > count / 2 && !deposit.processed) {
         deposit.processed = 1
         app.balances.increase(gatewayAccount.address, currency, amount)
@@ -113,7 +113,8 @@ module.exports = {
       senderId: this.trs.senderId,
       recipientId: address,
       fee: FEE,
-      processed: 0,
+      signs: 0,
+      ready: 0,
       outTransaction: '',
       oid: ''
     })
@@ -133,6 +134,7 @@ module.exports = {
     if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
 
     withdrawal.outTransaction = ot
+    withdrawal.signs += 1
     app.sdb.create('GatewayWithdrawalPrep', {
       wid: wid,
       signer: this.trs.senderId,
@@ -142,7 +144,7 @@ module.exports = {
 
   submitWithdrawalSignature: async function (wid, signature) {
     app.sdb.lock('gateway.submitWithdrawalSignature@' + this.trs.senderId)
-    let withdrawal = await app.sdb.findOne('GatewayWithdrawal', { condition: { tid: wid } })
+    let withdrawal = await app.sdb.get('GatewayWithdrawal', wid)
     if (!withdrawal) return 'Gateway withdrawal not exist'
     if (!withdrawal.outTransaction) return 'Out transaction not exist'
     // TODO validate signature
@@ -156,6 +158,16 @@ module.exports = {
 
     if (await app.sdb.exists('GatewayWithdrawalPrep', { wid: wid, signer: this.trs.senderId })) {
       return 'Duplicated withdrawal signature'
+    }
+
+    let validatorCount = await app.sdb.count('GatewayMember', {
+      gateway: withdrawal.gateway,
+      elected: 1
+    })
+
+    withdrawal.signs += 1
+    if (withdrawal.signs > validatorCount / 2) {
+      withdrawal.ready = 1
     }
 
     app.sdb.create('GatewayWithdrawalPrep', {

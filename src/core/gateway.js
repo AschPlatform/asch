@@ -155,7 +155,7 @@ Gateway.prototype.processWithdrawals = async function () {
   library.logger.debug('find ==========WITHDRAWAL============ log', lastWithdrawalLog)
 
   lastWithdrawalLog = lastWithdrawalLog ||
-    app.sdb.create('GatewayLog', withdrawalLogKey, { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL, seq: 0 })
+    app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL, seq: 0 })
 
   let lastSeq = lastWithdrawalLog.seq
 
@@ -240,7 +240,10 @@ Gateway.prototype.sendWithdrawals = async function () {
       gateway: GATEWAY,
       seq: { $gt: lastSeq }
     },
-    limit: PAGE_SIZE
+    limit: PAGE_SIZE,
+    sort: {
+      seq: 1
+    }
   })
   library.logger.debug('get gateway withdrawals', withdrawals)
   if (!withdrawals || !withdrawals.length) {
@@ -296,10 +299,10 @@ Gateway.prototype.sendWithdrawals = async function () {
 Gateway.prototype.onBlockchainReady = function () {
   if (global.Config.gateway) {
     loop.runAsync(self.importAccounts.bind(self), 10 * 1000)
-    loop.runAsync(self.processDeposits.bind(self), 10 * 1000)
+    loop.runAsync(self.processDeposits.bind(self), 60 * 1000)
     loop.runAsync(self.processWithdrawals.bind(self), 10 * 1000)
     if (global.Config.gateway.sendWithdrawal) {
-      loop.runAsync(self.sendWithdrawals.bind(self), 10 * 1000)
+      loop.runAsync(self.sendWithdrawals.bind(self), 30 * 1000)
     }
   }
 }
