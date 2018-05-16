@@ -58,8 +58,11 @@ module.exports = {
     })
     if (!validator || !validator.elected || validator.gateway !== gateway) return 'Permission denied'
 
-    let depositKey = 'gateway.deposit@' + [this.trs.senderId, currency, oid].join(':')
+    const depositKey = 'gateway.deposit@' + [currency, oid].join(':')
+    // console.log('------------------lock', depositKey, app.sdb.blockSession.holdLocks.keys())
     app.sdb.lock(depositKey)
+    const signerKey = 'gateway.deposit@' + [this.trs.senderId, currency, oid].join(':')
+    app.sdb.lock(signerKey)
 
     let gatewayAccount = await app.sdb.findOne('GatewayAccount', { condition: { outAddress: address } })
     if (!gatewayAccount) return 'Gateway account not exist'
@@ -69,8 +72,8 @@ module.exports = {
     if (gw.revoked) return 'Gateway already revoked'
     // if (gatewayAccount.version !== gw.version) return 'Gateway account version expired'
 
-    if (await app.sdb.exists('GatewayDepositSigner', { key: depositKey })) return 'Already submitted'
-    app.sdb.create('GatewayDepositSigner', { key: depositKey })
+    if (await app.sdb.exists('GatewayDepositSigner', { key: signerKey })) return 'Already submitted'
+    app.sdb.create('GatewayDepositSigner', { key: signerKey })
 
     let cond = { currency: currency, oid: oid }
     let deposit = await app.sdb.getBy('GatewayDeposit', cond)

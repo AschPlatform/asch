@@ -12,7 +12,7 @@ const leveldown = require('../../node_modules/kadence/node_modules/leveldown/lev
 const encoding = require('../../node_modules/kadence/node_modules/encoding-down');
 const Router = require('../utils/router.js');
 const sandboxHelper = require('../utils/sandbox.js');
-const loop = require('../utils/loop.js')
+const utils = require('../utils')
 
 require('array.prototype.find'); // Old node fix
 
@@ -276,7 +276,7 @@ Peer.prototype.joinNetwork = async function () {
 }
 
 Peer.prototype.onPeerReady = function () {
-  loop.runAsync(self.joinNetwork.bind(this), 60 * 1000)
+  utils.loopAsyncFunction(self.joinNetwork.bind(this), 60 * 1000)
 }
 
 // Shared
