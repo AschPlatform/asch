@@ -639,50 +639,6 @@ Blocks.prototype.loadBlocksPart = function (filter, cb) {
   });
 }
 
-Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
-  var newLimit = limit + (offset || 0);
-  var params = { limit: newLimit, offset: offset || 0 };
-
-  library.logger.debug("loadBlockOffset limit: " + limit + ", offset: " + offset + ", verify: " + verify);
-  library.dbSequence.add(function (cb) {
-    library.dbLite.query(FULL_BLOCK_QUERY +
-      "where b.height >= $offset and b.height < $limit " +
-      "ORDER BY b.height, t.rowid" +
-      "", params, private.blocksDataFields, function (err, rows) {
-        // Notes:
-        // If while loading we encounter an error, for example, an invalid signature on a block & transaction, then we need to stop loading and remove all blocks after the last good block. We also need to process all transactions within the block.
-        if (err) {
-          return cb("loadBlockOffset db error: " + err);
-        }
-
-        var blocks = private.readDbRows(rows);
-
-        async.eachSeries(blocks, function (block, next) {
-          library.logger.debug("loadBlocksOffset processing:", block.id);
-          block.transactions = library.base.block.sortTransactions(block);
-          if (verify) {
-            if (!private.lastBlock || !private.lastBlock.id) {
-              // apply genesis block
-              self.applyBlock(block, null, false, false, next);
-            } else {
-              self.verifyBlock(block, null, function (err) {
-                if (err) {
-                  return next(err);
-                }
-                self.applyBlock(block, null, false, false, next);
-              });
-            }
-          } else {
-            self.setLastBlock(block);
-            setImmediate(next);
-          }
-        }, function (err) {
-          cb(err, private.lastBlock);
-        });
-      });
-  }, cb);
-}
-
 Blocks.prototype.setLastBlock = function (block) {
   private.lastBlock = block
   if (global.Config.netVersion === 'mainnet') {
@@ -822,7 +778,6 @@ Blocks.prototype.applyBlock = async function (block, options) {
   app.logger.trace('enter applyblock')
   let appliedTransactions = {}
 
-  app.sdb.beginBlock(block)
   try {
     for (let i in block.transactions) {
       let transaction = block.transactions[i]
@@ -857,7 +812,7 @@ Blocks.prototype.applyBlock = async function (block, options) {
     }
   } catch (e) {
     app.logger.error(e)
-    app.sdb.rollbackBlock()
+    await app.sdb.rollbackBlock()
     throw new Error('Failed to apply block: ' + e)
   }
 }
@@ -865,6 +820,7 @@ Blocks.prototype.applyBlock = async function (block, options) {
 Blocks.prototype.processBlock = async function (block, options) {
   if (!private.loaded) throw new Error('Blockchain is loading')
 
+  app.sdb.beginBlock(block)
   if (!block.transactions) block.transactions = []
   if (!options.local) {
     try {
@@ -922,31 +878,17 @@ Blocks.prototype.processBlock = async function (block, options) {
 
     if (options.broadcast) {
       options.votes.signatures = options.votes.signatures.slice(0, 6);
-      library.bus.message('newBlock', block, options.votes, true);
+      library.bus.message('newBlock', block, options.votes);
     }
   } catch (e) {
     app.logger.error('save block error: ', e)
-    app.sdb.rollbackBlock()
+    await app.sdb.rollbackBlock()
     throw new Error('Failed to save block: ' + e)
   } finally {
     private.blockCache = {};
     private.proposeCache = {};
     private.lastVoteTime = null;
     library.base.consensus.clearState();
-    if (options.local) {
-      modules.transactions.clearUnconfirmed()
-    } else if (!options.syncing) {
-      for (let t of block.transactions) {
-        modules.transactions.removeUnconfirmedTransaction(t.id)
-      }
-      let pendingTrs = modules.transactions.getUnconfirmedTransactionList()
-      modules.transactions.clearUnconfirmed()
-      try {
-        await modules.transactions.applyTransactionsAsync(pendingTrs)
-      } catch (e) {
-        app.logger.error('Failed to redo pending transactions', e)
-      }
-    }
   }
 }
 
@@ -1172,7 +1114,7 @@ Blocks.prototype.generateBlock = async function (keypair, timestamp) {
   library.logger.info("get active delegate keypairs len: " + activeKeypairs.length);
   var localVotes = library.base.consensus.createVotes(activeKeypairs, block);
   if (library.base.consensus.hasEnoughVotes(localVotes)) {
-    app.sdb.beginBlock(block)
+    modules.transactions.clearUnconfirmed()
     await this.processBlock(block, { local: true, broadcast: true, votes: localVotes })
     library.logger.log('Forged new block id: ' + id +
       ' height: ' + height +
@@ -1217,13 +1159,27 @@ Blocks.prototype.onReceiveBlock = function (block, votes) {
       library.logger.info('Received new block id: ' + block.id + ' height: ' + block.height + ' round: ' + modules.round.calc(modules.blocks.getLastBlock().height) + ' slot: ' + slots.getSlotNumber(block.timestamp));
 
       (async function () {
+        let pendingTrsMap = new Map()
         try {
-          app.sdb.rollbackBlock()
+          const pendingTrs = modules.transactions.getUnconfirmedTransactionList()
+          for (let t of pendingTrs) {
+            pendingTrsMap.set(t.id, t)
+          }
+          modules.transactions.clearUnconfirmed()
+          await app.sdb.rollbackBlock()
           await self.processBlock(block, { votes: votes, broadcast: true })
-          cb()
         } catch (e) {
           library.logger.error('Failed to process received block', e)
-          cb(e)
+        } finally {
+          for (let t of block.transactions) {
+            pendingTrsMap.delete(t.id)
+          }
+          try {
+            await modules.transactions.applyTransactionsAsync([...pendingTrsMap.values()])
+          } catch (e) {
+            library.logger.error('Failed to redo unconfirmed transactions', e)
+          }
+          cb()
         }
       })()
     } else if (block.prevBlockId != private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
@@ -1337,6 +1293,7 @@ Blocks.prototype.onReceiveVotes = function (votes) {
       var id = block.id;
       (async function () {
         try {
+          modules.transactions.clearUnconfirmed()
           await self.processBlock(block, { votes: totalVotes, local: true, broadcast: true })
           library.logger.log('Forged new block id: ' + id +
             ' height: ' + height +

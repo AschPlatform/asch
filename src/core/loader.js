@@ -96,7 +96,7 @@ private.findUpdate = function (lastBlock, peer, cb) {
     (async function () {
       try {
         // FIXME
-        app.sdb.rollbackBlock()
+        await app.sdb.rollbackBlock()
         modules.transactions.clearUnconfirmed();
         if (toRemove > 0) {
           for (let h = lastBlock.height; h > commonBlock.height; h--) {

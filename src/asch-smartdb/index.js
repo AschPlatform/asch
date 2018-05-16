@@ -500,7 +500,7 @@ class DbSession {
      */
     rollbackChanges(serial) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this.sessionSerial <= serial)
+            if (this.sessionSerial < serial)
                 return this.sessionSerial;
             const from = this.sessionSerial;
             this.log.traceEnabled && this.log.trace(`BEGIN rollbackChanges ( serial = ${serial} )`);

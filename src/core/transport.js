@@ -78,7 +78,7 @@ private.attachApi = function () {
         res.status(200).json({ success: false, error: errMsg });
       } else {
         library.bus.message('unconfirmedTransaction', transaction, true);
-        res.status(200).json({ success: true, transactionId: transactions[0].id });
+        res.status(200).json({ success: true, transactionId: transaction.id });
       }
     });
   })
