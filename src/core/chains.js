@@ -959,7 +959,7 @@ shared.submitOutTransfer = function (req, cb) {
       return cb('Already exists');
     }
     library.logger.log('Submit outtransfer transaction ' + trs.id + ' from chain ' + req.chain);
-    modules.transactions.receiveTransactions([trs], cb);
+    modules.transactions.processUnconfirmedTransaction(trs, cb);
   }, cb);
 }
 

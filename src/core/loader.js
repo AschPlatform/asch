@@ -182,14 +182,14 @@ private.loadUnconfirmedTransactions = function (cb) {
       return cb();
     }
 
-    var transactions = data.body.transactions;
+    const transactions = data.body.transactions;
+    const contact = peer[1]
+    const peerStr = contact.hostname + ':' + contact.port
 
     for (var i = 0; i < transactions.length; i++) {
       try {
         transactions[i] = library.base.transaction.objectNormalize(transactions[i]);
       } catch (e) {
-        const contact = peer[1]
-        var peerStr = contact.hostname + ':' + contact.port
         library.logger.log('Transaction ' + (transactions[i] ? transactions[i].id : 'null') + ' is not valid, ban 60 min', peerStr);
         return cb()
       }
@@ -201,8 +201,9 @@ private.loadUnconfirmedTransactions = function (cb) {
         trs.push(transactions[i]);
       }
     }
+    library.logger.info('Loading ' + transactions.length + ' unconfirmed transaction from peer ' + peerStr)
     library.sequence.add(function (cb) {
-      modules.transactions.receiveTransactions(trs, cb);
+      modules.transactions.processUnconfirmedTransactions(trs, cb);
     }, cb);
   });
 }

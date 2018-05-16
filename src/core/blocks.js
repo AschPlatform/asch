@@ -862,137 +862,6 @@ Blocks.prototype.applyBlock = async function (block, options) {
   }
 }
 
-Blocks.prototype.applyBlock_ = function (block, votes, broadcast, saveBlock, callback) {
-  private.isActive = true;
-  var applyedTrsIdSet = new Set
-  function doApplyBlock(cb) {
-    library.dbLite.query('SAVEPOINT applyblock');
-
-    function done(err) {
-      if (err) {
-        library.balanceCache.rollback()
-        var finalErr = 'applyBlock err: ' + err;
-        library.dbLite.query('ROLLBACK TO SAVEPOINT applyblock', function (rollbackErr) {
-          if (rollbackErr) {
-            library.logger.error('Failed to rollback to savepoint applyblock: ' + rollbackErr)
-            process.exit(1)
-            return
-          }
-          private.isActive = false;
-          cb(err);
-        });
-      } else {
-        library.dbLite.query('RELEASE SAVEPOINT applyblock', function (releaseErr) {
-          private.isActive = false;
-          if (releaseErr) {
-            library.logger.error('Failed to commit savepoint applyblock: ' + releaseErr)
-            process.exit(1)
-            return
-          } else {
-            self.setLastBlock(block);
-            library.oneoff.clear()
-            library.balanceCache.commit()
-            private.blockCache = {};
-            private.proposeCache = {};
-            private.lastVoteTime = null;
-            library.base.consensus.clearState();
-            if (broadcast) {
-              library.logger.info("Block applied correctly with " + block.transactions.length + " transactions");
-              votes.signatures = votes.signatures.slice(0, 6);
-              library.bus.message('newBlock', block, votes, true);
-            }
-            cb();
-          }
-        });
-      }
-    }
-    var sortedTrs = block.transactions.sort(function (a, b) {
-      if (a.type == 1) {
-        return 1;
-      }
-      return 0;
-    });
-    async.eachSeries(sortedTrs, function (transaction, nextTr) {
-      async.waterfall([
-        function (next) {
-          modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey, isGenesis: block.height == 1 }, next);
-        },
-        function (sender, next) {
-          // if (modules.transactions.hasUnconfirmedTransaction(transaction)) {
-          //   return next(null, sender);
-          // }
-          modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
-            if (err && global.Config.netVersion === 'mainnet' &&
-              (block.height == 4659 || block.height == 7091 || block.height == 11920)) {
-              next(null, sender);
-            } else {
-              next(err, sender);
-            }
-          });
-        },
-        function (sender, next) {
-          modules.transactions.apply(transaction, block, sender, next);
-        }
-      ], function (err) {
-        modules.transactions.removeUnconfirmedTransaction(transaction.id);
-        if (err) {
-          var errorContext = {
-            transaction: transaction,
-            block: block,
-            error: err
-          };
-          library.logger.error("Failed to apply transaction", errorContext);
-          nextTr(err);
-          return;
-        }
-        applyedTrsIdSet.add(transaction.id)
-        nextTr();
-      });
-    }, function (err) {
-      if (err) {
-        return done(err);
-      }
-      library.logger.debug("apply block ok");
-      if (saveBlock) {
-        private.saveBlock(block, function (err) {
-          if (err) {
-            library.logger.error("Failed to save block: " + err);
-            process.exit(1);
-            return;
-          }
-          library.logger.debug("save block ok");
-          modules.round.tick(block, done);
-        });
-      } else {
-        modules.round.tick(block, done);
-      }
-    });
-  }
-
-  library.balancesSequence.add(function (cb) {
-    var unconfirmedTrs = modules.transactions.getUnconfirmedTransactionList(true);
-    modules.transactions.undoUnconfirmedList(function (err) {
-      if (err) {
-        library.logger.error('Failed to undo uncomfirmed transactions', err);
-        return process.exit(0);
-      }
-      library.oneoff.clear()
-      doApplyBlock(function (err) {
-        if (err) {
-          library.logger.error('Failed to apply block: ' + err)
-        }
-        var redoTrs = unconfirmedTrs.filter((item) => !applyedTrsIdSet.has(item.id))
-        modules.transactions.receiveTransactions(redoTrs, function (err) {
-          if (err) {
-            library.logger.error('Failed to redo unconfirmed transactions', err);
-          }
-          cb()
-        });
-      })
-    });
-  }, callback);
-}
-
 Blocks.prototype.processBlock = async function (block, options) {
   if (!private.loaded) throw new Error('Blockchain is loading')
 
@@ -1073,7 +942,7 @@ Blocks.prototype.processBlock = async function (block, options) {
       let pendingTrs = modules.transactions.getUnconfirmedTransactionList()
       modules.transactions.clearUnconfirmed()
       try {
-        await modules.transactions.receiveTransactionsAsync(pendingTrs)
+        await modules.transactions.applyTransactionsAsync(pendingTrs)
       } catch (e) {
         app.logger.error('Failed to redo pending transactions', e)
       }

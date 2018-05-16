@@ -623,7 +623,7 @@ shared.transferAsset = function (req, cb) {
       }
     }
 
-    library.balancesSequence.add(function (cb) {
+    library.sequence.add(function (cb) {
       if (body.multisigAccountPublicKey && body.multisigAccountPublicKey != keypair.publicKey.toString('hex')) {
         modules.accounts.getAccount({ publicKey: body.multisigAccountPublicKey }, function (err, account) {
           if (err) {
@@ -681,7 +681,7 @@ shared.transferAsset = function (req, cb) {
             } catch (e) {
               return cb(e.toString());
             }
-            modules.transactions.receiveTransactions([transaction], cb);
+            modules.transactions.processUnconfirmedTransaction(transaction, cb);
           });
         });
       } else {
@@ -718,7 +718,7 @@ shared.transferAsset = function (req, cb) {
           } catch (e) {
             return cb(e.toString());
           }
-          modules.transactions.receiveTransactions([transaction], cb);
+          modules.transactions.processUnconfirmedTransaction(transaction, cb);
         });
       }
     }, function (err, transaction) {

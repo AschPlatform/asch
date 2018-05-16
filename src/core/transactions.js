@@ -1,13 +1,14 @@
-var ByteBuffer = require("bytebuffer");
-var crypto = require('crypto');
-var async = require('async');
-var ed = require('../utils/ed.js');
-var constants = require('../utils/constants.js');
-var slots = require('../utils/slots.js');
-var Router = require('../utils/router.js');
-var TransactionTypes = require('../utils/transaction-types.js');
-var sandboxHelper = require('../utils/sandbox.js');
+var ByteBuffer = require("bytebuffer")
+var crypto = require('crypto')
+var async = require('async')
+var ed = require('../utils/ed.js')
+var constants = require('../utils/constants.js')
+var slots = require('../utils/slots.js')
+var Router = require('../utils/router.js')
+var TransactionTypes = require('../utils/transaction-types.js')
+var sandboxHelper = require('../utils/sandbox.js')
 var addressHelper = require('../utils/address.js')
+var LimitCache = require('../utils/limit-cache.js')
 
 var genesisblock = null;
 // Private fields
@@ -61,316 +62,6 @@ class TransactionPool {
   }
 }
 
-function Transfer() {
-  this.create = function (data, trs) {
-    trs.recipientId = data.recipientId;
-    trs.amount = data.amount;
-
-    return trs;
-  }
-
-  this.calculateFee = function (trs, sender) {
-    return library.base.block.calculateFee();
-  }
-
-  this.verify = function (trs, sender, cb) {
-    if (!addressHelper.isAddress(trs.recipientId)) {
-      return cb("Invalid recipient");
-    }
-
-    if (trs.amount <= 0) {
-      return cb("Invalid transaction amount");
-    }
-
-    if (trs.recipientId == sender.address) {
-      return cb("Invalid recipientId, cannot be your self");
-    }
-
-    if (!global.featureSwitch.enableMoreLockTypes) {
-      var lastBlock = modules.blocks.getLastBlock()
-      if (sender.lockHeight && lastBlock && lastBlock.height + 1 <= sender.lockHeight) {
-        return cb('Account is locked')
-      }
-    }
-
-    cb(null, trs);
-  }
-
-  this.process = function (trs, sender, cb) {
-    setImmediate(cb, null, trs);
-  }
-
-  this.getBytes = function (trs) {
-    return null;
-  }
-
-  this.apply = function (trs, block, sender, cb) {
-    modules.accounts.setAccountAndGet({ address: trs.recipientId }, function (err, recipient) {
-      if (err) {
-        return cb(err);
-      }
-
-      modules.accounts.mergeAccountAndGet({
-        address: trs.recipientId,
-        balance: trs.amount,
-        u_balance: trs.amount,
-        blockId: block.id,
-        round: modules.round.calc(block.height)
-      }, function (err) {
-        cb(err);
-      });
-    });
-  }
-
-  this.undo = function (trs, block, sender, cb) {
-    modules.accounts.setAccountAndGet({ address: trs.recipientId }, function (err, recipient) {
-      if (err) {
-        return cb(err);
-      }
-
-      modules.accounts.mergeAccountAndGet({
-        address: trs.recipientId,
-        balance: -trs.amount,
-        u_balance: -trs.amount,
-        blockId: block.id,
-        round: modules.round.calc(block.height)
-      }, function (err) {
-        cb(err);
-      });
-    });
-  }
-
-  this.applyUnconfirmed = function (trs, sender, cb) {
-    setImmediate(cb);
-  }
-
-  this.undoUnconfirmed = function (trs, sender, cb) {
-    setImmediate(cb);
-  }
-
-  this.objectNormalize = function (trs) {
-    delete trs.blockId;
-    return trs;
-  }
-
-  this.dbRead = function (raw) {
-    return null;
-  }
-
-  this.dbSave = function (trs, cb) {
-    setImmediate(cb);
-  }
-
-  this.ready = function (trs, sender) {
-    if (sender.multisignatures.length) {
-      if (!trs.signatures) {
-        return false;
-      }
-
-      return trs.signatures.length >= sender.multimin - 1;
-    } else {
-      return true;
-    }
-  }
-}
-
-function Storage() {
-  this.create = function (data, trs) {
-    trs.asset.storage = {
-      content: Buffer.isBuffer(data.content) ? data.content.toString('hex') : data.content
-    }
-
-    return trs;
-  }
-
-  this.calculateFee = function (trs, sender) {
-    var binary = Buffer.from(trs.asset.storage.content, 'hex');
-    return (Math.floor(binary.length / 200) + 1) * library.base.block.calculateFee();
-  }
-
-  this.verify = function (trs, sender, cb) {
-    if (!trs.asset.storage || !trs.asset.storage.content) {
-      return cb('Invalid transaction asset');
-    }
-    if (new Buffer(trs.asset.storage.content, 'hex').length > 4096) {
-      return cb('Invalid storage content size');
-    }
-
-    cb(null, trs);
-  }
-
-  this.process = function (trs, sender, cb) {
-    setImmediate(cb, null, trs);
-  }
-
-  this.getBytes = function (trs) {
-    return ByteBuffer.fromHex(trs.asset.storage.content).toBuffer();
-  }
-
-  this.apply = function (trs, block, sender, cb) {
-    setImmediate(cb);
-  }
-
-  this.undo = function (trs, block, sender, cb) {
-    setImmediate(cb);
-  }
-
-  this.applyUnconfirmed = function (trs, sender, cb) {
-    setImmediate(cb);
-  }
-
-  this.undoUnconfirmed = function (trs, sender, cb) {
-    setImmediate(cb);
-  }
-
-  this.objectNormalize = function (trs) {
-    var report = library.scheme.validate(trs.asset.storage, {
-      type: "object",
-      properties: {
-        content: {
-          type: "string",
-          format: "hex"
-        }
-      },
-      required: ['content']
-    });
-
-    if (!report) {
-      throw Error('Invalid storage parameters: ' + library.scheme.getLastError());
-    }
-
-    return trs;
-  }
-
-  this.dbRead = function (raw) {
-    if (!raw.st_content) {
-      return null;
-    } else {
-      var storage = {
-        content: raw.st_content
-      }
-
-      return { storage: storage };
-    }
-  }
-
-  this.dbSave = function (trs, cb) {
-    try {
-      var content = new Buffer(trs.asset.storage.content, 'hex');
-    } catch (e) {
-      return cb(e.toString())
-    }
-
-    library.dbLite.query("INSERT INTO storages(transactionId, content) VALUES($transactionId, $content)", {
-      transactionId: trs.id,
-      content: content
-    }, cb);
-  }
-
-  this.ready = function (trs, sender) {
-    if (sender.multisignatures.length) {
-      if (!trs.signatures) {
-        return false;
-      }
-
-      return trs.signatures.length >= sender.multimin - 1;
-    } else {
-      return true;
-    }
-  }
-}
-
-function Lock() {
-  this.create = function (data, trs) {
-    trs.args = data.args
-
-    return trs;
-  }
-
-  this.calculateFee = function (trs, sender) {
-    return library.base.block.calculateFee();
-  }
-
-  this.verify = function (trs, sender, cb) {
-    if (trs.args.length > 1) return cb('Invalid args length')
-    if (trs.args[0].length > 50) return cb('Invalid lock height')
-    var lockHeight = Number(trs.args[0])
-
-    var lastBlock = modules.blocks.getLastBlock()
-
-    if (isNaN(lockHeight) || lockHeight <= lastBlock.height) return cb('Invalid lock height')
-    if (global.featureSwitch.enableLockReset) {
-      if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight && lockHeight <= sender.lockHeight) return cb('Account is already locked at height ' + sender.lockHeight)
-    } else {
-      if (sender.lockHeight && lastBlock.height + 1 <= sender.lockHeight) return cb('Account is already locked at height ' + sender.lockHeight)
-    }
-
-    cb(null, trs);
-  }
-
-  this.process = function (trs, sender, cb) {
-    setImmediate(cb, null, trs);
-  }
-
-  this.getBytes = function (trs) {
-    return null
-  }
-
-  this.apply = function (trs, block, sender, cb) {
-    library.base.account.set(sender.address, { u_multimin: sender.lockHeight }, function (err) {
-      if (err) return cb('Failed to backup lockHeight')
-      library.base.account.set(sender.address, { lockHeight: Number(trs.args[0]) }, cb)
-    })
-  }
-
-  this.undo = function (trs, block, sender, cb) {
-    library.logger.warn('undo lock height', {
-      trs: trs,
-      sender: sender
-    })
-    library.base.account.set(sender.address, { lockHeight: sender.u_multimin }, cb)
-  }
-
-  this.applyUnconfirmed = function (trs, sender, cb) {
-    var key = sender.address + ':' + trs.type
-    if (library.oneoff.has(key)) {
-      return setImmediate(cb, 'Double submit')
-    }
-    library.oneoff.set(key, true)
-    setImmediate(cb)
-  }
-
-  this.undoUnconfirmed = function (trs, sender, cb) {
-    var key = sender.address + ':' + trs.type
-    library.oneoff.delete(key)
-    setImmediate(cb)
-  }
-
-  this.objectNormalize = function (trs) {
-    return trs;
-  }
-
-  this.dbRead = function (raw) {
-    return null;
-  }
-
-  this.dbSave = function (trs, cb) {
-    setImmediate(cb);
-  }
-
-  this.ready = function (trs, sender) {
-    if (sender.multisignatures.length) {
-      if (!trs.signatures) {
-        return false;
-      }
-
-      return trs.signatures.length >= sender.multimin - 1;
-    } else {
-      return true;
-    }
-  }
-}
-
 // Constructor
 function Transactions(cb, scope) {
   library = scope;
@@ -378,11 +69,8 @@ function Transactions(cb, scope) {
   self = this;
   self.__private = private;
   self.pool = new TransactionPool()
+  self.processedTrsCache = new LimitCache()
   private.attachApi();
-
-  library.base.transaction.attachAssetType(TransactionTypes.SEND, new Transfer());
-  library.base.transaction.attachAssetType(TransactionTypes.STORAGE, new Storage());
-  library.base.transaction.attachAssetType(TransactionTypes.LOCK, new Lock());
 
   setImmediate(cb, null, self);
 }
@@ -442,133 +130,6 @@ private.attachStorageApi = function () {
     library.logger.error(req.url, err.toString());
     res.status(500).send({ success: false, error: err.toString() });
   });
-}
-
-private.list = function (filter, cb) {
-  var sortFields = ['t.id', 't.blockId', 't.amount', 't.fee', 't.type', 't.timestamp', 't.senderPublicKey', 't.senderId', 't.recipientId', 't.confirmations', 'b.height'];
-  var params = {}, fields_or = [], owner = "";
-  if (filter.blockId) {
-    fields_or.push('blockId = $blockId')
-    params.blockId = filter.blockId;
-  }
-  if (filter.senderPublicKey) {
-    fields_or.push('lower(hex(senderPublicKey)) = $senderPublicKey')
-    params.senderPublicKey = filter.senderPublicKey;
-  }
-  if (filter.senderId) {
-    fields_or.push('senderId = $senderId');
-    params.senderId = filter.senderId;
-  }
-  if (filter.recipientId) {
-    fields_or.push('recipientId = $recipientId')
-    params.recipientId = filter.recipientId;
-  }
-  if (filter.ownerAddress && filter.ownerPublicKey) {
-    owner = '(lower(hex(senderPublicKey)) = $ownerPublicKey or recipientId = $ownerAddress)';
-    params.ownerPublicKey = filter.ownerPublicKey;
-    params.ownerAddress = filter.ownerAddress;
-  } else if (filter.ownerAddress) {
-    owner = '(senderId = $ownerAddress or recipientId = $ownerAddress)';
-    params.ownerAddress = filter.ownerAddress;
-  }
-  if (filter.type >= 0) {
-    fields_or.push('type = $type');
-    params.type = filter.type;
-  }
-  if (filter.uia) {
-    fields_or.push('(type >=9 and type <= 14)')
-  }
-
-  if (filter.message) {
-    fields_or.push('message = $message')
-    params.message = filter.message
-  }
-
-  if (filter.limit) {
-    params.limit = filter.limit;
-  } else {
-    params.limit = filter.limit = 20;
-  }
-
-  if (filter.offset >= 0) {
-    params.offset = filter.offset;
-  }
-
-  if (filter.orderBy) {
-    var sort = filter.orderBy.split(':');
-    var sortBy = sort[0].replace(/[^\w_]/gi, '').replace('_', '.');
-    if (sort.length == 2) {
-      var sortMethod = sort[1] == 'desc' ? 'desc' : 'asc'
-    } else {
-      sortMethod = "desc";
-    }
-  }
-
-  if (sortBy) {
-    if (sortFields.indexOf(sortBy) < 0) {
-      return cb("Invalid sort field");
-    }
-  }
-
-  var uiaCurrencyJoin = ''
-  if (filter.currency) {
-    uiaCurrencyJoin = 'inner join transfers ut on ut.transactionId = t.id and ut.currency = "' + filter.currency + '" '
-  }
-
-  var connector = "or";
-  if (filter.and) {
-    connector = "and";
-  }
-
-  library.dbLite.query("select count(t.id) " +
-    "from trs t " +
-    "inner join blocks b on t.blockId = b.id " + uiaCurrencyJoin +
-    (fields_or.length || owner ? "where " : "") + " " +
-    (fields_or.length ? "(" + fields_or.join(' ' + connector + ' ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner), params, { "count": Number }, function (err, rows) {
-      if (err) {
-        return cb(err);
-      }
-
-      var count = rows.length ? rows[0].count : 0;
-
-      // Need to fix 'or' or 'and' in query
-      library.dbLite.query("select t.id, b.height, t.blockId, t.type, t.timestamp, lower(hex(t.senderPublicKey)), t.senderId, t.recipientId, t.amount, t.fee, lower(hex(t.signature)), lower(hex(t.signSignature)), t.signatures, t.args, t.message, (select max(height) + 1 from blocks) - b.height " +
-        "from trs t " +
-        "inner join blocks b on t.blockId = b.id " + uiaCurrencyJoin +
-        (fields_or.length || owner ? "where " : "") + " " +
-        (fields_or.length ? "(" + fields_or.join(' ' + connector + ' ') + ") " : "") + (fields_or.length && owner ? " and " + owner : owner) + " " +
-        (filter.orderBy ? 'order by ' + sortBy + ' ' + sortMethod : '') + " " +
-        (filter.limit ? 'limit $limit' : '') + " " +
-        (filter.offset ? 'offset $offset' : ''), params, ['t_id', 'b_height', 't_blockId', 't_type', 't_timestamp', 't_senderPublicKey', 't_senderId', 't_recipientId', 't_amount', 't_fee', 't_signature', 't_signSignature', 't_signatures', 't_args', 't_message', 'confirmations'], function (err, rows) {
-          if (err) {
-            return cb(err);
-          }
-
-          var transactions = [];
-          for (var i = 0; i < rows.length; i++) {
-            transactions.push(library.base.transaction.dbRead(rows[i]));
-          }
-          var data = {
-            transactions: transactions,
-            count: count
-          }
-          cb(null, data);
-        });
-    });
-}
-
-private.getById = function (id, cb) {
-  library.dbLite.query("select t.id, b.height, t.blockId, t.type, t.timestamp, lower(hex(t.senderPublicKey)), t.senderId, t.recipientId, t.amount, t.fee, lower(hex(t.signature)), lower(hex(t.signSignature)), t.args, t.message, (select max(height) + 1 from blocks) - b.height " +
-    "from trs t " +
-    "inner join blocks b on t.blockId = b.id " +
-    "where t.id = $id", { id: id }, ['t_id', 'b_height', 't_blockId', 't_type', 't_timestamp', 't_senderPublicKey', 't_senderId', 't_recipientId', 't_amount', 't_fee', 't_signature', 't_signSignature', 't_args', 't_message', 'confirmations'], function (err, rows) {
-      if (err || !rows.length) {
-        return cb(err || "Can't find transaction: " + id);
-      }
-
-      var transaction = library.base.transaction.dbRead(rows[0]);
-      cb(null, transaction);
-    });
 }
 
 Transactions.prototype.getUnconfirmedTransaction = function (id) {
@@ -633,34 +194,63 @@ Transactions.prototype.getTransaction = function (req, cb) {
   })()
 }
 
-Transactions.prototype.receiveTransactions = function (transactions, cb) {
+Transactions.prototype.applyTransactionsAsync = async function (transactions) {
+  for (let i = 0; i < transactions.length; ++i) {
+    await self.applyUnconfirmedTransactionAsync(transactions[i])
+  }
+}
+
+Transactions.prototype.processUnconfirmedTransactions = function (transactions, cb) {
   (async function () {
     try {
-      await self.receiveTransactionsAsync(transactions)
+      for (let t of transactions) {
+        await self.processUnconfirmedTransactionAsync(transaction)
+      }
+      cb(null, transactions)
     } catch (e) {
-      return cb(e)
+      cb(e.toString(), transactions)
     }
-    cb(null, transactions)
   })()
 }
 
-Transactions.prototype.receiveTransactionsAsync = async function (transactions) {
-  for (let i = 0; i < transactions.length; ++i) {
-    await self.processUnconfirmedTransactionAsync(transactions[i])
+Transactions.prototype.processUnconfirmedTransaction = function (transaction, cb) {
+  (async function () {
+    try {
+      await self.processUnconfirmedTransactionAsync(transaction)
+      cb(null, transaction)
+    } catch (e) {
+      cb(e.toString(), transaction)
+    }
+  })()
+}
+
+Transactions.prototype.processUnconfirmedTransactionAsync = async function (transaction) {
+  try {
+    if (!transaction.id) {
+      transaction.id = library.base.transaction.getId(transaction);
+    }
+
+    if (self.processedTrsCache.has(transaction.id)) {
+      throw new Error('Transaction already processed')
+    }
+
+    await self.applyUnconfirmedTransactionAsync(transaction)
+    self.pool.add(transaction)
+    return transaction
+  } catch (e) {
+    throw e
+  } finally {
+    self.processedTrsCache.set(transaction.id, true)
   }
 }
 
-Transactions.prototype.processUnconfirmedTransactionAsync = async function (transaction, broadcast) {
-  library.logger.debug('process unconfirmed trs', transaction)
-  if (!transaction.id) {
-    transaction.id = library.base.transaction.getId(transaction);
-  }
+Transactions.prototype.applyUnconfirmedTransactionAsync = async function (transaction) {
+  library.logger.debug('apply unconfirmed trs', transaction)
 
   if (self.pool.has(transaction.id)) {
-    throw new Error('Transaction already processed')
+    throw new Error('Transaction already in the pool')
   }
 
-  // FIXME
   if (!transaction.senderId) {
     transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
   }
@@ -697,11 +287,6 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async function (tran
     library.logger.error(e)
     throw e
   }
-  self.pool.add(transaction)
-  if (broadcast) {
-    library.bus.message('unconfirmedTransaction', transaction, true);
-  }
-  return transaction
 }
 
 Transactions.prototype.addTransactionUnsigned = function (transaction, cb) {
@@ -727,89 +312,7 @@ Transactions.prototype.onBind = function (scope) {
 
 // Shared
 shared.getTransactions = function (req, cb) {
-  var query = req.body;
-  library.scheme.validate(query, {
-    type: "object",
-    properties: {
-      blockId: {
-        type: "string"
-      },
-      limit: {
-        type: "integer",
-        minimum: 0,
-        maximum: 100
-      },
-      type: {
-        type: "integer",
-        minimum: 0,
-        maximum: 100
-      },
-      orderBy: {
-        type: "string"
-      },
-      offset: {
-        type: "integer",
-        minimum: 0
-      },
-      senderPublicKey: {
-        type: "string",
-        format: "publicKey"
-      },
-      ownerPublicKey: {
-        type: "string",
-        format: "publicKey"
-      },
-      ownerAddress: {
-        type: "string"
-      },
-      senderId: {
-        type: "string"
-      },
-      recipientId: {
-        type: "string"
-      },
-      amount: {
-        type: "integer",
-        minimum: 0,
-        maximum: constants.fixedPoint
-      },
-      fee: {
-        type: "integer",
-        minimum: 0,
-        maximum: constants.fixedPoint
-      },
-      uia: {
-        type: "integer",
-        minimum: 0,
-        maximum: 1
-      },
-      currency: {
-        type: "string",
-        minimum: 1,
-        maximum: 22
-      },
-      and: {
-        type: "integer",
-        minimum: 0,
-        maximum: 1
-      }
-    }
-  }, function (err) {
-    if (err) {
-      return cb(err[0].message);
-    }
-
-    (async function () {
-      let transactions = await app.sdb.findAll('Transaction', { limit: 20 })
-    })()
-    private.list(query, function (err, data) {
-      if (err) {
-        return cb("Failed to get transactions");
-      }
-
-      cb(null, { transactions: data.transactions, count: data.count });
-    });
-  });
+  // FIXME
 }
 
 shared.getTransaction = function (req, cb) {
@@ -939,7 +442,8 @@ shared.addTransactionUnsigned = function (req, cb) {
           secondKeyPair: secondKeyPair,
           keypair: keypair
         })
-        await self.processUnconfirmedTransactionAsync(trs, true)
+        await self.processUnconfirmedTransactionAsync(trs)
+        library.bus.message('unconfirmedTransaction', trs)
         cb(null, { transactionId: trs.id })
       } catch (e) {
         library.logger.warn('Failed to process unsigned transaction', e)

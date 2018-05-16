@@ -8,7 +8,6 @@ var bignum = require('bignumber');
 var Router = require('../utils/router.js');
 var slots = require('../utils/slots.js')
 var sandboxHelper = require('../utils/sandbox.js');
-var LimitCache = require('../utils/limit-cache.js');
 var shell = require('../utils/shell.js');
 
 // Private fields
@@ -17,7 +16,6 @@ var modules, library, self, private = {}, shared = {};
 private.headers = {};
 private.loaded = false;
 private.chainMessageCache = {};
-private.processedTrsCache = new LimitCache()
 
 // Constructor
 function Transport(cb, scope) {
@@ -70,20 +68,12 @@ private.attachApi = function () {
       return res.status(200).json({ success: false, error: "Invalid transaction body" });
     }
 
-    if (private.processedTrsCache.has(transaction.id)) {
-      return res.status(200).json({ success: false, error: "Already processed transaction" + transaction.id });
-    }
-
     library.sequence.add(function (cb) {
-      if (modules.transactions.hasUnconfirmed(transaction)) {
-        return cb('Already exists');
-      }
       library.logger.log('Received transaction ' + transaction.id + ' from http client');
-      modules.transactions.receiveTransactions([transaction], cb);
-    }, function (err, transactions) {
-      private.processedTrsCache.set(transaction.id, true)
+      modules.transactions.processUnconfirmedTransaction(transaction, cb);
+    }, function (err, transaction) {
       if (err) {
-        library.logger.warn('Receive invalid transaction,id is ' + transaction.id, err);
+        library.logger.warn('Receive invalid transaction ' + transaction.id, err);
         let errMsg = err.message ? err.message : err.toString()
         res.status(200).json({ success: false, error: errMsg });
       } else {
@@ -147,7 +137,7 @@ Transport.prototype.onPeerReady = function () {
     (async () => {
       try {
         let blocks = await app.sdb.getBlocksByHeightRange(min, max)
-        app.logger.trace('find common blocks in database', blocks)
+        // app.logger.trace('find common blocks in database', blocks)
         if (!blocks || !blocks.length) {
           return res.send({ success: false, error: 'Blocks not found' })
         }
@@ -160,7 +150,7 @@ Transport.prototype.onPeerReady = function () {
           }
         }
         if (!commonBlock) {
-          return res.send({ success: false, error: 'Common block not found'})
+          return res.send({ success: false, error: 'Common block not found' })
         }
         return res.send({ success: true, common: commonBlock });
       } catch (e) {
@@ -188,7 +178,9 @@ Transport.prototype.onPeerReady = function () {
         let maxHeight = minHeight + blocksLimit - 1
         let blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
 
-        if (!blocks || !blocks.length) throw new Error('No blocks')
+        if (!blocks || !blocks.length) {
+          return res.send({ blocks: [] })
+        }
 
         maxHeight = blocks[blocks.length - 1].height
         let transactions = await app.sdb.findAll('Transaction', {
@@ -196,7 +188,7 @@ Transport.prototype.onPeerReady = function () {
             height: { $gt: lastBlock.height, $lte: maxHeight }
           }
         })
-        app.logger.debug('Transport get blocks transactions', transactions)
+        // app.logger.trace('Transport get blocks transactions', transactions)
         let firstHeight = blocks[0].height
         for (let i in transactions) {
           let t = transactions[i]
@@ -338,7 +330,6 @@ Transport.prototype.onPeerReady = function () {
     }
     try {
       var transaction = library.base.transaction.objectNormalize(message.body.transaction);
-      // transaction.asset = transaction.asset || {}
     } catch (e) {
       library.logger.error("Received transaction parse error", {
         message: message,
@@ -348,24 +339,18 @@ Transport.prototype.onPeerReady = function () {
       return
     }
 
-    if (private.processedTrsCache.has(transaction.id)) {
-      return
-    }
-
     library.sequence.add(function (cb) {
-      if (modules.transactions.hasUnconfirmed(transaction)) {
-        return cb('Already exists')
-      }
-      library.logger.log('Receive transaction ' + transaction.id)
-      modules.transactions.receiveTransactions([transaction], cb)
-    }, function (err, transactions) {
-      private.processedTrsCache.set(transaction.id, true)
+      library.logger.log('Received transaction ' + transaction.id + ' from remote peer');
+      modules.transactions.processUnconfirmedTransaction(transaction, cb);
+    }, function (err) {
       if (err) {
-        library.logger.warn('Receive invalid transaction,id is ' + transaction.id, err)
+        library.logger.warn('Receive invalid transaction ' + transaction.id, err);
+        let errMsg = err.message ? err.message : err.toString()
       } else {
-        library.bus.message('unconfirmedTransaction', transaction, true)
+        library.bus.message('unconfirmedTransaction', transaction, true);
+
       }
-    })
+    });
   })
 
   modules.peer.subscribe('chainMessage', function (message) {
@@ -411,7 +396,7 @@ Transport.prototype.onUnconfirmedTransaction = function (transaction) {
       transaction: transaction
     }
   }
-  self.broadcast('transactions', message);
+  self.broadcast('transaction', message);
 }
 
 Transport.prototype.onNewBlock = function (block, votes) {

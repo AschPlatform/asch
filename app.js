@@ -72,8 +72,8 @@ function main() {
 
   appConfig.version = version;
   appConfig.baseDir = baseDir;
-  appConfig.dataDir = program.data || path.resolve(baseDir, 'data'),
-  appConfig.buildVersion = 'development';
+  appConfig.dataDir = program.data || path.resolve(baseDir, 'data')
+  appConfig.buildVersion = 'development'
   appConfig.netVersion = process.env.NET_VERSION || 'localnet';
   appConfig.publicDir = path.join(baseDir, 'public', 'dist');
   appConfig.chainDir = program.chains || path.join(baseDir, 'chains')
@@ -195,7 +195,7 @@ function main() {
             scope.logger.error('failed to close sdb', e)
           }
         })()
-        
+
         if (fs.existsSync(pidFile)) {
           fs.unlinkSync(pidFile);
         }
