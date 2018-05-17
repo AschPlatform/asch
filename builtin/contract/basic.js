@@ -205,7 +205,11 @@ module.exports = {
 
     sender.role = app.AccountRole.AGENT
     sender.isAgent = 1
-    app.sdb.create('Agent', { name: sender.name })
+    app.sdb.create('Agent', {
+      name: sender.name,
+      tid: this.trs.id,
+      timestamp: this.trs.timestamp
+    })
   },
 
   setAgent: async function (agent) {

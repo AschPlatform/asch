@@ -2,6 +2,7 @@ module.exports = {
   table: 'proposals',
   tableFields: [
     { name: 'tid', type: 'String', length: 64, primary_key: true },
+    { name: 'timestamp', type: 'Number', not_null: true, index: true },
     { name: 'title', type: 'String', length: 256 },
     { name: 'senderId', type: 'String', length: 50 },
     { name: 'desc', type: 'Text' },

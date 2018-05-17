@@ -148,6 +148,7 @@ module.exports = {
 
     app.sdb.create('Proposal', {
       tid: this.trs.id,
+      timestamp: this.trs.timestamp,
       title: title,
       desc: desc,
       topic: topic,

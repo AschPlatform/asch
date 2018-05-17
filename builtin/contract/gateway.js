@@ -110,6 +110,7 @@ module.exports = {
 
     app.sdb.create('GatewayWithdrawal', {
       tid: this.trs.id,
+      timestamp: this.trs.timestamp,
       seq: seq,
       gateway: gateway,
       currency: currency,

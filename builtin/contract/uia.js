@@ -38,6 +38,7 @@ module.exports = {
 
     app.sdb.create('Asset', {
       tid: this.trs.id,
+      timestamp: this.trs.timestamp,
       name: fullName,
       desc: desc,
       maximum: maximum,
