@@ -179,6 +179,7 @@ Gateway.prototype.processWithdrawals = async function () {
   for (let w of withdrawals) {
     async function processWithdrawal() {
       let contractParams = null
+      w = await app.sdb.get('GatewayWithdrawal', w.tid)
       if (!w.outTransaction) {
         let output = [{ address: w.recipientId, value: Number(w.amount) }]
         let ot = await PIFY(gatewayLib.bitcoin.createNewTransaction)(multiAccount, output)
