@@ -80,6 +80,7 @@ module.exports = {
     if (!deposit) {
       deposit = app.sdb.create('GatewayDeposit', {
         tid: this.trs.id,
+        timestamp: this.trs.timestamp,
         gateway: gateway,
         currency: currency,
         amount: amount,
