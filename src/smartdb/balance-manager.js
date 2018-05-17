@@ -6,8 +6,8 @@ class BalanceManager {
     this.sdb = sdb
   }
 
-  _getBalanceId(address, currency){
-    return app.sdb.getEntityKey('Balance', { address, currency } )
+  _getBalanceId(address, currency) {
+    return app.sdb.getEntityKey('Balance', { address, currency })
   }
 
   get(address, currency) {
@@ -32,22 +32,23 @@ class BalanceManager {
     if (bignum(amount).eq(0)) return
 
     let balanceId = this._getBalanceId(address, currency)
-    let item = this.sdb.getCached('Balance', balanceId, true)
-      || this.sdb.create('Balance', {address, currency, balance: '0'})
-    if (item !== null) {
+    let item = this.sdb.getCached('Balance', balanceId)
+    if (!item) {
       item.balance = bignum(item.balance).plus(amount).toString(10)
     } else {
-      item = this.sdb.create('Balance', balanceId)
-      item.address = address
-      item.balance = amount
-      item.flag = this.getCurrencyFlag(currency)
+      item = this.sdb.create('Balance', {
+        address,
+        currency,
+        balance: amount,
+        flag: this.getCurrencyFlag(currency)
+      })
     }
   }
 
   decrease(address, currency, amount) {
     this.increase(address, currency, '-' + amount)
   }
-  
+
   transfer(currency, amount, from, to) {
     this.decrease(from, currency, amount)
     this.increase(to, currency, amount)
