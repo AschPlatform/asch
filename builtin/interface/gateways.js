@@ -7,7 +7,7 @@ module.exports = async function (router) {
     if (count > 0) {
       gateways = await app.sdb.findAll('Gateway', { limit, offset })
       for (let gw of gateways) {
-        gw.validatorNumber = await app.model.GatewayMember.count({ gateway: gw.name, elected: 1 })
+        gw.validatorNumber = await app.sdb.count('GatewayMember', { gateway: gw.name, elected: 1 })
       }
     }
     return { count, gateways }
