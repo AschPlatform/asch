@@ -3428,7 +3428,7 @@ JSON返回示例：
 }   
 ```  
 
-##### **2.11.1.2 上传数据(签名后再上传)**
+##### **2.11.1.2 上传数据(本地签名后再上传)**
 
 POST接口规格如下：
 payload为asch-js创建出来的交易数据
@@ -3459,17 +3459,17 @@ var AschJS = require('asch-js');
 var secret = 'motion group blossom coral upper warrior pattern fragile sister misery palm detect'
 // 二级密码
 var secondSecret = 'erjimima001'
-// 将字符串"helloworld"用base64进行编码
-var content = new Buffer('helloworld').toString('base64')
-aGVsbG93b3JsZA==
+// 将字符串"helloworld"用hex进行编码
+var content = new Buffer('helloworld').toString('hex')
+68656c6c6f776f726c64
 
-// Asch用base64方式存储刚才得到的编码值"aGVsbG93b3JsZA=="
+// Asch用hex方式存储刚才得到的编码值"68656c6c6f776f726c64"
 var trs = AschJS.storage.createStorage(content, secret, secondSecret)
 console.log(JSON.stringify(trs))
-{"type":8,"amount":0,"fee":10000000,"recipientId":null,"senderPublicKey":"fafcd01f6b813fdeb3c086e60bc7fa9bfc8ef70ae7be47ce0ac5d06e7b1a8575","timestamp":20587956,"asset":{"storage":{"content":"aGVsbG93b3JsZA=="}},"__assetBytes__":{"type":"Buffer","data":[]},"signature":"9663a7f54fd1c18c2447ada61326c34e1cb3ff417089b48e28c25196ebd4a648532782da2a2344de01100c896e568287c2445716f7ac096ff5972bcdf45d850a","signSignature":"60dcfc71cd93d09509c3384b5fa0311de2f31050628efb784e782d9dd39f9a76e76fc09dd03d73165853a194bb59a9d224c960d693c000490d83e58df5fbdd00"}
+{"type":8,"amount":0,"fee":10000000,"recipientId":null,"senderPublicKey":"fafcd01f6b813fdeb3c086e60bc7fa9bfc8ef70ae7be47ce0ac5d06e7b1a8575","timestamp":20587956,"asset":{"storage":{"content":"68656c6c6f776f726c64"}},"__assetBytes__":{"type":"Buffer","data":[]},"signature":"9663a7f54fd1c18c2447ada61326c34e1cb3ff417089b48e28c25196ebd4a648532782da2a2344de01100c896e568287c2445716f7ac096ff5972bcdf45d850a","signSignature":"60dcfc71cd93d09509c3384b5fa0311de2f31050628efb784e782d9dd39f9a76e76fc09dd03d73165853a194bb59a9d224c960d693c000490d83e58df5fbdd00"}
 
 // 将生成的交易信息广播出去
-curl -H "Content-Type: application/json" -H "magic:594fe0f3" -H "version:''" -k -X POST -d '{"transaction":{"type":8,"amount":0,"fee":10000000,"recipientId":null,"senderPublicKey":"fafcd01f6b813fdeb3c086e60bc7fa9bfc8ef70ae7be47ce0ac5d06e7b1a8575","timestamp":20587956,"asset":{"storage":{"content":"aGVsbG93b3JsZA=="}},"__assetBytes__":{"type":"Buffer","data":[]},"signature":"9663a7f54fd1c18c2447ada61326c34e1cb3ff417089b48e28c25196ebd4a648532782da2a2344de01100c896e568287c2445716f7ac096ff5972bcdf45d850a","signSignature":"60dcfc71cd93d09509c3384b5fa0311de2f31050628efb784e782d9dd39f9a76e76fc09dd03d73165853a194bb59a9d224c960d693c000490d83e58df5fbdd00"}}' 'http://localhost:4096/peer/transactions' && echo
+curl -H "Content-Type: application/json" -H "magic:594fe0f3" -H "version:''" -k -X POST -d '{"transaction":{"type":8,"amount":0,"fee":10000000,"recipientId":null,"senderPublicKey":"fafcd01f6b813fdeb3c086e60bc7fa9bfc8ef70ae7be47ce0ac5d06e7b1a8575","timestamp":20587956,"asset":{"storage":{"content":"68656c6c6f776f726c64"}},"__assetBytes__":{"type":"Buffer","data":[]},"signature":"9663a7f54fd1c18c2447ada61326c34e1cb3ff417089b48e28c25196ebd4a648532782da2a2344de01100c896e568287c2445716f7ac096ff5972bcdf45d850a","signSignature":"60dcfc71cd93d09509c3384b5fa0311de2f31050628efb784e782d9dd39f9a76e76fc09dd03d73165853a194bb59a9d224c960d693c000490d83e58df5fbdd00"}}' 'http://localhost:4096/peer/transactions' && echo
 ```   
    
 JSON返回示例：   
