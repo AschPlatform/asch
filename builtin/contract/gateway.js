@@ -102,9 +102,10 @@ module.exports = {
   withdrawal: async function (address, gateway, currency, amount) {
     const FEE = '10000' // FIXME
     let balance = app.balances.get(this.trs.senderId, currency)
-    if (balance.lt(amount) || balance.lt(FEE)) return 'Insufficient balance'
+    if (balance.lt(amount)) return 'Insufficient balance'
 
-    let outAmount = bignum(amount).sub(FEE).toString()
+    let outAmount = bignum(amount).sub(FEE)
+    if (outAmount.lte(0)) return 'Invalid amount'
 
     app.balances.decrease(this.trs.senderId, currency, amount)
     let seq = Number(app.autoID.increment('gate_withdrawal_seq'))
@@ -115,7 +116,7 @@ module.exports = {
       seq: seq,
       gateway: gateway,
       currency: currency,
-      amount: outAmount,
+      amount: outAmount.toString(),
       senderId: this.trs.senderId,
       recipientId: address,
       fee: FEE,

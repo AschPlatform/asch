@@ -31,7 +31,7 @@ module.exports = async function (router) {
     let currencies = await app.sdb.findAll('GatewayCurrency', {})
     let filtered = []
     for (let c of currencies) {
-      let gateway = await app.sdb.findOne('Gateway', {condition: {name: c.gateway}})
+      let gateway = await app.sdb.findOne('Gateway', { condition: { name: c.gateway } })
       if (gateway && gateway.activated) filtered.push(c)
     }
     return { count: filtered.length, currencies: filtered }
@@ -75,6 +75,19 @@ module.exports = async function (router) {
     let deposits = []
     if (count > 0) {
       deposits = await app.sdb.findAll('GatewayDeposit', { condition, limit, offset })
+      let currencyList = deposits.map((d) => d.currency)
+      let currencyMap = new Map()
+      let gatewayAssets = await app.sdb.findAll('GatewayCurrency', {
+        condition: {
+          symbol: { $in: currencyList }
+        }
+      })
+      for (let a of gatewayAssets) {
+        currencyMap.set(a.symbol, a)
+      }
+      for (let d of deposits) {
+        d.asset = currencyMap.get(d.currency)
+      }
     }
     return { count, deposits }
   })
@@ -92,6 +105,19 @@ module.exports = async function (router) {
     let withdrawals = []
     if (count > 0) {
       withdrawals = await app.sdb.findAll('GatewayWithdrawal', { condition, limit, offset })
+      let currencyList = withdrawals.map((w) => w.currency)
+      let currencyMap = new Map()
+      let gatewayAssets = await app.sdb.findAll('GatewayCurrency', {
+        condition: {
+          symbol: { $in: currencyList }
+        }
+      })
+      for (let a of gatewayAssets) {
+        currencyMap.set(a.symbol, a)
+      }
+      for (let w of withdrawals) {
+        w.asset = currencyMap.get(w.currency)
+      }
     }
     return { count, withdrawals }
   })
