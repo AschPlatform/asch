@@ -65,7 +65,7 @@ async function loadModels(dir) {
     let schema = require(fullpath)
     schemas.push(new AschCore.ModelSchema(schema, modelName))
   }
-  app.sdb.lock = ( name ) => app.sdb.lockInCurrentBlock(name)
+  app.sdb.lock = (name) => app.sdb.lockInCurrentBlock(name)
   await app.sdb.init(schemas)
 }
 
@@ -230,16 +230,25 @@ module.exports = async function (options) {
     if (sigCount < m) throw new Error('Signatures not enough')
   }
 
-  app.createMultisigAddress = function (gateway, m, accounts, isRaw) {
-    if (gateway === 'bitcoin') {
-      let ma = gatewayLib.bitcoin.createMultisigAddress(m, accounts)
-      if (!isRaw) {
-        ma.accountExtrsInfo.redeemScript = ma.accountExtrsInfo.redeemScript.toString('hex')
-        ma.accountExtrsInfo = JSON.stringify(ma.accountExtrsInfo)
+  app.gateway = {
+    createMultisigAddress: function (gateway, m, accounts, isRaw) {
+      if (gateway === 'bitcoin') {
+        let ma = gatewayLib.bitcoin.createMultisigAddress(m, accounts)
+        if (!isRaw) {
+          ma.accountExtrsInfo.redeemScript = ma.accountExtrsInfo.redeemScript.toString('hex')
+          ma.accountExtrsInfo = JSON.stringify(ma.accountExtrsInfo)
+        }
+        return ma
+      } else {
+        throw new Error('Unsupported gateway: ' + gateway)
       }
-      return ma
-    } else {
-      throw new Error('Unsupported gateway: ' + gateway)
+    },
+    isValidAddress: function (gateway, address) {
+      if (gateway === 'bitcoin') {
+        return gatewayLib.bitcoin.isValidAddress(address)
+      } else {
+        throw new Error('Unsupported gateway: ' + gateway)
+      }
     }
   }
 

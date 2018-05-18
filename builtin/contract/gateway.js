@@ -15,7 +15,7 @@ module.exports = {
     let outPublicKeys = validators.map(function (v) { return v.outPublicKey })
     let unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
     outPublicKeys.push('02' + this.trs.senderPublicKey)
-    let account = app.createMultisigAddress(gateway, unlockNumber, outPublicKeys)
+    let account = app.gateway.createMultisigAddress(gateway, unlockNumber, outPublicKeys)
     let seq = Number(app.autoID.increment('gate_account_seq'))
     app.sdb.create('GatewayAccount', {
       address: this.trs.senderId,
@@ -106,6 +106,8 @@ module.exports = {
 
     let outAmount = bignum(amount).sub(FEE)
     if (outAmount.lte(0)) return 'Invalid amount'
+
+    if (!app.gateway.isValidAddress(gateway, address)) return 'Invalid withdrawal address'
 
     app.balances.decrease(this.trs.senderId, currency, amount)
     let seq = Number(app.autoID.increment('gate_withdrawal_seq'))

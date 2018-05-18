@@ -155,7 +155,7 @@ Gateway.prototype.processWithdrawals = async function () {
 
   let outPublicKeys = validators.map((v) => v.outPublicKey).sort((l, r) => l - r)
   let unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
-  let multiAccount = app.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
+  let multiAccount = app.gateway.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
   library.logger.debug('gateway validators cold account', multiAccount)
 
   let withdrawalLogKey = app.sdb.getEntityKey('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL })
@@ -270,7 +270,7 @@ Gateway.prototype.sendWithdrawals = async function () {
 
   let outPublicKeys = validators.map((v) => v.outPublicKey).sort((l, r) => l - r)
   let unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
-  let multiAccount = app.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
+  let multiAccount = app.gateway.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
   library.logger.debug('gateway validators cold account', multiAccount)
 
   for (let w of withdrawals) {
