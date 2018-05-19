@@ -7,10 +7,10 @@ module.exports = function (router) {
       condition.address = req.params.address
     }
 
-    let account = await app.model.Account.findOne({ condition })
+    let account = await app.sdb.findOne('Account', { condition })
     let unconfirmedAccount = null
     if (account) {
-      unconfirmedAccount = app.sdb.get('Account', { address: account.address })
+      unconfirmedAccount = await app.sdb.get('Account', account.address)
     } else {
       unconfirmedAccount = null
     }

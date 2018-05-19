@@ -1,5 +1,6 @@
 module.exports = {
   table: 'delegates',
+  memory: true,
   tableFields: [
     { name: 'address', type: 'String', length: 50, primary_key: true, not_null: true },
     { name: 'tid', type: 'String', length: 64, index: true, not_null: true },

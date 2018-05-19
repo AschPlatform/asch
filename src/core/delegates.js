@@ -18,6 +18,8 @@ require('array.prototype.find'); // Old node fix
 // Private fields
 var modules, library, self, private = {}, shared = {};
 
+const BOOK_KEEPER_NAME = 'round_bookkeeper'
+
 private.loaded = false;
 private.blockStatus = new BlockStatus();
 private.keypairs = {};
@@ -404,31 +406,6 @@ private.attachApi = function () {
   });
 }
 
-private.getKeysSortByVote = function (cb) {
-  (async function () {
-    try {
-      let delegates = await app.model.Delegate.findAll({
-        limit: 101,
-        sort: {
-          votes: -1
-        }
-      })
-      if (!delegates || !delegates.length) {
-        cb('No active delegates found')
-      }
-      let keys = delegates.map(function (d) {
-        return d.publicKey
-      })
-      keys.sort(function (l, r) {
-        return l < r
-      })
-      cb(null, keys)
-    } catch (e) {
-      cb('Database error: ' + e)
-    }
-  })()
-}
-
 private.getBlockSlotData = function (slot, height, cb) {
   self.generateDelegateList(height, function (err, activeDelegates) {
     if (err) {
@@ -513,7 +490,7 @@ private.loadMyDelegates = function (cb) {
 
   (async function () {
     try {
-      let delegates = await app.model.Delegate.findAll()
+      let delegates = app.sdb.getAllCached('Delegate')
       if (!delegates || !delegates.length) {
         return cb('Delegates not found in db')
       }
@@ -740,37 +717,27 @@ Delegates.prototype.validateBlockSlot = function (block, cb) {
 }
 
 Delegates.prototype.getDelegates = function (query, cb) {
-  (async function () {
-    try {
-      let delegates = await app.model.Delegate.findAll()
-      if (!delegates || !delegates.length) return cb('No delegates')
+  let delegates = app.sdb.getAllCached('Delegate').map((d) => Object.assign({}, d))
+  if (!delegates || !delegates.length) return cb('No delegates')
 
-      delegates = delegates.sort(function (l, r) {
-        if (l.votes !== r.votes) return r.votes - l.votes
-        return r.publicKey < l.publicKey
-      })
+  delegates = delegates.sort(self.sort)
 
-      let lastBlock = modules.blocks.getLastBlock();
-      let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
-      for (let i = 0; i < delegates.length; ++i) {
-        let d = delegates[i]
-        d.rate = i + 1
-        delegates[i].approval = ((d.votes / totalSupply) * 100).toFixed(2);
+  let lastBlock = modules.blocks.getLastBlock();
+  let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
+  for (let i = 0; i < delegates.length; ++i) {
+    let d = delegates[i]
+    d.rate = i + 1
+    delegates[i].approval = ((d.votes / totalSupply) * 100).toFixed(2);
 
-        var percent = 100 - (d.missedBlocks / (d.producedBlocks + d.missedBlocks) / 100);
-        percent = percent || 0;
-        delegates[i].productivity = parseFloat(Math.floor(percent * 100) / 100).toFixed(2);
+    var percent = 100 - (d.missedBlocks / (d.producedBlocks + d.missedBlocks) / 100);
+    percent = percent || 0;
+    delegates[i].productivity = parseFloat(Math.floor(percent * 100) / 100).toFixed(2);
 
-        delegates[i].vote = delegates[i].votes
-        delegates[i].missedblocks = delegates[i].missedBlocks
-        delegates[i].producedblocks = delegates[i].producedBlocks
-      }
-      return cb(null, delegates)
-    } catch (e) {
-      library.logger.error('Failed to find delegates', e)
-      return cb('Cannot find delegates')
-    }
-  })()
+    delegates[i].vote = delegates[i].votes
+    delegates[i].missedblocks = delegates[i].missedBlocks
+    delegates[i].producedblocks = delegates[i].producedBlocks
+  }
+  return cb(null, delegates)
 }
 
 Delegates.prototype.sandboxApi = function (call, args, cb) {
@@ -805,6 +772,10 @@ Delegates.prototype.onBlockchainReady = function () {
   });
 }
 
+Delegate.prototype.sort = function (l, r) {
+  return (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey
+}
+
 Delegates.prototype.cleanup = function (cb) {
   private.loaded = false;
   cb();
@@ -812,22 +783,11 @@ Delegates.prototype.cleanup = function (cb) {
 
 Delegates.prototype.getTopDelegates = function () {
   let delegatesMap = new Map()
-  for (let d of app.sdb.entries('Delegate')) {
-    delegatesMap.set(d[1].name, d[1])
+  for (let d of app.sdb.getAllCached('Delegate')) {
+    delegatesMap.set(d.name, d)
   }
-  let delegates = []
-  for (let d of delegatesMap.entries()) {
-    delegates.push(d[1])
-  }
-  delegates = delegates.sort((l, r) => {
-    if (l.votes !== r.votes) {
-      return r.votes - l.votes
-    }
-    return l.publicKey < r.publicKey
-  }).map((d) => {
-    return d.publicKey
-  })
-  return delegates.slice(0, 101)
+
+  return [...delegatesMap.values()].sort(this.sort).map(d => d.publicKey).slice(0, 101)
 }
 
 Delegates.prototype.getBookkeeperAddresses = function () {
@@ -841,19 +801,18 @@ Delegates.prototype.getBookkeeperAddresses = function () {
 }
 
 Delegates.prototype.getBookkeeper = function () {
-  let item = app.sdb.get('Variable', { key: 'round_bookkeeper' })
+  let item = app.sdb.getCached('Variable', BOOK_KEEPER_NAME)
   if (!item) throw new Error('Bookkeeper variable not found')
   return JSON.parse(item.value)
 }
 
-Delegates.prototype.updateBookkeeper = function () {
-  let delegates = this.getTopDelegates()
+Delegates.prototype.updateBookkeeper = function (delegates) {
+  delegates = delegates || this.getTopDelegates()
   let value = JSON.stringify(delegates)
-  if (!app.sdb.get('Variable', { key: 'round_bookkeeper' })) {
-    app.sdb.create('Variable', { key: 'round_bookkeeper', value: value })
-  } else {
-    app.sdb.update('Variable', { value: value }, { key: 'round_bookkeeper' })
-  }
+  let bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME) ||
+    app.sdb.create('Variable', BOOK_KEEPER_NAME, { key: BOOK_KEEPER_NAME, value: value })
+
+  bookKeeper.value = value
 }
 
 // Shared
@@ -906,7 +865,7 @@ shared.getDelegate = function (req, cb) {
 shared.count = function (req, cb) {
   (async function () {
     try {
-      let count = await app.model.Delegate.count()
+      let count = app.sdb.getAllCached('Delegate').length
       return cb(null, { count })
     } catch (e) {
       library.logger.error('get delegate count error', e)
@@ -933,17 +892,11 @@ shared.getVoters = function (req, cb) {
 
     (async function () {
       try {
-        let votes = await app.model.Vote.findAll({ condition: { delegate: query.name } })
+        let votes = await app.sdb.findAll('Vote', { condition: { delegate: query.name } })
         if (!votes || !votes.length) return cb(null, { accounts: [] })
 
         let addresses = votes.map((v) => v.address)
-        let accounts = await app.model.Account.findAll({
-          condition: {
-            address: {
-              $in: addresses
-            }
-          }
-        })
+        let accounts = await app.sdb.findAll('Account', { condition: { address: { $in: addresses } } })
         let lastBlock = modules.blocks.getLastBlock();
         let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
         for (let a of accounts) {

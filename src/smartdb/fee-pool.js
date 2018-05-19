@@ -7,30 +7,33 @@ class FeePool {
     this.round = 1
   }
 
+  _getFeePoolId(currency) {
+    return `${this.round}_${currency}`
+  }
+
   setRound(round) {
     this.round = round
   }
 
   add(currency, amount) {
-    let cond = {
-      round: this.round,
-      currency: currency
-    }
-    let item = this.sdb.get(MODEL_NAME, cond)
+    let feePoolId = this._getFeePoolId(currency);
+    let item = this.sdb.getCached(MODEL_NAME, feePoolId )
     if (item) {
-      let newAmount = bignum(item.amount).plus(amount).toString()
-      this.sdb.update(MODEL_NAME, { amount: newAmount }, cond)
+      item.amount = bignum(item.amount).plus(amount).toString()
     } else {
-      cond.amount = amount
-      this.sdb.create(MODEL_NAME, cond)
+      item = this.sdb.create(MODEL_NAME, feePoolId )
+      item.amount = amount
     }
   }
 
   getFees() {
-    let entries = this.sdb.entries(MODEL_NAME)
-    app.logger.debug('fee pool get fees', entries, this.round)
+    let items = this.sdb.getAllCached(MODEL_NAME)
+    app.logger.debug('fee pool get fees', items, this.round)
     let feeMap = new Map
-    for (let [key, value] of entries) {
+    for (let item of items) {
+      //FIXME: what field?
+      let key = item
+      let value = item
       let [rk, ck] = key.split(',')
       let round = Number(rk.split(':')[1])
       let currency = ck.split(':')[1]

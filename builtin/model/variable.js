@@ -1,5 +1,6 @@
 module.exports = {
   table: 'variables',
+  memory: true,
   tableFields: [
     {
       name: 'key',

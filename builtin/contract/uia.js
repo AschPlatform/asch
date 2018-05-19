@@ -7,10 +7,10 @@ module.exports = {
 
     let senderId = this.trs.senderId
     app.sdb.lock('uia.registerIssuer@' + senderId)
-    let exists = await app.model.Issuer.exists({ name: name })
+    let exists = await app.sdb.exists('Issuer', { name: name })
     if (exists) return 'Issuer name already exists'
 
-    exists = await app.model.Issuer.findOne({condition: {issuerId: senderId}})
+    exists = await app.sdb.exists('Issuer', { issuerId: senderId })
     if (exists) return 'Account is already an issuer'
 
     app.sdb.create('Issuer', {
@@ -27,17 +27,18 @@ module.exports = {
     if (precision > 16 || precision < 0) return 'Invalid asset precision'
     app.validate('amount', maximum)
 
-    let issuer = await app.model.Issuer.findOne({ condition: { issuerId: this.trs.senderId } })
+    let issuer = await app.sdb.findOne('Issuer', { condition: { issuerId: this.trs.senderId } })
     if (!issuer) return 'Account is not an issuer'
 
     let fullName = issuer.name + '.' + symbol
     app.sdb.lock('uia.registerAsset@' + fullName)
 
-    exists = await app.model.Asset.exists({ name: fullName })
+    exists = await app.sdb.exists('Asset', { name: fullName })
     if (exists) return 'Asset already exists'
 
     app.sdb.create('Asset', {
       tid: this.trs.id,
+      timestamp: this.trs.timestamp,
       name: fullName,
       desc: desc,
       maximum: maximum,
@@ -50,14 +51,14 @@ module.exports = {
   issue: async function (name, amount) {
     app.sdb.lock('uia.issue@' + name)
 
-    let asset = await app.model.Asset.findOne({ condition: { name: name } })
+    let asset = await app.sdb.get('Asset', name)
     if (!asset) return 'Asset not exists'
-    if (asset.issuerId !== this.trs.senderId ) return 'Permission denied'
+    if (asset.issuerId !== this.trs.senderId) return 'Permission denied'
 
     let quantity = bignum(asset.quantity).plus(amount)
     if (quantity.gt(asset.maximum)) return 'Exceed issue limit'
 
-    app.sdb.update('Asset', { quantity: quantity.toString() }, { name: name })
+    asset.quantity = quantity.toString(10)
     app.balances.increase(this.trs.senderId, name, amount)
   },
 
@@ -72,7 +73,7 @@ module.exports = {
       recipientAddress = recipient
     } else {
       recipientName = recipient
-      let recipientAccount = await app.model.Account.findOne({ condition: { name: recipient } })
+      let recipientAccount = await app.sdb.findOne('Account', { condition: { name: recipient } })
       if (!recipientAccount) return 'Recipient name not exist'
       recipientAddress = recipientAccount.address
     }
