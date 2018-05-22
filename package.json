@@ -1,6 +1,6 @@
 {
   "name": "asch",
-  "version": "1.4.0",
+  "version": "1.4.0-beta",
   "private": true,
   "scripts": {
     "start": "node app.js",
