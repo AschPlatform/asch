@@ -36,7 +36,6 @@ function main() {
     .option('-c, --config <path>', 'Config file path')
     .option('-p, --port <port>', 'Listening port number')
     .option('-a, --address <ip>', 'Listening host name or ip')
-    .option('-b, --blockchain <path>', 'Blockchain db path')
     .option('-g, --genesisblock <path>', 'Genesisblock path')
     .option('-x, --peers [peers...]', 'Peers list')
     .option('-l, --log <level>', 'Log level')
@@ -44,6 +43,7 @@ function main() {
     .option('-e, --execute <path>', 'exe')
     .option('--chains <dir>', 'Chains directory')
     .option('--base <dir>', 'Base directory')
+    .option('--data <dir>', 'Data directory')
     .parse(process.argv);
 
   var baseDir = program.base || './';
@@ -72,7 +72,8 @@ function main() {
 
   appConfig.version = version;
   appConfig.baseDir = baseDir;
-  appConfig.buildVersion = 'development';
+  appConfig.dataDir = program.data || path.resolve(baseDir, 'data')
+  appConfig.buildVersion = 'development'
   appConfig.netVersion = process.env.NET_VERSION || 'localnet';
   appConfig.publicDir = path.join(baseDir, 'public', 'dist');
   appConfig.chainDir = program.chains || path.join(baseDir, 'chains')
@@ -151,7 +152,6 @@ function main() {
   //logger.setLevel = tracer.setLevel
 
   var options = {
-    dbFile: program.blockchain || path.join(baseDir, 'blockchain.db'),
     appConfig: appConfig,
     genesisblock: genesisblock,
     logger: logger,
@@ -188,7 +188,14 @@ function main() {
         } else {
           scope.logger.info('Cleaned up successfully');
         }
-        app.db.close()
+        (async function () {
+          try {
+            await app.sdb.close()
+          } catch (e) {
+            scope.logger.error('failed to close sdb', e)
+          }
+        })()
+
         if (fs.existsSync(pidFile)) {
           fs.unlinkSync(pidFile);
         }

@@ -252,7 +252,7 @@ private.attachApi = function () {
   library.network.app.use('/api/accounts', router);
   library.network.app.use(function (err, req, res, next) {
     if (!err) return next();
-    library.logger.error(req.url, err.toString());
+    library.logger.error(req.url, err);
     res.status(500).send({ success: false, error: err.toString() });
   });
 }
@@ -552,11 +552,7 @@ shared.myVotedDelegates = function (req, cb) {
       try {
         let address
         if (query.name) {
-          let account = await app.model.Account.findOne({
-            condition: {
-              name: query.name
-            }
-          })
+          let account = await app.sdb.getBy('Account', { name: query.name })
           if (!account) {
             return cb('Account not found')
           }
@@ -564,11 +560,7 @@ shared.myVotedDelegates = function (req, cb) {
         } else {
           address = query.address
         }
-        let votes = await app.model.Vote.findAll({
-          condition: {
-            address: address
-          },
-        })
+        let votes = await app.sdb.findAll('Vote', { condition: { address: address } })
         if (!votes || !votes.length) {
           return cb(null, { delegates: [] })
         }
@@ -581,8 +573,8 @@ shared.myVotedDelegates = function (req, cb) {
           return cb(null, { delegates: [] })
         }
 
-        let myVotedDelegates = delegates.filter((d) => delegateNames.has(d.name))  
-        return cb(null, {delegates: myVotedDelegates})
+        let myVotedDelegates = delegates.filter((d) => delegateNames.has(d.name))
+        return cb(null, { delegates: myVotedDelegates })
       } catch (e) {
         library.logger.error('get voted delegates error', e)
         return cb('Server error')
@@ -610,7 +602,7 @@ shared.getAccount = function (req, cb) {
 
     (async function () {
       try {
-        let account = await app.model.Account.findOne({ condition: { address: query.address } })
+        let account = await app.sdb.findOne('Account', { condition: { address: query.address } })
         let accountData
         if (!account) {
           accountData = {
@@ -621,7 +613,7 @@ shared.getAccount = function (req, cb) {
             lockHeight: 0
           }
         } else {
-          let unconfirmedAccount = app.sdb.get('Account', { address: query.address })
+          let unconfirmedAccount = await app.sdb.attach('Account', account)
           accountData = {
             address: account.address,
             unconfirmedBalance: unconfirmedAccount.xas,
@@ -630,8 +622,8 @@ shared.getAccount = function (req, cb) {
             lockHeight: account.lockHeight || 0
           };
         }
-        let latestBlock = modules.blocks.getLastBlock();
-        var ret = {
+        let latestBlock = modules.blocks.getLastBlock()
+        let ret = {
           account: accountData,
           latestBlock: {
             height: latestBlock.height,

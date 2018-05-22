@@ -1,4 +1,3 @@
-
 var assert = require('assert');
 var crypto = require('crypto');
 var ip = require('ip');
@@ -448,20 +447,12 @@ private.getIdSequence = function (height, cb) {
 private.getIdSequence2 = function (height, cb) {
   (async () => {
     try {
-      let blocks = await app.model.Block.findAll({
-        fields: ['id', 'height'],
-        condition: {
-          height: { $lte: height }
-        },
-        sort: {
-          height: -1
-        },
-        limit: 5
-      })
-      let ids = blocks.map((b) => {
-        return b.id
-      })
-      return cb(null, { ids: ids, firstHeight: blocks[blocks.length-1].height })
+      let maxHeight = Math.max(height, private.lastBlock.height)
+      let minHeight = Math.max(0, maxHeight - 4)
+      let blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
+      blocks = blocks.reverse()
+      let ids = blocks.map((b) => b.id)
+      return cb(null, { ids: ids, firstHeight: minHeight })
     } catch (e) {
       cb(e)
     }
@@ -536,21 +527,23 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
     if (err) {
       return cb('Failed to get last block id sequence' + err)
     }
-    library.logger.debug('getIdSequence=========', data)
-    var max = lastBlockHeight;
-    lastBlockHeight = data.firstHeight;
-    modules.transport.getFromPeer(peer, {
-      api: "/blocks/common?ids=" + data.ids.join(',') + '&max=' + max + '&min=' + lastBlockHeight,
-      method: "GET"
-    }, function (err, data) {
-      if (err || data.body.error) {
-        return cb(err || data.body.error.toString());
+    library.logger.trace('getIdSequence=========', data)
+    const params = {
+      body: {
+        max: lastBlockHeight,
+        min: data.firstHeight,
+        ids: data.ids
+      }
+    }
+    modules.peer.request('commonBlock', params, peer, function (err, ret) {
+      if (err || ret.error) {
+        return cb(err || ret.error.toString());
       }
 
-      if (!data.body.common) {
+      if (!ret.common) {
         return cb('Common block not found');
       }
-      cb(null, data.body.common)
+      cb(null, ret.common)
     });
   });
 }
@@ -644,50 +637,6 @@ Blocks.prototype.loadBlocksPart = function (filter, cb) {
 
     cb(err, blocks);
   });
-}
-
-Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
-  var newLimit = limit + (offset || 0);
-  var params = { limit: newLimit, offset: offset || 0 };
-
-  library.logger.debug("loadBlockOffset limit: " + limit + ", offset: " + offset + ", verify: " + verify);
-  library.dbSequence.add(function (cb) {
-    library.dbLite.query(FULL_BLOCK_QUERY +
-      "where b.height >= $offset and b.height < $limit " +
-      "ORDER BY b.height, t.rowid" +
-      "", params, private.blocksDataFields, function (err, rows) {
-        // Notes:
-        // If while loading we encounter an error, for example, an invalid signature on a block & transaction, then we need to stop loading and remove all blocks after the last good block. We also need to process all transactions within the block.
-        if (err) {
-          return cb("loadBlockOffset db error: " + err);
-        }
-
-        var blocks = private.readDbRows(rows);
-
-        async.eachSeries(blocks, function (block, next) {
-          library.logger.debug("loadBlocksOffset processing:", block.id);
-          block.transactions = library.base.block.sortTransactions(block);
-          if (verify) {
-            if (!private.lastBlock || !private.lastBlock.id) {
-              // apply genesis block
-              self.applyBlock(block, null, false, false, next);
-            } else {
-              self.verifyBlock(block, null, function (err) {
-                if (err) {
-                  return next(err);
-                }
-                self.applyBlock(block, null, false, false, next);
-              });
-            }
-          } else {
-            self.setLastBlock(block);
-            setImmediate(next);
-          }
-        }, function (err) {
-          cb(err, private.lastBlock);
-        });
-      });
-  }, cb);
 }
 
 Blocks.prototype.setLastBlock = function (block) {
@@ -830,7 +779,6 @@ Blocks.prototype.applyBlock = async function (block, options) {
   let appliedTransactions = {}
 
   try {
-    app.sdb.beginBlock()
     for (let i in block.transactions) {
       let transaction = block.transactions[i]
       transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
@@ -838,152 +786,41 @@ Blocks.prototype.applyBlock = async function (block, options) {
       if (appliedTransactions[transaction.id]) {
         throw new Error("Duplicate transaction in block: " + transaction.id)
       }
-      await library.base.transaction.apply(transaction, block)
+
+      let senderId = transaction.senderId
+      let sender = await app.sdb.get('Account', senderId)
+      if (!sender) {
+        if (block.height === 0) {
+          sender = app.sdb.create('Account', {
+            address: senderId,
+            name: '',
+            xas: 0
+          })
+        } else {
+          throw new Error('Sender account not found')
+        }
+      }
+      let context = {
+        trs: transaction,
+        block: block,
+        sender: sender
+      }
+      await library.base.transaction.apply(context)
       // TODO not just remove, should mark as applied
       // modules.blockchain.transactions.removeUnconfirmedTransaction(transaction.id)
       appliedTransactions[transaction.id] = transaction
     }
   } catch (e) {
     app.logger.error(e)
-    app.sdb.rollbackBlock()
+    await app.sdb.rollbackBlock()
     throw new Error('Failed to apply block: ' + e)
   }
-}
-
-Blocks.prototype.applyBlock_ = function (block, votes, broadcast, saveBlock, callback) {
-  private.isActive = true;
-  var applyedTrsIdSet = new Set
-  function doApplyBlock(cb) {
-    library.dbLite.query('SAVEPOINT applyblock');
-
-    function done(err) {
-      if (err) {
-        library.balanceCache.rollback()
-        var finalErr = 'applyBlock err: ' + err;
-        library.dbLite.query('ROLLBACK TO SAVEPOINT applyblock', function (rollbackErr) {
-          if (rollbackErr) {
-            library.logger.error('Failed to rollback to savepoint applyblock: ' + rollbackErr)
-            process.exit(1)
-            return
-          }
-          private.isActive = false;
-          cb(err);
-        });
-      } else {
-        library.dbLite.query('RELEASE SAVEPOINT applyblock', function (releaseErr) {
-          private.isActive = false;
-          if (releaseErr) {
-            library.logger.error('Failed to commit savepoint applyblock: ' + releaseErr)
-            process.exit(1)
-            return
-          } else {
-            self.setLastBlock(block);
-            library.oneoff.clear()
-            library.balanceCache.commit()
-            private.blockCache = {};
-            private.proposeCache = {};
-            private.lastVoteTime = null;
-            library.base.consensus.clearState();
-            if (broadcast) {
-              library.logger.info("Block applied correctly with " + block.transactions.length + " transactions");
-              votes.signatures = votes.signatures.slice(0, 6);
-              library.bus.message('newBlock', block, votes, true);
-            }
-            cb();
-          }
-        });
-      }
-    }
-    var sortedTrs = block.transactions.sort(function (a, b) {
-      if (a.type == 1) {
-        return 1;
-      }
-      return 0;
-    });
-    async.eachSeries(sortedTrs, function (transaction, nextTr) {
-      async.waterfall([
-        function (next) {
-          modules.accounts.setAccountAndGet({ publicKey: transaction.senderPublicKey, isGenesis: block.height == 1 }, next);
-        },
-        function (sender, next) {
-          // if (modules.transactions.hasUnconfirmedTransaction(transaction)) {
-          //   return next(null, sender);
-          // }
-          modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
-            if (err && global.Config.netVersion === 'mainnet' &&
-              (block.height == 4659 || block.height == 7091 || block.height == 11920)) {
-              next(null, sender);
-            } else {
-              next(err, sender);
-            }
-          });
-        },
-        function (sender, next) {
-          modules.transactions.apply(transaction, block, sender, next);
-        }
-      ], function (err) {
-        modules.transactions.removeUnconfirmedTransaction(transaction.id);
-        if (err) {
-          var errorContext = {
-            transaction: transaction,
-            block: block,
-            error: err
-          };
-          library.logger.error("Failed to apply transaction", errorContext);
-          nextTr(err);
-          return;
-        }
-        applyedTrsIdSet.add(transaction.id)
-        nextTr();
-      });
-    }, function (err) {
-      if (err) {
-        return done(err);
-      }
-      library.logger.debug("apply block ok");
-      if (saveBlock) {
-        private.saveBlock(block, function (err) {
-          if (err) {
-            library.logger.error("Failed to save block: " + err);
-            process.exit(1);
-            return;
-          }
-          library.logger.debug("save block ok");
-          modules.round.tick(block, done);
-        });
-      } else {
-        modules.round.tick(block, done);
-      }
-    });
-  }
-
-  library.balancesSequence.add(function (cb) {
-    var unconfirmedTrs = modules.transactions.getUnconfirmedTransactionList(true);
-    modules.transactions.undoUnconfirmedList(function (err) {
-      if (err) {
-        library.logger.error('Failed to undo uncomfirmed transactions', err);
-        return process.exit(0);
-      }
-      library.oneoff.clear()
-      doApplyBlock(function (err) {
-        if (err) {
-          library.logger.error('Failed to apply block: ' + err)
-        }
-        var redoTrs = unconfirmedTrs.filter((item) => !applyedTrsIdSet.has(item.id))
-        modules.transactions.receiveTransactions(redoTrs, function (err) {
-          if (err) {
-            library.logger.error('Failed to redo unconfirmed transactions', err);
-          }
-          cb()
-        });
-      })
-    });
-  }, callback);
 }
 
 Blocks.prototype.processBlock = async function (block, options) {
   if (!private.loaded) throw new Error('Blockchain is loading')
 
+  app.sdb.beginBlock(block)
   if (!block.transactions) block.transactions = []
   if (!options.local) {
     try {
@@ -998,8 +835,10 @@ Blocks.prototype.processBlock = async function (block, options) {
     await self.verifyBlock(block, options)
 
     library.logger.debug("verify block ok");
-    let exists = await app.model.Block.exists({ id: block.id })
-    if (exists) throw new Error('Block already exists: ' + block.id)
+    if (block.height !== 0) {
+      let exists = (undefined !== await app.sdb.getBlockById(block.id))
+      if (exists) throw new Error('Block already exists: ' + block.id)
+    }
 
     if (block.height !== 0) {
       try {
@@ -1015,7 +854,8 @@ Blocks.prototype.processBlock = async function (block, options) {
     for (let i in block.transactions) {
       let transaction = block.transactions[i]
       library.base.transaction.objectNormalize(transaction)
-      let exists = await app.model.Transaction.exists({ id: transaction.id })
+      // FIXME
+      let exists = await app.sdb.exists('Transaction', { id: transaction.id })
       if (exists) throw new Error('Block contain already confirmed transaction')
     }
 
@@ -1029,47 +869,31 @@ Blocks.prototype.processBlock = async function (block, options) {
   }
 
   try {
-    // self.processFee(block)
-    self.saveBlock(block)
+    self.saveBlockTransactions(block)
     await self.applyRound(block)
-    await app.sdb.commitBlock({ noTransaction: !!options.noTransaction })
+    await app.sdb.commitBlock()
+    let trsCount = block.transactions.length
+    app.logger.info('Block applied correctly with ' + trsCount + ' transactions')
+    self.setLastBlock(block);
+
+    if (options.broadcast) {
+      options.votes.signatures = options.votes.signatures.slice(0, 6);
+      library.bus.message('newBlock', block, options.votes);
+    }
   } catch (e) {
     app.logger.error('save block error: ', e)
-    app.sdb.rollbackBlock()
+    await app.sdb.rollbackBlock()
     throw new Error('Failed to save block: ' + e)
-  }
-  let trsCount = block.transactions.length
-  app.logger.info('Block applied correctly with ' + trsCount + ' transactions')
-  self.setLastBlock(block);
-
-  private.blockCache = {};
-  private.proposeCache = {};
-  private.lastVoteTime = null;
-  library.base.consensus.clearState();
-  if (options.broadcast) {
-    options.votes.signatures = options.votes.signatures.slice(0, 6);
-    library.bus.message('newBlock', block, options.votes, true);
-  }
-
-  // process unconfirmed transactions
-  if (options.local) {
-    modules.transactions.clearUnconfirmed()
-  } else if (!options.syncing) {
-    for (let t of block.transactions) {
-      modules.transactions.removeUnconfirmedTransaction(t.id)
-    }
-    let pendingTrs = modules.transactions.getUnconfirmedTransactionList()
-    modules.transactions.clearUnconfirmed()
-    try {
-      await modules.transactions.receiveTransactionsAsync(pendingTrs)
-    } catch (e) {
-      app.logger.error('Failed to redo pending transactions', e)
-    }
+  } finally {
+    private.blockCache = {};
+    private.proposeCache = {};
+    private.lastVoteTime = null;
+    library.base.consensus.clearState();
   }
 }
 
-Blocks.prototype.saveBlock = function (block) {
-  app.logger.trace('Blocks#save height', block.height)
+Blocks.prototype.saveBlockTransactions = function (block) {
+  app.logger.trace('Blocks#saveBlockTransactions height', block.height)
   for (let i in block.transactions) {
     let trs = block.transactions[i]
     trs.height = block.height
@@ -1077,14 +901,7 @@ Blocks.prototype.saveBlock = function (block) {
     trs.signatures = JSON.stringify(trs.signatures)
     app.sdb.create('Transaction', trs)
   }
-  let blockObj = {}
-  for (let k in block) {
-    if (k !== 'transactions') {
-      blockObj[k] = block[k]
-    }
-  }
-  app.sdb.create('Block', blockObj)
-  app.logger.trace('Blocks#save end')
+  app.logger.trace('Blocks#save transactions')
 }
 
 // Blocks.prototype.processFee = function (block) {
@@ -1101,36 +918,33 @@ Blocks.prototype.applyRound = async function (block) {
     return
   }
 
-  app.sdb.increment('Delegate', { producedBlocks: 1 }, { publicKey: block.delegate })
+  let delegate = app.sdb.getCached('Delegate', modules.accounts.generateAddressByPublicKey(block.delegate))
+  delegate.producedBlocks += 1
 
   let delegates = await PIFY(modules.delegates.generateDelegateList)(block.height)
 
   // process fee
-  let round = Math.floor((block.height + delegates.length - 1) / delegates.length)
+  let roundNumber = Math.floor((block.height + delegates.length - 1) / delegates.length)
 
-  if (!app.sdb.get('Round', { round: round })) {
-    app.sdb.create('Round', { fees: 0, rewards: 0, round: round })
-  }
+  let round = await app.sdb.get('Round', roundNumber) ||
+    app.sdb.create('Round', { fees: 0, rewards: 0, round: roundNumber })
 
+  let transFee = 0
   for (let t of block.transactions) {
-    app.sdb.increment('Round', { fees: t.fee }, { round: round })
+    transFee += t.fee
   }
 
-  var reward = private.blockStatus.calcReward(block.height)
-  app.sdb.increment('Round', { rewards: reward }, { round: round })
+  round.fees += transFee
+  round.rewards += private.blockStatus.calcReward(block.height)
 
   if (block.height % 101 !== 0) return
 
-  app.logger.debug('----------------------on round ' + round + ' end-----------------------')
+  app.logger.debug('----------------------on round ' + roundNumber + ' end-----------------------')
   app.logger.debug('delegate length', delegates.length)
 
-  let forgedBlocks = await app.model.Block.findAll({
-    limit: 100,
-    sort: {
-      height: -1
-    }
-  })
+  let forgedBlocks = await app.sdb.getBlocksByHeightRange(block.height - 100, block.height - 1)
   let forgedDelegates = forgedBlocks.map(function (b) {
+    // FIXME getBlocksByHeight should return clean object
     return b.delegate
   })
   forgedDelegates.push(block.delegate)
@@ -1141,39 +955,43 @@ Blocks.prototype.applyRound = async function (block) {
     }
   }
   for (let md of missedDelegates) {
-    app.sdb.increment('Delegate', { missedBlocks: 1 }, { publicKey: md })
+    let addr = modules.accounts.generateAddressByPublicKey(md)
+    app.sdb.getCached('Delegate', addr).missedBlocks += 1
   }
 
-  let roundStat = app.sdb.get('Round', { round: round })
-  let fees = roundStat.fees
-  let rewards = roundStat.rewards
-  let ratio = 0.8
+  let fees = round.fees
+  let rewards = round.rewards
+  let ratio = 1
 
   let actualFees = Math.floor(fees * ratio)
   let feeAverage = Math.floor(actualFees / delegates.length)
   let feeRemainder = actualFees - feeAverage * delegates.length
-  let feeFounds = fees - actualFees
+  //let feeFounds = fees - actualFees
 
   let actualRewards = Math.floor(rewards * ratio)
   let rewardAverage = Math.floor(actualRewards / delegates.length)
   let rewardRemainder = actualRewards - rewardAverage * delegates.length
-  let rewardFounds = rewards - actualRewards
+  //let rewardFounds = rewards - actualRewards
 
-  function updateDelegate(pk, fee, reward) {
-    app.sdb.increment('Delegate', { fees: fee }, { publicKey: pk })
-    app.sdb.increment('Delegate', { rewards: reward }, { publicKey: pk })
-    let delegateInfo = app.sdb.get('Delegate', { publicKey: pk })
-    app.sdb.increment('Account', { xas: fee + reward }, { address: delegateInfo.address })
+  async function updateDelegate(pk, fee, reward) {
+    let addr = modules.accounts.generateAddressByPublicKey(pk)
+    let delegate = app.sdb.getCached('Delegate', addr)
+    delegate.fees += fee
+    delegate.rewards += reward
+    // TODO should account be all cached?
+    let account = await app.sdb.get('Account', delegate.address)
+    account.xas += (fee + reward)
   }
+
   for (let fd of forgedDelegates) {
-    updateDelegate(fd, feeAverage, rewardAverage)
+    await updateDelegate(fd, feeAverage, rewardAverage)
   }
-  updateDelegate(block.delegate, feeRemainder, rewardRemainder)
+  await updateDelegate(block.delegate, feeRemainder, rewardRemainder)
 
-  let totalClubFounds = feeFounds + rewardFounds
-  app.logger.info('Asch witness club get new founds: ' + totalClubFounds)
-  // FIXME dapp id
-  app.balances.increase('club_dapp_id', 'XAS', totalClubFounds)
+  // let totalClubFounds = feeFounds + rewardFounds
+  // app.logger.info('Asch witness club get new founds: ' + totalClubFounds)
+  // // FIXME dapp id
+  // app.balances.increase('club_dapp_id', 'XAS', totalClubFounds)
 
   if (block.height % 101 === 0) {
     modules.delegates.updateBookkeeper()
@@ -1191,23 +1009,24 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
     },
     function (next) {
       count++;
-      modules.transport.getFromPeer(peer, {
-        method: "GET",
-        api: '/blocks?lastBlockId=' + lastCommonBlockId + '&limit=200'
-      }, function (err, data) {
-        if (err || data.body.error) {
-          return next(err || data.body.error.toString());
+      const params = {
+        body: {
+          lastBlockId: lastCommonBlockId,
+          limit: 200
         }
-
-        var blocks = data.body.blocks;
-
+      }
+      modules.peer.request('blocks', params, peer, function (err, ret) {
+        if (err || ret.error) {
+          return next(err || ret.error.toString());
+        }
+        const contact = peer[1]
+        const peerStr = contact.hostname + ':' + contact.port
+        const blocks = ret.blocks;
+        library.logger.log('Loading ' + blocks.length + ' blocks from', peerStr);
         if (blocks.length == 0) {
           loaded = true;
           next();
         } else {
-          var peerStr = data.peer ? ip.fromLong(data.peer.ip) + ":" + data.peer.port : 'unknown';
-          library.logger.log('Loading ' + blocks.length + ' blocks from', peerStr);
-
           (async function () {
             try {
               for (let block of blocks) {
@@ -1218,7 +1037,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
               }
               next()
             } catch (e) {
-              library.logger.error('Failed to process block', err)
+              library.logger.error('Failed to process synced block', e)
               return cb(e)
             }
           })()
@@ -1295,6 +1114,7 @@ Blocks.prototype.generateBlock = async function (keypair, timestamp) {
   library.logger.info("get active delegate keypairs len: " + activeKeypairs.length);
   var localVotes = library.base.consensus.createVotes(activeKeypairs, block);
   if (library.base.consensus.hasEnoughVotes(localVotes)) {
+    modules.transactions.clearUnconfirmed()
     await this.processBlock(block, { local: true, broadcast: true, votes: localVotes })
     library.logger.log('Forged new block id: ' + id +
       ' height: ' + height +
@@ -1339,13 +1159,27 @@ Blocks.prototype.onReceiveBlock = function (block, votes) {
       library.logger.info('Received new block id: ' + block.id + ' height: ' + block.height + ' round: ' + modules.round.calc(modules.blocks.getLastBlock().height) + ' slot: ' + slots.getSlotNumber(block.timestamp));
 
       (async function () {
+        let pendingTrsMap = new Map()
         try {
-          app.sdb.rollbackBlock()
+          const pendingTrs = modules.transactions.getUnconfirmedTransactionList()
+          for (let t of pendingTrs) {
+            pendingTrsMap.set(t.id, t)
+          }
+          modules.transactions.clearUnconfirmed()
+          await app.sdb.rollbackBlock()
           await self.processBlock(block, { votes: votes, broadcast: true })
-          cb()
         } catch (e) {
           library.logger.error('Failed to process received block', e)
-          cb(e)
+        } finally {
+          for (let t of block.transactions) {
+            pendingTrsMap.delete(t.id)
+          }
+          try {
+            await modules.transactions.applyTransactionsAsync([...pendingTrsMap.values()])
+          } catch (e) {
+            library.logger.error('Failed to redo unconfirmed transactions', e)
+          }
+          cb()
         }
       })()
     } else if (block.prevBlockId != private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
@@ -1459,6 +1293,7 @@ Blocks.prototype.onReceiveVotes = function (votes) {
       var id = block.id;
       (async function () {
         try {
+          modules.transactions.clearUnconfirmed()
           await self.processBlock(block, { votes: totalVotes, local: true, broadcast: true })
           library.logger.log('Forged new block id: ' + id +
             ' height: ' + height +
@@ -1493,16 +1328,12 @@ Blocks.prototype.onBind = function (scope) {
 
   (async () => {
     try {
-      let count = await app.model.Block.count()
+      let count = app.sdb.blocksCount
       app.logger.info('Blocks found:', count)
-      if (count === 0) {
+      if (!count) {
         await self.processBlock(genesisblock.block, {})
       } else {
-        let block = await app.model.Block.findOne({
-          condition: {
-            height: count - 1
-          }
-        })
+        let block = await app.sdb.getBlockByHeight(count - 1)
         self.setLastBlock(block)
       }
       library.bus.message('blockchainReady')
@@ -1554,20 +1385,21 @@ shared.getBlock = function (req, cb) {
 
     (async function () {
       try {
-        let condition
+        let block
         if (query.id) {
-          condition = { id: query.id }
+          block = await app.sdb.getBlockById(query.id)
         } else if (query.height) {
-          condition = { height: query.height }
+          block = await app.sdb.getBlockByHeight(query.height)
         }
-        let block = await app.model.Block.findOne({ condition })
+
         if (!block) {
           return cb('Block not found')
         }
         block.reward = private.blockStatus.calcReward(block.height)
         return cb(null, { block })
       } catch (e) {
-
+        library.logger.error(e)
+        return cb('Server error')
       }
     })()
   });
@@ -1597,16 +1429,14 @@ shared.getFullBlock = function (req, cb) {
 
     (async function () {
       try {
-        let condition
+        let block
         if (query.id) {
-          condition = { id: query.id }
+          block = await app.getBlockById(query.id, true)
         } else if (query.height) {
-          condition = { height: query.height }
+          block = await app.getBlock(query.height, true)
         }
-        let block = await app.model.Block.findOne({ condition })
+
         if (!block) return cb('Block not found')
-        let transactions = await app.model.Transaction.findAll({ condition: { height: block.height } })
-        block.transactions = transactions
         return cb(null, { block: block })
       } catch (e) {
         library.logger.error('Failed to find block', e)
@@ -1648,29 +1478,24 @@ shared.getBlocks = function (req, cb) {
       try {
         let offset = query.offset ? Number(query.offset) : 0
         let limit = query.limit ? Number(query.limit) : 20
-        let condition = {}
-        let sort = {}
+        let minHeight
+        let maxHeight
         if (query.orderBy === 'height:desc') {
-          condition.height = {
-            $lte: private.lastBlock.height - offset
-          }
-          sort = { height: -1 }
+          maxHeight = private.lastBlock.height - offset
+          minHeight = maxHeight - limit + 1
         } else {
-          condition.height = {
-            $gte: offset
-          }
-          sort = { height: 1 }
+          minHeight = offset
+          maxHeight = offset + limit - 1
         }
-        if (query.generatorPublicKey) {
-          condition.delegate = query.generatorPublicKey
-        }
-        let count = await app.model.Block.count(condition)
+
+        //TODO: get by delegate ??
+        // if (query.generatorPublicKey) {
+        //   condition.delegate = query.generatorPublicKey
+        // }
+        let count = app.sdb.blocksCount
         if (!count) throw new Error('Failed to get blocks count')
-        let blocks = await app.model.Block.findAll({
-          condition: condition,
-          limit: limit,
-          sort: sort
-        })
+
+        let blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
         if (!blocks || !blocks.length) return cb('No blocks')
         return cb(null, { count, blocks })
       } catch (e) {
@@ -1678,7 +1503,6 @@ shared.getBlocks = function (req, cb) {
         return cb('Server error')
       }
     })()
-
   });
 }
 

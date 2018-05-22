@@ -14,18 +14,18 @@ module.exports = function (router) {
     let transactions = []
     let condition = {}
     if (defined(req.query.type)) condition.type = Number(req.query.type)
-    if (defined(req.query.height)) condition.height= Number(req.query.height)
+    if (defined(req.query.height)) condition.height = Number(req.query.height)
     if (defined(req.query.senderId)) condition.senderId = req.query.senderId
     if (defined(req.query.message)) condition.message = req.query.message
-    let count = await app.model.Transaction.count(condition)
+    let count = await app.sdb.count('Transaction', condition)
     if (count > 0) {
-      transactions = await app.model.Transaction.findAll({ condition, offset, limit, sort })
+      transactions = await app.sdb.findAll('Transaction', { condition, offset, limit, sort })
     }
     return { transactions, count }
   })
 
   router.get('/:id', async function (req) {
-    let trs = await app.model.Transaction.findOne({ condition: { id: req.params.id } })
+    let trs = await app.sdb.findOne('Transaction', { condition: { id: req.params.id } })
     if (!trs) throw new Error('Transaction no found')
     return { transaction: trs }
   })

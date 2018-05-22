@@ -5,7 +5,7 @@ async function getAssetMap(assetNames) {
   let gaNameList = assetNameList.filter((n) => n.indexOf('.') === -1)
 
   if (uiaNameList && uiaNameList.length) {
-    let assets = await app.model.Asset.findAll({
+    let assets = await app.sdb.findAll('Asset', {
       condition: {
         name: { $in: uiaNameList }
       }
@@ -15,7 +15,7 @@ async function getAssetMap(assetNames) {
     }
   }
   if (gaNameList && gaNameList.length) {
-    let gatewayAssets = await app.model.GatewayCurrency.findAll({
+    let gatewayAssets = await app.sdb.findAll('GatewayCurrency', {
       condition: {
         symbol: { $in: gaNameList }
       }
@@ -29,7 +29,7 @@ async function getAssetMap(assetNames) {
 
 async function getTransactionMap(tids) {
   let trsMap = new Map
-  let trs = await app.model.Transaction.findAll({
+  let trs = await app.sdb.findAll('Transaction', {
     condition: {
       id: { $in: tids }
     }
@@ -44,57 +44,33 @@ module.exports = function (router) {
   router.get('/', async (req) => {
     let ownerId = req.query.ownerId
     let currency = req.query.currency
-    let condition1 = null
-    let condition2 = null
+    let condition = {}
     let limit = Number(req.query.limit) || 10
     let offset = Number(req.query.offset) || 0
-    if (ownerId && currency) {
-      condition1 = [
-        { senderId: ownerId },
-        { currency: currency }
-      ]
-      condition2 = [
-        { recipientId: ownerId },
-        { currency: currency }
-      ]
-    } else if (ownerId) {
-      condition1 = { senderId: ownerId }
-      condition2 = { recipientId: ownerId }
-    } else if (currency) {
-      condition1 = condition2 = { currency: currency }
-    } else {
-      condition1 = condition2 = null
+    if (ownerId) {
+      condition.$or = {
+        senderId: ownerId,
+        recipientId: ownerId
+      }
     }
-    let count = 0
-    let transfers
-    if (condition1 === null || condition1 === condition2) {
-      count = await app.model.Transfer.count(condition1)
-      transfers = await app.model.Transfer.findAll({
-        condition: condition1,
-        limit: limit,
-        offset: offset,
-      })
-    } else {
-      let count1 = await app.model.Transfer.count(condition1)
-      let count2 = await app.model.Transfer.count(condition2)
-      let t1 = await app.model.Transfer.findAll({
-        condition: condition1,
-        limit: limit,
-        offset: offset,
-        sort: { timestamp: -1 }
-      })
-      let t2 = await app.model.Transfer.findAll({
-        condition: condition2,
-        limit: limit,
-        offset: offset,
-        sort: { timestamp: -1 }
-      })
-      transfers = t1.concat(t2).sort((l, r) => {
-        return r.t_timestamp - l.t_timestamp
-      }).slice(0, limit)
-      count = count1 + count2
+    if (currency) {
+      condition.currency = currency
     }
+    if (req.query.senderId) {
+      condition.senderId = req.query.senderId
+    }
+    if (req.query.recipientId) {
+      condition.recipientId = req.query.recipientId
+    }
+    let count = await app.sdb.count('Transfer', condition)
+    let transfers = []
     if (count > 0) {
+      transfers = await app.sdb.findAll('Transfer', {
+        condition: condition,
+        limit: limit,
+        offset: offset,
+        sort: { timestamp: -1 }
+      })
       let assetNames = new Set
       for (let t of transfers) {
         if (t.currency !== 'XAS') {

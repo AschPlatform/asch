@@ -3,10 +3,10 @@ module.exports = {
     let tid = this.trs.id
     let chainAddress = app.util.address.generateChainAddress(tid)
 
-    let exists = await app.model.Chain.exists({ name: name })
+    let exists = await app.sdb.exists('Chain', { name: name })
     if (exists) return 'Chain name already registered'
 
-    exists = await app.model.Chain.exists({ link: link })
+    exists = await app.sdb.exists('Chain', { link: link })
     if (exists) return 'Chain link already registered'
 
     app.sdb.create('Account', { address: chainAddress, xas: 0, name: '' })
@@ -28,21 +28,21 @@ module.exports = {
   },
 
   replaceDelegate: async function (chain, from, to) {
-    app.sdb.update('ChainDelegate', { delegate: to }, { delegate: from, chain: chain })
+    //app.sdb.update('ChainDelegate', { delegate: to }, { delegate: from, chain: chain })
   },
 
   addDelegate: async function (chain, key) {
-    app.sdb.create('ChainDelegate', { chain: chain, delegate: key })
-    app.sdb.increment('Chain', { unlockNumber: 1 }, { name: chain })
+    //app.sdb.create('ChainDelegate', { chain: chain, delegate: key })
+    //app.sdb.increment('Chain', { unlockNumber: 1 }, { name: chain })
   },
 
   removeDelegate: async function (chain, key) {
-    app.sdb.del('ChainDelegate', { chain: chain, delegate: key })
-    app.sdb.increment('Chain', { unlockNumber: -1 }, { name: chain })
+    //app.sdb.del('ChainDelegate', { chain: chain, delegate: key })
+    //app.sdb.increment('Chain', { unlockNumber: -1 }, { name: chain })
   },
 
   deposit: async function (chainName, currency, amount) {
-    let chain = await app.model.Chain.findOne({ condition: { name: chainName } })
+    let chain = await app.sdb.findOne('Chain', { condition: { name: chainName } })
     if (!chain) return 'Chain not found'
 
     let senderId = this.trs.senderId
@@ -53,11 +53,12 @@ module.exports = {
       app.balances.transfer(currency, amount, senderId, chain.address)
     } else {
       amount = Number(amount)
-      let sender = app.sdb.get('Account', { address: senderId })
-      if (!sender || !sender.xas || sender.xas < amount) return 'Insufficient balance'
+      let sender = this.sender
+      if (sender.xas < amount) return 'Insufficient balance'
+      sender.xas -= amount
 
-      app.sdb.increment('Account', { xas: -1 * amount }, { address: senderId })
-      app.sdb.increment('Account', { xas: 1 * amount }, { address: chain.address })
+      let chainAccount = await app.sdb.get('Account', chain.address)
+      chainAccount += amount
     }
     app.sdb.create('Deposit', {
       tid: this.trs.id,
@@ -70,13 +71,13 @@ module.exports = {
   },
 
   withdrawal: async function (chainName, recipient, currency, amount, oid, seq) {
-    let chain = await app.model.Chain.findOne({ condition: { name: chainName } })
+    let chain = await app.sdb.findOne('Chain', { condition: { name: chainName } })
     if (!chain) return 'Chain not found'
 
-    let exists = await app.model.Withdrawal.exists({ chain: chainName, oid: oid })
+    let exists = await app.sdb.exists('Withdrawal', { chain: chainName, oid: oid })
     if (exists) return 'Chain withdrawal already processed'
 
-    let validators = await app.model.ChainDelegate.findAll({ condition: { chain: chainName } })
+    let validators = await app.sdb.findAll('ChainDelegate', { condition: { chain: chainName } })
     if (!validators || !validators.length) return 'Chain delegates not found'
 
     let validatorPublicKeySet = new Set
@@ -98,10 +99,10 @@ module.exports = {
       app.balances.transfer(currency, amount, chain.address, recipient)
     } else {
       amount = Number(amount)
-      let sender = app.sdb.get('Account', { address: chain.address })
-      if (!sender || !sender.xas || sender.xas < amount) return 'Insufficient balance'
-      app.sdb.increment('Account', { xas: -1 * amount }, { address: chain.address })
-      let account = app.sdb.get('Account', { address: recipient })
+      let sender = this.sender
+      if (sender.xas < amount) return 'Insufficient balance'
+      sender.xas -= amount
+      let account = await app.sdb.get('Account', recipient)
       if (!account) {
         app.sdb.create('Account', {
           address: recipient,
@@ -109,7 +110,7 @@ module.exports = {
           name: ''
         })
       } else {
-        app.sdb.increment('Account', { xas: amount }, { address: recipient })
+        account.xas += amount
       }
     }
     app.sdb.create('Withdrawal', {

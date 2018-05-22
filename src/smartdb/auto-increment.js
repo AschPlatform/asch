@@ -6,26 +6,20 @@ class AutoIncrement {
   }
 
   get(key) {
-    let item = this.sdb.get('Variable', {
-      key: key
-    })
+    let item = this.sdb.getCached('Variable', key)
     let value = item ? item.value : '0'
     return value
   }
 
   increment(key) {
-    let item = this.sdb.get('Variable', {
-      key: key
-    })
-    if (!item) {
-      let value = '1'
-      this.sdb.create('Variable', { key: key, value: value })
-      return value
+    let item = this.sdb.getCached('Variable', key)
+    if (item) {
+      item.value = bignum(item.value).plus(1).toString()
     } else {
-      let newValue = bignum(item.value).plus(1).toString()
-      this.sdb.update('Variable', { value: newValue }, { key: key })
-      return newValue
+      item = this.sdb.create('Variable', key)
+      item.value = '1'
     }
+    return item.value
   }
 }
 

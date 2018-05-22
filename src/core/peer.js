@@ -1,16 +1,26 @@
-var async = require('async');
-var util = require('util');
-var fs = require('fs');
-var path = require('path');
-var ip = require('ip');
-var extend = require('extend');
-var Router = require('../utils/router.js');
-var sandboxHelper = require('../utils/sandbox.js');
+const async = require('async');
+const util = require('util');
+const fs = require('fs');
+const path = require('path');
+const ip = require('ip');
+const extend = require('extend');
+const crypto = require('crypto');
+const kadence = require('kadence');
+const { knuthShuffle } = require('knuth-shuffle');
+const levelup = require('../..//node_modules/kadence/node_modules/levelup/lib/levelup.js');
+const leveldown = require('../../node_modules/kadence/node_modules/leveldown/leveldown.js');
+const encoding = require('../../node_modules/kadence/node_modules/encoding-down');
+const Router = require('../utils/router.js');
+const sandboxHelper = require('../utils/sandbox.js');
+const utils = require('../utils')
 
 require('array.prototype.find'); // Old node fix
 
 // Private fields
 var modules, library, self, private = {}, shared = {};
+
+private.protocol = 'http:'
+private.mainNode = null
 
 // Constructor
 function Peer(cb, scope) {
@@ -18,6 +28,7 @@ function Peer(cb, scope) {
   self = this;
   self.__private = private;
   private.attachApi();
+  private.initNode();
 
   setImmediate(cb, null, self);
 }
@@ -49,86 +60,27 @@ private.attachApi = function () {
   });
 }
 
-private.updatePeerList = function (cb) {
-  modules.transport.getFromRandomPeer({
-    api: '/list',
-    method: 'GET'
-  }, function (err, data) {
-    if (err) {
-      return cb();
-    }
-
-    var report = library.scheme.validate(data.body.peers, { type: "array", required: true, uniqueItems: true });
-    library.scheme.validate(data.body, {
-      type: "object",
-      properties: {
-        peers: {
-          type: "array",
-          uniqueItems: true
-        }
-      },
-      required: ['peers']
-    }, function (err) {
-      if (err) {
-        return cb();
-      }
-
-      var peers = data.body.peers;
-
-      async.eachLimit(peers, 2, function (peer, cb) {
-        library.scheme.validate(peer, {
-          type: "object",
-          properties: {
-            ip: {
-              type: "string"
-            },
-            port: {
-              type: "integer",
-              minimum: 1,
-              maximum: 65535
-            },
-            state: {
-              type: "integer",
-              minimum: 0,
-              maximum: 3
-            },
-            os: {
-              type: "string"
-            },
-            version: {
-              type: "string"
-            },
-            chain: {
-              type: "string",
-              length: 64
-            }
-          },
-          required: ['ip', 'port', 'state']
-        }, function (err) {
-          if (err) {
-            return setImmediate(cb, "Invalid peer: " + err);
-          }
-
-          peer.ip = parseInt(peer.ip);
-
-          if (isNaN(peer.ip)) {
-            return setImmediate(cb);
-          }
-
-          if (ip.toLong("127.0.0.1") == peer.ip || peer.port == 0 || peer.port > 65535) {
-            return setImmediate(cb);
-          }
-
-          if (!self.isCompatible(peer.version)) {
-            library.logger.debug("Skip uncompatible peer " + peer.ip, peer.version);
-            return setImmediate(cb);
-          }
-
-          self.update(peer, cb);
-        });
-      }, cb);
-    });
-  });
+private.initNode = function () {
+  const protocol = private.protocol
+  const hostname = global.Config.publicIp || global.Config.address
+  const port = global.Config.peerPort
+  const contact = { hostname, port, protocol }
+  const identity = self.getIdentity(contact)
+  const transport = new kadence.HTTPTransport()
+  const storageDir = path.resolve(global.Config.dataDir, 'dht')
+  const storage = levelup(encoding(leveldown(storageDir)))
+  private.mainNode = new kadence.KademliaNode({
+    logger: library.logger,
+    transport,
+    storage,
+    identity,
+    contact
+  })
+  const node = private.mainNode
+  const peerCacheDir = path.join(global.Config.dataDir, 'peer')
+  node.rolodex = node.plugin(kadence.rolodex(peerCacheDir))
+  node.plugin(kadence.quasar())
+  node.listen(port)
 }
 
 private.count = function (cb) {
@@ -142,92 +94,10 @@ private.count = function (cb) {
   })
 }
 
-private.banManager = function (cb) {
-  app.db.rawQuery("UPDATE peers SET state = 1, clock = null where (state = 0 and clock - $now < 0)", { now: Date.now() }, cb);
-}
-
-private.getByFilter = function (filter, cb) {
-  var sortFields = ["ip", "port", "state", "os", "version"];
-  var sortMethod = '', sortBy = ''
-  var limit = filter.limit || null;
-  var offset = filter.offset || null;
-  delete filter.limit;
-  delete filter.offset;
-
-  var where = [];
-  var params = {};
-
-  if (filter.hasOwnProperty('state') && filter.state !== null) {
-    where.push("state = $state");
-    params.state = filter.state;
-  }
-
-  if (filter.hasOwnProperty('os') && filter.os !== null) {
-    where.push("os = $os");
-    params.os = filter.os;
-  }
-
-  if (filter.hasOwnProperty('version') && filter.version !== null) {
-    where.push("version = $version");
-    params.version = filter.version;
-  }
-
-  if (filter.hasOwnProperty('ip') && filter.ip !== null) {
-    where.push("ip = $ip");
-    params.ip = filter.ip;
-  }
-
-  if (filter.hasOwnProperty('port') && filter.port !== null) {
-    where.push("port = $port");
-    params.port = filter.port;
-  }
-
-  if (filter.hasOwnProperty('orderBy')) {
-    var sort = filter.orderBy.split(':');
-    sortBy = sort[0].replace(/[^\w\s]/gi, '');
-    if (sort.length == 2) {
-      sortMethod = sort[1] == 'desc' ? 'desc' : 'asc'
-    } else {
-      sortMethod = 'desc';
-    }
-  }
-
-  if (sortBy) {
-    if (sortFields.indexOf(sortBy) < 0) {
-      return cb("Invalid sort field");
-    }
-  }
-
-  if (limit !== null) {
-    if (limit > 100) {
-      return cb("Invalid limit. Maximum is 100");
-    }
-    params['limit'] = limit;
-  }
-
-  if (offset !== null) {
-    params['offset'] = offset;
-  }
-
-  app.db.rawQuery("select ip, port, state, os, version from peers" +
-    (where.length ? (' where ' + where.join(' and ')) : '') +
-    (sortBy ? ' order by ' + sortBy + ' ' + sortMethod : '') + " " +
-    (limit ? ' limit $limit' : '') +
-    (offset ? ' offset $offset ' : ''),
-    params, {
-      "ip": String,
-      "port": Number,
-      "state": Number,
-      "os": String,
-      "version": String
-    }, function (err, rows) {
-      cb(err, rows);
-    });
-}
-
 // Public methods
 Peer.prototype.list = function (options, cb) {
   options.limit = options.limit || 100;
+  return cb(null, [])
 
   app.db.rawQuery("select p.ip, p.port, p.state, p.os, p.version from peers p " + (options.chain ? " inner join peer_chains pd on p.id = pd.peerId and pd.chain = $chain " : "") + " where p.state > 0 ORDER BY RANDOM() LIMIT $limit", options, {
     "ip": String,
@@ -251,38 +121,6 @@ Peer.prototype.listWithChain = function (options, cb) {
     "version": String
   }, function (err, rows) {
     cb(err, rows);
-  });
-}
-
-Peer.prototype.reset = function (cb) {
-  app.db.rawQuery('update peers set state = 2', function (err) {
-    if (cb) return cb(err)
-    if (err) {
-      library.logger.error('Failed to reset peers: ' + e)
-    }
-  })
-}
-
-Peer.prototype.state = function (pip, port, state, timeoutSeconds, cb) {
-  var isFrozenList = library.config.peers.list.find(function (peer) {
-    return peer.ip == ip.fromLong(pip) && peer.port == port;
-  });
-  if (isFrozenList !== undefined) return cb && cb("Peer in white list");
-  if (state == 0) {
-    var clock = (timeoutSeconds || 1) * 1000;
-    clock = Date.now() + clock;
-  } else {
-    clock = null;
-  }
-  app.db.rawQuery("UPDATE peers SET state = $state, clock = $clock WHERE ip = $ip and port = $port;", {
-    state: state,
-    clock: clock,
-    ip: pip,
-    port: port
-  }, function (err) {
-    err && library.logger.error('Peer#state', err);
-
-    cb && cb()
   });
 }
 
@@ -321,42 +159,6 @@ Peer.prototype.addChain = function (config, cb) {
   });
 }
 
-Peer.prototype.update = function (peer, cb) {
-  if (!peer.ip || !peer.port) {
-    cb && cb();
-    return;
-  }
-  var chain = peer.chain;
-  var params = {
-    ip: peer.ip,
-    port: peer.port,
-    os: peer.os || null,
-    version: peer.version || null
-  }
-  async.series([
-    function (cb) {
-      app.db.rawQuery("INSERT OR IGNORE INTO peers (ip, port, state, os, version) VALUES ($ip, $port, $state, $os, $version);", extend({}, params, { state: 1 }), cb);
-    },
-    function (cb) {
-      if (peer.state !== undefined) {
-        params.state = peer.state;
-      }
-      app.db.rawQuery("UPDATE peers SET os = $os, version = $version" + (peer.state !== undefined ? ", state = CASE WHEN state = 0 THEN state ELSE $state END " : "") + " WHERE ip = $ip and port = $port;", params, cb);
-    },
-    function (cb) {
-      if (chain) {
-        self.addChain({ chain: chain, ip: peer.ip, port: peer.port }, cb);
-      } else {
-        setImmediate(cb);
-      }
-
-    }
-  ], function (err) {
-    err && library.logger.error('Peer#update', err);
-    cb && cb()
-  })
-}
-
 Peer.prototype.getVersion = function () {
   return {
     version: library.config.version,
@@ -387,6 +189,50 @@ Peer.prototype.isCompatible = function (version) {
   return true;
 }
 
+Peer.prototype.getIdentity = function (contact, isHex) {
+  let address = contact.hostname + ':' + contact.port
+  return crypto.createHash('ripemd160').update(address).digest()
+}
+
+Peer.prototype.handle = function (method, handler) {
+  private.mainNode.use(method, handler)
+}
+
+Peer.prototype.subscribe = function (topic, handler) {
+  private.mainNode.quasarSubscribe(topic, function (content) {
+    handler(content)
+  })
+}
+
+Peer.prototype.publish = function (topic, message) {
+  private.mainNode.quasarPublish(topic, message)
+}
+
+Peer.prototype.request = function (method, params, contact, cb) {
+  private.mainNode.send(method, params, contact, cb)
+}
+
+Peer.prototype.randomRequest = function (method, params, cb) {
+  const node = private.mainNode
+  const randomContact = knuthShuffle([...node.router.getClosestContactsToKey(
+    node.identity.toString('hex'),
+    node.router.size
+  ).entries()]).shift();
+  if (!randomContact) return cb('No contact')
+  library.logger.debug('select random contract', randomContact)
+  let isCallbacked = false
+  setTimeout(function () {
+    if (isCallbacked) return
+    isCallbacked = true
+    cb('Timeout', undefined, randomContact)
+  }, 2000)
+  node.send(method, params, randomContact, function (err, result) {
+    if (isCallbacked) return
+    isCallbacked = true
+    cb(err, result, randomContact)
+  })
+}
+
 Peer.prototype.sandboxApi = function (call, args, cb) {
   sandboxHelper.callMethod(shared, call, args, cb);
 }
@@ -397,51 +243,40 @@ Peer.prototype.onBind = function (scope) {
 }
 
 Peer.prototype.onBlockchainReady = function () {
-  let initSqls = [
-    'CREATE UNIQUE INDEX IF NOT EXISTS peers_unique ON peers(ip, port)',
-    'update peers set state = 1, clock = null where state != 0;'
-  ]
-  app.db.rawQuery(initSqls.join(';'), function () {
-    async.eachSeries(library.config.peers.list, function (peer, cb) {
-      app.db.rawQuery("INSERT OR IGNORE INTO peers(ip, port, state) VALUES($ip, $port, $state)", {
-        ip: ip.toLong(peer.ip),
-        port: Number(peer.port),
-        state: 2
-      }, cb);
-    }, function (err) {
-      if (err) {
-        library.logger.error('onBlockchainReady', err);
-      }
-
-      private.count(function (err, count) {
-        if (count) {
-          private.updatePeerList(function (err) {
-            err && library.logger.error('updatePeerList', err);
-            library.bus.message('peerReady');
-          })
-          library.logger.info('Peers ready, stored ' + count);
-        } else {
-          library.logger.warn('Peers list is empty');
-        }
-      });
-    });
+  const node = private.mainNode
+  for (let seed of global.Config.peers.list) {
+    let contact = {
+      hostname: seed.ip,
+      port: seed.port,
+      protocol: private.protocol
+    }
+    let identity = self.getIdentity(contact)
+    node.join([identity, contact])
+  }
+  node.once('join', function () {
+    library.logger.info(`connected to ${node.router.size} peers`)
+    library.logger.debug('connected nodes', node.router.getClosestContactsToKey(node.identity).entries())
   })
+  node.once('error', function (err) {
+    library.logger.error('failed to join network', err)
+  })
+  library.bus.message('peerReady')
+}
+
+Peer.prototype.joinNetwork = async function () {
+  const node = private.mainNode
+  let peers = await node.rolodex.getBootstrapCandidates()
+  if (peers && peers.length > 0) {
+    peers = peers.map(url => kadence.utils.parseContactURL(url))
+  }
+  library.logger.debug('join network bootstrap candidates', peers)
+  for (let p of peers) {
+    node.join(p)
+  }
 }
 
 Peer.prototype.onPeerReady = function () {
-  setImmediate(function nextUpdatePeerList() {
-    private.updatePeerList(function (err) {
-      err && library.logger.error('updatePeerList timer', err);
-      setTimeout(nextUpdatePeerList, 60 * 1000);
-    })
-  });
-
-  setImmediate(function nextBanManager() {
-    private.banManager(function (err) {
-      err && library.logger.error('banManager timer', err);
-      setTimeout(nextBanManager, 65 * 1000)
-    });
-  });
+  utils.loopAsyncFunction(self.joinNetwork.bind(this), 60 * 1000)
 }
 
 // Shared

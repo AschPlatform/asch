@@ -6,6 +6,7 @@ module.exports = {
     { name: 'updateInterval', type: 'Number' },
     { name: 'minimumMembers', type: 'Number' },
     { name: 'lastUpdateHeight', type: 'BigInt' },
+    { name: 'activated', type: 'Number', default: 0 },
     { name: 'revoked', type: 'Number', default: 0 },
     { name: 'version', type: 'Number' },
     { name: 'createTime', type: 'Number' },
