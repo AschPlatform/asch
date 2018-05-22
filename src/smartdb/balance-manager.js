@@ -1,5 +1,5 @@
 let bignum = require('bignumber')
-let AschCore = require('../asch-smartdb').AschCore
+let AschCore = require('asch-smartdb').AschCore
 
 class BalanceManager {
   constructor(sdb) {

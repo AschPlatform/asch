@@ -5,7 +5,7 @@ const PIFY = require('../utils/pify.js')
 const utils = require('../utils')
 const gatewayLib = require('gateway-lib')
 
-const AschCore = require('../asch-smartdb').AschCore
+const AschCore = require('asch-smartdb').AschCore
 
 var modules, library, self, private = {}, shared = {};
 
