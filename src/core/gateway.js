@@ -43,10 +43,10 @@ function Gateway(cb, scope) {
 }
 
 Gateway.prototype.importAccounts = async function () {
-  if (modules.loader.syncing()) {
+  const GATEWAY = global.Config.gateway.name
+  if (modules.loader.syncing() || !GATEWAY) {
     return
   }
-  const GATEWAY = global.Config.gateway.name
   const key = app.sdb.getEntityKey('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.IMPORT_ADDRESS })
   let lastImportAddressLog = app.sdb.getCached('GatewayLog', key)
 
@@ -72,10 +72,10 @@ Gateway.prototype.importAccounts = async function () {
 }
 
 Gateway.prototype.processDeposits = async function () {
-  if (modules.loader.syncing()) {
+  const GATEWAY = global.Config.gateway.name
+  if (modules.loader.syncing() || !GATEWAY) {
     return
   }
-  const GATEWAY = global.Config.gateway.name
   const CURRENCY = 'BTC'
 
   let validators = await app.sdb.findAll('GatewayMember', { gateway: GATEWAY, elected: 1 })
@@ -141,10 +141,10 @@ Gateway.prototype.processDeposits = async function () {
 }
 
 Gateway.prototype.processWithdrawals = async function () {
-  if (modules.loader.syncing()) {
+  const GATEWAY = global.Config.gateway.name
+  if (modules.loader.syncing() || !GATEWAY) {
     return
   }
-  let GATEWAY = global.Config.gateway.name
   let PAGE_SIZE = 25
   let validators = await app.sdb.findAll('GatewayMember', { gateway: GATEWAY, elected: 1 })
   if (!validators || !validators.length) {
@@ -211,7 +211,7 @@ Gateway.prototype.processWithdrawals = async function () {
       await PIFY(modules.transactions.addTransactionUnsigned)(contractParams)
     }
     const onError = function (err) {
-      library.logger.error('Pprocess gateway withdrawal error, will retry', err)
+      library.logger.error('Process gateway withdrawal error, will retry', err)
     }
     try {
       await utils.retryAsync(processWithdrawal, 3, 10 * 1000, onError)
@@ -225,10 +225,10 @@ Gateway.prototype.processWithdrawals = async function () {
 }
 
 Gateway.prototype.sendWithdrawals = async function () {
-  if (modules.loader.syncing()) {
+  const GATEWAY = global.Config.gateway.name
+  if (modules.loader.syncing() || !GATEWAY) {
     return
   }
-  let GATEWAY = global.Config.gateway.name
   const PAGE_SIZE = 25
   let lastSeq = 0
   let logKey = app.sdb.getEntityKey('GatewayLog', {
