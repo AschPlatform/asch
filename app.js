@@ -48,17 +48,18 @@ function main() {
 
   var baseDir = program.base || './';
 
-  var pidFile = path.join(baseDir, 'asch.pid');
-  if (fs.existsSync(pidFile)) {
-    console.log('Failed: asch server already started');
-    return;
-  }
-
   var appConfigFile = path.join(baseDir, 'config.json');
   if (program.config) {
     appConfigFile = path.resolve(process.cwd(), program.config);
   }
   var appConfig = JSON.parse(fs.readFileSync(appConfigFile, 'utf8'));
+
+  var pidFile = appConfig.pidFile || path.join(baseDir, 'asch.pid');
+  if (fs.existsSync(pidFile)) {
+    console.log('Failed: asch server already started');
+    return;
+  }
+
 
   if (!appConfig.chain.masterpassword) {
     var randomstring = require("randomstring");
@@ -144,7 +145,7 @@ function main() {
   }
 
   var logger = new Logger({
-    filename: path.join(baseDir, 'logs', 'debug.log'),
+    filename: appConfig.logFile || path.join(baseDir, 'logs', 'debug.log'),
     echo: program.deamon ? null : appConfig.logLevel,
     errorLevel: appConfig.logLevel
   });

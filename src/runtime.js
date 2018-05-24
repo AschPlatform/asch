@@ -16,7 +16,7 @@ var BalanceManager = require('./smartdb/balance-manager')
 var AutoIncrement = require('./smartdb/auto-increment')
 var FeePool = require('./smartdb/fee-pool')
 var AccountRole = require('./utils/account-role')
-const AschCore = require('./asch-smartdb').AschCore
+const AschCore = require('asch-smartdb').AschCore
 
 class RouteWrapper {
   constructor() {
@@ -126,6 +126,25 @@ async function loadInterfaces(dir, routes) {
       rw.path = '/api/v2/' + basename
     }
     routes.use(rw.path, router)
+  }
+}
+
+function adaptSmartDBLogger( logLevel ) {
+  const LogLevel = AschCore.LogLevel
+  const levelMap = {
+    "trace"  : LogLevel.Trace,
+    "debug"  : LogLevel.Debug,
+    "log"    : LogLevel.Log,
+    "info"   : LogLevel.Info,
+    "warn"   : LogLevel.Warn,
+    "error"  : LogLevel.Error,
+    "fatal"  : LogLevel.Fatal 
+  }
+  
+  AschCore.LogManager.logFactory = {
+    level : levelMap[logLevel] || LogLevel.Info,
+    format: false,
+    create : ( name ) => app.logger
   }
 }
 
@@ -263,7 +282,8 @@ module.exports = async function (options) {
 
   const BLOCK_HEADER_DIR = path.resolve(dataDir, 'blocks')
   const BLOCK_DB_PATH = path.resolve(dataDir, 'blockchain.db')
-
+  
+  adaptSmartDBLogger(options.appConfig.LogLevel) 
   app.sdb = new AschCore.SmartDB(BLOCK_DB_PATH, BLOCK_HEADER_DIR)
   app.balances = new BalanceManager(app.sdb)
   app.autoID = new AutoIncrement(app.sdb)
