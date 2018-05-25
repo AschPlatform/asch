@@ -1,58 +1,59 @@
-#Asch-CLI User Guide
+# Asch-CLI User Guide
 ---
 Index
 =================
+ - [Asch-CLI Instruction](#asch-cli-instruction)
+    - [0 Asch-CLI Overview](#0-asch-cli-overview)
+    - [1 Asch-CLI Installation](#1-asch-cli-installation)
+    - [2 Asch-CLI Synopsis](#2-asch-cli-synopsis)
+    - [3 Asch-CLI Option Description](#3-asch-cli-option-description)
+      - [3.1 Print help information](#31-print-help-information)
+      - [3.2 Print Asch-CLI version information](#32-print-asch-cli-version-information)
+      - [3.3 Appoint the host name or IP address of target Asch Server](#33-appoint-the-host-name-or-ip-address-of-target-asch-server)
+      - [3.4 Appoint the port number of target Asch server](#34-appoint-the-port-number-of-target-asch-server)
+      - [3.5 Appoint the main chain](#35-appoint-the-main-chain)
+      - [4 Asch-CLI supported commands](#4-asch-cli-supported-commands)
+      - [4.1 Check the blockchain height](#41-check-the-blockchain-height)
+      - [4.2 Check the blockchain status](#42-check-the-blockchain-status)
+      - [4.3 Check account information by password](#43-check-account-information-by-password)
+      - [4.4 Check account information by public key](#44-check-account-information-by-public-key)
+      - [4.5 Check account balance by account address](##45-check-account-balance-by-account-address)
+      - [4.6 Check account information by account address](#46-check-account-information-by-account-address)
+      - [4.7 Check delegates voted by the account address](#47-check-delegates-voted-by-the-account-address)
+      - [4.8 Check the whole number of delegates](#48-check-the-whole-number-of-delegates)
+      - [4.9 Check delegates information and sort out](#49-check-delegates-information-and-sort-out)
+      - [4.10 Check the voters of the delegate by his public key](#410-check-the-voters-of-the-delegate-by-his-public-key)
+      - [4.11 Check detail information of delegate by public key](#411-check-detail-information-of-delegate-by-public-key)
+      - [4.12 Check the detail information of delegate by the name](#412-check-the-detail-information-of-delegate-by-the-name)
+      - [4.13 Check/analyse block information in whole network](#413-checkanalyze-block-information-in-whole-network)
+      - [4.14 Check block information by block ID](#414-check-block-information-by-block-id)
+      - [4.15 Check block information by block height](#415-check-block-information-by-block-height)
+      - [4.16 Check the peer/node status](#416-check-the-peernode-status)
+      - [4.17 Check unconfirmed transaction by public key](#417-check-unconfirmed-transaction-by-public-key)
+      - [4.18 Check/analyse transaction information in the whole network](#418-checkanalyse-transaction-information-in-the-whole-network)
+      - [4.19 Check transaction detail inforamtion by transaction ID](#419-check-transaction-detail-inforamtion-by-transaction-id)
+      - [4.20 Transfer money](#420-transfer-money)
+      - [4.21 Register delegate](#421-register-delegate)
+      - [4.22 Vote for delegate](#422-vote-for-delegate)
+      - [4.23 Cancel the vote for delegate](#423-cancel-the-vote-for-delegate)
+      - [4.24 Set second password (secret)](#424-set-second-password-secret)
+      - [4.25 Register Dapp (decentralized application)](#425-register-dapp-decentralized-application)
+      - [4.26 Contract related command](#426-contract-related-command)
+      - [4.27 Encrypt related command](#427-encrypt-related-command)
+      - [4.28 Dapp related command](#428-dapp-related-command)
+      - [4.29 Create genesis block file](#429-create-genesis-block-file)
+      - [4.30 Check the status of all nodes/peers of the whole network](#430-check-the-status-of-all-nodespeers-of-the-whole-network)
+      - [4.31 Check delegates' status in the whole network](#431-check-delegates-status-in-the-whole-network)
+      - [4.32 Check the original place of all nodes/peers' IP address in the whole network](#432-check-the-original-place-of-all-nodespeers-ip-address-in-the-whole-network)
 
-  * [Asch-CLI Instruction](#asch-cli-instruction)
-    * [0 Asch-CLI Overview](#0-asch-cli-overview)
-    * [1 Asch-CLI Installation](#1-asch-cli-installation)
-    * [2 Asch-CLI Synopsis](#2-asch-cli-synopsis)
-    * [3 Asch-CLI Option Description](#3-asch-cli-option-description)
-      * [3.1 Print help information](#31-print-help-information)
-      * [3.2 Print Asch-CLI version information](#32-print-asch-cli-version-information)
-      * [3.3 Appoint the host name or IP address of target Asch Server](#33-appoint-the-host-name-or-ip-address-of-target-asch-server)
-      * [3.4 Appoint the port number of target Asch server](#34-appoint-the-port-number-of-target-asch-server)
-      * [3.5 Appoint the main chain](#35-appoint-the-main-chain)
-    * [4 Asch-CLI supported commands](#4-asch-cli-supported-commands)
-      * [4.1 Check the blockchain height](#41-check-the-blockchain-height)
-      * [4.2 Check the blockchain status](#42-check-the-blockchain-status)
-      * [4.3 Check account information by password](#43-check-account-information-by-password)
-      * [4.4 Check account information by public key](#44-check-account-information-by-public-key)
-      * [4.5 Check account balance by account address](##45-check-account-balance-by-account-address)
-      * [4.6 Check account information by account address](#46-check-account-information-by-account-address)
-      * [4.7 Check delegates voted by the account address](#47-check-delegates-voted-by-the-account-address)
-      * [4.8 Check the whole number of delegates](#48-check-the-whole-number-of-delegates)
-      * [4.9 Check delegates information and sort out](#49-check-delegates-information-and-sort-out)
-      * [4.10 Check the voters of the delegate by his public key](#410-check-the-voters-of-the-delegate-by-his-public-key)
-      * [4.11 Check detail information of delegate by public key](#411-check-detail-information-of-delegate-by-public-key)
-      * [4.12 Check the detail information of delegate by the name](#412-check-the-detail-information-of-delegate-by-the-name)
-      * [4.13 Check/analyse block information in whole network](#413-checkanalyze-block-information-in-whole-network)
-      * [4.14 Check block information by block ID](#414-check-block-information-by-block-id)
-      * [4.15 Check block information by block height](#415-check-block-information-by-block-height)
-      * [4.16 Check the peer/node status](#416-check-the-peernode-status)
-      * [4.17 Check unconfirmed transaction by public key](#417-check-unconfirmed-transaction-by-public-key)
-      * [4.18 Check/analyse transaction information in the whole network](#418-checkanalyse-transaction-information-in-the-whole-network)
-      * [4.19 Check transaction detail inforamtion by transaction ID](#419-check-transaction-detail-inforamtion-by-transaction-id)
-      * [4.20 Transfer money](#420-transfer-money)
-      * [4.21 Register delegate](#421-register-delegate)
-      * [4.22 Vote for delegate](#422-vote-for-delegate)
-      * [4.23 Cancel the vote for delegate](#423-cancel-the-vote-for-delegate)
-      * [4.24 Set second password (secret)](#424-set-second-password-secret)
-      * [4.25 Register Dapp (decentralized application)](#425-register-dapp-decentralized-application)
-      * [4.26 Contract related command](#426-contract-related-command)
-      * [4.27 Encrypt related command](#427-encrypt-related-command)
-      * [4.28 Dapp related command](#428-dapp-related-command)
-      * [4.29 Create genesis block file](#429-create-genesis-block-file)
-      * [4.30 Check the status of all nodes/peers of the whole network](#430-check-the-status-of-all-nodespeers-of-the-whole-network)
-      * [4.31 Check delegates' status in the whole network](#431-check-delegates-status-in-the-whole-network)
-      * [4.32 Check the original place of all nodes/peers' IP address in the whole network](#432-check-the-original-place-of-all-nodespeers-ip-address-in-the-whole-network)
-
+Index created with [markdown-toc](https://github.com/AlanWalk/markdown-toc)
 ---
-##0 Asch-CLI Overview
+
+## 0 Asch-CLI Overview
 From [Asch Whitepaper](/asch_whitepaper_en.md)
 > Asch-CLI is a command line interface provided by Asch system. Within the Asch-CLI, developers can rapidly establish a sidechain by making some simple configurations according to instructions and then create any kind of applications on this sidechain. The system also provides a series of APIs to help developers to create complicate smart contract applications. The functions of these APIs include consensus, strong random numbers, database, and cryptology and so on.
 
-##1 Asch-CLI Installation
+## 1 Asch-CLI Installation
 - Install nodejs package manager **npm**
 `sudo apt-get install npm`
 
@@ -60,11 +61,11 @@ From [Asch Whitepaper](/asch_whitepaper_en.md)
 `npm install -g asch-cli`
 NOTICE: if you install it in China, try parameter `--registry=http://registry.npm.taobao.org` to accelerate the installation.
  
-##2 Asch-CLI Synopsis
+## 2 Asch-CLI Synopsis
 `asch-cli [option] [command]`
 
-##3 Asch-CLI Option Description
-###3.1 Print help information
+## 3 Asch-CLI Option Description
+### 3.1 Print help information
 **Parameter:** 	-h, --help  
 **Return:**     Help document of Asch-CLI commands or sub-commands  
 **Usage:**  	
@@ -128,7 +129,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getvoteddelegates -h #print Asch-C
     -l, --limit <n>   
 ```
 
-###3.2 Print Asch-CLI version information 
+### 3.2 Print Asch-CLI version information 
 **Parameter:** 	-V, --version  
 **Return:**     Output the version information  
 **Usage:**  `asch-cli -V`	
@@ -140,7 +141,7 @@ root@asch:~# asch-cli -V
 1.0.0
 ```
 
-###3.3 Appoint the host name or IP address of target Asch Server
+### 3.3 Appoint the host name or IP address of target Asch Server
 **Parameter:** -H, --host &lt;host&gt; [command] *(Default: 127.0.0.1)* 
 
 **Return:** none
@@ -153,7 +154,7 @@ root@asch:~# asch-cli -H 45.32.248.33 getheight     #check block height of Asch 
 101236
 ```
 
-###3.4 Appoint the port number of target Asch server
+### 3.4 Appoint the port number of target Asch server
 **Parameter:** -P, --port &lt;port&gt; [command] *(Default: 4096)*
 
 **Return:** none
@@ -167,7 +168,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getheight
 102313
 ```
 
-###3.5 Appoint the main chain
+### 3.5 Appoint the main chain
 **Parameter:** -M, --main     *(Default: test chain)*
 
 **Return:** none
@@ -181,8 +182,8 @@ root@asch:~# asch-cli -M -H *.*.*.105 -P 8192 getheight  #check the block height
 9388
 ```
 
-##4 Asch-CLI supported commands
-###4.1 Check the blockchain height
+## 4 Asch-CLI supported commands
+### 4.1 Check the blockchain height
 **Command:** getheight
 
 **Return:** blockchain height
@@ -196,7 +197,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getheight
 105387
 ```
 
-###4.2 Check the blockchain status
+### 4.2 Check the blockchain status
 **Command:** getblockstatus
 
 **Return:** a JSON format string including blockchain height, transaction fee, milestone, the reward of each delegate's block and the whole current volume
@@ -217,7 +218,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getblockstatus
 }
 ```
 
-###4.3 Check account information by password
+### 4.3 Check account information by password
 **Command:**  openaccount [secret]
 
 **Return:** A JSON string containing account information such as address, balance, public key, and second public key and so on.
@@ -241,7 +242,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 openaccount "fault still attack al
 }
 ```
 
-###4.4 Check account information by public key
+### 4.4 Check account information by public key
 **Command:**openaccountbypublickey [publickey]
 
 **Return:** A JSON string containing  account information such as address, balance, public key, and second public key and so on.
@@ -264,7 +265,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 openaccountbypublickey "bd1e78c5a1
 }
 ```
 
-###4.5 Check account balance by account address
+### 4.5 Check account balance by account address
 **Command:** getbalance [address]
 
 **Return:** A integer number that will be the account balance when divided by 100000000
@@ -278,7 +279,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getbalance 16723473400748954103
 20000000000
 ```
 
-###4.6 Check account information by account address 
+### 4.6 Check account information by account address 
 **Command:** getaccount [address]
 
 **Return:** A JSON string containing  account information such as address, balance, public key, and second public key and so on.
@@ -302,7 +303,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getaccount 16723473400748954103
 }
 ```
 
-###4.7 Check delegates voted by the account address
+### 4.7 Check delegates voted by the account address
 **Command:** getvoteddelegates [options] [address]
 
 **Return:** A list containing the delegates voted by this account
@@ -335,7 +336,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getvoteddelegates 1574554029389021
        productivity: '99.23' }]
 ```
 
-###4.8 Check the whole number of delegates
+### 4.8 Check the whole number of delegates
 **Command:** getdelegatescount
 
 **Return:** An integer number indicates the count of all delegates
@@ -349,7 +350,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getdelegatescount
 232
 ```
 
-###4.9 Check delegates information and sort out
+### 4.9 Check delegates information and sort out
 **Command:**getdelegates [options]
 
 **Return:** A list containing all delegates' information
@@ -380,7 +381,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 getdelegates -o 1 -l 1 -s rate:asc
 ]
 ```
 
-###4.10 Check the voters of the delegate by his public key
+### 4.10 Check the voters of the delegate by his public key
 **Command:** getvoters [publicKey]
 
 **Return:** A list containing all the voters
@@ -406,7 +407,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getvoters "ae256559d06409435c04
   }]
 ```
   
-###4.11 Check detail information of delegate by public key
+### 4.11 Check detail information of delegate by public key
 **Command:** getdelegatebypublickey [publicKey]
 
 **Return:** A JSON string containing delegate's detail information such as name, address, votes, produced blocks, and forging reward and so on.
@@ -432,7 +433,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getdelegatebypublickey "ae25655
   "forged": "174083762523"
 }
 ```
-###4.12 Check the detail information of delegate by the name
+### 4.12 Check the detail information of delegate by the name
 **Command:** getdelegatebyusername [username]
 
 **Return:** A JSON string containing delegate's detail
@@ -459,7 +460,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getdelegatebyusername "wgl_002"
 }
 ```
 
-###4.13 Check/analyse block information in whole network
+### 4.13 Check/analyse block information in whole network
 **Command:** getblocks [options]
 
 **Return:** A JSON string containing query result status and queried block information
@@ -495,7 +496,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getblocks -o 1 -l 1 -r 35000000
   "count": 45350
 }
 ```
-###4.14 Check block information by block ID
+### 4.14 Check block information by block ID
 **Command:** getblockbyid [id]
 
 **Return:** A JSON string containing block ID, block height, previous block ID, total transaction number, total amount, transaction fee, reward, hash, block generator public key and ID, block signature, quantity of confirmation and so on.
@@ -525,7 +526,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getblockbyid 142594212804090687
 }
 ```
 
-###4.15 Check block information by block height
+### 4.15 Check block information by block height
 **Command:** getblockbyheight [height]
 
 **Return:** A JSON string containing block ID, block height, previous block ID, total transaction number, total amount, transaction fee, reward, hash, block generator public key and ID, block signature, quantity of confirmation and so on.
@@ -556,7 +557,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getblockbyheight 1
 }
 ```
 
-###4.16 Check the peer/node status
+### 4.16 Check the peer/node status
 **Command:** getpeers [options] 
 
 **Return:** A list containing peer ip, port, operation system, and Asch version, and so on.
@@ -587,7 +588,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getpeers -o 1 -l 2
 ]
 ```
 
-###4.17 Check unconfirmed transaction by public key
+### 4.17 Check unconfirmed transaction by public key
 **Command:** getunconfirmedtransactions [options]
 
 **Return:** A list containing details of all transactions that are not confirmed yet
@@ -616,7 +617,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 getunconfirmedtransactions -k "
 ]
 ```
 
-###4.18 Check/analyse transaction information in the whole network
+### 4.18 Check/analyse transaction information in the whole network
 **Command:** gettransactions [options]
 
 **Return:** A list containing all selected transaction's detail information
@@ -667,7 +668,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 gettransactions -o 1 -l 2 #chec
 ]
 ```
 
-###4.19 Check transaction detail inforamtion by transaction ID
+### 4.19 Check transaction detail inforamtion by transaction ID
 **Command:** gettransaction [id]
 
 **Return:** A JSON string containing transaction ID, block height, block ID, time stamp, sender's public key, recipient's address, total amount, fee, signature, confirmation quantity, assets, and etc.
@@ -697,7 +698,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 gettransaction 1719258193633915
 }
 ```
 
-###4.20 Transfer money
+### 4.20 Transfer money
 **Command:** sendmoney [option]
 
 **Return:** transaction result. true=success, otherwise error message
@@ -711,7 +712,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 sendmoney -e "motion group blossom
 true
 ```
 
-###4.21 Register delegate
+### 4.21 Register delegate
 **Command:** registerdelegate [options]
 
 **Return:** Registering result，ture=success, otherwise error message
@@ -725,7 +726,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 registerdelegate -e "fault stil
 true
 ```
 
-###4.22 Vote for delegate 
+### 4.22 Vote for delegate 
 **Command:** upvote [options] 
 
 **Return:** Voting result, ture=success, otherwise error message
@@ -739,7 +740,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 upvote -e "fault still attack a
 true
 ```
 
-###4.23 Cancel the vote for delegate
+### 4.23 Cancel the vote for delegate
 **Command:**downvote [options]
 
 **Return:** Cancelling vote result, ture=success, otherwise error message
@@ -753,7 +754,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 downvote -e "fault still attack
 true
 ```
 
-###4.24 Set second password (secret)
+### 4.24 Set second password (secret)
 **Command:** setsecondsecret [options]
 
 **Return:** Setting up result, ture=success, otherwise error message
@@ -767,7 +768,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 setsecondsecret -e "fault still
 true
 ```
 
-###4.25 Register Dapp (decentralized application)
+### 4.25 Register Dapp (decentralized application)
 **Command:** registerdapp [options]
 
 **Return:**
@@ -778,7 +779,7 @@ true
 
 
 
-###4.26 Contract related command
+### 4.26 Contract related command
 **Command:** contract [options]
 
 **Return:** 
@@ -810,7 +811,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 crypto -g
 Done
 ```
 
-###4.28 Dapp related command
+### 4.28 Dapp related command
 **Command:** dapps [options] 
 
 **Return:** 
@@ -843,7 +844,7 @@ root@asch:~# more genesisBlock.json
 }
 ```
 
-###4.30 Check the status of all nodes/peers of the whole network
+### 4.30 Check the status of all nodes/peers of the whole network
 **Command:** peerstat
 
 **Return:** The peer's information, containing peer IP address, port, version and block height and etc.
@@ -859,7 +860,7 @@ root@asch:~# asch-cli -H 101.200.162.236 -P 4096 peerstat
 45.32.19.241:4096 1.0.0 106036
 ```
 
-###4.31 Check delegates' status in the whole network
+### 4.31 Check delegates' status in the whole network
 **Command:** delegatestat
 
 **Return:** Delegates' information, containing delegates' name, address, approval votes, productivity, the amount of generated blocks, block height, ID, and the time of last block generated and so on.
@@ -882,7 +883,7 @@ intmaster	7321911740133937168	97	88.36%	100%	1032	105871	6757656887343300317	201
 mode_6	9248745407080572308	8	88.48%	100%	1060	105873	3777454410915098884	2016/08/17 21:53:10(25 mins ago)
 ```
 
-###4.32 Check the original place of all nodes/peers' IP address in the whole network
+### 4.32 Check the original place of all nodes/peers' IP address in the whole network
 **Command:** ipstat
 
 **Return:** the original place of each peer's IP address
