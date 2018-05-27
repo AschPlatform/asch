@@ -4,6 +4,7 @@ dapps/
 .DS_Store
 .ed25519-node
 .idea/
+*.lock
 *.log
 __MACOSX/
 nodejs/
