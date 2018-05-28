@@ -1,6 +1,6 @@
 # Asch Node Installation Guide
 
-## 1. Sytem requirement
+## 1. System requirements
 - Linux system required
 - Public IP address required
 - Ubuntu 16.04 64bit OS recommended
