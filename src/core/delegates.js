@@ -773,7 +773,8 @@ Delegates.prototype.onBlockchainReady = function () {
 }
 
 Delegate.prototype.sort = function (l, r) {
-  return (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey
+  return (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey ? 1 : -1 
+  // return (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey
 }
 
 Delegates.prototype.cleanup = function (cb) {
