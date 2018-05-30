@@ -4,8 +4,8 @@
 
 readonly INIT_DIR=$(readlink -m $(dirname $0))
 
-function add_cron() {
-	cnt=`cat /etc/crontab | grep 'asch_monitor' | grep -v '#' | wc -l`
+add_cron() {
+	cnt=$(grep 'asch_monitor' /etc/crontab | grep -v '#' | wc -l)
 	if [ $cnt -eq 0 ];then
 		echo "*/1 * * * * root $INIT_DIR/asch_monitor.sh" >> /etc/crontab
 		if [ $? -ne 0 ];then
@@ -14,7 +14,7 @@ function add_cron() {
 	fi
 }
 
-function main() {
+main() {
 	add_cron
 	echo "Configure asch_monitor crontab done."
 }

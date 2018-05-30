@@ -11,10 +11,10 @@ Der Entwicklungsprozess einer Dapp nützt alle drei dieser Netzwerktypen:
 
 ## 2 Localnet starten
 
-Das Localnet kann gleich nach dem Download ausgeführt werden. [Asch Source-Code](https://github.com/sqfasd/asch).
+Das Localnet kann gleich nach dem Download ausgeführt werden. [Asch Source-Code](https://github.com/AschPlatform/asch).
 
 ```
-git clone https://github.com/sqfasd/asch
+git clone https://github.com/AschPlatform/asch
 ```
 Danach müssen die Installationsschritte in der README-Datei befolgt werden.
 

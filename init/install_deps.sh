@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function main() {
+main() {
   echo "Updating apt-get ..."
   apt-get update -yqq
 
