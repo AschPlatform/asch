@@ -9,46 +9,21 @@ And the development of Dapp involves all of these types of network simultaneousl
 - step 2: testing on the testnet
 - step 3: deploying officially on mainnet
 
-## 2 Setup Folder Structure
+### 1.1 System requirements
+- Node v8.x.x
 
-To setup the folder structure clone ```asch-cli``` and ```asch```.
+## 2 Setup asch-cli
+
+```
+npm install -g asch-cli
 ```
 
-# first install nvm because asch-cli and asch are use different node versions!
-wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
-nvm install 7.0.0
-nvm install 8.0.0
-
-
-root  
-└───asch-cli
-│       config.json
-│       contract-example.js
-│       .gitignore
-│       index.js
-|       ...
-|       ...
-└───asch
-        app.js
-        aschd
-        config.json
-        ...
-        ...
-
-# clone asch-cli
-git clone https://github.com/aschplatform/asch-cli.git asch-cli && cd asch-cli && npm install && chmod u+x bin/asch-cli && bin/asch-cli -help && cd ..
-
+## 2 Setup asch
+```
 # clone asch
-git clone https://github.com/aschplatform/asch.git asch && cd asch && npm install && nvm use 7.0.0 && cd ..
+git clone https://github.com/aschplatform/asch.git asch && cd asch && npm install && cd ..
 ```
-NOTE: DO NOT use ```cnpm``` from TAOBAO since there are some **bugs** in it.
-
-
-
-
-
-
-## 3 Start localnet
+## 4 Start localnet
 
 Run your own local asch node.
 
@@ -74,7 +49,7 @@ cd asch/public
 
 Install the dependencies for the frontend application
 ```
-npm install
+yarn install
 ```
 
 Build the frontend application for the localnet.
@@ -86,13 +61,13 @@ Now you can access the frontend application on the address ```localhost:4096```.
 *NOTE:* You don't need to start a http-server. Asch is already providing one for you.
 
 
-## 4 Prepare Account For Dapp Registration
+## 5 Prepare Account For Dapp Registration
 
 First create a new local asch-account.
 
 ```
 # execute (in root folder)
-asch-cli/bin/asch-cli -H 127.0.0.1 -P 4096 crypto --generate
+> asch-cli -H 127.0.0.1 -P 4096 crypto --generate
 # ?  Enter number of accounts to generate:
 1
 ```
@@ -118,20 +93,20 @@ We need **100 XAS** to register a dapp. Our new account has **0 XAS**. The **gen
 
 ```
 # send money to our account 
-asch-cli/bin/asch-cli -H 127.0.0.1 -P 4096 sendmoney --secret "someone manual strong movie roof episode eight spatial brown soldier soup motor" --to "AHMCKebuL2nRYDgszf9J2KjVZzAw95WUyB" --amount 100000000000
+> asch-cli -H 127.0.0.1 -P 4096 sendmoney --secret "someone manual strong movie roof episode eight spatial brown soldier soup motor" --to "AHMCKebuL2nRYDgszf9J2KjVZzAw95WUyB" --amount 100000000000
 
 # check your balance
-asch-cli/bin/asch-cli -H 127.0.0.1 -P 4096 openaccount "sentence weasel match weather apple onion release keen lens deal fruit matrix"
+> asch-cli -H 127.0.0.1 -P 4096 openaccount "sentence weasel match weather apple onion release keen lens deal fruit matrix"
 ```
 
 
-## 5 Create A Dapp Metadata File
+## 6 Create A Dapp Metadata File
 
 First we have to create 5 delegate accounts:
 
 ```
 # execute in root (you don't have to point to the localhost, this command is execute only in asch-cli)
-asch-cli/bin/asch-cli crypto --generate
+> asch-cli crypto --generate
 ? Enter number of accounts to generate
 5
 
@@ -169,12 +144,8 @@ After that enter your Asch source code folder and make sure the localnet is runn
 
 ```
 # this must be executed in a new console
-mkdir asch/dapps
-cd asch/dapps
-nvm use 8.0.0
-
-# execute inside the asch/dapps folder following command:
-../../asch-cli/bin/asch-cli -H 127.0.0.1 -P 4096 dapps -a
+> mkdir asch-test-dapp && cd asch-test-dapp
+> asch-cli dapps -a
 
 # enter dapp name?
 hello
@@ -199,9 +170,15 @@ db18d5799944030f76b6ce0879b1ca4b0c2c1cee51f53ce9b43f78259950c2fd,590e28d2964b0aa
 
 # how many delegates are needed to unlock asset of a dapp?
 3
+
+# Enter master secret of your genesis account 
+[hidden]
+
+# Do you want publish a inbuilt asset in this dapp? 
+No
 ```
 
-This step created the `asch/dapps/dapp.json` file.
+This step created the `asch-test-dapp/dapp.json` file.
 ```
 {
   "name": "hello",
@@ -225,12 +202,11 @@ This step created the `asch/dapps/dapp.json` file.
 
 ## 6 Register The Dapp On The Localnet
 
-Until now we only have a empty file (`asch/dapps/dapp.json`). Now we want to register this dapp metadata file on the localnet. We register the dapp with **our** newly generated address.
+Until now we only have generated file (`asch-test-dapp/dapp.json`). Now we want to register this dapp metadata file on the localnet. We register the dapp with **our** newly generated address.
 
 ```
 # execute (in asch/dapps)
-nvm use 8.0.0
-../../asch-cli/bin/asch-cli -H 127.0.0.1 -P 4096 registerdapp --metafile dapp.json --secret "sentence weasel match weather apple onion release keen lens deal fruit matrix"
+> asch-cli -H 127.0.0.1 -P 4096 registerdapp --metafile dapp.json --secret "sentence weasel match weather apple onion release keen lens deal fruit matrix"
 ```
 
 **Result**
@@ -241,15 +217,46 @@ nvm use 8.0.0
 
 Now navigate in your browser to `localhost:4096`. Login with **our** new created account. Under dapps you should see the register dapps.
 
+Use browser access `http://localhost:4096/api/dapps/get?id=<dapp Id>`, you can query the dapp, the following is the return information:
+
+```
+{
+    "success": true, 
+    "dapp": {
+        "name": "asch-dapp-helloworld", 
+        "description": "A hello world demo for asch dapp", 
+        "tags": "asch,dapp,demo", 
+        "link": "https://github.com/AschPlatform/asch-dapp-helloworld/archive/master.zip", 
+        "type": 0, 
+        "category": 1, 
+        "icon": "http://o7dyh3w0x.bkt.clouddn.com/hello.png", 
+        "delegates": [
+            "a518e4390512e43d71503a02c9912413db6a9ffac4cbefdcd25b8fa2a1d5ca27", 
+            "c7dee266d5c85bf19da8fab1efc93204fed7b35538a3618d7f6a12d022498cab", 
+            "9cac187d70713b33cc4a9bf3ff4c004bfca94802aed4a32e2f23ed662161ea50", 
+            "01944ce58570592250f509214d29171a84f0f9c15129dbea070251512a08f5cc", 
+            "f31d61066c902bebc80155fed318200ffbcfc97792511ed18d85bd5af666639f"
+        ], 
+        "unlockDelegates": 3, 
+        "transactionId": "0599a6100280df0d296653e89177b9011304d971fb98aba3edcc5b937c4183fb"
+    }
+}
+```
 
 ## 7 Install the dapp on the localnet
 
 Finally it is time to install the dapp on the localnet.
 
+First we copy the files created in previous step to the dapp subdirectory under the asch installation directory and rename it to dapp's id:
+
 ```
-# execute (in asch/)
-nvm use 8.0.0
-../asch-cli/bin/asch-cli -H 127.0.0.1 -P 4096 dapps --install
+> cp -r asch-test-dapp path/to/asch/dapps/0599a6100280df0d296653e89177b9011304d971fb98aba3edcc5b937c4183fb
+```
+
+then:
+```
+# execute 
+asch-cli -H 127.0.0.1 -P 4096 dapps --install
 
 # ? Enter dapp id
 # <dapp id>    (input your dapp Id)
@@ -290,7 +297,7 @@ Then write the passwords of the 5 delegates into the dapp configuration file `as
 # stop the localnet with Ctrl + C
 
 # restart the localnet
-node app.js
+> node app.js
 ```
 
 ## 8 Access The Dapp In Your Browser
@@ -329,7 +336,7 @@ In the future when the DApp is published in testnet or mainnet, it still needs a
 Now we can see that there is a new folder added under `asch/dapps`, named as the DApp ID just created.
 
 ```
-ls -la dapps/<dapp id>
+> ls -la dapps/<dapp id>
 
 dapps
 └───<dapp id>
@@ -355,7 +362,7 @@ All the essential files for developers can be found in ```modules/contracts/```
 There are 4 build-in contract types in this folder:
 
 ```
-ls -1 dapps/<dapp id>/modules/contracts/
+> ls -1 dapps/<dapp id>/modules/contracts/
 
 
 dapps
@@ -379,7 +386,7 @@ In this project, we are able to conduct multiple tasks such as deposit, in-chain
 Currently deposit can only be executed via command line (this feature will be built into the main wallet in the future).
 
 ```
-asch-cli dapps --deposit
+> asch-cli dapps --deposit
 
 ? Enter secret *******************************************************************************
 ? Enter amount 100

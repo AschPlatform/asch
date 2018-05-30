@@ -74,7 +74,7 @@ npm config set msvs_version 2015 --global
 最后安装asch需要的一些依赖，执行以下命令:
 ```
 npm i -g gulp
-npm i -g bower
+npm i -g yarn
 ```
 
 ### 11 运行代码
@@ -127,7 +127,7 @@ npm install
 所有的命令都要在 **git bash** 中进行，原因已经在之前安装git的时候说明了，依次执行以下命令即可：
 ```
 cd public
-npm install
+yarn install
 gulp build-test
 ```
 

@@ -57,13 +57,13 @@ npm install
 ```
 cd public/
 
-npm install bower -g
+npm install yarn -g
 npm install browserify -g
 npm install gulp  -g
 
-npm install
+yarn install
 # angular chose "angular#~1.5.3 which resolved to 1.5.11 and is required by ASCH"
-bower install
+
 
 npm run build
 gulp build-test #This make the front-end files in public dir.
