@@ -6,6 +6,7 @@ var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
 
 var genesisblock = null;
+
 // Constructor
 function Block(scope, cb) {
   this.scope = scope;
@@ -46,6 +47,7 @@ Block.prototype.sortTransactions = function (data) {
     return a.id.localeCompare(b.id);
   });
 }
+
 Block.prototype.create = function (data) {
   var transactions = this.sortTransactions(data);
 
@@ -322,28 +324,28 @@ Block.prototype.calculateFee = function (block) {
 Block.prototype.dbRead = function (raw) {
   if (!raw.b_id) {
     return null
-  } else {
-    
-    var block = {
-      id: raw.b_id,
-      version: parseInt(raw.b_version),
-      timestamp: parseInt(raw.b_timestamp),
-      height: parseInt(raw.b_height),
-      previousBlock: raw.b_previousBlock,
-      numberOfTransactions: parseInt(raw.b_numberOfTransactions),
-      totalAmount: parseInt(raw.b_totalAmount),
-      totalFee: parseInt(raw.b_totalFee),
-      reward: parseInt(raw.b_reward),
-      payloadLength: parseInt(raw.b_payloadLength),
-      payloadHash: raw.b_payloadHash,
-      generatorPublicKey: raw.b_generatorPublicKey,
-      generatorId: private.getAddressByPublicKey(raw.b_generatorPublicKey),
-      blockSignature: raw.b_blockSignature,
-      confirmations: raw.b_confirmations
-    }
-    block.totalForged = (block.totalFee + block.reward);
-    return block;
   }
+
+  var block = {
+    id: raw.b_id,
+    version: parseInt(raw.b_version),
+    timestamp: parseInt(raw.b_timestamp),
+    height: parseInt(raw.b_height),
+    previousBlock: raw.b_previousBlock,
+    numberOfTransactions: parseInt(raw.b_numberOfTransactions),
+    totalAmount: parseInt(raw.b_totalAmount),
+    totalFee: parseInt(raw.b_totalFee),
+    reward: parseInt(raw.b_reward),
+    payloadLength: parseInt(raw.b_payloadLength),
+    payloadHash: raw.b_payloadHash,
+    generatorPublicKey: raw.b_generatorPublicKey,
+    generatorId: private.getAddressByPublicKey(raw.b_generatorPublicKey),
+    blockSignature: raw.b_blockSignature,
+    confirmations: raw.b_confirmations
+  }
+  block.totalForged = (block.totalFee + block.reward);
+
+  return block;
 }
 
 // Export

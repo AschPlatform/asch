@@ -411,7 +411,6 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) { //inherit
   } catch (e) {
     cb('Invalid transaction asset body: ' + e)
   }
-
 }
 
 Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
@@ -710,40 +709,40 @@ Transaction.prototype.objectNormalize = function (trs) {
 Transaction.prototype.dbRead = function (raw) {
   if (!raw.t_id) {
     return null
-  } else {
-    var tx = {
-      id: raw.t_id,
-      height: raw.b_height,
-      blockId: raw.b_id || raw.t_blockId,
-      type: parseInt(raw.t_type),
-      timestamp: parseInt(raw.t_timestamp),
-      senderPublicKey: raw.t_senderPublicKey,
-      requesterPublicKey: raw.t_requesterPublicKey,
-      senderId: raw.t_senderId,
-      recipientId: raw.t_recipientId,
-      amount: parseInt(raw.t_amount),
-      fee: parseInt(raw.t_fee),
-      signature: raw.t_signature,
-      signSignature: raw.t_signSignature,
-      signatures: raw.t_signatures ? raw.t_signatures.split(',') : null,
-      confirmations: raw.confirmations,
-      args: raw.t_args ? JSON.parse(raw.t_args) : null,
-      message: raw.t_message,
-      asset: {}
-    }
-
-    if (!private.types[tx.type]) {
-      throw Error('Unknown transaction type ' + tx.type);
-    }
-
-    var asset = private.types[tx.type].dbRead.call(this, raw);
-
-    if (asset) {
-      tx.asset = extend(tx.asset, asset);
-    }
-
-    return tx;
   }
+
+  var tx = {
+    id: raw.t_id,
+    height: raw.b_height,
+    blockId: raw.b_id || raw.t_blockId,
+    type: parseInt(raw.t_type),
+    timestamp: parseInt(raw.t_timestamp),
+    senderPublicKey: raw.t_senderPublicKey,
+    requesterPublicKey: raw.t_requesterPublicKey,
+    senderId: raw.t_senderId,
+    recipientId: raw.t_recipientId,
+    amount: parseInt(raw.t_amount),
+    fee: parseInt(raw.t_fee),
+    signature: raw.t_signature,
+    signSignature: raw.t_signSignature,
+    signatures: raw.t_signatures ? raw.t_signatures.split(',') : null,
+    confirmations: raw.confirmations,
+    args: raw.t_args ? JSON.parse(raw.t_args) : null,
+    message: raw.t_message,
+    asset: {}
+  }
+
+  if (!private.types[tx.type]) {
+    throw Error('Unknown transaction type ' + tx.type);
+  }
+
+  var asset = private.types[tx.type].dbRead.call(this, raw);
+
+  if (asset) {
+    tx.asset = extend(tx.asset, asset);
+  }
+
+  return tx;
 }
 
 Transaction.prototype.dbReadAsset = function (type, raw) {
