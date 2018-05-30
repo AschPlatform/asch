@@ -93,7 +93,7 @@ function outputHtml(path) {
 		.replace('partials/', '')
 		.replace('.html', '.min.js');
 	var assets = useref.assets({
-		searchPath: '{.,bower_components,src}'
+		searchPath: '{.,node_modules/@bower_components,src}'
 	});
 	var injectFiles = gulp.src([scssOptions.tmpPath + '/js/templateCache.js'], {read: false});
 	var injectOptions = {
@@ -101,10 +101,10 @@ function outputHtml(path) {
 	};
 	var compileStream = gulp.src(path)
 		.pipe(replace(/href=\"(.+\.scss)\"/g, function(match, $1) {
-			// 根目录是src或bower_components
+			// 根目录是src或node_modules/@bower_components
 			var url = 'src' + $1;
 			if (!fs.existsSync(url)) {
-				url = 'bower_components' + $1;
+				url = 'node_modules/@bower_components' + $1;
 			}
 			var outUrl = scssOptions.tmpPath + '/' + url.replace('.scss', '.css');
 			// 同步编译scss文件
@@ -128,7 +128,7 @@ function outputHtml(path) {
 				url = url.trim();
 				// 如果是bower的组件js，如果末尾没有分号则添加分号
 				if (!fs.existsSync('src' + url)) {
-					url = 'bower_components' + url;
+					url = 'node_modules/@bower_components' + url;
 					content = fs.readFileSync(url, 'utf8');
 					// 末尾没有分号才添加，避免组件被引入多次而添加了很多分号
 					if (!content.endsWith(';')) {
@@ -290,7 +290,7 @@ gulp.task('connect', function() {
 	// 启动本地server
 	connect.server({
 		// 多个root目录
-		root: ['src', './bower_components'],
+		root: ['src', './node_modules/@bower_components'],
 		port: 8008,
 		livereload: true,
 		// 本地server中间件，完成本地动态编译
@@ -304,7 +304,7 @@ gulp.task('connect', function() {
 				}
 				url = 'src' + path;
 				if (!fs.existsSync(url)) {
-					url = 'bower_components' + path;
+					url = 'node_modules/@bower_components' + path;
 				}
 				if (path.endsWith('.scss') || path.endsWith('.css')) {
 					res.setHeader('content-type', 'text/css');
