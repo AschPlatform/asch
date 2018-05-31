@@ -49,7 +49,7 @@ cd asch/public
 
 Install the dependencies for the frontend application
 ```
-npm install
+yarn install
 ```
 
 Build the frontend application for the localnet.

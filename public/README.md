@@ -4,7 +4,7 @@
 
 - nodejs
 - npm
-- bower (npm install bower -g)
+- yarn (npm install yarn -g)
 - gulp (npm install gulp  -g)
 - browserify (npm install browserify -g)
 
@@ -15,8 +15,7 @@
 ## Build
 
 ```
-npm install
-npm run build  // (just in case)
+yarn install
 ```
 
 ### Realtime build for local dev
@@ -38,19 +37,4 @@ gulp build-test
 
 ```
 gulp build-main
-```
-
-## Notice (THIS BLOCK KEEP UPDATING)
-
-TIME: Pull form this category before 1/17 may need delete node_modules and reinstall to make it function well
-
-```bash
-rm -rf node_modules/
-npm install
-```
-
-####or
-```bash
-npm install bignumber.js
-npm install
 ```
