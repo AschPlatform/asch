@@ -243,7 +243,7 @@ root@asch:~# asch-cli -H 45.32.248.33 -P 4096 openaccount "fault still attack al
 ```
 
 ### 4.4 Check account information by public key
-**Command:**openaccountbypublickey [publickey]
+**Command:** openaccountbypublickey [publickey]
 
 **Return:** A JSON string containing  account information such as address, balance, public key, and second public key and so on.
 
