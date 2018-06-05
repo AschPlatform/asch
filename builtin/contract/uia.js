@@ -49,6 +49,7 @@ module.exports = {
   },
 
   issue: async function (name, amount) {
+    app.validate('amount', amount)
     app.sdb.lock('uia.issue@' + name)
 
     let asset = await app.sdb.get('Asset', name)
@@ -63,6 +64,7 @@ module.exports = {
   },
 
   transfer: async function (currency, amount, recipient) {
+    app.validate('amount', amount)
     let senderId = this.trs.senderId
     let balance = app.balances.get(senderId, currency)
     if (balance.lt(amount)) return 'Insufficient balance'

@@ -41,10 +41,6 @@ module.exports = function (router) {
 
       for (let b of balances) {
         b.asset = currencyMap.get(b.currency)
-        // FIXME feerate
-        if (b.asset.symbol === 'BTC') {
-          b.asset.fee = '10000'
-        }
       }
     }
     return { count: count, balances: balances }

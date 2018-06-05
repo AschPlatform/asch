@@ -49,6 +49,8 @@ module.exports = {
   },
 
   deposit: async function (gateway, address, currency, amount, oid) {
+    app.validate('amount', amount)
+
     if (! await app.sdb.exists('GatewayCurrency', { symbol: currency })) return 'Currency not supported'
 
     let validator = await app.sdb.findOne('GatewayMember', {
@@ -99,12 +101,13 @@ module.exports = {
     }
   },
 
-  withdrawal: async function (address, gateway, currency, amount) {
-    const FEE = '10000' // FIXME
+  withdrawal: async function (address, gateway, currency, amount, fee) {
+    app.validate('amount', fee)
+    app.validate('amount', amount)
     let balance = app.balances.get(this.trs.senderId, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
 
-    let outAmount = bignum(amount).sub(FEE)
+    let outAmount = bignum(amount).sub(fee)
     if (outAmount.lte(0)) return 'Invalid amount'
 
     if (!app.gateway.isValidAddress(gateway, address)) return 'Invalid withdrawal address'
@@ -121,7 +124,7 @@ module.exports = {
       amount: outAmount.toString(),
       senderId: this.trs.senderId,
       recipientId: address,
-      fee: FEE,
+      fee: fee,
       signs: 0,
       ready: 0,
       outTransaction: '',
