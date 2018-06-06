@@ -6,7 +6,7 @@ var changeCase = require('change-case')
 var tracer = require('tracer')
 var validate = require('validate.js')
 var extend = require('extend')
-var gatewayLib = require('gateway-lib')
+var gatewayLib = require('asch-gateway')
 
 var PIFY = require('./utils/pify')
 var slots = require('./utils/slots')
@@ -249,10 +249,11 @@ module.exports = async function (options) {
     if (sigCount < m) throw new Error('Signatures not enough')
   }
 
+  const bitcoinUtils = new gatewayLib.bitcoin.Utils('testnet')
   app.gateway = {
     createMultisigAddress: function (gateway, m, accounts, isRaw) {
       if (gateway === 'bitcoin') {
-        let ma = gatewayLib.bitcoin.createMultisigAddress(m, accounts)
+        let ma = bitcoinUtils.createMultisigAddress(m, accounts)
         if (!isRaw) {
           ma.accountExtrsInfo.redeemScript = ma.accountExtrsInfo.redeemScript.toString('hex')
           ma.accountExtrsInfo = JSON.stringify(ma.accountExtrsInfo)
@@ -264,7 +265,7 @@ module.exports = async function (options) {
     },
     isValidAddress: function (gateway, address) {
       if (gateway === 'bitcoin') {
-        return gatewayLib.bitcoin.isValidAddress(address)
+        return bitcoinUtils.isValidAddress(address)
       } else {
         throw new Error('Unsupported gateway: ' + gateway)
       }
@@ -341,4 +342,5 @@ module.exports = async function (options) {
   app.contractTypeMapping[403] = 'gateway.withdrawal'
   app.contractTypeMapping[404] = 'gateway.submitWithdrawalTransaction'
   app.contractTypeMapping[405] = 'gateway.submitWithdrawalSignature'
+  app.contractTypeMapping[406] = 'gateway.submitOutTransactionId'
 }

@@ -720,7 +720,7 @@ Delegates.prototype.getDelegates = function (query, cb) {
   let delegates = app.sdb.getAllCached('Delegate').map((d) => Object.assign({}, d))
   if (!delegates || !delegates.length) return cb('No delegates')
 
-  delegates = delegates.sort(self.sort)
+  delegates = delegates.sort(self.compare)
 
   let lastBlock = modules.blocks.getLastBlock();
   let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
@@ -772,9 +772,8 @@ Delegates.prototype.onBlockchainReady = function () {
   });
 }
 
-Delegate.prototype.sort = function (l, r) {
+Delegates.prototype.compare = function (l, r) {
   return (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey ? 1 : -1 
-  // return (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey
 }
 
 Delegates.prototype.cleanup = function (cb) {
@@ -783,12 +782,8 @@ Delegates.prototype.cleanup = function (cb) {
 }
 
 Delegates.prototype.getTopDelegates = function () {
-  let delegatesMap = new Map()
-  for (let d of app.sdb.getAllCached('Delegate')) {
-    delegatesMap.set(d.name, d)
-  }
-
-  return [...delegatesMap.values()].sort(this.sort).map(d => d.publicKey).slice(0, 101)
+  let allDelegates = app.sdb.getAllCached('Delegate')
+  return allDelegates.sort(self.compare).map(d => d.publicKey).slice(0, 101)
 }
 
 Delegates.prototype.getBookkeeperAddresses = function () {
@@ -808,7 +803,7 @@ Delegates.prototype.getBookkeeper = function () {
 }
 
 Delegates.prototype.updateBookkeeper = function (delegates) {
-  delegates = delegates || this.getTopDelegates()
+  delegates = delegates || self.getTopDelegates()
   let value = JSON.stringify(delegates)
   let bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME) ||
     app.sdb.create('Variable', BOOK_KEEPER_NAME, { key: BOOK_KEEPER_NAME, value: value })

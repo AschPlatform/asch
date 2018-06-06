@@ -105,4 +105,7 @@ module.exports = {
   405: function (trs) {
     return 0.01
   },
+  406: function (trs) {
+    return 0.01
+  },
 }

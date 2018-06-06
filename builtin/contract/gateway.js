@@ -60,9 +60,9 @@ module.exports = {
     })
     if (!validator || !validator.elected || validator.gateway !== gateway) return 'Permission denied'
 
-    const depositKey = 'gateway.deposit@' + [currency, oid].join(':')
+    // const depositKey = 'gateway.deposit@' + [currency, oid].join(':')
     // console.log('------------------lock', depositKey, app.sdb.blockSession.holdLocks.keys())
-    app.sdb.lock(depositKey)
+    // app.sdb.lock(depositKey)
     const signerKey = 'gateway.deposit@' + [this.trs.senderId, currency, oid].join(':')
     app.sdb.lock(signerKey)
 
@@ -133,7 +133,7 @@ module.exports = {
   },
 
   submitWithdrawalTransaction: async function (wid, ot, ots) {
-    app.sdb.lock('gateway.submitWithdrawalTransaction@' + this.trs.senderId)
+    app.sdb.lock('gateway.gatewayWithdrawalSignature@' + wid)
     let withdrawal = await app.sdb.get('GatewayWithdrawal', wid)
     if (!withdrawal) return 'Gateway withdrawal not exist'
     if (withdrawal.outTransaction) return 'Out transaction already exist'
@@ -155,7 +155,7 @@ module.exports = {
   },
 
   submitWithdrawalSignature: async function (wid, signature) {
-    app.sdb.lock('gateway.submitWithdrawalSignature@' + this.trs.senderId)
+    app.sdb.lock('gateway.gatewayWithdrawalSignature@' + [this.trs.senderId, wid].join(':'))
     let withdrawal = await app.sdb.get('GatewayWithdrawal', wid)
     if (!withdrawal) return 'Gateway withdrawal not exist'
     if (!withdrawal.outTransaction) return 'Out transaction not exist'
@@ -187,5 +187,23 @@ module.exports = {
       signer: this.trs.senderId,
       signature: signature
     })
+  },
+
+  submitOutTransactionId: async function (wid, oid) {
+    // FIXME validate oid
+    if (!oid) return 'Invalid out transaciton id'
+    app.sdb.lock('gateway.submitOutTransactionId@' + wid)
+    let withdrawal = await app.sdb.get('GatewayWithdrawal', wid)
+    if (!withdrawal) return 'Gateway withdrawal not exist'
+    if (!withdrawal.outTransaction) return 'Out transaction not exist'
+    if (withdrawal.oid) return 'Out transaction id already submitted'
+
+    let validator = await app.sdb.findOne('GatewayMember', {
+      condition: {
+        address: this.trs.senderId,
+      }
+    })
+    if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
+    withdrawal.oid = oid
   },
 }

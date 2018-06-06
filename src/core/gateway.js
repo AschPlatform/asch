@@ -3,9 +3,7 @@ const slots = require('../utils/slots.js')
 const Router = require('../utils/router.js')
 const PIFY = require('../utils/pify.js')
 const utils = require('../utils')
-const gatewayLib = require('gateway-lib')
-
-const AschCore = require('asch-smartdb').AschCore
+const gatewayLib = require('asch-gateway')
 
 var modules, library, self, private = {}, shared = {};
 
@@ -39,7 +37,69 @@ function Gateway(cb, scope) {
   self = this;
   self.__private = private;
 
+  let gatewayConfig = global.Config.gateway.rpc
+
+  if (!!gatewayConfig.username) {
+    self.client = new gatewayLib.bitcoin.Client(
+      gatewayConfig.username,
+      gatewayConfig.password,
+      'testnet',
+      gatewayConfig.port,
+      gatewayConfig.host
+    )
+    self.gatewayUtil = new gatewayLib.bitcoin.Utils('testnet')
+  }
+
   setImmediate(cb, null, self);
+}
+
+private.importAddress = function (address) {
+  return new Promise((resolve, reject) => {
+    self.client.importAddress(address, function (err, result) {
+      if (err) reject(err)
+      else resolve(result)
+    })
+  })
+}
+
+private.getTransactionsFromBlockHeight = function (height) {
+  return new Promise((resolve, reject) => {
+    self.client.getTransactionsFromBlockHeight(height, function (err, result) {
+      if (err) reject(err)
+      else resolve(result)
+    })
+  })
+}
+
+private.createNewTransaction = function (multiAccount, output, spentTids, fee) {
+  return new Promise((resolve, reject) => {
+    self.client.createNewTransaction(multiAccount, output, spentTids, fee, function (err, result) {
+      if (err) reject(err)
+      else resolve(result)
+    })
+  })
+}
+
+private.sendRawTransaction = function (t) {
+  return new Promise((resolve, reject) => {
+    self.client.sendRawTransaction(t, function (err, result) {
+      if (err) reject(err)
+      else resolve(result)
+    })
+  })
+}
+
+private.getSpentTids = async function (gateway) {
+  let spentTids = []
+  let latestWithdrawals = await app.sdb.find('GatewayWithdrawal', { gateway: gateway }, 10, { seq: -1 })
+  for (let w of latestWithdrawals) {
+    if (!w.outTransaction) continue
+    const ot = JSON.parse(w.outTransaction)
+    const rawTransaction = ot.txhex
+    const tids = self.gatewayUtil.getSpentTidsFromRawTransaction(rawTransaction)
+    spentTids = spentTids.concat(tids)
+  }
+  return spentTids
 }
 
 Gateway.prototype.importAccounts = async function () {
@@ -63,7 +123,7 @@ Gateway.prototype.importAccounts = async function () {
   let len = gatewayAccounts.length
   if (len > 0) {
     for (let a of gatewayAccounts) {
-      await PIFY(gatewayLib.bitcoin.importAddress)(a.outAddress)
+      await private.importAddress(a.outAddress)
     }
 
     lastImportAddressLog.seq = gatewayAccounts[len - 1].seq
@@ -97,7 +157,7 @@ Gateway.prototype.processDeposits = async function () {
     app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.DEPOSIT, seq: 0 })
 
   let lastSeq = lastDepositLog.seq
-  let ret = await PIFY(gatewayLib.bitcoin.getTransactionsFromBlockHeight)(lastSeq)
+  let ret = await private.getTransactionsFromBlockHeight(lastSeq)
   if (!ret || !ret.transactions) {
     library.logger.error('Failed to get gateway transactions')
     return
@@ -132,7 +192,7 @@ Gateway.prototype.processDeposits = async function () {
         await utils.retryAsync(processDeposit, 3, 10 * 1000, onError)
         library.logger.info('Gateway deposit processed', { address: ot.address, amount: ot.amount, gateway: GATEWAY })
       } catch (e) {
-        library.logger.warn('Failed to process gateway deposit', {error: e, outTransaction: ot})
+        library.logger.warn('Failed to process gateway deposit', { error: e, outTransaction: ot })
       }
     }
     lastDepositLog.seq = outTransactions[len - 1].height
@@ -173,6 +233,8 @@ Gateway.prototype.processWithdrawals = async function () {
     return
   }
 
+  let spentTids = await private.getSpentTids(GATEWAY)
+  library.logger.debug('gateway spent tids', spentTids)
   let account = {
     privateKey: global.Config.gateway.outSecret
   }
@@ -182,13 +244,14 @@ Gateway.prototype.processWithdrawals = async function () {
       w = await app.sdb.get('GatewayWithdrawal', w.tid)
       if (!w.outTransaction) {
         let output = [{ address: w.recipientId, value: Number(w.amount) }]
-        let ot = await PIFY(gatewayLib.bitcoin.createNewTransaction)(multiAccount, output)
+        let ot = await private.createNewTransaction(multiAccount, output, spentTids, Number(w.fee))
+        spentTids = spentTids.concat(self.gatewayUtil.getSpentTidsFromRawTransaction(ot.txhex))
         library.logger.debug('create withdrawl out transaction', ot)
 
         let inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
         library.logger.debug('input account info', inputAccountInfo)
 
-        let ots = gatewayLib.bitcoin.signTransaction(ot, account, inputAccountInfo)
+        let ots = self.gatewayUtil.signTransaction(ot, account, inputAccountInfo)
         library.logger.debug('sign withdrawl out transaction', ots)
 
         contractParams = {
@@ -200,7 +263,7 @@ Gateway.prototype.processWithdrawals = async function () {
       } else {
         let ot = JSON.parse(w.outTransaction)
         let inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
-        let ots = gatewayLib.bitcoin.signTransaction(ot, account, inputAccountInfo)
+        let ots = self.gatewayUtil.signTransaction(ot, account, inputAccountInfo)
         contractParams = {
           type: 405,
           secret: global.Config.gateway.secret,
@@ -215,7 +278,7 @@ Gateway.prototype.processWithdrawals = async function () {
     }
     try {
       await utils.retryAsync(processWithdrawal, 3, 10 * 1000, onError)
-      library.logger.info('Gateway withdrawal processed', { wid: w.tid, type: contractParams.type })
+      library.logger.info('Gateway withdrawal processed', w.tid)
     } catch (e) {
       library.logger.warn('Failed to process gateway withdrawal', { error: e, transaction: w })
     }
@@ -276,7 +339,7 @@ Gateway.prototype.sendWithdrawals = async function () {
   for (let w of withdrawals) {
     if (!w.outTransaction) {
       library.logger.debug('out transaction not created')
-      continue
+      return
     }
     let preps = await app.sdb.findAll('GatewayWithdrawalPrep', { condition: { wid: w.tid } })
     if (preps.length < unlockNumber) {
@@ -292,23 +355,30 @@ Gateway.prototype.sendWithdrawals = async function () {
     async function sendWithdrawal() {
       let inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
       library.logger.debug('before build transaction')
-      let finalTransaction = gatewayLib.bitcoin.buildTransaction(ot, ots, inputAccountInfo)
+      let finalTransaction = self.gatewayUtil.buildTransaction(ot, ots, inputAccountInfo)
       library.logger.debug('before send raw tarnsaction', finalTransaction)
-      let ret = await PIFY(gatewayLib.bitcoin.sendRawTransaction)(finalTransaction)
-      return ret
+      let tid = await private.sendRawTransaction(finalTransaction)
+      return tid
     }
     const onError = function (err) {
       library.logger.error('Send withdrawal error, will retry...', err)
     }
     try {
-      const ret = await utils.retryAsync(sendWithdrawal, 3, 10 * 1000)
-      library.logger.info('Send withdrawal transaction to out chain success', ret)
+      const tid = await utils.retryAsync(sendWithdrawal, 3, 10 * 1000, onError)
+      library.logger.info('Send withdrawal transaction to out chain success', tid)
+      const submitOidParams = {
+        type: 406,
+        secret: global.Config.gateway.secret,
+        fee: 1000000,
+        args: [w.tid, tid]
+      }
+      await PIFY(modules.transactions.addTransactionUnsigned)(submitOidParams)
     } catch (e) {
       library.logger.error('Failed to send gateway withdrawal', { error: e, transaction: w })
     }
+    lastLog.seq = w.seq
+    app.sdb.saveLocalChanges()
   }
-  let len = withdrawals.length
-  lastLog.seq = withdrawals[len - 1].seq
 }
 
 Gateway.prototype.onBlockchainReady = function () {
