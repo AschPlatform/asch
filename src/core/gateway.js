@@ -3,7 +3,7 @@ const slots = require('../utils/slots.js')
 const Router = require('../utils/router.js')
 const PIFY = require('../utils/pify.js')
 const utils = require('../utils')
-const gatewayLib = require('gateway-lib')
+const gatewayLib = require('asch-gateway')
 
 const AschCore = require('asch-smartdb').AschCore
 

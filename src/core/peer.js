@@ -5,11 +5,8 @@ const path = require('path');
 const ip = require('ip');
 const extend = require('extend');
 const crypto = require('crypto');
-const kadence = require('kadence');
+const kadence = require('@kadenceproject/kadence');
 const { knuthShuffle } = require('knuth-shuffle');
-const levelup = require('../..//node_modules/kadence/node_modules/levelup/lib/levelup.js');
-const leveldown = require('../../node_modules/kadence/node_modules/leveldown/leveldown.js');
-const encoding = require('../../node_modules/kadence/node_modules/encoding-down');
 const Router = require('../utils/router.js');
 const sandboxHelper = require('../utils/sandbox.js');
 const utils = require('../utils')
@@ -68,7 +65,7 @@ private.initNode = function () {
   const identity = self.getIdentity(contact)
   const transport = new kadence.HTTPTransport()
   const storageDir = path.resolve(global.Config.dataDir, 'dht')
-  const storage = levelup(encoding(leveldown(storageDir)))
+  const storage = new kadence.KademliaLevelStorage(storageDir)
   private.mainNode = new kadence.KademliaNode({
     logger: library.logger,
     transport,

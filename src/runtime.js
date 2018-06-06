@@ -6,7 +6,7 @@ var changeCase = require('change-case')
 var tracer = require('tracer')
 var validate = require('validate.js')
 var extend = require('extend')
-var gatewayLib = require('gateway-lib')
+var gatewayLib = require('asch-gateway')
 
 var PIFY = require('./utils/pify')
 var slots = require('./utils/slots')
