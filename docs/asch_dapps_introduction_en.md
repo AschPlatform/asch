@@ -6,7 +6,7 @@ As we mentioned in whitepaper, not like Etherum or Bitcoin, Asch is using a side
 The advantage of sidechain framework is that both the code and data are independent from main blockchain, hence data over-dilation can be avoided. In fact this is a nature partition mechanism.
 A sidechain has its own blockchain, delegates and nodes network, which means a block generated from a sidechain will be able to broadcast among the nodes belong to this sidechain.
 
-Every coin has to sides, so does independency of sidechain. After finishing the developement of DApp, developers still need to consider the operating and maintenance. In detail, it is necessary for developers to guarntee enough nodes to maintain acceptable security.
+Every coin has two sides, so does independency of sidechain. After finishing the developement of DApp, developers still need to consider the operating and maintenance. In detail, it is necessary for developers to guarntee enough nodes to maintain acceptable security.
 
 From this perspective, the sidechain mechanism is not as good as Ethereum. Once a DApp is deployed on Ethereum, all the nodes in Ethereum can work for it, as well as promise the security.
 
@@ -19,7 +19,7 @@ For example, let's say Asch system has 1000 nodes. And under this circumstance s
 
 Comparily, only one option is available in Ethereum, which is all nodes are occupied to run this application. It is said that Ethereum is also about to provide a partition mechanism, which is a solution that Asch system has already had.
 
-And obviously for those crucial applications that require high level security, Asch system still allows to develop on main blockchain. But this priority cannot be granted to all the developers because of unlimited dilations of main blockchain and potential risk of uncertainty (such as DAO issue)
+And obviously for those crucial applications that require high level security, Asch system still allows to develop on main blockchain. But this priority cannot be granted to all the developers because of unlimited dilations of main blockchain and potential risk of uncertainty (such as [DAO issue](https://en.wikipedia.org/wiki/The_DAO_(organization)#Risks))
 
 The flexibility of sidechain is also reflected in that all paramaters of its blockchain can be customized. You can configure some common ones like block interval, block reward, or transaction fee's destination, or if you are an advanced user, you can even revise the consensus algorithm.
 
@@ -75,10 +75,10 @@ Here are some tutorials from the begining which will be helpful to the developer
 
 
 - [Dapp Development Tutorial 3: Asch Dapp Mini DAO](./dapp_docs/3_mini_dao_en.md)
-	This tutorial shows how to create a new type transaction or smart contract, and demostrates a mini dao project with project management and voting function.
+	This tutorial shows how to create a new type transaction or smart contract, and demostrates a mini decentralized autonomous organization (dao) project with project management and voting function.
 
 - [Dapp Development Tutorial 4: Asch Dapp Dice Game](./dapp_docs/4_dice_game_en.md)
 	This tutorial shows how to crate more complicate transaction or smart contract, how to establish the connection among contracts, and how to carry out the contract based on historic data. The tutorial also demostrates a dice game.
 
 - [Dapp Development Tutorial 5: Publish Dapp online](./dapp_docs/5_dapp_publish_en.md)
-	This tutorial shows how to register the application to online system (testnet, mainnet0 and how to install/uninstall it.
+	This tutorial shows how to register the application to online system (testnet, mainnet and how to install/uninstall it.
