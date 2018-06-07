@@ -175,6 +175,10 @@ Gateway.prototype.processDeposits = async function () {
         library.logger.warn('unknow address', { address: ot.address, gateway: GATEWAY, t: ot })
         continue
       }
+      if (await app.sdb.exists('GatewayDeposit', { gateway: GATEWAY, oid: ot.txid })) {
+        library.logger.info('already processed deposit', { gateway: GATEWAY, oid: ot.txid })
+        continue
+      }
 
       async function processDeposit() {
         const params = {
@@ -233,17 +237,18 @@ Gateway.prototype.processWithdrawals = async function () {
     return
   }
 
-  let spentTids = await private.getSpentTids(GATEWAY)
-  library.logger.debug('gateway spent tids', spentTids)
   let account = {
     privateKey: global.Config.gateway.outSecret
   }
   for (let w of withdrawals) {
+    if (w.ready) continue
     async function processWithdrawal() {
       let contractParams = null
       w = await app.sdb.get('GatewayWithdrawal', w.tid)
       if (!w.outTransaction) {
         let output = [{ address: w.recipientId, value: Number(w.amount) }]
+        let spentTids = await private.getSpentTids(GATEWAY)
+        library.logger.debug('gateway spent tids', spentTids)
         let ot = await private.createNewTransaction(multiAccount, output, spentTids, Number(w.fee))
         spentTids = spentTids.concat(self.gatewayUtil.getSpentTidsFromRawTransaction(ot.txhex))
         library.logger.debug('create withdrawl out transaction', ot)
