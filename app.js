@@ -74,8 +74,8 @@ function main() {
   appConfig.version = version;
   appConfig.baseDir = baseDir;
   appConfig.dataDir = program.data || path.resolve(baseDir, 'data')
-  appConfig.buildVersion = '18:07:38 07/06/2018'
-  appConfig.netVersion = process.env.NET_VERSION || 'localnet';
+  appConfig.buildVersion = 'DEFAULT_BUILD_TIME'
+  appConfig.netVersion = process.env.NET_VERSION || 'testnet';
   appConfig.publicDir = path.join(baseDir, 'public', 'dist');
   appConfig.chainDir = program.chains || path.join(baseDir, 'chains')
 

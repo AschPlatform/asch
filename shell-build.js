@@ -1,11 +1,7 @@
 var path = require('path');
 var util = require('util');
 var moment = require('moment');
-var gulp = require('gulp');
-var shell = require('gulp-shell');
-var replace = require('gulp-replace');
-var webpack = require('webpack-stream');
-var nodeExternals = require('webpack-node-externals');
+var shell = require('shelljs')
 var package = require('./package');
 
 var format = util.format;
@@ -16,8 +12,8 @@ function build(osVersion, netVersion) {
   var dir = 'asch-' + osVersion + '-' + package.version + '-' + netVersion;
   var fullpath = path.join(__dirname, 'build', dir);
   var cmds = [];
-  cmds.push(format('cd %s && mkdir -p public chains tmp logs bin', fullpath));
-  cmds.push(format('cp -r package.json aschd init proto %s', fullpath));
+  cmds.push(format('cd %s && mkdir -p public chains tmp logs bin data', fullpath));
+  cmds.push(format('cp -r package.json aschd init proto app.js src builtin %s', fullpath));
   if (netVersion != 'localnet') {
     cmds.push(format('sed -i "s/testnet/%s/g" %s/aschd', netVersion, fullpath));
     cmds.push(format('cp config-%s.json %s/config.json', netVersion, fullpath));
@@ -34,53 +30,10 @@ function build(osVersion, netVersion) {
   cmds.push(format('cp -r public/dist %s/public/', fullpath));
   cmds.push(format('cd %s && npm install --production', fullpath));
   cmds.push(format('cd %s/.. && tar zcf %s.tar.gz %s', fullpath, dir, dir));
-  // return gulp.src('app.js')
-  //   .pipe(webpack({
-  //     output: {
-  //       filename: 'app.js'
-  //     },
-  //     target: 'node',
-  //     context: __dirname,
-  //     node: {
-  //       __filename: true,
-  //       __dirname: true
-  //     },
-  //     externals: [nodeExternals()]
-  //   }))
-  //   .pipe(replace('localnet', netVersion))
-  //   .pipe(replace(DEFAULT_BUILD_TIME, buildTime))
-  //   .pipe(gulp.dest(fullpath))
-  //   .pipe(shell(cmds));
-  return gulp.pipe(replace('localnet', netVersion))
-    .pipe(replace(DEFAULT_BUILD_TIME, buildTime))
-    .pipe(gulp.dest(fullpath))
-    .pipe(shell(cmds));
-}
 
-function buildSource(netVersion) {
-  var dir = 'asch-' + 'linux' + '-' + package.version + '-' + netVersion;
-  var fullpath = path.join(__dirname, 'build', dir);
-  return gulp.src('app.js')
-    .pipe(webpack({
-      output: {
-        filename: 'app.js'
-      },
-      target: 'node',
-      context: __dirname,
-      node: {
-        __filename: true,
-        __dirname: true
-      },
-      externals: [nodeExternals()]
-    }))
-    .pipe(replace('localnet', netVersion))
-    .pipe(replace(DEFAULT_BUILD_TIME, buildTime))
-    .pipe(gulp.dest(fullpath));
+  replace 'localnet' by netVersion in files that in (app.js src/\*)
+  replace DEFAULT_BUILT_TIME by buildTime (app.js )
 }
-
-gulp.task('build-src-main', function () {
-  return buildSource('mainnet');
-})
 
 gulp.task('win64-build-local', function () {
   return build('win64', 'localnet');
