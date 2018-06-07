@@ -10,12 +10,13 @@ var package = require('./package');
 
 var format = util.format;
 var buildTime = moment().format('HH:mm:ss DD/MM/YYYY');
+var DEFAULT_BUILD_TIME = '18:07:38 07/06/2018'
 
 function build(osVersion, netVersion) {
   var dir = 'asch-' + osVersion + '-' + package.version + '-' + netVersion;
   var fullpath = path.join(__dirname, 'build', dir);
   var cmds = [];
-  cmds.push(format('cd %s && mkdir -p public dapps tmp logs bin', fullpath));
+  cmds.push(format('cd %s && mkdir -p public chains tmp logs bin', fullpath));
   cmds.push(format('cp -r package.json aschd init proto %s', fullpath));
   if (netVersion != 'localnet') {
     cmds.push(format('sed -i "s/testnet/%s/g" %s/aschd', netVersion, fullpath));
@@ -29,24 +30,29 @@ function build(osVersion, netVersion) {
   if (osVersion == 'linux') {
     cmds.push(format('cp `which node` %s/bin/', fullpath));
   }
+  cmds.push(format('cp -r app.js src %s', fullpath));
   cmds.push(format('cp -r public/dist %s/public/', fullpath));
   cmds.push(format('cd %s && npm install --production', fullpath));
   cmds.push(format('cd %s/.. && tar zcf %s.tar.gz %s', fullpath, dir, dir));
-  return gulp.src('app.js')
-    .pipe(webpack({
-      output: {
-        filename: 'app.js'
-      },
-      target: 'node',
-      context: __dirname,
-      node: {
-        __filename: true,
-        __dirname: true
-      },
-      externals: [nodeExternals()]
-    }))
-    .pipe(replace('localnet', netVersion))
-    .pipe(replace('development', buildTime))
+  // return gulp.src('app.js')
+  //   .pipe(webpack({
+  //     output: {
+  //       filename: 'app.js'
+  //     },
+  //     target: 'node',
+  //     context: __dirname,
+  //     node: {
+  //       __filename: true,
+  //       __dirname: true
+  //     },
+  //     externals: [nodeExternals()]
+  //   }))
+  //   .pipe(replace('localnet', netVersion))
+  //   .pipe(replace(DEFAULT_BUILD_TIME, buildTime))
+  //   .pipe(gulp.dest(fullpath))
+  //   .pipe(shell(cmds));
+  return gulp.pipe(replace('localnet', netVersion))
+    .pipe(replace(DEFAULT_BUILD_TIME, buildTime))
     .pipe(gulp.dest(fullpath))
     .pipe(shell(cmds));
 }
@@ -68,7 +74,7 @@ function buildSource(netVersion) {
       externals: [nodeExternals()]
     }))
     .pipe(replace('localnet', netVersion))
-    .pipe(replace('development', buildTime))
+    .pipe(replace(DEFAULT_BUILD_TIME, buildTime))
     .pipe(gulp.dest(fullpath));
 }
 
