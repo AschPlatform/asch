@@ -227,12 +227,13 @@ Loader.prototype.startSyncBlocks = function () {
     library.logger.debug('startSyncBlocks enter sequence')
     private.syncing = true
     var lastBlock = modules.blocks.getLastBlock()
-    private.loadBlocks(lastBlock, cb)
-  }, function (err) {
-    err && library.logger.error('loadBlocks error:', err)
-    private.syncing = false
-    private.blocksToSync = 0
-    library.logger.debug('startSyncBlocks end')
+    private.loadBlocks(lastBlock, function (err) {
+      err && library.logger.error('loadBlocks error:', err)
+      private.syncing = false
+      private.blocksToSync = 0
+      library.logger.debug('startSyncBlocks end')
+      cb()
+    })
   });
 }
 

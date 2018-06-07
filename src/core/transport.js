@@ -37,6 +37,12 @@ private.attachApi = function () {
   });
 
   router.post("/transactions", function (req, res) {
+    if (modules.loader.syncing()) {
+      return res.status(500).send({
+        success: false,
+        error: 'Blockchain is syncing'
+      })
+    }
     var lastBlock = modules.blocks.getLastBlock();
     var lastSlot = slots.getSlotNumber(lastBlock.timestamp);
     if (slots.getNextSlot() - lastSlot >= 12) {
@@ -261,6 +267,9 @@ Transport.prototype.onPeerReady = function () {
   });
 
   modules.peer.subscribe('block', function (message) {
+    if (modules.loader.syncing()) {
+      return
+    }
     let block = message.body.block
     let votes = message.body.votes
     try {
@@ -317,6 +326,9 @@ Transport.prototype.onPeerReady = function () {
   });
 
   modules.peer.subscribe('transaction', function (message) {
+    if (modules.loader.syncing()) {
+      return
+    }
     const lastBlock = modules.blocks.getLastBlock();
     const lastSlot = slots.getSlotNumber(lastBlock.timestamp);
     if (slots.getNextSlot() - lastSlot >= 12) {

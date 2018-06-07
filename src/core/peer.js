@@ -65,7 +65,7 @@ private.initNode = function () {
   const identity = self.getIdentity(contact)
   const transport = new kadence.HTTPTransport()
   const storageDir = path.resolve(global.Config.dataDir, 'dht')
-  const storage = new kadence.KademliaLevelStorage(storageDir)
+  const storage = new kadence.LevelKademliaStorage(storageDir)
   private.mainNode = new kadence.KademliaNode({
     logger: library.logger,
     transport,
