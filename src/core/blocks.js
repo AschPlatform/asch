@@ -854,9 +854,10 @@ Blocks.prototype.processBlock = async function (block, options) {
     for (let i in block.transactions) {
       let transaction = block.transactions[i]
       library.base.transaction.objectNormalize(transaction)
-      // FIXME
-      let exists = await app.sdb.exists('Transaction', { id: transaction.id })
-      if (exists) throw new Error('Block contain already confirmed transaction')
+    }
+    let idList = block.transactions.map((t) => t.id)
+    if (await app.sdb.exists('Transaction', { id: { $in: idList } })) {
+      throw new Error('Block contain already confirmed transaction')
     }
 
     app.logger.trace('before applyBlock')
