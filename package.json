@@ -11,10 +11,10 @@
     "@kadenceproject/kadence": "https://github.com/AschPlatform/kadence/tarball/v3.3.0+asch.2",
     "array.prototype.find": "1.0.0",
     "array.prototype.findindex": "2.0.0",
-    "asch-gateway": "https://github.com/AschPlatform/asch-gateway-dist/tarball/master",
+    "asch-gateway": "https://github.com/AschPlatform/asch-gateway-dist/tarball/develop",
     "asch-js": "https://github.com/AschPlatform/asch-js/tarball/develop",
-    "asch-sandbox": "https://github.com/AschPlatform/asch-sandbox-dist/tarball/master",
-    "asch-smartdb": "https://github.com/AschPlatform/asch-smartdb-dist/tarball/master",
+    "asch-sandbox": "https://github.com/AschPlatform/asch-sandbox-dist/tarball/develop",
+    "asch-smartdb": "https://github.com/AschPlatform/asch-smartdb-dist/tarball/develop",
     "async": "1.5.2",
     "bignumber": "https://github.com/AschPlatform/bignumber/tarball/v1.3.0-2+asch.1",
     "bitcore-mnemonic": "^1.2.5",
@@ -41,7 +41,6 @@
     "randomstring": "1.1.5",
     "request": "2.74.0",
     "rimraf": "2.5.4",
-    "shelljs": "^0.7.8",
     "socket.io": "1.4.8",
     "sodium": "^2.0.3",
     "static-module": "2.0.0",
@@ -54,15 +53,11 @@
   "devDependencies": {
     "babel": "=5.8.23",
     "chai": "^3.0.0",
-    "gulp": "^3.9.1",
-    "gulp-replace": "^0.5.4",
-    "gulp-shell": "^0.5.2",
     "mocha": "^2.2.5",
     "mocha-babel": "^3.0.3",
     "moment": "^2.9.0",
+    "shelljs": "^0.7.8",
     "should": "~4.6.0",
-    "supertest": "^1.0.1",
-    "webpack-node-externals": "^1.2.0",
-    "webpack-stream": "^3.2.0"
+    "supertest": "^1.0.1"
   }
 }
