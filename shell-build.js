@@ -33,12 +33,10 @@ function build(osVersion, netVersion) {
   shell.exec(`cd ${fullPath}/.. && tar zcf ${dir}.tar.gz ${dir}`);
   shell.exec(`find ./src -type f -print0 | xargs -0 sed -i 's/localnet/${netVersion}/g'`);
   shell.sed('-i', 'localnet', netVersion, 'app.js');
-  shell.sed('-i', 'DEFAULT_BUILD_TIME', buildTime);
+  shell.sed('-i', 'DEFAULT_BUILD_TIME', buildTime, 'app.js');
 }
 
-//build('win64', 'localnet');
-build('linux', 'localnet');
-//build('win64', 'testnet');
-//build('linux', 'testnet');
-//build('win64', 'mainnet');
-//build('linux', 'mainnet');
+
+// process.argv[2]: osVersion, can be win64 or linux
+// process.argv[3]: netVersion, can be localnet, testnet or mainnet
+build(process.argv[2], process.argv[3])
