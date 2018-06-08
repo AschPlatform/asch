@@ -240,6 +240,7 @@ Gateway.prototype.processWithdrawals = async function () {
   let account = {
     privateKey: global.Config.gateway.outSecret
   }
+  let spentTids = await private.getSpentTids(GATEWAY)
   for (let w of withdrawals) {
     if (w.ready) continue
     async function processWithdrawal() {
@@ -247,7 +248,6 @@ Gateway.prototype.processWithdrawals = async function () {
       w = await app.sdb.get('GatewayWithdrawal', w.tid)
       if (!w.outTransaction) {
         let output = [{ address: w.recipientId, value: Number(w.amount) }]
-        let spentTids = await private.getSpentTids(GATEWAY)
         library.logger.debug('gateway spent tids', spentTids)
         let ot = await private.createNewTransaction(multiAccount, output, spentTids, Number(w.fee))
         spentTids = spentTids.concat(self.gatewayUtil.getSpentTidsFromRawTransaction(ot.txhex))
