@@ -36,9 +36,7 @@ function build(osVersion, netVersion) {
   shell.sed('-i', 'DEFAULT_BUILD_TIME', buildTime);
 }
 
-//build('win64', 'localnet');
-build('linux', 'localnet');
-//build('win64', 'testnet');
-//build('linux', 'testnet');
-//build('win64', 'mainnet');
-//build('linux', 'mainnet');
+
+// process.argv[2]: osVersion, can be win64 or linux
+// process.argv[3]: netVersion, cab be localnet, testnet or mainnet
+build(process.argv[2], process.argv[3])
