@@ -7,7 +7,6 @@ var Router = require('../utils/router.js');
 var slots = require('../utils/slots.js');
 var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
-var TransactionTypes = require('../utils/transaction-types.js');
 var sandboxHelper = require('../utils/sandbox.js');
 var addressHelper = require('../utils/address.js')
 var PIFY = require('../utils/pify.js')
@@ -236,8 +235,6 @@ function Delegates(cb, scope) {
   self.__private = private;
   private.attachApi();
 
-  library.base.transaction.attachAssetType(TransactionTypes.DELEGATE, new Delegate());
-
   setImmediate(cb, null, self);
 }
 
@@ -437,7 +434,7 @@ private.loop = function (cb) {
     return setImmediate(cb);
   }
 
-  if (!private.loaded || modules.loader.syncing() || !modules.round.loaded()) {
+  if (!private.loaded || modules.loader.syncing()) {
     library.logger.trace('Loop:', 'node not ready');
     return setImmediate(cb);
   }

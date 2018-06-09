@@ -14,7 +14,6 @@ var amountHelper = require('./utils/amount')
 var Router = require('./utils/router.js');
 var BalanceManager = require('./smartdb/balance-manager')
 var AutoIncrement = require('./smartdb/auto-increment')
-var FeePool = require('./smartdb/fee-pool')
 var AccountRole = require('./utils/account-role')
 const AschCore = require('asch-smartdb').AschCore
 
@@ -161,7 +160,6 @@ module.exports = async function (options) {
       currency: 'XAS',
       min: '10000000'
     },
-    feePool: null,
     hooks: {},
     custom: {},
     logger: options.logger
@@ -288,7 +286,6 @@ module.exports = async function (options) {
   app.sdb = new AschCore.SmartDB(BLOCK_DB_PATH, BLOCK_HEADER_DIR)
   app.balances = new BalanceManager(app.sdb)
   app.autoID = new AutoIncrement(app.sdb)
-  app.feePool = new FeePool(app.sdb)
   app.events = new EventEmitter()
 
   app.util = {

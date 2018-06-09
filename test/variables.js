@@ -6,7 +6,6 @@ var async = require('async');
 var request = require('request');
 var asch = require('asch-js');
 
-var TxTypes = require('../src/utils/transaction-types.js');
 var addressHelper = require('../src/utils/address.js');
 
 // Node configuration
@@ -396,7 +395,6 @@ module.exports = {
   Gaccount: Gaccount,
   Daccount: Daccount,
   Eaccount: Eaccount,
-  TxTypes: TxTypes,
   guestbookDapp: guestbookDapp,
   Fees: Fees,
   normalizer: normalizer,

@@ -9,9 +9,8 @@ jsonSql.setDialect('sqlite')
 var constants = require('../utils/constants.js')
 var slots = require('../utils/slots.js')
 var Router = require('../utils/router.js')
-var TransactionTypes = require('../utils/transaction-types.js')
 var sandboxHelper = require('../utils/sandbox.js')
-var flagsHelper = require('../uia/flags-helper.js')
+var flagsHelper = {}
 var addressHelper = require('../utils/address.js')
 var amountHelper = require('../utils/amount.js')
 
@@ -24,23 +23,6 @@ function UIA(cb, scope) {
   self = this
   self.__private = private
   private.attachApi()
-
-  // library.base.transaction.attachAssetType(TransactionTypes.UIA_ISSUER, require('../uia/issuer.js'))
-  // library.base.transaction.attachAssetType(TransactionTypes.UIA_ASSET, require('../uia/asset.js'))
-  // library.base.transaction.attachAssetType(TransactionTypes.UIA_FLAGS, require('../uia/flags.js'))
-  // library.base.transaction.attachAssetType(TransactionTypes.UIA_ACL, require('../uia/acl.js'))
-  // library.base.transaction.attachAssetType(TransactionTypes.UIA_ISSUE, require('../uia/issue.js'))
-  // library.base.transaction.attachAssetType(TransactionTypes.UIA_TRANSFER, require('../uia/transfer.js'))
-
-  // library.model.getAllAssetBalances((err, results) => {
-  //   if (err) return cb('Failed to load asset balances: ' + err)
-  //   for (let i = 0; i < results.length; ++i) {
-  //     let {currency, address, balance} = results[i]
-  //     library.balanceCache.setAssetBalance(address, currency, balance)
-  //   }
-  //   library.balanceCache.commit()
-  //   cb(null, self)
-  // })
   cb(null, self)
 }
 
@@ -66,15 +48,7 @@ private.attachApi = function () {
     'get /transactions/my/:address/:currency': 'getMyTransactions',
     'get /transactions/:currency': 'getTransactions',
 
-    // TODO(qingfeng) update issuer or asset description
-    // 'put /issuers/:iid': 'updateIssuer',
-    // 'put /assets/:aid': 'updateAsset',
-    'put /issuers': 'registerIssuer',
-    'put /assets': 'registerAssets',
-    'put /assets/:name/acl': 'updateAssetAcl',
-    'put /assets/:name/issue': 'issueAsset',
     'put /transfers': 'transferAsset',
-    'put /assets/:name/flags': 'updateFlags',
   })
 
   router.use(function (req, res, next) {
@@ -668,7 +642,6 @@ shared.transferAsset = function (req, cb) {
 
             try {
               var transaction = library.base.transaction.create({
-                type: TransactionTypes.UIA_TRANSFER,
                 amount: body.amount,
                 currency: body.currency,
                 sender: account,
@@ -706,7 +679,6 @@ shared.transferAsset = function (req, cb) {
 
           try {
             var transaction = library.base.transaction.create({
-              type: TransactionTypes.UIA_TRANSFER,
               currency: body.currency,
               amount: body.amount,
               sender: account,

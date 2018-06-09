@@ -8,7 +8,6 @@ var slots = require('../utils/slots.js');
 var Router = require('../utils/router.js');
 var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
-var TransactionTypes = require('../utils/transaction-types.js');
 var Diff = require('../utils/diff.js');
 var sandboxHelper = require('../utils/sandbox.js');
 var addressHelper = require('../utils/address.js');
@@ -19,150 +18,12 @@ var modules, library, self, private = {}, shared = {};
 
 private.blockStatus = new BlockStatus();
 
-function Vote() {
-  this.create = function (data, trs) {
-    trs.recipientId = null;
-    trs.asset.vote = {
-      votes: data.votes
-    };
-
-    return trs;
-  }
-
-  this.calculateFee = function (trs, sender) {
-    return 0.1 * constants.fixedPoint;
-  }
-
-  this.verify = function (trs, sender, cb) {
-    if (!trs.asset.vote || !trs.asset.vote.votes || !trs.asset.vote.votes.length) {
-      return setImmediate(cb, "No votes sent");
-    }
-
-    if (trs.asset.vote.votes && trs.asset.vote.votes.length > 33) {
-      return setImmediate(cb, "Voting limit exceeded. Maximum is 33 votes per transaction");
-    }
-
-    modules.delegates.checkDelegates(trs.senderPublicKey, trs.asset.vote.votes, function (err) {
-      setImmediate(cb, err, trs);
-    });
-  }
-
-  this.process = function (trs, sender, cb) {
-    setImmediate(cb, null, trs);
-  }
-
-  this.getBytes = function (trs) {
-    try {
-      var buf = trs.asset.vote.votes ? new Buffer(trs.asset.vote.votes.join(''), 'utf8') : null;
-    } catch (e) {
-      throw Error(e.toString());
-    }
-
-    return buf;
-  }
-
-  this.apply = function (trs, block, sender, cb) {
-    library.base.account.merge(sender.address, {
-      delegates: trs.asset.vote.votes,
-      blockId: block.id,
-      round: modules.round.calc(block.height)
-    }, cb);
-  }
-
-  this.undo = function (trs, block, sender, cb) {
-    if (trs.asset.vote.votes === null) return cb();
-
-    var votesInvert = Diff.reverse(trs.asset.vote.votes);
-
-    library.base.account.merge(sender.address, {
-      delegates: votesInvert,
-      blockId: block.id,
-      round: modules.round.calc(block.height)
-    }, cb);
-  }
-
-  this.applyUnconfirmed = function (trs, sender, cb) {
-    if (modules.blocks.getLastBlock() &&
-      modules.blocks.getLastBlock().height < 1294343 &&
-      global.Config.netVersion === 'mainnet') {
-      return setImmediate(cb)
-    }
-    var key = sender.address + ':' + trs.type
-    if (library.oneoff.has(key)) {
-      return setImmediate(cb, 'Double submit')
-    }
-    library.oneoff.set(key, true)
-    setImmediate(cb)
-  }
-
-  this.undoUnconfirmed = function (trs, sender, cb) {
-    var key = sender.address + ':' + trs.type
-    library.oneoff.delete(key)
-    setImmediate(cb)
-  }
-
-  this.objectNormalize = function (trs) {
-    var report = library.scheme.validate(trs.asset.vote, {
-      type: "object",
-      properties: {
-        votes: {
-          type: "array",
-          minLength: 1,
-          maxLength: 101,
-          uniqueItems: true
-        }
-      },
-      required: ['votes']
-    });
-
-    if (!report) {
-      throw new Error("Incorrect votes in transactions: " + library.scheme.getLastError());
-    }
-
-    return trs;
-  }
-
-  this.dbRead = function (raw) {
-    // console.log(raw.v_votes);
-
-    if (!raw.v_votes) {
-      return null
-    } else {
-      var votes = raw.v_votes.split(',');
-      var vote = {
-        votes: votes
-      };
-      return { vote: vote };
-    }
-  }
-
-  this.dbSave = function (trs, cb) {
-    library.dbLite.query("INSERT INTO votes(votes, transactionId) VALUES($votes, $transactionId)", {
-      votes: util.isArray(trs.asset.vote.votes) ? trs.asset.vote.votes.join(',') : null,
-      transactionId: trs.id
-    }, cb);
-  }
-
-  this.ready = function (trs, sender) {
-    if (sender.multisignatures.length) {
-      if (!trs.signatures) {
-        return false;
-      }
-      return trs.signatures.length >= sender.multimin - 1;
-    } else {
-      return true;
-    }
-  }
-}
-
 // Constructor
 function Accounts(cb, scope) {
   library = scope;
   self = this;
   self.__private = private;
   private.attachApi();
-
-  library.base.transaction.attachAssetType(TransactionTypes.VOTE, new Vote());
 
   setImmediate(cb, null, self);
 }

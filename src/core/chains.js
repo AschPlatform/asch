@@ -11,7 +11,6 @@ var rmdir = require('rimraf');
 var ip = require('ip');
 var valid_url = require('valid-url');
 var DecompressZip = require('decompress-zip');
-var TransactionTypes = require('../utils/transaction-types.js');
 var Router = require('../utils/router.js');
 var constants = require('../utils/constants.js');
 var sandboxHelper = require('../utils/sandbox.js');

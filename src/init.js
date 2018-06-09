@@ -354,30 +354,7 @@ module.exports = function(options, done) {
       cb(null, new Bus)
     },
 
-    dbLite: function (cb) {
-      // var dbLite = require('./utils/dblite-helper.js');
-      // dbLite.connect(dbFile, cb);
-      
-      // raw dblite should be deprecated because of smartdb
-      // for compatibility cause, use fake object
-      cb(null, {})
-    },
-
-    oneoff: function (cb) {
-      cb(null, new Map)
-    },
-
-    balanceCache: function (cb) {
-      var BalanceManager = require('./utils/balance-manager.js')
-      cb(null, new BalanceManager)
-    },
-
-    model: ['dbLite', function (cb, scope) {
-      // var Model = require('./utils/model.js')
-      cb(null, {})
-    }],
-
-    base: ['dbLite', 'bus', 'scheme', 'genesisblock', function (cb, scope) {
+    base: ['bus', 'scheme', 'genesisblock', function (cb, scope) {
       var Transaction = require('./base/transaction.js');
       var Block = require('./base/block.js');
       var Account = require('./base/account.js');
@@ -387,9 +364,6 @@ module.exports = function(options, done) {
         bus: function (cb) {
           cb(null, scope.bus);
         },
-        dbLite: function (cb) {
-          cb(null, scope.dbLite);
-        },
         scheme: function (cb) {
           cb(null, scope.scheme);
         },
@@ -398,22 +372,22 @@ module.exports = function(options, done) {
             block: genesisblock
           });
         },
-        consensus: ["dbLite", "bus", "scheme", "genesisblock", function (cb, scope) {
+        consensus: ["bus", "scheme", "genesisblock", function (cb, scope) {
           new Consensus(scope, cb);
         }],
-        account: ["dbLite", "bus", "scheme", 'genesisblock', function (cb, scope) {
+        account: ["bus", "scheme", 'genesisblock', function (cb, scope) {
           new Account(scope, cb);
         }],
-        transaction: ["dbLite", "bus", "scheme", 'genesisblock', "account", function (cb, scope) {
+        transaction: ["bus", "scheme", 'genesisblock', "account", function (cb, scope) {
           new Transaction(scope, cb);
         }],
-        block: ["dbLite", "bus", "scheme", 'genesisblock', "account", "transaction", function (cb, scope) {
+        block: ["bus", "scheme", 'genesisblock', "account", "transaction", function (cb, scope) {
           new Block(scope, cb);
         }]
       }, cb);
     }],
 
-    modules: ['network', 'connect', 'config', 'logger', 'bus', 'sequence', 'dbSequence', 'balancesSequence', 'dbLite', 'base', 'oneoff', 'balanceCache', 'model', function (cb, scope) {
+    modules: ['network', 'connect', 'config', 'logger', 'bus', 'sequence', 'dbSequence', 'balancesSequence', 'base', function (cb, scope) {
       global.library = scope
       var tasks = {};
       moduleNames.forEach(function (name) {
