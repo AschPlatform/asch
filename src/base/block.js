@@ -6,16 +6,8 @@ var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
 
 var genesisblock = null;
-// Constructor
-function Block(scope, cb) {
-  this.scope = scope;
-  genesisblock = this.scope.genesisblock;
-  cb && setImmediate(cb, null, this);
-}
-
 // Private methods
 var private = {};
-private.blockStatus = new BlockStatus();
 private.getAddressByPublicKey = function (publicKey) {
   var publicKeyHash = crypto.createHash('sha256').update(publicKey, 'hex').digest();
   var temp = new Buffer(8);
@@ -25,6 +17,13 @@ private.getAddressByPublicKey = function (publicKey) {
 
   var address = bignum.fromBuffer(temp).toString();
   return address;
+}
+// Constructor
+function Block(scope, cb) {
+  this.scope = scope;
+  genesisblock = this.scope.genesisblock;
+  private.blockStatus = new BlockStatus();
+  cb && setImmediate(cb, null, this);
 }
 
 // Public methods

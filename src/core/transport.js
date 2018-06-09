@@ -118,7 +118,6 @@ Transport.prototype.sandboxApi = function (call, args, cb) {
 // Events
 Transport.prototype.onBind = function (scope) {
   modules = scope;
-
   private.headers = {
     os: modules.system.getOS(),
     version: modules.system.getVersion(),

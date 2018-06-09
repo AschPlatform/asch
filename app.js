@@ -1,36 +1,42 @@
-var assert = require('assert');
-var crypto = require('crypto');
-var program = require('commander');
-var path = require('path');
-var fs = require('fs');
-var async = require('async');
-var tracer = require('tracer');
-var Logger = require('./src/logger');
-var init = require('./src/init');
-var initRuntime = require('./src/runtime')
+const assert = require('assert')
+const crypto = require('crypto')
+const program = require('commander')
+const path = require('path')
+const fs = require('fs')
+const async = require('async')
+const randomstring = require('randomstring')
+const ip = require('ip')
+const daemon = require('daemon')
+const tracer = require('tracer')
+const init = require('./src/init')
+const initRuntime = require('./src/runtime')
 
 function verifyGenesisBlock(scope, block) {
   try {
-    var payloadHash = crypto.createHash('sha256');
+    const payloadHash = crypto.createHash('sha256')
 
-    for (var i = 0; i < block.transactions.length; ++i) {
-      var trs = block.transactions[i];
-      var bytes = scope.base.transaction.getBytes(trs);
-      payloadHash.update(bytes);
+    for (let i = 0; i < block.transactions.length; ++i) {
+      const trs = block.transactions[i]
+      const bytes = scope.base.transaction.getBytes(trs)
+      payloadHash.update(bytes)
     }
-    var id = scope.base.block.getId(block);
-    assert.equal(payloadHash.digest().toString('hex'), block.payloadHash, 'Unexpected payloadHash');
-    assert.equal(id, block.id, 'Unexpected block id');
-    // assert.equal(id, '11839820784468442760', 'Block id is incorrect');
+    const id = scope.base.block.getId(block)
+    assert.equal(
+      payloadHash.digest().toString('hex'),
+      block.payloadHash,
+      'Unexpected payloadHash',
+    )
+    assert.equal(id, block.id, 'Unexpected block id')
+    // assert.equal(id, '11839820784468442760', 'Block id is incorrect')
   } catch (e) {
-    throw (e)
+    throw e;
   }
 }
 
 function main() {
-  process.stdin.resume();
+  process.stdin.resume()
 
-  var version = '1.4.0-beta';
+  const version = '1.4.0-beta'
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')
@@ -44,73 +50,72 @@ function main() {
     .option('--chains <dir>', 'Chains directory')
     .option('--base <dir>', 'Base directory')
     .option('--data <dir>', 'Data directory')
-    .parse(process.argv);
+    .parse(process.argv)
 
-  var baseDir = program.base || './';
+  const baseDir = program.base || './'
 
-  var appConfigFile = path.join(baseDir, 'config.json');
+  let appConfigFile = path.join(baseDir, 'config.json')
   if (program.config) {
-    appConfigFile = path.resolve(process.cwd(), program.config);
+    appConfigFile = path.resolve(process.cwd(), program.config)
   }
-  var appConfig = JSON.parse(fs.readFileSync(appConfigFile, 'utf8'));
+  const appConfig = JSON.parse(fs.readFileSync(appConfigFile, 'utf8'))
 
-  var pidFile = appConfig.pidFile || path.join(baseDir, 'asch.pid');
+  const pidFile = appConfig.pidFile || path.join(baseDir, 'asch.pid')
   if (fs.existsSync(pidFile)) {
-    console.log('Failed: asch server already started');
-    return;
+    console.log('Failed: asch server already started')
+    return
   }
 
 
   if (!appConfig.chain.masterpassword) {
-    var randomstring = require("randomstring");
     appConfig.chain.masterpassword = randomstring.generate({
       length: 12,
       readable: true,
-      charset: 'alphanumeric'
-    });
-    fs.writeFileSync(appConfigFile, JSON.stringify(appConfig, null, 2), "utf8");
+      charset: 'alphanumeric',
+    })
+    fs.writeFileSync(appConfigFile, JSON.stringify(appConfig, null, 2), 'utf8')
   }
 
-  appConfig.version = version;
-  appConfig.baseDir = baseDir;
+  appConfig.version = version
+  appConfig.baseDir = baseDir
   appConfig.dataDir = program.data || path.resolve(baseDir, 'data')
   appConfig.buildVersion = 'DEFAULT_BUILD_TIME'
-  appConfig.netVersion = process.env.NET_VERSION || 'testnet';
-  appConfig.publicDir = path.join(baseDir, 'public', 'dist');
+  appConfig.netVersion = process.env.NET_VERSION || 'testnet'
+  appConfig.publicDir = path.join(baseDir, 'public', 'dist')
   appConfig.chainDir = program.chains || path.join(baseDir, 'chains')
 
-  global.Config = appConfig;
+  global.Config = appConfig
 
-  var genesisblockFile = path.join(baseDir, 'genesisBlock.json');
+  let genesisblockFile = path.join(baseDir, 'genesisBlock.json')
   if (program.genesisblock) {
-    genesisblockFile = path.resolve(process.cwd(), program.genesisblock);
+    genesisblockFile = path.resolve(process.cwd(), program.genesisblock)
   }
-  var genesisblock = JSON.parse(fs.readFileSync(genesisblockFile, 'utf8'));
+  const genesisblock = JSON.parse(fs.readFileSync(genesisblockFile, 'utf8'))
 
   if (program.port) {
-    appConfig.port = program.port;
+    appConfig.port = program.port
   }
 
   if (program.address) {
-    appConfig.address = program.address;
+    appConfig.address = program.address
   }
 
   if (program.peers) {
     if (typeof program.peers === 'string') {
-      appConfig.peers.list = program.peers.split(',').map(function (peer) {
-        peer = peer.split(":");
+      appConfig.peers.list = program.peers.split(',').map((peer) => {
+        const parts = peer.split(':')
         return {
-          ip: peer.shift(),
-          port: peer.shift() || appConfig.port
-        };
-      });
+          ip: parts.shift(),
+          port: parts.shift() || appConfig.port,
+        }
+      })
     } else {
-      appConfig.peers.list = [];
+      appConfig.peers.list = []
     }
   }
 
   if (appConfig.netVersion === 'mainnet') {
-    var seeds = [
+    const seeds = [
       757137132,
       1815983436,
       759980934,
@@ -120,122 +125,120 @@ function main() {
       1760474482,
       1760474149,
       759110497,
-      757134616
-    ];
-    var ip = require('ip');
-    for (var i = 0; i < seeds.length; ++i) {
-      appConfig.peers.list.push({ ip: ip.fromLong(seeds[i]), port: 80 });
+      757134616,
+    ]
+    for (let i = 0; i < seeds.length; ++i) {
+      appConfig.peers.list.push({ ip: ip.fromLong(seeds[i]), port: 80 })
     }
   }
 
   if (program.log) {
-    appConfig.logLevel = program.log;
+    appConfig.logLevel = program.log
   }
 
-  var protoFile = path.join(baseDir, 'proto', 'index.proto');
+  const protoFile = path.join(baseDir, 'proto', 'index.proto')
   if (!fs.existsSync(protoFile)) {
-    console.log('Failed: proto file not exists!');
-    return;
+    console.log('Failed: proto file not exists!')
+    return
   }
 
   if (program.daemon) {
-    console.log('Asch server started as daemon ...');
-    require('daemon')({ cwd: process.cwd() });
-    fs.writeFileSync(pidFile, process.pid, 'utf8');
+    console.log('Asch server started as daemon ...')
+    daemon({ cwd: process.cwd() })
+    fs.writeFileSync(pidFile, process.pid, 'utf8')
   }
 
-  var logger = new Logger({
-    filename: appConfig.logFile || path.join(baseDir, 'logs', 'debug.log'),
-    echo: program.deamon ? null : appConfig.logLevel,
-    errorLevel: appConfig.logLevel
-  });
-  //var logger = tracer.dailyfile({ root: path.join(baseDir, 'logs'), maxLogFiles: 10, allLogsFileName: 'debug'})
-  //logger.setLevel = tracer.setLevel
+  let logger
+  if (program.daemon) {
+    logger = tracer.dailyfile({
+      root: path.join(baseDir, 'logs'),
+      maxLogFiles: 10,
+      allLogsFileName: 'debug',
+    })
+  } else {
+    logger = tracer.colorConsole()
+  }
+  tracer.setLevel(appConfig.logLevel)
 
-  var options = {
-    appConfig: appConfig,
-    genesisblock: genesisblock,
-    logger: logger,
-    protoFile: protoFile
-  };
+  const options = {
+    appConfig,
+    genesisblock,
+    logger,
+    protoFile,
+  }
 
   if (program.reindex) {
-    appConfig.loading.verifyOnLoading = true;
+    appConfig.loading.verifyOnLoading = true
   }
 
   global.featureSwitch = {}
-  global.state = {};
+  global.state = {}
 
-  init(options, function (err, scope) {
-    if (err) {
-      scope.logger.fatal(err);
+  init(options, (error, scope) => {
+    if (error) {
+      scope.logger.fatal(error)
       if (fs.existsSync(pidFile)) {
-        fs.unlinkSync(pidFile);
+        fs.unlinkSync(pidFile)
       }
-      process.exit(1);
-      return;
+      process.exit(1)
+      return
     }
-    process.once('cleanup', function () {
-      scope.logger.info('Cleaning up...');
-      async.eachSeries(scope.modules, function (module, cb) {
-        if (typeof (module.cleanup) == 'function') {
-          module.cleanup(cb);
+    process.once('cleanup', () => {
+      scope.logger.info('Cleaning up...')
+      async.eachSeries(scope.modules, (module, cb) => {
+        if (typeof (module.cleanup) === 'function') {
+          module.cleanup(cb)
         } else {
-          setImmediate(cb);
+          setImmediate(cb)
         }
-      }, function (err) {
+      }, (err) => {
         if (err) {
-          scope.logger.error('Error while cleaning up', err);
+          scope.logger.error('Error while cleaning up', err)
         } else {
-          scope.logger.info('Cleaned up successfully');
+          scope.logger.info('Cleaned up successfully')
         }
-        (async function () {
+        (async () => {
           try {
-            await app.sdb.close()
+            await global.app.sdb.close()
           } catch (e) {
             scope.logger.error('failed to close sdb', e)
           }
         })()
 
         if (fs.existsSync(pidFile)) {
-          fs.unlinkSync(pidFile);
+          fs.unlinkSync(pidFile)
         }
-        process.exit(1);
-      });
-    });
-
-    process.once('SIGTERM', function () {
-      process.emit('cleanup');
+        process.exit(1)
+      })
     })
 
-    process.once('exit', function () {
-      scope.logger.info('process exited');
-    });
+    process.once('SIGTERM', () => {
+      process.emit('cleanup')
+    })
 
-    process.once('SIGINT', function () {
-      process.emit('cleanup');
-    });
+    process.once('exit', () => {
+      scope.logger.info('process exited')
+    })
 
-    process.on('uncaughtException', function (err) {
+    process.once('SIGINT', () => {
+      process.emit('cleanup')
+    })
+
+    process.on('uncaughtException', (err) => {
       // handle the error safely
-      scope.logger.fatal('uncaughtException', { message: err.message, stack: err.stack });
-      process.emit('cleanup');
-    });
-    process.on('unhandledRejection', function (err) {
+      scope.logger.fatal('uncaughtException', { message: err.message, stack: err.stack })
+      process.emit('cleanup')
+    })
+    process.on('unhandledRejection', (err) => {
       // handle the error safely
-      scope.logger.error('unhandledRejection', err);
-      process.emit('cleanup');
-    });
+      scope.logger.error('unhandledRejection', err)
+      process.emit('cleanup')
+    })
 
-    if (typeof gc !== 'undefined') {
-      setInterval(function () {
-        gc();
-      }, 60000);
-    }
-    verifyGenesisBlock(scope, scope.genesisblock.block);
+    verifyGenesisBlock(scope, scope.genesisblock.block)
 
     options.library = scope;
-    (async function () {
+    (async () => {
       try {
         await initRuntime(options)
       } catch (e) {
@@ -245,18 +248,17 @@ function main() {
       }
       if (program.execute) {
         // only for debug use
-        // require(path.resolve(program.execute))(scope);
+        // require(path.resolve(program.execute))(scope)
       }
-
-      scope.bus.message('bind', scope.modules);
+      scope.bus.message('bind', scope.modules)
       global.modules = scope.modules
 
-      scope.logger.info('Modules ready and launched');
+      scope.logger.info('Modules ready and launched')
       if (!scope.config.publicIp) {
-        scope.logger.warn('Failed to get public ip, block forging MAY not work!');
+        scope.logger.warn('Failed to get public ip, block forging MAY not work!')
       }
     })()
-  });
+  })
 }
 
-main();
+main()

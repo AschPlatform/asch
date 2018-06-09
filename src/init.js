@@ -1,22 +1,37 @@
-var path = require('path');
-var fs = require('fs');
-var os = require('os');
-var https = require('https');
-var EventEmitter = require('events');
-var async = require('async');
-var z_schema = require('z-schema');
-var ip = require('ip');
-var Sequence = require('./utils/sequence.js');
-var slots = require('./utils/slots.js');
+const fs = require('fs')
+const os = require('os')
+const domain = require('domain')
+const { EventEmitter } = require('events')
+const http = require('http')
+const https = require('https')
+const socketio = require('socket.io')
+const async = require('async')
+const ZSchema = require('z-schema')
+const ip = require('ip')
+const express = require('express')
+const compression = require('compression')
+const cors = require('cors')
+const changeCase = require('change-case')
+const bodyParser = require('body-parser')
+const methodOverride = require('method-override')
+const Sequence = require('./utils/sequence.js')
+const slots = require('./utils/slots.js')
+const queryParser = require('./utils/express-query-int')
+const ZSchemaExpress = require('./utils/zscheme-express.js')
+const Transaction = require('./base/transaction.js')
+const Block = require('./base/block.js')
+const Account = require('./base/account.js')
+const Consensus = require('./base/consensus.js')
+const protobuf = require('./utils/protobuf.js')
 
-var moduleNames = [
+const moduleNames = [
   'server',
   'accounts',
   'transactions',
-  'transport',
   'loader',
   'system',
   'peer',
+  'transport',
   'delegates',
   'round',
   'uia',
@@ -25,390 +40,374 @@ var moduleNames = [
   'gateway',
 ];
 
+const CIPHERS = `
+  ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:
+  ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:
+  ECDHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:
+  DHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA256:HIGH:
+  !aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA`
+
 function getPublicIp() {
-  var publicIp = null;
+  let publicIp = null
   try {
-    var ifaces = os.networkInterfaces();
-    Object.keys(ifaces).forEach(function (ifname) {
-      ifaces[ifname].forEach(function (iface) {
-        if ('IPv4' !== iface.family || iface.internal !== false) {
+    const ifaces = os.networkInterfaces()
+    Object.keys(ifaces).forEach((ifname) => {
+      ifaces[ifname].forEach((iface) => {
+        if (iface.family !== 'IPv4' || iface.internal !== false) {
           // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
           return;
         }
         if (!ip.isPrivate(iface.address)) {
-          publicIp = iface.address;
+          publicIp = iface.address
         }
       });
     });
   } catch (e) {
+    throw e
   }
-  return publicIp;
+  return publicIp
 }
 
-module.exports = function(options, done) {
-  var modules = [];
-  var dbFile = options.dbFile;
-  var appConfig = options.appConfig;
-  var genesisblock = options.genesisblock;
+module.exports = function init(options, done) {
+  const modules = []
+  const { appConfig, genesisblock } = options
 
   if (!appConfig.publicIp) {
-    appConfig.publicIp = getPublicIp();
+    appConfig.publicIp = getPublicIp()
   }
-  
+
   async.auto({
-    config: function (cb) {
-      cb(null, appConfig);
+    config(cb) {
+      cb(null, appConfig)
     },
 
-    logger: function (cb) {
-      cb(null, options.logger);
+    logger(cb) {
+      cb(null, options.logger)
     },
 
-    genesisblock: function (cb) {
-      cb(null, {
-        block: genesisblock
-      });
+    genesisblock(cb) {
+      cb(null, { block: genesisblock })
     },
 
-    protobuf: function (cb) {
-      var protobuf = require('./utils/protobuf.js');
-      protobuf(options.protoFile, cb);
+    protobuf(cb) {
+      protobuf(options.protoFile, cb)
     },
 
-    scheme: function (cb) {
-      z_schema.registerFormat("hex", function (str) {
-        var b = null
+    scheme(cb) {
+      ZSchema.registerFormat('hex', (str) => {
+        let b
         try {
-          b = new Buffer(str, "hex");
+          b = Buffer.from(str, 'hex')
         } catch (e) {
           return false;
         }
 
-        return b && b.length > 0;
+        return b && b.length > 0
       });
 
-      z_schema.registerFormat('publicKey', function (str) {
-        if (str.length == 0) {
+      ZSchema.registerFormat('publicKey', (str) => {
+        if (str.length === 0) {
+          return true
+        }
+
+        try {
+          const publicKey = Buffer.from(str, 'hex')
+
+          return publicKey.length === 32
+        } catch (e) {
+          return false
+        }
+      });
+
+      ZSchema.registerFormat('splitarray', (str) => {
+        try {
+          const a = str.split(',')
+          return a.length > 0 && a.length <= 1000
+        } catch (e) {
+          return false
+        }
+      });
+
+      ZSchema.registerFormat('signature', (str) => {
+        if (str.length === 0) {
           return true;
         }
 
         try {
-          var publicKey = new Buffer(str, "hex");
-
-          return publicKey.length == 32;
+          const signature = Buffer.from(str, 'hex')
+          return signature.length === 64
         } catch (e) {
-          return false;
-        }
-      });
-
-      z_schema.registerFormat('splitarray', function (str) {
-        try {
-          var a = str.split(',');
-          if (a.length > 0 && a.length <= 1000) {
-            return true;
-          } else {
-            return false;
-          }
-        } catch (e) {
-          return false;
-        }
-      });
-
-      z_schema.registerFormat('signature', function (str) {
-        if (str.length == 0) {
-          return true;
-        }
-
-        try {
-          var signature = new Buffer(str, "hex");
-          return signature.length == 64;
-        } catch (e) {
-          return false;
+          return false
         }
       })
 
-      z_schema.registerFormat('listQuery', function (obj) {
-        obj.limit = 100;
-        return true;
-      });
+      ZSchema.registerFormat('listQuery', (obj) => {
+        obj.limit = 100
+        return true
+      })
 
-      z_schema.registerFormat('listDelegates', function (obj) {
-        obj.limit = 101;
-        return true;
-      });
+      ZSchema.registerFormat('listDelegates', (obj) => {
+        obj.limit = 101
+        return true
+      })
 
-      z_schema.registerFormat('checkInt', function (value) {
+      ZSchema.registerFormat('checkInt', (value) => {
         if (isNaN(value) || parseInt(value) != value || isNaN(parseInt(value, 10))) {
-          return false;
+          return false
         }
 
-        value = parseInt(value);
-        return true;
-      });
+        value = parseInt(value)
+        return true
+      })
 
-      z_schema.registerFormat('ip', function (value) {
-
-      });
-
-      cb(null, new z_schema())
+      cb(null, new ZSchema())
     },
 
-    network: ['config', function (cb, scope) {
-      var express = require('express');
-      var compression = require('compression');
-      var cors = require('cors');
-      var app = express();
-      
-      app.use(compression({ level: 6 }));
-      app.use(cors());
-      app.options("*", cors());
+    network: ['config', (cb, scope) => {
+      const app = express()
 
-      var server = require('http').createServer(app);
-      var io = require('socket.io')(server);
+      app.use(compression({ level: 6 }))
+      app.use(cors())
+      app.options('*', cors())
+
+      const server = http.createServer(app)
+      const io = socketio(server)
+      let sslio
+      let sslserver
 
       if (scope.config.ssl.enabled) {
-        var privateKey = fs.readFileSync(scope.config.ssl.options.key);
-        var certificate = fs.readFileSync(scope.config.ssl.options.cert);
+        const privateKey = fs.readFileSync(scope.config.ssl.options.key)
+        const certificate = fs.readFileSync(scope.config.ssl.options.cert)
 
-        var https = require('https').createServer({
+        sslserver = https.createServer({
           key: privateKey,
           cert: certificate,
-          ciphers: "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:"
-                 + "ECDHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:DHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA256:HIGH:"
-                 + "!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA"
-        }, app);
+          ciphers: CIPHERS,
+        }, app)
 
-        var https_io = require('socket.io')(https);
+        sslio = socketio(sslServer);
       }
 
       cb(null, {
-        express: express,
-        app: app,
-        server: server,
-        io: io,
-        https: https,
-        https_io: https_io
-      });
+        express,
+        app,
+        server,
+        io,
+        sslserver,
+        sslio,
+      })
     }],
 
-    dbSequence: ["logger", function (cb, scope) {
-      var sequence = new Sequence({
-        name: "db",
-        onWarning: function (current, limit) {
-          scope.logger.warn("DB queue", current)
-        }
+    dbSequence: ['logger', (cb, scope) => {
+      const sequence = new Sequence({
+        name: 'db',
+        onWarning: (current) => {
+          scope.logger.warn('DB queue', current)
+        },
       });
-      cb(null, sequence);
+      cb(null, sequence)
     }],
 
-    sequence: ["logger", function (cb, scope) {
-      var sequence = new Sequence({
-        name: "normal",
-        onWarning: function (current, limit) {
-          scope.logger.warn("Main queue", current)
-        }
+    sequence: ['logger', (cb, scope) => {
+      const sequence = new Sequence({
+        name: 'normal',
+        onWarning: (current) => {
+          scope.logger.warn('Main queue', current)
+        },
       });
-      cb(null, sequence);
+      cb(null, sequence)
     }],
 
-    balancesSequence: ["logger", function (cb, scope) {
-      var sequence = new Sequence({
-        name: "balance",
-        onWarning: function (current, limit) {
-          scope.logger.warn("Balance queue", current)
-        }
+    balancesSequence: ['logger', (cb, scope) => {
+      const sequence = new Sequence({
+        name: 'balance',
+        onWarning: (current) => {
+          scope.logger.warn('Balance queue', current)
+        },
       });
-      cb(null, sequence);
+      cb(null, sequence)
     }],
 
-    connect: ['config', 'genesisblock', 'logger', 'network', function (cb, scope) {
-      var bodyParser = require('body-parser');
-      var methodOverride = require('method-override');
-      var requestSanitizer = require('./utils/request-sanitizer');
-      var queryParser = require('./utils/express-query-int');
+    connect: ['config', 'genesisblock', 'logger', 'network', (cb, scope) => {
+      const PAYLOAD_LIMIT_SIZE = '8mb'
+      scope.network.app.engine('html', require('ejs').renderFile)
+      scope.network.app.use(require('express-domain-middleware'))
+      scope.network.app.set('view engine', 'ejs')
+      scope.network.app.set('views', scope.config.publicDir)
+      scope.network.app.use(scope.network.express.static(scope.config.publicDir))
+      scope.network.app.use(bodyParser.raw({ limit: PAYLOAD_LIMIT_SIZE }))
+      scope.network.app.use(bodyParser.urlencoded({
+        extended: true,
+        limit: PAYLOAD_LIMIT_SIZE,
+        parameterLimit: 5000,
+      }))
+      scope.network.app.use(bodyParser.json({ limit: PAYLOAD_LIMIT_SIZE }))
+      scope.network.app.use(methodOverride())
 
-      scope.network.app.engine('html', require('ejs').renderFile);
-      scope.network.app.use(require('express-domain-middleware'));
-      scope.network.app.set('view engine', 'ejs');
-      scope.network.app.set('views', scope.config.publicDir);
-      scope.network.app.use(scope.network.express.static(scope.config.publicDir));
-      scope.network.app.use(bodyParser.raw({limit: "8mb"}));
-      scope.network.app.use(bodyParser.urlencoded({extended: true, limit: "8mb", parameterLimit: 5000}));
-      scope.network.app.use(bodyParser.json({limit: "8mb"}));
-      scope.network.app.use(methodOverride());
-
-      var ignore = ['id', 'name', 'lastBlockId', 'blockId', 'transactionId', 'address', 'recipientId', 'senderId', 'previousBlock'];
+      const ignore = [
+        'id', 'name', 'lastBlockId', 'blockId',
+        'transactionId', 'address', 'recipientId',
+        'senderId', 'previousBlock',
+      ]
       scope.network.app.use(queryParser({
-        parser: function (value, radix, name) {
+        parser(value, radix, name) {
+          console.log('----------', value, radix, name)
           if (ignore.indexOf(name) >= 0) {
-            return value;
+            return value
           }
 
-          if (isNaN(value) || parseInt(value) != value || isNaN(parseInt(value, radix))) {
-            return value;
+          if (isNaN(value) ||
+            parseInt(value) != value ||
+            isNaN(parseInt(value, radix))) {
+            return value
           }
 
-          return parseInt(value);
-        }
-      }));
+          return parseInt(value, radix)
+        },
+      }))
 
-      scope.network.app.use(require('./utils/zscheme-express.js')(scope.scheme));
+      scope.network.app.use(ZSchemaExpress(scope.scheme))
 
-      scope.network.app.use(function (req, res, next) {
-        var parts = req.url.split('/');
-        var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      scope.network.app.use((req, res, next) => {
+        const parts = req.url.split('/')
+        const host = req.headers['x-forwarded-for'] || req.connection.remoteAddress
+        const { port } = req.headers
 
-        scope.logger.debug(req.method + " " + req.url + " from " + ip + ':' + req.headers['port']);
+        scope.logger.debug(`receive request: ${req.method} ${req.url} from ${host}:${port}`)
 
-        /* Instruct browser to deny display of <frame>, <iframe> regardless of origin.
-         *
-         * RFC -> https://tools.ietf.org/html/rfc7034
-         */
-        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('X-Frame-Options', 'DENY')
+        res.setHeader('Content-Security-Policy', 'frame-ancestors \'none\'')
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader(
+          'Access-Control-Allow-Headers',
+          'Origin, Content-Length,  X-Requested-With, Content-Type, Accept, request-node-status',
+        )
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD, PUT, DELETE')
 
-        /* Set Content-Security-Policy headers.
-         *
-         * frame-ancestors - Defines valid sources for <frame>, <iframe>, <object>, <embed> or <applet>.
-         *
-         * W3C Candidate Recommendation -> https://www.w3.org/TR/CSP/
-         */
-        res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
-        
-        //allow CORS
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Access-Control-Allow-Headers", "Origin, Content-Length,  X-Requested-With, Content-Type, Accept, request-node-status");
-        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD, PUT, DELETE");        
-
-        if (req.method == "OPTIONS"){
-          res.sendStatus(200);
-          scope.logger.debug("Response pre-flight request");
-          return;
+        if (req.method === 'OPTIONS') {
+          res.sendStatus(200)
+          scope.logger.debug('Response pre-flight request')
+          return
         }
 
         const URI_PREFIXS = ['api', 'api2', 'peer']
-        var isApiOrPeer = parts.length > 1 && (URI_PREFIXS.indexOf(parts[1]) !== -1);
-        var whiteList = scope.config.api.access.whiteList;
-        var blackList = scope.config.peers.blackList;
+        const isApiOrPeer = parts.length > 1 && (URI_PREFIXS.indexOf(parts[1]) !== -1)
+        const { whiteList } = scope.config.api.access
+        const { blackList } = scope.config.peers
 
-        var forbidden = isApiOrPeer && (
-            (whiteList.length > 0 && whiteList.indexOf(ip) < 0) ||
-            (blackList.length > 0 && blackList.indexOf(ip) >= 0) );
+        const forbidden = isApiOrPeer && (
+          (whiteList.length > 0 && whiteList.indexOf(ip) < 0) ||
+          (blackList.length > 0 && blackList.indexOf(ip) >= 0));
 
         if (isApiOrPeer && forbidden) {
           res.sendStatus(403);
-        }
-        else if ( isApiOrPeer && req.headers["request-node-status"] == "yes") {
-          //Add server status info to response header
-          var lastBlock = scope.modules.blocks.getLastBlock();
-          res.setHeader('Access-Control-Expose-Headers',"node-status");
-          res.setHeader("node-status",JSON.stringify({
+        } else if (isApiOrPeer && req.headers['request-node-status'] === 'yes') {
+          // Add server status info to response header
+          const lastBlock = scope.modules.blocks.getLastBlock()
+          res.setHeader('Access-Control-Expose-Headers', 'node-status')
+          res.setHeader('node-status', JSON.stringify({
             blockHeight: lastBlock.height,
             blockTime: slots.getRealTime(lastBlock.timestamp),
-            blocksBehind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1),
+            blocksBehind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) + 1),
             version: scope.modules.peer.getVersion(),
-          }));
-          next();
+          }))
+          next()
+        } else {
+          next()
         }
-        else{
-          next();
-        }
-      });
+      })
 
-      scope.network.server.listen(scope.config.port, scope.config.address, function (err) {
-        scope.logger.log("Asch started: " + scope.config.address + ":" + scope.config.port);
+      scope.network.server.listen(scope.config.port, scope.config.address, (err) => {
+        scope.logger.log(`Asch started: ${scope.config.address}:${scope.config.port}`)
 
         if (!err) {
           if (scope.config.ssl.enabled) {
-            scope.network.https.listen(scope.config.ssl.options.port, scope.config.ssl.options.address, function (err) {
-              scope.logger.log("Asch https started: " + scope.config.ssl.options.address + ":" + scope.config.ssl.options.port);
-
-              cb(err, scope.network);
-            });
+            scope.network.sslserver.listen(
+              scope.config.ssl.options.port,
+              scope.config.ssl.options.address,
+              (sslError) => {
+                const { address, port } = scope.config.ssl.options
+                scope.logger.log(`Asch https started: ${address}:${port}`)
+                cb(sslError, scope.network)
+              },
+            )
           } else {
-            cb(null, scope.network);
+            cb(null, scope.network)
           }
         } else {
-          cb(err, scope.network);
+          cb(err, scope.network)
         }
-      });
-
+      })
     }],
 
-    bus: function (cb) {
-      var changeCase = require('change-case');
-
+    bus(cb) {
       class Bus extends EventEmitter {
-        message() {
-          var args = [];
-          Array.prototype.push.apply(args, arguments);
-          var topic = args.shift();
-          modules.forEach(function (module) {
-            var eventName = 'on' + changeCase.pascalCase(topic);
-            if (typeof (module[eventName]) == 'function') {
-              module[eventName].apply(module[eventName], args);
+        message(topic, ...restArgs) {
+          modules.forEach((module) => {
+            const eventName = `on${changeCase.pascalCase(topic)}`
+            if (typeof (module[eventName]) === 'function') {
+              module[eventName].apply(module[eventName], [...restArgs])
             }
           });
-          this.emit.apply(this, arguments);
+          this.emit(topic, ...restArgs)
         }
       }
-      cb(null, new Bus)
+      cb(null, new Bus())
     },
 
-    base: ['bus', 'scheme', 'genesisblock', function (cb, scope) {
-      var Transaction = require('./base/transaction.js');
-      var Block = require('./base/block.js');
-      var Account = require('./base/account.js');
-      var Consensus = require('./base/consensus.js');
+    base: [
+      'bus', 'scheme', 'genesisblock',
+      (outerCallback, outerScope) => {
+        async.auto({
+          bus(cb) {
+            cb(null, outerScope.bus)
+          },
+          scheme(cb) {
+            cb(null, outerScope.scheme)
+          },
+          genesisblock(cb) {
+            cb(null, { block: genesisblock })
+          },
+          consensus: ['bus', 'scheme', 'genesisblock', (cb, scope) => {
+            new Consensus(scope, cb)
+          }],
+          account: ['bus', 'scheme', 'genesisblock', (cb, scope) => {
+            new Account(scope, cb)
+          }],
+          transaction: ['bus', 'scheme', 'genesisblock', 'account', (cb, scope) => {
+            new Transaction(scope, cb)
+          }],
+          block: ['bus', 'scheme', 'genesisblock', 'account', 'transaction', (cb, scope) => {
+            new Block(scope, cb)
+          }],
+        }, outerCallback)
+      }],
 
-      async.auto({
-        bus: function (cb) {
-          cb(null, scope.bus);
-        },
-        scheme: function (cb) {
-          cb(null, scope.scheme);
-        },
-        genesisblock: function (cb) {
-          cb(null, {
-            block: genesisblock
-          });
-        },
-        consensus: ["bus", "scheme", "genesisblock", function (cb, scope) {
-          new Consensus(scope, cb);
-        }],
-        account: ["bus", "scheme", 'genesisblock', function (cb, scope) {
-          new Account(scope, cb);
-        }],
-        transaction: ["bus", "scheme", 'genesisblock', "account", function (cb, scope) {
-          new Transaction(scope, cb);
-        }],
-        block: ["bus", "scheme", 'genesisblock', "account", "transaction", function (cb, scope) {
-          new Block(scope, cb);
-        }]
-      }, cb);
-    }],
+    modules: [
+      'network', 'connect', 'config', 'logger', 'bus',
+      'sequence', 'dbSequence', 'balancesSequence', 'base',
+      (outerCallback, scope) => {
+        global.library = scope
+        const tasks = {}
+        moduleNames.forEach((name) => {
+          tasks[name] = (cb) => {
+            const d = domain.create()
 
-    modules: ['network', 'connect', 'config', 'logger', 'bus', 'sequence', 'dbSequence', 'balancesSequence', 'base', function (cb, scope) {
-      global.library = scope
-      var tasks = {};
-      moduleNames.forEach(function (name) {
-        tasks[name] = function (cb) {
-          var d = require('domain').create();
+            d.on('error', (err) => {
+              scope.logger.fatal(`Domain ${name}`, { message: err.message, stack: err.stack })
+            });
 
-          d.on('error', function (err) {
-            scope.logger.fatal('Domain ' + name, {message: err.message, stack: err.stack});
-          });
-
-          d.run(function () {
-            scope.logger.debug('Loading module', name)
-            var Klass = require('./core/' + name);
-            var obj = new Klass(cb, scope)
-            modules.push(obj);
-          });
-        }
-      });
-      async.series(tasks, function (err, results) {
-        cb(err, results);
-      });
-    }]
-  }, done);
+            d.run(() => {
+              scope.logger.debug('Loading module', name)
+              const Klass = require(`./core/${name}`)
+              const obj = new Klass(cb, scope)
+              modules.push(obj)
+            })
+          }
+        })
+        async.series(tasks, (err, results) => {
+          outerCallback(err, results)
+        })
+      }],
+  }, done)
 };
