@@ -1,7 +1,7 @@
 const sandboxHelper = require('../utils/sandbox.js')
 const slots = require('../utils/slots.js')
 const Router = require('../utils/router.js')
-const PIFY = require('../utils/pify.js')
+const PIFY = require('util').promisify
 const utils = require('../utils')
 const gatewayLib = require('asch-gateway')
 

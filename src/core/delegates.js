@@ -9,7 +9,7 @@ var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
 var sandboxHelper = require('../utils/sandbox.js');
 var addressHelper = require('../utils/address.js')
-var PIFY = require('../utils/pify.js')
+var PIFY = util.promisify
 let jsonSql = require('json-sql')({ separatedValues: false })
 
 require('array.prototype.find'); // Old node fix

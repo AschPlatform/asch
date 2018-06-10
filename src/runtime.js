@@ -6,7 +6,6 @@ const changeCase = require('change-case')
 const validate = require('validate.js')
 const extend = require('extend')
 const gatewayLib = require('asch-gateway')
-const PIFY = require('./utils/pify')
 const slots = require('./utils/slots')
 const amountHelper = require('./utils/amount')
 const Router = require('./utils/router.js');
@@ -14,6 +13,8 @@ const BalanceManager = require('./smartdb/balance-manager')
 const AutoIncrement = require('./smartdb/auto-increment')
 const AccountRole = require('./utils/account-role')
 const { AschCore } = require('asch-smartdb')
+
+const PIFY = util.promisify
 
 class RouteWrapper {
   constructor() {

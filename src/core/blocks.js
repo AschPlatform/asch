@@ -11,7 +11,7 @@ var constants = require('../utils/constants.js');
 var Router = require('../utils/router.js');
 var slots = require('../utils/slots.js');
 var sandboxHelper = require('../utils/sandbox.js');
-var PIFY = require('../utils/pify.js')
+var PIFY = require('util').promisify
 
 require('array.prototype.findindex'); // Old node fix
 

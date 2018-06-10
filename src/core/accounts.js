@@ -11,7 +11,7 @@ var constants = require('../utils/constants.js');
 var Diff = require('../utils/diff.js');
 var sandboxHelper = require('../utils/sandbox.js');
 var addressHelper = require('../utils/address.js');
-var PIFY = require('../utils/pify.js');
+var PIFY = util.promiseify
 
 // Private fields
 var modules, library, self, private = {}, shared = {};
