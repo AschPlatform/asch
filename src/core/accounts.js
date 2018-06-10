@@ -8,7 +8,6 @@ var slots = require('../utils/slots.js');
 var Router = require('../utils/router.js');
 var BlockStatus = require("../utils/block-status.js");
 var constants = require('../utils/constants.js');
-var Diff = require('../utils/diff.js');
 var sandboxHelper = require('../utils/sandbox.js');
 var addressHelper = require('../utils/address.js');
 var PIFY = util.promiseify

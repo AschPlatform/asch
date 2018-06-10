@@ -3,43 +3,43 @@ const LOG_SET_VALUE = 2
 
 class Tmdb {
   constructor(map) {
-    this.map = (map instanceof Map ? map : new Map)
-    this.log = new Array
+    this.map = (map instanceof Map ? map : new Map())
+    this.log = []
   }
 
   set(keys, value) {
-    var parent = this.map
-    var path = []
+    let parent = this.map
+    const path = []
     for (let i = 0; i < keys.length - 1; ++i) {
-      let k = keys[i]
+      const k = keys[i]
       let m = parent.get(k)
       path.push(k)
       if (!m) {
-        m = new Map
+        m = new Map()
         this.log.push([path, LOG_ADD_PATH])
         parent.set(k, m)
       }
       parent = m
     }
-    var lastKey = keys[keys.length - 1]
+    const lastKey = keys[keys.length - 1]
     this.log.push([keys, LOG_SET_VALUE, parent.get(lastKey)])
     parent.set(lastKey, value)
   }
 
   get(keys) {
-    var m = this.map
+    let m = this.map
     for (let i = 0; i < keys.length; ++i) {
       m = m.get(keys[i])
       if (!m) {
-        return
+        return null
       }
     }
     return m
   }
 
-  remove_(keys) {
-    var m = this.map
-    for (let i = 0; i < keys.length-1; ++i) {
+  remove(keys) {
+    let m = this.map
+    for (let i = 0; i < keys.length - 1; ++i) {
       m = m.get(keys[i])
       if (!m) {
         return
@@ -49,14 +49,14 @@ class Tmdb {
   }
 
   set_(keys, value) {
-    var m = this.map
-    for (let i = 0; i < keys.length-1; ++i) {
+    let m = this.map
+    for (let i = 0; i < keys.length - 1; ++i) {
       m = m.get(keys[i])
       if (!m) {
         return
       }
     }
-    var lastKey = keys[keys.length - 1]
+    const lastKey = keys[keys.length - 1]
     if (value === undefined) {
       m.delete(lastKey)
     } else {
@@ -66,13 +66,13 @@ class Tmdb {
 
   rollback() {
     while (this.log.length !== 0) {
-      let [keys, type, value] = this.log.pop()
+      const [keys, type, value] = this.log.pop()
       switch (type) {
         case 1:
-          this.remove_(keys)
+          this.remove(keys)
           break;
         case 2:
-          this.set_(keys, value)
+          this.set(keys, value)
           break;
         default:
           throw new Error('unknow log type')
@@ -81,7 +81,7 @@ class Tmdb {
   }
 
   commit() {
-    this.log = new Array
+    this.log = []
   }
 }
 

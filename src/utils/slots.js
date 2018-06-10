@@ -1,22 +1,14 @@
-/**
- * Get time from Asch epoch.
- * @param {number|undefined} time Time in unix seconds
- * @returns {number}
- */
-
 function beginEpochTime() {
-  var d = new Date(Date.UTC(2016, 5, 27, 20, 0, 0, 0));
-
-  return d;
+  return new Date(Date.UTC(2016, 5, 27, 20, 0, 0, 0))
 }
 
 function getEpochTime(time) {
-  if (time === undefined) {
-    time = (new Date()).getTime();
+  let t = time
+  if (t === undefined) {
+    t = (new Date()).getTime()
   }
-  var d = beginEpochTime();
-  var t = d.getTime();
-  return Math.floor((time - t) / 1000);
+  const t0 = beginEpochTime().getTime()
+  return Math.floor((t - t0) / 1000)
 }
 
 module.exports = {
@@ -25,41 +17,41 @@ module.exports = {
 
   delegates: 101,
 
-  getTime: function (time) {
-    return getEpochTime(time);
+  getTime(time) {
+    return getEpochTime(time)
   },
 
-  getRealTime: function (epochTime) {
-    if (epochTime === undefined) {
-      epochTime = this.getTime()
+  getRealTime(epochTime) {
+    let et = epochTime
+    if (et === undefined) {
+      et = this.getTime()
     }
-    var d = beginEpochTime();
-    var t = Math.floor(d.getTime() / 1000) * 1000;
-    return t + epochTime * 1000;
+    const d = beginEpochTime()
+    const t = Math.floor(d.getTime() / 1000) * 1000
+    return t + (et * 1000)
   },
 
-  getSlotNumber: function (epochTime) {
-    if (epochTime === undefined) {
-      epochTime = this.getTime()
+  getSlotNumber(epochTime) {
+    let et = epochTime
+    if (et === undefined) {
+      et = this.getTime()
     }
-    return Math.floor(epochTime / this.interval);
+    return Math.floor(et / this.interval)
   },
 
-  getSlotTime: function (slot) {
-    return slot * this.interval;
+  getSlotTime(slot) {
+    return slot * this.interval
   },
 
-  getNextSlot: function () {
-    var slot = this.getSlotNumber();
-
-    return slot + 1;
+  getNextSlot() {
+    return this.getSlotNumber() + 1
   },
 
-  getLastSlot: function (nextSlot) {
-    return nextSlot + this.delegates;
+  getLastSlot(nextSlot) {
+    return nextSlot + this.delegates
   },
 
-  roundTime: function (date) {
-    Math.floor(date.getTime() / 1000) * 1000
-  }
+  roundTime(date) {
+    return Math.floor(date.getTime() / 1000) * 1000
+  },
 }

@@ -1,28 +1,28 @@
 module.exports = {
-  sleep: function (ms) {
-    return new Promise((resolve, reject) => setTimeout(resolve, ms))
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
   },
-  loopAsyncFunction: function (asyncFunc, interval) {
+  loopAsyncFunction(asyncFunc, interval) {
     setImmediate(function next() {
-      (async function () {
+      (async () => {
         try {
           await asyncFunc()
         } catch (e) {
-          library.logger.error('Failed to run ' + asyncFunc.name, e)
+          library.logger.error(`Failed to run ${asyncFunc.name}`, e)
         }
         setTimeout(next, interval)
       })()
     })
   },
-  loop: function (func, interval) {
+  loop(func, interval) {
     setImmediate(function next() {
-      func(function (err) {
-        library.logger.error('Failed to run ' + func.name, err)
+      func((err) => {
+        library.logger.error(`Failed to run ${func.name}`, err)
         setTimeout(next, interval)
       })
     })
   },
-  retryAsync: async function (worker, times, interval, errorHandler) {
+  retryAsync: async (worker, times, interval, errorHandler) => {
     for (let i = 0; i < times; i++) {
       try {
         return await worker()
@@ -30,9 +30,12 @@ module.exports = {
         if (i === times - 1) {
           throw e
         }
-        errorHandler && errorHandler(e)
+        if (errorHandler) {
+          errorHandler(e)
+        }
         await this.sleep(interval)
       }
     }
-  }
+    return null
+  },
 }

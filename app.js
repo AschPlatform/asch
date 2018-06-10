@@ -27,9 +27,8 @@ function verifyGenesisBlock(scope, block) {
       'Unexpected payloadHash',
     )
     assert.equal(id, block.id, 'Unexpected block id')
-    // assert.equal(id, '11839820784468442760', 'Block id is incorrect')
   } catch (e) {
-    throw e;
+    throw e
   }
 }
 
@@ -65,7 +64,6 @@ function main() {
     console.log('Failed: asch server already started')
     return
   }
-
 
   if (!appConfig.chain.masterpassword) {
     appConfig.chain.masterpassword = randomstring.generate({

@@ -1,4 +1,4 @@
-let bignum = require('bignumber')
+const bignum = require('bignumber')
 
 class AutoIncrement {
   constructor(sdb) {
@@ -6,8 +6,8 @@ class AutoIncrement {
   }
 
   get(key) {
-    let item = this.sdb.getCached('Variable', key)
-    let value = item ? item.value : '0'
+    const item = this.sdb.getCached('Variable', key)
+    const value = item ? item.value : '0'
     return value
   }
 

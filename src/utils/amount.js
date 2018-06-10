@@ -1,11 +1,11 @@
-var bignum = require('bignumber')
+const bignum = require('bignumber')
 
 module.exports = {
-  validate: function (amount) {
-    if (typeof amount != 'string') return 'Invalid amount type'
+  validate(amount) {
+    if (typeof amount !== 'string') return 'Invalid amount type'
     if (!/^[1-9][0-9]*$/.test(amount)) return 'Amount should be integer'
 
-    var bnAmount
+    let bnAmount
     try {
       bnAmount = bignum(amount)
     } catch (e) {
@@ -15,16 +15,17 @@ module.exports = {
     return null
   },
 
-  calcRealAmount: function (amount, precision) {
+  calcRealAmount(amount, precision) {
     let ba = bignum(amount)
-    while (precision > 0) {
-      if (precision > 8) {
-        ba = ba.div(Math.pow(10, 8))
+    let p = precision
+    while (p > 0) {
+      if (pprecision > 8) {
+        ba = ba.div(10 ** 8)
       } else {
-        ba = ba.div(Math.pow(10, precision))
+        ba = ba.div(10 ** p)
       }
-      precision -= 8
+      p -= 8
     }
     return ba.toString()
-  }
+  },
 }

@@ -2,7 +2,6 @@ var os = require("os");
 var sandboxHelper = require('../utils/sandbox.js');
 var slots = require('../utils/slots.js');
 var Router = require('../utils/router.js');
-var shell = require('../utils/shell.js');
 
 // Private fields
 var modules, library, self, private = {}, shared = {};
@@ -56,7 +55,7 @@ private.attachApi = function () {
 shared.getSystemInfo = function (req, cb) {
 
   var lastBlock = modules.blocks.getLastBlock();
-  var systemInfo = shell.getOsInfo();
+  // var systemInfo = shell.getOsInfo();
 
   return cb(null, {
     os: os.platform() +"_"+ os.release(),    
@@ -69,12 +68,12 @@ shared.getSystemInfo = function (req, cb) {
       behind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1)
     },
 
-    systemLoad:{
-      cores : systemInfo.cpucore,
-      loadAverage : systemInfo.loadavg,
-      freeMem: systemInfo.memfreemb, 
-      totalMem: systemInfo.memtotalmb
-    }
+    // systemLoad:{
+    //   cores : systemInfo.cpucore,
+    //   loadAverage : systemInfo.loadavg,
+    //   freeMem: systemInfo.memfreemb, 
+    //   totalMem: systemInfo.memtotalmb
+    // }
   });  
 }
 

@@ -13,6 +13,7 @@ module.exports = {
     "no-alert": "off",
     "no-plusplus": "off",
     "no-restricted-syntax": 0,
+    "no-await-in-loop": 0,
     "import/no-dynamic-require": 0,
     "global-require": 0,
     "default-case": "off",

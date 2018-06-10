@@ -8,7 +8,6 @@ var bignum = require('bignumber');
 var Router = require('../utils/router.js');
 var slots = require('../utils/slots.js')
 var sandboxHelper = require('../utils/sandbox.js');
-var shell = require('../utils/shell.js');
 
 // Private fields
 var modules, library, self, private = {}, shared = {};
@@ -46,7 +45,6 @@ private.attachApi = function () {
     var lastBlock = modules.blocks.getLastBlock();
     var lastSlot = slots.getSlotNumber(lastBlock.timestamp);
     if (slots.getNextSlot() - lastSlot >= 12) {
-      library.logger.error("OS INFO", shell.getInfo())
       library.logger.error("Blockchain is not ready", { getNextSlot: slots.getNextSlot(), lastSlot: lastSlot, lastBlockHeight: lastBlock.height })
       return res.status(200).json({ success: false, error: "Blockchain is not ready" });
     }
@@ -331,7 +329,6 @@ Transport.prototype.onPeerReady = function () {
     const lastBlock = modules.blocks.getLastBlock();
     const lastSlot = slots.getSlotNumber(lastBlock.timestamp);
     if (slots.getNextSlot() - lastSlot >= 12) {
-      library.logger.error("OS INFO", shell.getInfo())
       library.logger.error("Blockchain is not ready", { getNextSlot: slots.getNextSlot(), lastSlot: lastSlot, lastBlockHeight: lastBlock.height })
       return
     }

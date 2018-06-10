@@ -1,9 +1,7 @@
 module.exports = {
-  1: function (trs) {
-    return 0.1
-  },
-  2: function (trs) {
-    let len = trs.args[0].length
+  1: () => 0.1,
+  2: (trs) => {
+    const len = trs.args[0].length
     if (len === 2) {
       return 200
     } else if (len === 3) {
@@ -14,98 +12,37 @@ module.exports = {
       return 40
     } else if (len <= 10) {
       return 10
-    } else {
-      return 1
     }
-  },
-  3: function (trs) {
-    return 5
-  },
-  4: function (trs) {
-    return 0.1
-  },
-  5: function (trs) {
-    return 0
-  },
-  6: function (trs) {
-    return 5
-  },
-  7: function (trs) {
-    return 100
-  },
-  8: function (trs) {
-    return 0.1
-  },
-  9: function (trs) {
-    return 0
-  },
-  10: function (trs) {
-    return 100
-  },
-  11: function (trs) {
-    return 0.1
-  },
-  12: function (trs) {
-    return 0.1
-  },
-  100: function (trs) {
-    return 100
-  },
-  101: function (trs) {
-    return 500
-  },
-  102: function (trs) {
-    return 0.1
-  },
-  103: function (trs) {
-    return 0.1
-  },
-  200: function (trs) {
-    return 100
-  },
-  201: function (trs) {
     return 1
   },
-  202: function (trs) {
-    return 1
-  },
-  203: function (trs) {
-    return 1
-  },
-  204: function (trs) {
-    return 0.1
-  },
-  205: function (trs) {
-    return 0.1
-  },
-  300: function (trs) {
-    return 10
-  },
-  301: function (trs) {
-    return 0.1
-  },
-  302: function (trs) {
-    return 0
-  },
-  400: function (trs) {
-    return 0.1
-  },
-  401: function (trs) {
-    return 100
-  },
-  402: function (trs) {
-    return 0.01
-  },
-  403: function (trs) {
-    return 0
-  },
-  404: function (trs) {
-    return 0.01
-  },
-  405: function (trs) {
-    return 0.01
-  },
-  406: function (trs) {
-    return 0.01
-  },
+  3: () => 5,
+  4: () => 0.1,
+  5: () => 0,
+  6: () => 5,
+  7: () => 100,
+  8: () => 0.1,
+  9: () => 0,
+  10: () => 100,
+  11: () => 0.1,
+  12: () => 0.1,
+  100: () => 100,
+  101: () => 500,
+  102: () => 0.1,
+  103: () => 0.1,
+  200: () => 100,
+  201: () => 1,
+  202: () => 1,
+  203: () => 1,
+  204: () => 0.1,
+  205: () => 0.1,
+  300: () => 10,
+  301: () => 0.1,
+  302: () => 0,
+  400: () => 0.1,
+  401: () => 100,
+  402: () => 0.01,
+  403: () => 0,
+  404: () => 0.01,
+  405: () => 0.01,
+  406: () => 0.01,
 }
