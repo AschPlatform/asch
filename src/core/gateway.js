@@ -104,7 +104,7 @@ private.getSpentTids = async function (gateway) {
 
 Gateway.prototype.importAccounts = async function () {
   const GATEWAY = global.Config.gateway.name
-  if (modules.loader.syncing() || !GATEWAY) {
+  if (modules.loader.syncing() || !GATEWAY || !self.client) {
     return
   }
   const key = app.sdb.getEntityKey('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.IMPORT_ADDRESS })
@@ -133,7 +133,7 @@ Gateway.prototype.importAccounts = async function () {
 
 Gateway.prototype.processDeposits = async function () {
   const GATEWAY = global.Config.gateway.name
-  if (modules.loader.syncing() || !GATEWAY) {
+  if (modules.loader.syncing() || !GATEWAY || !self.client) {
     return
   }
   const CURRENCY = 'BTC'
@@ -206,7 +206,7 @@ Gateway.prototype.processDeposits = async function () {
 
 Gateway.prototype.processWithdrawals = async function () {
   const GATEWAY = global.Config.gateway.name
-  if (modules.loader.syncing() || !GATEWAY) {
+  if (modules.loader.syncing() || !GATEWAY || !self.client) {
     return
   }
   let PAGE_SIZE = 25
@@ -294,7 +294,7 @@ Gateway.prototype.processWithdrawals = async function () {
 
 Gateway.prototype.sendWithdrawals = async function () {
   const GATEWAY = global.Config.gateway.name
-  if (modules.loader.syncing() || !GATEWAY) {
+  if (modules.loader.syncing() || !GATEWAY || !self.client) {
     return
   }
   const PAGE_SIZE = 25

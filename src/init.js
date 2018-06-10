@@ -151,14 +151,7 @@ module.exports = function init(options, done) {
         return true
       })
 
-      ZSchema.registerFormat('checkInt', (value) => {
-        if (isNaN(value) || parseInt(value) != value || isNaN(parseInt(value, 10))) {
-          return false
-        }
-
-        value = parseInt(value)
-        return true
-      })
+      ZSchema.registerFormat('checkInt', value => Number.isInteger(value))
 
       cb(null, new ZSchema())
     },
@@ -251,18 +244,15 @@ module.exports = function init(options, done) {
       ]
       scope.network.app.use(queryParser({
         parser(value, radix, name) {
-          console.log('----------', value, radix, name)
           if (ignore.indexOf(name) >= 0) {
             return value
           }
 
-          if (isNaN(value) ||
-            parseInt(value) != value ||
-            isNaN(parseInt(value, radix))) {
+          if (!Number.isInteger(value)) {
             return value
           }
 
-          return parseInt(value, radix)
+          return Number.parseInt(value, radix)
         },
       }))
 
@@ -355,8 +345,7 @@ module.exports = function init(options, done) {
       cb(null, new Bus())
     },
 
-    base: [
-      'bus', 'scheme', 'genesisblock',
+    base: ['bus', 'scheme', 'genesisblock',
       (outerCallback, outerScope) => {
         async.auto({
           bus(cb) {

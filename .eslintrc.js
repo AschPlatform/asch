@@ -9,6 +9,7 @@ module.exports = {
     "semi": "off",
     "no-console": "off",
     "no-undef": 0,
+    "no-new": 0,
     "no-alert": "off",
     "no-plusplus": "off",
     "no-restricted-syntax": 0,
