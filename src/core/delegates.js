@@ -12,8 +12,6 @@ var addressHelper = require('../utils/address.js')
 var PIFY = util.promisify
 let jsonSql = require('json-sql')({ separatedValues: false })
 
-require('array.prototype.find'); // Old node fix
-
 // Private fields
 var modules, library, self, private = {}, shared = {};
 
@@ -700,36 +698,20 @@ shared.getVoters = function (req, cb) {
 }
 
 shared.getDelegates = function (req, cb) {
-  var query = req.body;
-  library.scheme.validate(query, {
-    type: 'object',
-    properties: {
-      limit: {
-        type: "integer",
-        minimum: 0,
-        maximum: 101
-      },
-      offset: {
-        type: "integer",
-        minimum: 0
-      }
-    }
-  }, function (err) {
-    if (err) {
-      return cb(err[0].message);
-    }
+  var query = req.body
+  let offset = Number(query.offset || 0)
+  let limit = Number(query.limit || 0)
+  if (Number.isNaN(limit) || Number.isNaN(offset)) {
+    return cb('Invalid params')
+  }
 
-    let offset = query.offset || 0
-    let limit = query.limit || 20;
-
-    self.getDelegates({}, function (err, delegates) {
-      if (err) return cb(err)
-      return cb(null, {
-        totalCount: delegates.length,
-        delegates: delegates.slice(offset, offset + limit)
-      })
+  return self.getDelegates({}, function (err, delegates) {
+    if (err) return cb(err)
+    return cb(null, {
+      totalCount: delegates.length,
+      delegates: delegates.slice(offset, offset + limit)
     })
-  });
+  })
 }
 
 shared.getFee = function (req, cb) {

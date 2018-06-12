@@ -247,11 +247,9 @@ module.exports = function init(options, done) {
           if (ignore.indexOf(name) >= 0) {
             return value
           }
-
           if (!Number.isInteger(value)) {
             return value
           }
-
           return Number.parseInt(value, radix)
         },
       }))

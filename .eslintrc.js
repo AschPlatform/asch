@@ -17,6 +17,7 @@ module.exports = {
     "import/no-dynamic-require": 0,
     "global-require": 0,
     "default-case": "off",
+    "prefer-destructuring": 0,
     "no-param-reassign": [
       "error",
       {

@@ -1,296 +1,124 @@
-var assert = require('assert');
-var crypto = require('crypto');
-var ip = require('ip');
-var ByteBuffer = require("bytebuffer");
-var async = require('async');
-var ed = require('../utils/ed.js');
-var bignum = require('bignumber');
-var constants = require("../utils/constants.js");
-var BlockStatus = require("../utils/block-status.js");
-var constants = require('../utils/constants.js');
-var Router = require('../utils/router.js');
-var slots = require('../utils/slots.js');
-var sandboxHelper = require('../utils/sandbox.js');
-var PIFY = require('util').promisify
+const assert = require('assert')
+const crypto = require('crypto')
+const async = require('async')
+const constants = require('../utils/constants.js')
+const BlockStatus = require('../utils/block-status.js')
+const Router = require('../utils/router.js')
+const slots = require('../utils/slots.js')
+const sandboxHelper = require('../utils/sandbox.js')
+const PIFY = require('util').promisify
 
-require('array.prototype.findindex'); // Old node fix
+let genesisblock = null
+let modules
+let library
+let self
+const priv = {}
+const shared = {}
 
-var genesisblock = null;
-// Private fields
-var modules, library, self, private = {}, shared = {};
-
-private.lastBlock = {};
-private.blockStatus = new BlockStatus();
-private.loaded = false;
-private.isActive = false;
-private.blockCache = {};
-private.proposeCache = {};
-private.lastPropose = null;
+priv.lastBlock = {}
+priv.blockStatus = new BlockStatus()
+priv.loaded = false
+priv.isActive = false
+priv.blockCache = {}
+priv.proposeCache = {}
+priv.lastPropose = null
 
 // Constructor
 function Blocks(cb, scope) {
-  library = scope;
-  genesisblock = library.genesisblock;
-  self = this;
-  self.__private = private;
-  private.attachApi();
-
-  // private.saveGenesisBlock(function (err) {
-  //   setImmediate(cb, err, self);
-  // });
+  library = scope
+  genesisblock = library.genesisblock
+  self = this
+  priv.attachApi()
   setImmediate(cb, null, self)
 }
 
-// Private methods
-private.attachApi = function () {
-  var router = new Router();
+// priv methods
+priv.attachApi = () => {
+  const router = new Router()
 
-  router.use(function (req, res, next) {
-    if (modules) return next();
-    res.status(500).send({ success: false, error: "Blockchain is loading" });
-  });
+  router.use((req, res, next) => {
+    if (modules) return next()
+    return res.status(500).send({ success: false, error: 'Blockchain is loading' })
+  })
 
   router.map(shared, {
-    "get /get": "getBlock",
-    "get /full": "getFullBlock",
-    "get /": "getBlocks",
-    "get /getHeight": "getHeight",
-    "get /getMilestone": "getMilestone",
-    "get /getReward": "getReward",
-    "get /getSupply": "getSupply",
-    "get /getStatus": "getStatus"
-  });
+    'get /get': 'getBlock',
+    'get /full': 'getFullBlock',
+    'get /': 'getBlocks',
+    'get /getHeight': 'getHeight',
+    'get /getMilestone': 'getMilestone',
+    'get /getReward': 'getReward',
+    'get /getSupply': 'getSupply',
+    'get /getStatus': 'getStatus',
+  })
 
-  router.use(function (req, res, next) {
-    res.status(500).send({ success: false, error: "API endpoint not found" });
-  });
+  router.use((req, res) => {
+    res.status(500).send({ success: false, error: 'API endpoint not found' })
+  })
 
-  library.network.app.use('/api/blocks', router);
-  library.network.app.use(function (err, req, res, next) {
-    if (!err) return next();
-    library.logger.error(req.url, err.toString());
-    res.status(500).send({ success: false, error: err.toString() });
-  });
+  library.network.app.use('/api/blocks', router)
+  library.network.app.use((err, req, res, next) => {
+    if (!err) return next()
+    library.logger.error(req.url, err.toString())
+    return res.status(500).send({ success: false, error: err.toString() })
+  })
 }
 
-private.saveGenesisBlock = function (cb) {
-  library.dbLite.query("SELECT id FROM blocks WHERE id=$id", { id: genesisblock.block.id }, ['id'], function (err, rows) {
-    if (err) {
-      return cb(err)
-    }
-    var blockId = rows.length && rows[0].id;
-
-    if (!blockId) {
-      library.dbLite.query("SAVEPOINT savegenesisblock");
-      private.saveBlock(genesisblock.block, function (err) {
-        if (err) {
-          library.logger.error('saveGenesisBlock error', err);
-          library.dbLite.query("ROLLBACK TO SAVEPOINT savegenesisblock", function (rollbackErr) {
-            if (rollbackErr) {
-              library.logger.error("Failed to rollback savegenesisblock: " + rollBackErr);
-            }
-            process.exit(1);
-          });
-        } else {
-          library.dbLite.query("RELEASE SAVEPOINT savegenesisblock", function (releaseErr) {
-            if (releaseErr) {
-              library.logger.error("Failed to commit genesis block: " + releaseErr);
-              process.exit(1);
-            } else {
-              cb();
-            }
-          });
-        }
-      });
-    } else {
-      cb()
-    }
-  });
-}
-
-private.deleteBlock = function (blockId, cb) {
-  library.dbLite.query("DELETE FROM blocks WHERE id = $id", { id: blockId }, function (err, res) {
-    cb(err, res);
-  });
-}
-
-private.list = function (filter, cb) {
-  var sortFields = ['b.id', 'b.timestamp', 'b.height', 'b.prevBlockId', 'b.totalAmount', 'b.totalFee', 'b.reward', 'b.numberOfTransactions', 'b.generatorPublicKey'];
-  var params = {}, fields = [], sortMethod = '', sortBy = '';
-  if (filter.generatorPublicKey) {
-    fields.push('lower(hex(generatorPublicKey)) = $generatorPublicKey')
-    params.generatorPublicKey = filter.generatorPublicKey;
-  }
-
-  if (filter.numberOfTransactions) {
-    fields.push('numberOfTransactions = $numberOfTransactions');
-    params.numberOfTransactions = filter.numberOfTransactions;
-  }
-
-  if (filter.prevBlockId) {
-    fields.push('prevBlockId = $prevBlockId');
-    params.prevBlockId = filter.prevBlockId;
-  }
-
-  if (filter.height === 0 || filter.height > 0) {
-    fields.push('height = $height');
-    params.height = filter.height;
-  }
-
-  if (filter.totalAmount >= 0) {
-    fields.push('totalAmount = $totalAmount');
-    params.totalAmount = filter.totalAmount;
-  }
-
-  if (filter.totalFee >= 0) {
-    fields.push('totalFee = $totalFee');
-    params.totalFee = filter.totalFee;
-  }
-
-  if (filter.reward >= 0) {
-    fields.push('reward = $reward');
-    params.reward = filter.reward;
-  }
-
-  if (filter.orderBy) {
-    var sort = filter.orderBy.split(':');
-    sortBy = sort[0].replace(/[^\w\s]/gi, '');
-    sortBy = "b." + sortBy;
-    if (sort.length == 2) {
-      sortMethod = sort[1] == 'desc' ? 'desc' : 'asc'
-    } else {
-      sortMethod = 'desc';
-    }
-  }
-
-
-  if (sortBy) {
-    if (sortFields.indexOf(sortBy) < 0) {
-      return cb("Invalid sort field");
-    }
-  }
-
-  if (!filter.limit) {
-    filter.limit = 100;
-  }
-
-  if (!filter.offset) {
-    filter.offset = 0;
-  }
-
-  params.limit = filter.limit;
-  params.offset = filter.offset;
-
-  if (filter.limit > 100) {
-    return cb("Invalid limit. Maximum is 100");
-  }
-
-  library.dbLite.query("select count(b.id) " +
-    "from blocks b " +
-    (fields.length ? "where " + fields.join(' and ') : ''), params, { count: Number }, function (err, rows) {
-      if (err) {
-        return cb(err);
-      }
-
-      var count = rows[0].count;
-      library.dbLite.query("select b.id, b.version, b.timestamp, b.height, b.prevBlockId, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength, lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), (select max(height) + 1 from blocks) - b.height " +
-        "from blocks b " +
-        (fields.length ? "where " + fields.join(' and ') : '') + " " +
-        (filter.orderBy ? 'order by ' + sortBy + ' ' + sortMethod : '') + " limit $limit offset $offset ", params, ['b_id', 'b_version', 'b_timestamp', 'b_height', 'b_prevBlockId', 'b_numberOfTransactions', 'b_totalAmount', 'b_totalFee', 'b_reward', 'b_payloadLength', 'b_payloadHash', 'b_generatorPublicKey', 'b_blockSignature', 'b_confirmations'], function (err, rows) {
-          if (err) {
-            library.logger.error(err);
-            return cb(err);
-          }
-
-          var blocks = [];
-          for (var i = 0; i < rows.length; i++) {
-            blocks.push(library.base.block.dbRead(rows[i]));
-          }
-
-          var data = {
-            blocks: blocks,
-            count: count
-          }
-
-          cb(null, data);
-        });
-    });
-}
-
-private.getByField = function (field, cb) {
-  var condition = "b." + field.key + " = $" + field.key;
-  var values = {};
-  values[field.key] = field.value;
-  library.dbLite.query("select b.id, b.version, b.timestamp, b.height, b.prevBlockId, b.numberOfTransactions, b.totalAmount, b.totalFee, b.reward, b.payloadLength,  lower(hex(b.payloadHash)), lower(hex(b.generatorPublicKey)), lower(hex(b.blockSignature)), (select max(height) + 1 from blocks) - b.height " +
-    "from blocks b " +
-    "where " + condition, values, ['b_id', 'b_version', 'b_timestamp', 'b_height', 'b_prevBlockId', 'b_numberOfTransactions', 'b_totalAmount', 'b_totalFee', 'b_reward', 'b_payloadLength', 'b_payloadHash', 'b_generatorPublicKey', 'b_blockSignature', 'b_confirmations'], function (err, rows) {
-      if (err || !rows.length) {
-        return cb(err || "Block not found");
-      }
-
-      var block = library.base.block.dbRead(rows[0]);
-      cb(null, block);
-    });
-}
-
-private.getIdSequence2 = function (height, cb) {
+priv.getIdSequence2 = (height, cb) => {
   (async () => {
     try {
-      let maxHeight = Math.max(height, private.lastBlock.height)
-      let minHeight = Math.max(0, maxHeight - 4)
+      const maxHeight = Math.max(height, priv.lastBlock.height)
+      const minHeight = Math.max(0, maxHeight - 4)
       let blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
       blocks = blocks.reverse()
-      let ids = blocks.map((b) => b.id)
-      return cb(null, { ids: ids, firstHeight: minHeight })
+      const ids = blocks.map(b => b.id)
+      return cb(null, { ids, firstHeight: minHeight })
     } catch (e) {
-      cb(e)
+      return cb(e)
     }
   })()
 }
 
-// Public methods
-Blocks.prototype.getCommonBlock = function (peer, height, cb) {
-  var commonBlock = null;
-  var lastBlockHeight = height;
-  var count = 0;
+Blocks.prototype.getCommonBlock = (peer, height, cb) => {
+  const lastBlockHeight = height
 
-  private.getIdSequence2(lastBlockHeight, function (err, data) {
+  priv.getIdSequence2(lastBlockHeight, (err, data) => {
     if (err) {
-      return cb('Failed to get last block id sequence' + err)
+      return cb(`Failed to get last block id sequence${err}`)
     }
     library.logger.trace('getIdSequence=========', data)
     const params = {
       body: {
         max: lastBlockHeight,
         min: data.firstHeight,
-        ids: data.ids
-      }
+        ids: data.ids,
+      },
     }
-    modules.peer.request('commonBlock', params, peer, function (err, ret) {
-      if (err || ret.error) {
-        return cb(err || ret.error.toString());
+    return modules.peer.request('commonBlock', params, peer, (err2, ret) => {
+      if (err2 || ret.error) {
+        return cb(err2 || ret.error.toString())
       }
 
       if (!ret.common) {
-        return cb('Common block not found');
+        return cb('Common block not found')
       }
-      cb(null, ret.common)
-    });
-  });
+      return cb(null, ret.common)
+    })
+  })
 }
 
-Blocks.prototype.getBlock = function (filter, cb) {
-  shared.getBlock({ body: filter }, cb);
+Blocks.prototype.getBlock = (filter, cb) => {
+  shared.getBlock({ body: filter }, cb)
 }
 
-Blocks.prototype.setLastBlock = function (block) {
-  private.lastBlock = block
+Blocks.prototype.setLastBlock = (block) => {
+  priv.lastBlock = block
   if (global.Config.netVersion === 'mainnet') {
-    global.featureSwitch.enableLongId = private.lastBlock.height >= 1700000
-    global.featureSwitch.enable1_3_0 = private.lastBlock.height >= 2920000
-    global.featureSwitch.enableClubBonus = private.lastBlock.height >= 3320000
+    global.featureSwitch.enableLongId = priv.lastBlock.height >= 1700000
+    global.featureSwitch.enable1_3_0 = priv.lastBlock.height >= 2920000
+    global.featureSwitch.enableClubBonus = priv.lastBlock.height >= 3320000
     global.featureSwitch.enableMoreLockTypes = global.featureSwitch.enableClubBonus
-    global.featureSwitch.enableLockReset = private.lastBlock.height >= 4290000
+    global.featureSwitch.enableLockReset = priv.lastBlock.height >= 4290000
   } else {
     global.featureSwitch.enableLongId = true
     global.featureSwitch.enable1_3_0 = true
@@ -299,95 +127,79 @@ Blocks.prototype.setLastBlock = function (block) {
     global.featureSwitch.enableLockReset = true
   }
   global.featureSwitch.fixVoteNewAddressIssue = true
-  if (global.Config.netVersion === 'mainnet' && private.lastBlock.height < 1854000) {
+  if (global.Config.netVersion === 'mainnet' && priv.lastBlock.height < 1854000) {
     global.featureSwitch.fixVoteNewAddressIssue = false
   }
   global.featureSwitch.enableUIA = global.featureSwitch.enableLongId
 }
 
-Blocks.prototype.getLastBlock = function () {
-  return private.lastBlock;
-}
+Blocks.prototype.getLastBlock = () => priv.lastBlock
 
-Blocks.prototype.verifyBlock = async function (block, options) {
+Blocks.prototype.verifyBlock = async (block, options) => {
   try {
-    block.id = library.base.block.getId(block);
+    block.id = library.base.block.getId(block)
   } catch (e) {
-    throw new Error("Failed to get block id: " + e.toString());
+    throw new Error(`Failed to get block id: ${e.toString()}`)
   }
 
-  if (typeof block.height !== 'undefined' && !!private.lastBlock.id) {
-    block.height = private.lastBlock.height + 1;
+  if (typeof block.height !== 'undefined' && !!priv.lastBlock.id) {
+    block.height = priv.lastBlock.height + 1
   }
 
-  library.logger.debug("verifyBlock, id: " + block.id + ", h: " + block.height);
+  library.logger.debug(`verifyBlock, id: ${block.id}, h: ${block.height}`)
 
-  if (!block.prevBlockId && block.height != 0) {
-    throw new Error("Previous block should not be null");
+  if (!block.prevBlockId && block.height !== 0) {
+    throw new Error('Previous block should not be null')
   }
-
-  // var expectedReward = private.blockStatus.calcReward(block.height);
-
-  // if (block.height != 1 && expectedReward !== block.reward) {
-  //   return cb("Invalid block reward");
-  // }
 
   try {
     if (!library.base.block.verifySignature(block)) {
-      throw new Error("Failed to verify block signature");
+      throw new Error('Failed to verify block signature')
     }
   } catch (e) {
-    throw new Error("Got exception while verify block signature: " + e.toString());
+    throw new Error(`Got exception while verify block signature: ${e.toString()}`)
   }
 
-  if (block.prevBlockId != private.lastBlock.id) {
-    throw new Error('Incorrect previous block hash');
+  if (block.prevBlockId !== priv.lastBlock.id) {
+    throw new Error('Incorrect previous block hash')
   }
-
-  // if (block.version > 0) {
-  //   return cb("Invalid block version: " + block.version + ", id: " + block.id);
-  // }
 
   if (block.height !== 0) {
-    var blockSlotNumber = slots.getSlotNumber(block.timestamp);
-    var lastBlockSlotNumber = slots.getSlotNumber(private.lastBlock.timestamp);
+    const blockSlotNumber = slots.getSlotNumber(block.timestamp)
+    const lastBlockSlotNumber = slots.getSlotNumber(priv.lastBlock.timestamp)
 
     if (blockSlotNumber > slots.getSlotNumber() + 1 || blockSlotNumber <= lastBlockSlotNumber) {
-      throw new Error("Can't verify block timestamp: " + block.id);
+      throw new Error(`Can't verify block timestamp: ${block.id}`)
     }
   }
 
-  // if (block.payloadLength > constants.maxPayloadLength) {
-  //   throw new Error("Can't verify payload length of block: " + block.id);
-  // }
-
   if (block.transactions.length > constants.maxTxsPerBlock) {
-    throw new Error("Invalid amount of block assets: " + block.id);
+    throw new Error(`Invalid amount of block assets: ${block.id}`)
   }
   if (block.transactions.length !== block.count) {
     throw new Error('Invalid transaction count')
   }
 
-  var payloadHash = crypto.createHash('sha256')
-  var appliedTransactions = {}
+  const payloadHash = crypto.createHash('sha256')
+  const appliedTransactions = {}
 
   let totalFee = 0
-  for (var i in block.transactions) {
-    var transaction = block.transactions[i];
+  for (const transaction of block.transactions) {
     totalFee += transaction.fee
 
+    let bytes
     try {
-      var bytes = library.base.transaction.getBytes(transaction);
+      bytes = library.base.transaction.getBytes(transaction)
     } catch (e) {
-      throw new Error("Failed to get transaction bytes: " + e.toString());
+      throw new Error(`Failed to get transaction bytes: ${e.toString()}`)
     }
 
     if (appliedTransactions[transaction.id]) {
-      throw new Error("Duplicate transaction id in block " + block.id);
+      throw new Error(`Duplicate transaction id in block ${block.id}`)
     }
 
-    appliedTransactions[transaction.id] = transaction;
-    payloadHash.update(bytes);
+    appliedTransactions[transaction.id] = transaction
+    payloadHash.update(bytes)
   }
 
   if (totalFee !== block.fees) {
@@ -395,59 +207,67 @@ Blocks.prototype.verifyBlock = async function (block, options) {
   }
 
   if (payloadHash.digest().toString('hex') !== block.payloadHash) {
-    throw new Error("Invalid payload hash: " + block.id);
+    throw new Error(`Invalid payload hash: ${block.id}`)
   }
 
   if (options.votes) {
-    let votes = options.votes
-    if (block.height != votes.height) {
-      throw new Error("Votes height is not correct");
+    const votes = options.votes
+    if (block.height !== votes.height) {
+      throw new Error('Votes height is not correct')
     }
-    if (block.id != votes.id) {
-      throw new Error("Votes id is not correct");
+    if (block.id !== votes.id) {
+      throw new Error('Votes id is not correct')
     }
     if (!votes.signatures || !library.base.consensus.hasEnoughVotesRemote(votes)) {
-      throw new Error("Votes signature is not correct");
+      throw new Error('Votes signature is not correct')
     }
-    await self.verifyBlockVotes(block, votes);
+    await self.verifyBlockVotes(block, votes)
   }
 }
 
-Blocks.prototype.verifyBlockVotes = async function (block, votes) {
-  // FIXME
-  return true
+Blocks.prototype.verifyBlockVotes = async (block, votes) => {
+  const delegateList = await PIFY(modules.delegates.generateDelegateList)(block.height)
+  const publicKeySet = new Set(delegateList)
+  for (const item of votes.signatures) {
+    if (!publicKeySet[item.key]) {
+      throw new Error(`Votes key is not in the top list: ${item.key}`)
+    }
+    if (!library.base.consensus.verifyVote(votes.height, votes.id, item)) {
+      throw new Error('Failed to verify vote signature')
+    }
+  }
 }
 
-Blocks.prototype.applyBlock = async function (block, options) {
+Blocks.prototype.applyBlock = async (block) => {
   app.logger.trace('enter applyblock')
-  let appliedTransactions = {}
+  const appliedTransactions = {}
 
   try {
-    for (let i in block.transactions) {
-      let transaction = block.transactions[i]
-      transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
+    for (const transaction of block.transactions) {
+      transaction.senderId =
+        modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
 
       if (appliedTransactions[transaction.id]) {
-        throw new Error("Duplicate transaction in block: " + transaction.id)
+        throw new Error(`Duplicate transaction in block: ${transaction.id}`)
       }
 
-      let senderId = transaction.senderId
+      const senderId = transaction.senderId
       let sender = await app.sdb.get('Account', senderId)
       if (!sender) {
         if (block.height === 0) {
           sender = app.sdb.create('Account', {
             address: senderId,
             name: '',
-            xas: 0
+            xas: 0,
           })
         } else {
           throw new Error('Sender account not found')
         }
       }
-      let context = {
+      const context = {
         trs: transaction,
-        block: block,
-        sender: sender
+        block,
+        sender,
       }
       await library.base.transaction.apply(context)
       // TODO not just remove, should mark as applied
@@ -457,20 +277,21 @@ Blocks.prototype.applyBlock = async function (block, options) {
   } catch (e) {
     app.logger.error(e)
     await app.sdb.rollbackBlock()
-    throw new Error('Failed to apply block: ' + e)
+    throw new Error(`Failed to apply block: ${e}`)
   }
 }
 
-Blocks.prototype.processBlock = async function (block, options) {
-  if (!private.loaded) throw new Error('Blockchain is loading')
+Blocks.prototype.processBlock = async (b, options) => {
+  if (!priv.loaded) throw new Error('Blockchain is loading')
 
+  let block = b
   app.sdb.beginBlock(block)
   if (!block.transactions) block.transactions = []
   if (!options.local) {
     try {
       block = library.base.block.objectNormalize(block)
     } catch (e) {
-      library.logger.error('Failed to normalize block: ' + e, block)
+      library.logger.error(`Failed to normalize block: ${e}`, block)
       throw e
     }
 
@@ -478,10 +299,10 @@ Blocks.prototype.processBlock = async function (block, options) {
     // block.transactions = library.base.block.sortTransactions(block)
     await self.verifyBlock(block, options)
 
-    library.logger.debug("verify block ok");
+    library.logger.debug('verify block ok')
     if (block.height !== 0) {
-      let exists = (undefined !== await app.sdb.getBlockById(block.id))
-      if (exists) throw new Error('Block already exists: ' + block.id)
+      const exists = (undefined !== await app.sdb.getBlockById(block.id))
+      if (exists) throw new Error(`Block already exists: ${block.id}`)
     }
 
     if (block.height !== 0) {
@@ -489,17 +310,16 @@ Blocks.prototype.processBlock = async function (block, options) {
         await PIFY(modules.delegates.validateBlockSlot)(block)
       } catch (e) {
         library.logger.error(e)
-        throw new Error("Can't verify slot: " + e)
+        throw new Error(`Can't verify slot: ${e}`)
       }
-      library.logger.debug("verify block slot ok")
+      library.logger.debug('verify block slot ok')
     }
 
     // TODO use bloomfilter
-    for (let i in block.transactions) {
-      let transaction = block.transactions[i]
+    for (const transaction of block.transactions) {
       library.base.transaction.objectNormalize(transaction)
     }
-    let idList = block.transactions.map((t) => t.id)
+    const idList = block.transactions.map(t => t.id)
     if (await app.sdb.exists('Transaction', { id: { $in: idList } })) {
       throw new Error('Block contain already confirmed transaction')
     }
@@ -508,7 +328,7 @@ Blocks.prototype.processBlock = async function (block, options) {
     try {
       await self.applyBlock(block, options)
     } catch (e) {
-      app.logger.error('Failed to apply block: ' + e)
+      app.logger.error(`Failed to apply block: ${e}`)
       throw e
     }
   }
@@ -517,30 +337,29 @@ Blocks.prototype.processBlock = async function (block, options) {
     self.saveBlockTransactions(block)
     await self.applyRound(block)
     await app.sdb.commitBlock()
-    let trsCount = block.transactions.length
-    app.logger.info('Block applied correctly with ' + trsCount + ' transactions')
-    self.setLastBlock(block);
+    const trsCount = block.transactions.length
+    app.logger.info(`Block applied correctly with ${trsCount} transactions`)
+    self.setLastBlock(block)
 
     if (options.broadcast) {
-      options.votes.signatures = options.votes.signatures.slice(0, 6);
-      library.bus.message('newBlock', block, options.votes);
+      options.votes.signatures = options.votes.signatures.slice(0, 6)
+      library.bus.message('newBlock', block, options.votes)
     }
   } catch (e) {
     app.logger.error('save block error: ', e)
     await app.sdb.rollbackBlock()
-    throw new Error('Failed to save block: ' + e)
+    throw new Error(`Failed to save block: ${e}`)
   } finally {
-    private.blockCache = {};
-    private.proposeCache = {};
-    private.lastVoteTime = null;
-    library.base.consensus.clearState();
+    priv.blockCache = {}
+    priv.proposeCache = {}
+    priv.lastVoteTime = null
+    library.base.consensus.clearState()
   }
 }
 
-Blocks.prototype.saveBlockTransactions = function (block) {
+Blocks.prototype.saveBlockTransactions = (block) => {
   app.logger.trace('Blocks#saveBlockTransactions height', block.height)
-  for (let i in block.transactions) {
-    let trs = block.transactions[i]
+  for (const trs of block.transactions) {
     trs.height = block.height
     trs.args = JSON.stringify(trs.args)
     trs.signatures = JSON.stringify(trs.signatures)
@@ -557,78 +376,75 @@ Blocks.prototype.saveBlockTransactions = function (block) {
 //   }
 // }
 
-Blocks.prototype.applyRound = async function (block) {
+Blocks.prototype.applyRound = async (block) => {
   if (block.height === 0) {
     modules.delegates.updateBookkeeper()
     return
   }
 
-  let delegate = app.sdb.getCached('Delegate', modules.accounts.generateAddressByPublicKey(block.delegate))
+  const delegate = app.sdb.getCached('Delegate', modules.accounts.generateAddressByPublicKey(block.delegate))
   delegate.producedBlocks += 1
 
-  let delegates = await PIFY(modules.delegates.generateDelegateList)(block.height)
+  const delegates = await PIFY(modules.delegates.generateDelegateList)(block.height)
 
   // process fee
-  let roundNumber = Math.floor((block.height + delegates.length - 1) / delegates.length)
+  const roundNumber = Math.floor(((block.height + delegates.length) - 1) / delegates.length)
 
-  let round = await app.sdb.get('Round', roundNumber) ||
+  const round = await app.sdb.get('Round', roundNumber) ||
     app.sdb.create('Round', { fees: 0, rewards: 0, round: roundNumber })
 
   let transFee = 0
-  for (let t of block.transactions) {
+  for (const t of block.transactions) {
     transFee += t.fee
   }
 
   round.fees += transFee
-  round.rewards += private.blockStatus.calcReward(block.height)
+  round.rewards += priv.blockStatus.calcReward(block.height)
 
   if (block.height % 101 !== 0) return
 
-  app.logger.debug('----------------------on round ' + roundNumber + ' end-----------------------')
+  app.logger.debug(`----------------------on round ${roundNumber} end-----------------------`)
   app.logger.debug('delegate length', delegates.length)
 
-  let forgedBlocks = await app.sdb.getBlocksByHeightRange(block.height - 100, block.height - 1)
-  let forgedDelegates = forgedBlocks.map(function (b) {
-    // FIXME getBlocksByHeight should return clean object
-    return b.delegate
-  })
+  const forgedBlocks = await app.sdb.getBlocksByHeightRange(block.height - 100, block.height - 1)
+  const forgedDelegates = forgedBlocks.map(b => b.delegate)
   forgedDelegates.push(block.delegate)
-  let missedDelegates = []
-  for (let fd of forgedDelegates) {
-    if (delegates.indexOf(fd) == -1) {
+  const missedDelegates = []
+  for (const fd of forgedDelegates) {
+    if (delegates.indexOf(fd) === -1) {
       missedDelegates.push(fd)
     }
   }
-  for (let md of missedDelegates) {
-    let addr = modules.accounts.generateAddressByPublicKey(md)
+  for (const md of missedDelegates) {
+    const addr = modules.accounts.generateAddressByPublicKey(md)
     app.sdb.getCached('Delegate', addr).missedBlocks += 1
   }
 
-  let fees = round.fees
-  let rewards = round.rewards
-  let ratio = 1
+  const fees = round.fees
+  const rewards = round.rewards
+  const ratio = 1
 
-  let actualFees = Math.floor(fees * ratio)
-  let feeAverage = Math.floor(actualFees / delegates.length)
-  let feeRemainder = actualFees - feeAverage * delegates.length
-  //let feeFounds = fees - actualFees
+  const actualFees = Math.floor(fees * ratio)
+  const feeAverage = Math.floor(actualFees / delegates.length)
+  const feeRemainder = actualFees - (feeAverage * delegates.length)
+  // let feeFounds = fees - actualFees
 
-  let actualRewards = Math.floor(rewards * ratio)
-  let rewardAverage = Math.floor(actualRewards / delegates.length)
-  let rewardRemainder = actualRewards - rewardAverage * delegates.length
-  //let rewardFounds = rewards - actualRewards
+  const actualRewards = Math.floor(rewards * ratio)
+  const rewardAverage = Math.floor(actualRewards / delegates.length)
+  const rewardRemainder = actualRewards - (rewardAverage * delegates.length)
+  // let rewardFounds = rewards - actualRewards
 
   async function updateDelegate(pk, fee, reward) {
-    let addr = modules.accounts.generateAddressByPublicKey(pk)
-    let delegate = app.sdb.getCached('Delegate', addr)
-    delegate.fees += fee
-    delegate.rewards += reward
+    const addr = modules.accounts.generateAddressByPublicKey(pk)
+    const d = app.sdb.getCached('Delegate', addr)
+    d.fees += fee
+    d.rewards += reward
     // TODO should account be all cached?
-    let account = await app.sdb.get('Account', delegate.address)
+    const account = await app.sdb.get('Account', d.address)
     account.xas += (fee + reward)
   }
 
-  for (let fd of forgedDelegates) {
+  for (const fd of forgedDelegates) {
     await updateDelegate(fd, feeAverage, rewardAverage)
   }
   await updateDelegate(block.delegate, feeRemainder, rewardRemainder)
@@ -643,67 +459,63 @@ Blocks.prototype.applyRound = async function (block) {
   }
 }
 
-Blocks.prototype.loadBlocksFromPeer = function (peer, lastCommonBlockId, cb) {
-  var loaded = false;
-  var count = 0;
-  var lastValidBlock = null;
-
+Blocks.prototype.loadBlocksFromPeer = (peer, id, cb) => {
+  let loaded = false
+  let count = 0
+  let lastValidBlock = null
+  let lastCommonBlockId = id
   async.whilst(
-    function () {
-      return !loaded && count < 30;
-    },
-    function (next) {
-      count++;
+    () => !loaded && count < 30,
+    (next) => {
+      count++
       const params = {
         body: {
           lastBlockId: lastCommonBlockId,
-          limit: 200
-        }
+          limit: 200,
+        },
       }
-      modules.peer.request('blocks', params, peer, function (err, ret) {
+      modules.peer.request('blocks', params, peer, (err, ret) => {
         if (err || ret.error) {
-          return next(err || ret.error.toString());
+          return next(err || ret.error.toString())
         }
         const contact = peer[1]
-        const peerStr = contact.hostname + ':' + contact.port
-        const blocks = ret.blocks;
-        library.logger.log('Loading ' + blocks.length + ' blocks from', peerStr);
-        if (blocks.length == 0) {
-          loaded = true;
-          next();
-        } else {
-          (async function () {
-            try {
-              for (let block of blocks) {
-                await self.processBlock(block, { syncing: true })
-                lastCommonBlockId = block.id;
-                lastValidBlock = block;
-                library.logger.log('Block ' + block.id + ' loaded from ' + peerStr + ' at', block.height);
-              }
-              next()
-            } catch (e) {
-              library.logger.error('Failed to process synced block', e)
-              return cb(e)
-            }
-          })()
+        const peerStr = `${contact.hostname}:${contact.port}`
+        const blocks = ret.blocks
+        library.logger.log(`Loading ${blocks.length} blocks from`, peerStr)
+        if (blocks.length === 0) {
+          loaded = true
+          return next()
         }
-      });
+        return (async () => {
+          try {
+            for (const block of blocks) {
+              await self.processBlock(block, { syncing: true })
+              lastCommonBlockId = block.id
+              lastValidBlock = block
+              library.logger.log(`Block ${block.id} loaded from ${peerStr} at`, block.height)
+            }
+            return next()
+          } catch (e) {
+            library.logger.error('Failed to process synced block', e)
+            return cb(e)
+          }
+        })()
+      })
     },
-    function (err) {
-      setImmediate(cb, err, lastValidBlock);
-    }
+    (err) => {
+      setImmediate(cb, err, lastValidBlock)
+    },
   )
 }
 
-Blocks.prototype.generateBlock = async function (keypair, timestamp) {
-  let unconfirmedList = modules.transactions.getUnconfirmedTransactionList()
-  let payloadHash = crypto.createHash('sha256')
+Blocks.prototype.generateBlock = async (keypair, timestamp) => {
+  const unconfirmedList = modules.transactions.getUnconfirmedTransactionList()
+  const payloadHash = crypto.createHash('sha256')
   let payloadLength = 0
   let fees = 0
-  for (let i in unconfirmedList) {
-    let transaction = unconfirmedList[i]
+  for (const transaction of unconfirmedList) {
     fees += transaction.fee
-    let bytes = library.base.transaction.getBytes(transaction)
+    const bytes = library.base.transaction.getBytes(transaction)
     // TODO check payload length when process remote block
     if ((payloadLength + bytes.length) > 8 * 1024 * 1024) {
       throw new Error('Playload length outof range')
@@ -711,16 +523,16 @@ Blocks.prototype.generateBlock = async function (keypair, timestamp) {
     payloadHash.update(bytes)
     payloadLength += bytes.length
   }
-  var block = {
+  const block = {
     version: 0,
-    delegate: keypair.publicKey.toString("hex"),
-    height: private.lastBlock.height + 1,
-    prevBlockId: private.lastBlock.id,
-    timestamp: timestamp,
+    delegate: keypair.publicKey.toString('hex'),
+    height: priv.lastBlock.height + 1,
+    prevBlockId: priv.lastBlock.id,
+    timestamp,
     transactions: unconfirmedList,
     count: unconfirmedList.length,
-    fees: fees,
-    payloadHash: payloadHash.digest().toString("hex")
+    fees,
+    payloadHash: payloadHash.digest().toString('hex'),
   }
 
   block.signature = library.base.block.sign(block, keypair)
@@ -730,73 +542,76 @@ Blocks.prototype.generateBlock = async function (keypair, timestamp) {
   try {
     activeKeypairs = await PIFY(modules.delegates.getActiveDelegateKeypairs)(block.height)
   } catch (e) {
-    throw new Error('Failed to get active delegate keypairs: ' + e)
+    throw new Error(`Failed to get active delegate keypairs: ${e}`)
   }
 
-  var height = block.height;
-  var id = block.id;
-  assert(activeKeypairs && activeKeypairs.length > 0, "Active keypairs should not be empty");
-  library.logger.info("get active delegate keypairs len: " + activeKeypairs.length);
-  var localVotes = library.base.consensus.createVotes(activeKeypairs, block);
+  const height = block.height
+  const id = block.id
+  assert(activeKeypairs && activeKeypairs.length > 0, 'Active keypairs should not be empty')
+  library.logger.info(`get active delegate keypairs len: ${activeKeypairs.length}`)
+  const localVotes = library.base.consensus.createVotes(activeKeypairs, block)
   if (library.base.consensus.hasEnoughVotes(localVotes)) {
     modules.transactions.clearUnconfirmed()
-    await this.processBlock(block, { local: true, broadcast: true, votes: localVotes })
-    library.logger.log('Forged new block id: ' + id +
-      ' height: ' + height +
-      ' round: ' + modules.round.calc(height) +
-      ' slot: ' + slots.getSlotNumber(block.timestamp) +
-      ' reward: ' + private.blockStatus.calcReward(block.height));
-  } else {
-    if (!library.config.publicIp) {
-      return next("No public ip");
-    }
-    var serverAddr = library.config.publicIp + ':' + library.config.port;
-    var propose;
-    try {
-      propose = library.base.consensus.createPropose(keypair, block, serverAddr);
-    } catch (e) {
-      return next("Failed to create propose: " + e.toString());
-    }
-    library.base.consensus.setPendingBlock(block);
-    library.base.consensus.addPendingVotes(localVotes);
-    private.proposeCache[propose.hash] = true;
-    library.bus.message("newPropose", propose, true);
+    await self.processBlock(block, { local: true, broadcast: true, votes: localVotes })
+    library.logger.log(`Forged new block id: ${id} 
+      height: ${height} 
+      round: ${modules.round.calc(height)} 
+      slot: ${slots.getSlotNumber(block.timestamp)} 
+      reward: ${priv.blockStatus.calcReward(block.height)}`)
+    return null
   }
+  if (!library.config.publicIp) {
+    return next('No public ip')
+  }
+  const serverAddr = `${library.config.publicIp}:${library.config.port}`
+  let propose
+  try {
+    propose = library.base.consensus.createPropose(keypair, block, serverAddr)
+  } catch (e) {
+    return next(`Failed to create propose: ${e.toString()}`)
+  }
+  library.base.consensus.setPendingBlock(block)
+  library.base.consensus.addPendingVotes(localVotes)
+  priv.proposeCache[propose.hash] = true
+  library.bus.message('newPropose', propose, true)
+  return null
 }
 
-Blocks.prototype.sandboxApi = function (call, args, cb) {
-  sandboxHelper.callMethod(shared, call, args, cb);
+Blocks.prototype.sandboxApi = (call, args, cb) => {
+  sandboxHelper.callMethod(shared, call, args, cb)
 }
 
 // Events
-Blocks.prototype.onReceiveBlock = function (block, votes) {
-  if (modules.loader.syncing() || !private.loaded) {
-    return;
+Blocks.prototype.onReceiveBlock = (block, votes) => {
+  if (modules.loader.syncing() || !priv.loaded) {
+    return
   }
 
-  if (private.blockCache[block.id]) {
-    return;
+  if (priv.blockCache[block.id]) {
+    return
   }
-  private.blockCache[block.id] = true;
+  priv.blockCache[block.id] = true
 
-  library.sequence.add(function receiveBlock(cb) {
-    if (block.prevBlockId == private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
-      library.logger.info('Received new block id: ' + block.id + ' height: ' + block.height + ' round: ' + modules.round.calc(modules.blocks.getLastBlock().height) + ' slot: ' + slots.getSlotNumber(block.timestamp));
-
-      (async function () {
-        let pendingTrsMap = new Map()
+  library.sequence.add((cb) => {
+    if (block.prevBlockId === priv.lastBlock.id && priv.lastBlock.height + 1 === block.height) {
+      library.logger.info(`Received new block id: ${block.id} 
+        height: ${block.height} 
+        round: ${modules.round.calc(modules.blocks.getLastBlock().height)} 
+        slot: ${slots.getSlotNumber(block.timestamp)}`)
+      return (async () => {
+        const pendingTrsMap = new Map()
         try {
           const pendingTrs = modules.transactions.getUnconfirmedTransactionList()
-          for (let t of pendingTrs) {
+          for (const t of pendingTrs) {
             pendingTrsMap.set(t.id, t)
           }
           modules.transactions.clearUnconfirmed()
           await app.sdb.rollbackBlock()
-          await self.processBlock(block, { votes: votes, broadcast: true })
+          await self.processBlock(block, { votes, broadcast: true })
         } catch (e) {
           library.logger.error('Failed to process received block', e)
         } finally {
-          for (let t of block.transactions) {
+          for (const t of block.transactions) {
             pendingTrsMap.delete(t.id)
           }
           try {
@@ -807,158 +622,156 @@ Blocks.prototype.onReceiveBlock = function (block, votes) {
           cb()
         }
       })()
-    } else if (block.prevBlockId != private.lastBlock.id && private.lastBlock.height + 1 == block.height) {
-      // Fork: Same height but different previous block id
-      modules.delegates.fork(block, 1);
-      cb("Fork");
-    } else if (block.prevBlockId == private.lastBlock.prevBlockId && block.height == private.lastBlock.height && block.id != private.lastBlock.id) {
-      // Fork: Same height and previous block id, but different block id
-      modules.delegates.fork(block, 5);
-      cb("Fork");
-    } else if (block.height > private.lastBlock.height + 1) {
-      library.logger.info("receive discontinuous block height " + block.height);
-      modules.loader.startSyncBlocks();
-      cb();
-    } else {
-      cb();
+    } else if (block.prevBlockId !== priv.lastBlock.id &&
+      priv.lastBlock.height + 1 === block.height) {
+      modules.delegates.fork(block, 1)
+      return cb('Fork')
+    } else if (block.prevBlockId === priv.lastBlock.prevBlockId &&
+      block.height === priv.lastBlock.height &&
+      block.id !== priv.lastBlock.id) {
+      modules.delegates.fork(block, 5)
+      return cb('Fork')
+    } else if (block.height > priv.lastBlock.height + 1) {
+      library.logger.info(`receive discontinuous block height ${block.height}`)
+      modules.loader.startSyncBlocks()
+      return cb()
     }
-  });
+    return cb()
+  })
 }
 
-Blocks.prototype.onReceivePropose = function (propose) {
-  if (modules.loader.syncing() || !private.loaded) {
-    return;
+Blocks.prototype.onReceivePropose = (propose) => {
+  if (modules.loader.syncing() || !priv.loaded) {
+    return
   }
-  if (private.proposeCache[propose.hash]) {
-    return;
+  if (priv.proposeCache[propose.hash]) {
+    return
   }
-  private.proposeCache[propose.hash] = true;
+  priv.proposeCache[propose.hash] = true
 
-  library.sequence.add(function receivePropose(cb) {
-    if (private.lastPropose && private.lastPropose.height == propose.height &&
-      private.lastPropose.generatorPublicKey == propose.generatorPublicKey &&
-      private.lastPropose.id != propose.id) {
-      library.logger.warn("generate different block with the same height, generator: " + propose.generatorPublicKey);
-      return setImmediate(cb);
+  library.sequence.add((cb) => {
+    if (priv.lastPropose && priv.lastPropose.height === propose.height &&
+      priv.lastPropose.generatorPublicKey === propose.generatorPublicKey &&
+      priv.lastPropose.id !== propose.id) {
+      library.logger.warn(`generate different block with the same height, generator: ${propose.generatorPublicKey}`)
+      return setImmediate(cb)
     }
-    if (propose.height != private.lastBlock.height + 1) {
-      library.logger.debug("invalid propose height", propose);
-      if (propose.height > private.lastBlock.height + 1) {
-        library.logger.info("receive discontinuous propose height " + propose.height);
-        modules.loader.startSyncBlocks();
+    if (propose.height !== priv.lastBlock.height + 1) {
+      library.logger.debug('invalid propose height', propose)
+      if (propose.height > priv.lastBlock.height + 1) {
+        library.logger.info(`receive discontinuous propose height ${propose.height}`)
+        modules.loader.startSyncBlocks()
       }
-      return setImmediate(cb);
+      return setImmediate(cb)
     }
-    if (private.lastVoteTime && Date.now() - private.lastVoteTime < 5 * 1000) {
-      library.logger.debug("ignore the frequently propose");
-      return setImmediate(cb);
+    if (priv.lastVoteTime && Date.now() - priv.lastVoteTime < 5 * 1000) {
+      library.logger.debug('ignore the frequently propose')
+      return setImmediate(cb)
     }
-    library.logger.info("receive propose height " + propose.height + " bid " + propose.id);
-    library.bus.message("newPropose", propose, true);
-    async.waterfall([
-      function (next) {
-        modules.delegates.validateProposeSlot(propose, function (err) {
+    library.logger.info(`receive propose height ${propose.height} bid ${propose.id}`)
+    library.bus.message('newPropose', propose, true)
+    return async.waterfall([
+      (next) => {
+        modules.delegates.validateProposeSlot(propose, (err) => {
           if (err) {
-            next("Failed to validate propose slot: " + err);
+            next(`Failed to validate propose slot: ${err}`)
           } else {
-            next();
+            next()
           }
-        });
+        })
       },
-      function (next) {
-        library.base.consensus.acceptPropose(propose, function (err) {
+      (next) => {
+        library.base.consensus.acceptPropose(propose, (err) => {
           if (err) {
-            next("Failed to accept propose: " + err);
+            next(`Failed to accept propose: ${err}`)
           } else {
-            next();
+            next()
           }
-        });
+        })
       },
-      function (next) {
-        modules.delegates.getActiveDelegateKeypairs(propose.height, function (err, activeKeypairs) {
+      (next) => {
+        modules.delegates.getActiveDelegateKeypairs(propose.height, (err, activeKeypairs) => {
           if (err) {
-            next("Failed to get active keypairs: " + err);
+            next(`Failed to get active keypairs: ${err}`)
           } else {
-            next(null, activeKeypairs);
+            next(null, activeKeypairs)
           }
-        });
+        })
       },
-      function (activeKeypairs, next) {
+      (activeKeypairs, next) => {
         if (activeKeypairs && activeKeypairs.length > 0) {
-          var votes = library.base.consensus.createVotes(activeKeypairs, propose);
-          library.logger.debug("send votes height " + votes.height + " id " + votes.id + " sigatures " + votes.signatures.length);
-          modules.transport.sendVotes(votes, propose.address);
-          private.lastVoteTime = Date.now();
-          private.lastPropose = propose;
+          const votes = library.base.consensus.createVotes(activeKeypairs, propose)
+          library.logger.debug(`send votes height ${votes.height} id ${votes.id} sigatures ${votes.signatures.length}`)
+          modules.transport.sendVotes(votes, propose.address)
+          priv.lastVoteTime = Date.now()
+          priv.lastPropose = propose
         }
-        setImmediate(next);
-      }
-    ], function (err) {
+        setImmediate(next)
+      },
+    ], (err) => {
       if (err) {
-        library.logger.error("onReceivePropose error: " + err);
+        library.logger.error(`onReceivePropose error: ${err}`)
       }
-      library.logger.debug("onReceivePropose finished");
-      cb();
-    });
-  });
+      library.logger.debug('onReceivePropose finished')
+      cb()
+    })
+  })
 }
 
-Blocks.prototype.onReceiveVotes = function (votes) {
-  if (modules.loader.syncing() || !private.loaded) {
-    return;
+Blocks.prototype.onReceiveVotes = (votes) => {
+  if (modules.loader.syncing() || !priv.loaded) {
+    return
   }
-  library.sequence.add(function receiveVotes(cb) {
-    var totalVotes = library.base.consensus.addPendingVotes(votes);
+  library.sequence.add((cb) => {
+    const totalVotes = library.base.consensus.addPendingVotes(votes)
     if (totalVotes && totalVotes.signatures) {
-      library.logger.debug("receive new votes, total votes number " + totalVotes.signatures.length);
+      library.logger.debug(`receive new votes, total votes number ${totalVotes.signatures.length}`)
     }
     if (library.base.consensus.hasEnoughVotes(totalVotes)) {
-      var block = library.base.consensus.getPendingBlock();
-      var height = block.height;
-      var id = block.id;
-      (async function () {
+      const block = library.base.consensus.getPendingBlock()
+      const height = block.height
+      const id = block.id
+      return (async () => {
         try {
           modules.transactions.clearUnconfirmed()
           await self.processBlock(block, { votes: totalVotes, local: true, broadcast: true })
-          library.logger.log('Forged new block id: ' + id +
-            ' height: ' + height +
-            ' round: ' + modules.round.calc(height) +
-            ' slot: ' + slots.getSlotNumber(block.timestamp) +
-            ' reward: ' + private.blockStatus.calcReward(block.height));
+          library.logger.log(`Forged new block id: ${id} 
+            height: ${height} 
+            round: ${modules.round.calc(height)} 
+            slot: ${slots.getSlotNumber(block.timestamp)} 
+            reward: ${priv.blockStatus.calcReward(block.height)}`)
         } catch (e) {
-          library.logger.error("Failed to process confirmed block height: " + height + " id: " + id + " error: " + err);
+          library.logger.error(`Failed to process confirmed block height: ${height} id: ${id} error: ${err}`)
         }
         cb()
       })()
-    } else {
-      setImmediate(cb);
     }
-  });
+    return setImmediate(cb)
+  })
 }
 
-Blocks.prototype.getSupply = function () {
-  let height = private.lastBlock.height
-  return private.blockStatus.calcSupply(height)
+Blocks.prototype.getSupply = () => {
+  const height = priv.lastBlock.height
+  return priv.blockStatus.calcSupply(height)
 }
 
-Blocks.prototype.getCirculatingSupply = function () {
-  let height = private.lastBlock.height
-  return private.blockStatus.calcSupply(height)
+Blocks.prototype.getCirculatingSupply = () => {
+  const height = priv.lastBlock.height
+  return priv.blockStatus.calcSupply(height)
 }
 
-Blocks.prototype.onBind = function (scope) {
-  modules = scope;
+Blocks.prototype.onBind = (scope) => {
+  modules = scope
 
-  private.loaded = true;
-
-  (async () => {
+  priv.loaded = true
+  return (async () => {
     try {
-      let count = app.sdb.blocksCount
+      const count = app.sdb.blocksCount
       app.logger.info('Blocks found:', count)
       if (!count) {
         await self.processBlock(genesisblock.block, {})
       } else {
-        let block = await app.sdb.getBlockByHeight(count - 1)
+        const block = await app.sdb.getBlockByHeight(count - 1)
         self.setLastBlock(block)
       }
       library.bus.message('blockchainReady')
@@ -969,35 +782,35 @@ Blocks.prototype.onBind = function (scope) {
   })()
 }
 
-Blocks.prototype.cleanup = function (cb) {
-  private.loaded = false;
-  cb();
+Blocks.prototype.cleanup = (cb) => {
+  priv.loaded = false
+  cb()
 }
 
 // Shared
-shared.getBlock = function (req, cb) {
-  if (!private.loaded) {
-    return cb("Blockchain is loading")
+shared.getBlock = (req, cb) => {
+  if (!priv.loaded) {
+    return cb('Blockchain is loading')
   }
-  var query = req.body;
-  library.scheme.validate(query, {
-    type: "object",
+  const query = req.body
+  return library.scheme.validate(query, {
+    type: 'object',
     properties: {
       id: {
         type: 'string',
-        minLength: 1
+        minLength: 1,
       },
       height: {
         type: 'integer',
-        minimum: 1
-      }
-    }
-  }, function (err) {
+        minimum: 1,
+      },
+    },
+  }, (err) => {
     if (err) {
-      return cb(err[0].message);
+      return cb(err[0].message)
     }
 
-    (async function () {
+    return (async () => {
       try {
         let block
         if (query.id) {
@@ -1009,39 +822,39 @@ shared.getBlock = function (req, cb) {
         if (!block) {
           return cb('Block not found')
         }
-        block.reward = private.blockStatus.calcReward(block.height)
+        block.reward = priv.blockStatus.calcReward(block.height)
         return cb(null, { block })
       } catch (e) {
         library.logger.error(e)
         return cb('Server error')
       }
     })()
-  });
+  })
 }
 
-shared.getFullBlock = function (req, cb) {
-  if (!private.loaded) {
-    return cb("Blockchain is loading")
+shared.getFullBlock = (req, cb) => {
+  if (!priv.loaded) {
+    return cb('Blockchain is loading')
   }
-  var query = req.body;
-  library.scheme.validate(query, {
-    type: "object",
+  const query = req.body
+  return library.scheme.validate(query, {
+    type: 'object',
     properties: {
       id: {
         type: 'string',
-        minLength: 1
+        minLength: 1,
       },
       height: {
         type: 'integer',
-        minimum: 1
-      }
-    }
-  }, function (err) {
+        minimum: 1,
+      },
+    },
+  }, (err) => {
     if (err) {
-      return cb(err[0].message);
+      return cb(err[0].message)
     }
 
-    (async function () {
+    return (async () => {
       try {
         let block
         if (query.id) {
@@ -1051,65 +864,64 @@ shared.getFullBlock = function (req, cb) {
         }
 
         if (!block) return cb('Block not found')
-        return cb(null, { block: block })
+        return cb(null, { block })
       } catch (e) {
         library.logger.error('Failed to find block', e)
         return cb('Server error')
       }
     })()
-
-  });
+  })
 }
 
-shared.getBlocks = function (req, cb) {
-  if (!private.loaded) {
-    return cb("Blockchain is loading")
+shared.getBlocks = (req, cb) => {
+  if (!priv.loaded) {
+    return cb('Blockchain is loading')
   }
-  var query = req.body;
-  library.scheme.validate(query, {
-    type: "object",
+  const query = req.body
+  return library.scheme.validate(query, {
+    type: 'object',
     properties: {
       limit: {
-        type: "integer",
+        type: 'integer',
         minimum: 0,
-        maximum: 100
+        maximum: 100,
       },
       offset: {
-        type: "integer",
-        minimum: 0
+        type: 'integer',
+        minimum: 0,
       },
       generatorPublicKey: {
-        type: "string",
-        format: "publicKey"
-      }
-    }
-  }, function (err) {
+        type: 'string',
+        format: 'publicKey',
+      },
+    },
+  }, (err) => {
     if (err) {
-      return cb(err[0].message);
+      return cb(err[0].message)
     }
 
-    (async function () {
+    return (async () => {
       try {
-        let offset = query.offset ? Number(query.offset) : 0
-        let limit = query.limit ? Number(query.limit) : 20
+        const offset = query.offset ? Number(query.offset) : 0
+        const limit = query.limit ? Number(query.limit) : 20
         let minHeight
         let maxHeight
         if (query.orderBy === 'height:desc') {
-          maxHeight = private.lastBlock.height - offset
-          minHeight = maxHeight - limit + 1
+          maxHeight = priv.lastBlock.height - offset
+          minHeight = (maxHeight - limit) + 1
         } else {
           minHeight = offset
-          maxHeight = offset + limit - 1
+          maxHeight = (offset + limit) - 1
         }
 
-        //TODO: get by delegate ??
+        // TODO: get by delegate ??
         // if (query.generatorPublicKey) {
         //   condition.delegate = query.generatorPublicKey
         // }
-        let count = app.sdb.blocksCount
+        const count = app.sdb.blocksCount
         if (!count) throw new Error('Failed to get blocks count')
 
-        let blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
+        const blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
         if (!blocks || !blocks.length) return cb('No blocks')
         return cb(null, { count, blocks })
       } catch (e) {
@@ -1117,54 +929,52 @@ shared.getBlocks = function (req, cb) {
         return cb('Server error')
       }
     })()
-  });
+  })
 }
 
-shared.getHeight = function (req, cb) {
-  if (!private.loaded) {
-    return cb("Blockchain is loading")
+shared.getHeight = (req, cb) => {
+  if (!priv.loaded) {
+    return cb('Blockchain is loading')
   }
-  var query = req.body;
-  cb(null, { height: private.lastBlock.height });
+  return cb(null, { height: priv.lastBlock.height })
 }
 
-shared.getMilestone = function (req, cb) {
-  if (!private.loaded) {
-    return cb("Blockchain is loading")
+shared.getMilestone = (req, cb) => {
+  if (!priv.loaded) {
+    return cb('Blockchain is loading')
   }
-  var query = req.body, height = private.lastBlock.height;
-  cb(null, { milestone: private.blockStatus.calcMilestone(height) });
+  const height = priv.lastBlock.height
+  return cb(null, { milestone: priv.blockStatus.calcMilestone(height) })
 }
 
-shared.getReward = function (req, cb) {
-  if (!private.loaded) {
-    return cb("Blockchain is loading")
+shared.getReward = (req, cb) => {
+  if (!priv.loaded) {
+    return cb('Blockchain is loading')
   }
-  var query = req.body, height = private.lastBlock.height;
-  cb(null, { reward: private.blockStatus.calcReward(height) });
+  const height = priv.lastBlock.height
+  return cb(null, { reward: priv.blockStatus.calcReward(height) })
 }
 
-shared.getSupply = function (req, cb) {
-  if (!private.loaded) {
-    return cb("Blockchain is loading")
+shared.getSupply = (req, cb) => {
+  if (!priv.loaded) {
+    return cb('Blockchain is loading')
   }
-  var query = req.body, height = private.lastBlock.height;
-  cb(null, { supply: private.blockStatus.calcSupply(height) });
+  const height = priv.lastBlock.height
+  return cb(null, { supply: priv.blockStatus.calcSupply(height) })
 }
 
-shared.getStatus = function (req, cb) {
-  if (!private.loaded) {
-    return cb("Blockchain is loading")
+shared.getStatus = (req, cb) => {
+  if (!priv.loaded) {
+    return cb('Blockchain is loading')
   }
-  var query = req.body, height = private.lastBlock.height;
-  cb(null, {
-    height: height,
+  const height = priv.lastBlock.height
+  return cb(null, {
+    height,
     fee: library.base.block.calculateFee(),
-    milestone: private.blockStatus.calcMilestone(height),
-    reward: private.blockStatus.calcReward(height),
-    supply: private.blockStatus.calcSupply(height)
-  });
+    milestone: priv.blockStatus.calcMilestone(height),
+    reward: priv.blockStatus.calcReward(height),
+    supply: priv.blockStatus.calcSupply(height),
+  })
 }
 
-// Export
-module.exports = Blocks;
+module.exports = Blocks
