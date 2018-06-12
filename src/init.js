@@ -151,7 +151,7 @@ module.exports = function init(options, done) {
         return true
       })
 
-      ZSchema.registerFormat('checkInt', value => Number.isInteger(value))
+      ZSchema.registerFormat('checkInt', value => ! (isNaN(value) || parseInt(value) != value || isNaN(parseInt(value, 10))) )
 
       cb(null, new ZSchema())
     },
@@ -248,9 +248,9 @@ module.exports = function init(options, done) {
             return value
           }
 
-          if (!Number.isInteger(value)) {
-            return value
-          }
+        if (isNaN(value) || parseInt(value) != value || isNaN(parseInt(value, radix))) {
+          return value
+        }
 
           return Number.parseInt(value, radix)
         },
