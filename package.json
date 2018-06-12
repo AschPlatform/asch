@@ -24,7 +24,6 @@
     "compression": "1.6.1",
     "cors": "2.7.1",
     "daemon": "1.1.0",
-    "decompress-zip": "https://github.com/AschPlatform/decompress-zip/tarball/v0.2.0+asch.1",
     "ejs": "2.5.7",
     "express": "4.14.0",
     "express-domain-middleware": "0.1.0",
