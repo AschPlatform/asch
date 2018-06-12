@@ -18,11 +18,7 @@ module.exports = {
     "global-require": 0,
     "default-case": "off",
     "prefer-destructuring": 0,
-    "no-param-reassign": [
-      "error",
-      {
-        props: false
-      }
-    ]
+    "no-continue": 0,
+    "no-param-reassign": 0
   }
 };
