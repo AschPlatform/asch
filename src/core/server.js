@@ -1,81 +1,72 @@
-var util = require('util');
-var async = require('async');
-var path = require('path');
-var Router = require('../utils/router.js');
-var sandboxHelper = require('../utils/sandbox.js');
+const Router = require('../utils/router.js')
+const sandboxHelper = require('../utils/sandbox.js')
 
-// Private fields
-var modules, library, self, private = {}, shared = {};
+let modules
+let library
+let self
+const priv = {}
+const shared = {}
 
-private.loaded = false
+priv.loaded = false
 
-// Constructor
 function Server(cb, scope) {
-  library = scope;
-  self = this;
-  self.__private = private;
-  private.attachApi();
+  library = scope
+  self = this
+  priv.attachApi()
 
-  setImmediate(cb, null, self);
+  setImmediate(cb, null, self)
 }
 
-// Private methods
-private.attachApi = function() {
-  var router = new Router();
+// priv methods
+priv.attachApi = () => {
+  const router = new Router()
 
-  router.use(function (req, res, next) {
-    if (modules) return next();
-    res.status(500).send({success: false, error: "Blockchain is loading"});
-  });
+  router.use((req, res, next) => {
+    if (modules) return next()
+    return res.status(500).send({ success: false, error: 'Blockchain is loading' })
+  })
 
-  router.get('/', function (req, res) {
-    res.render('index.html');
-  });
+  router.get('/', (req, res) => {
+    res.render('index.html')
+  })
 
-  router.get('/api/blocks/totalsupply', function (req, res) {
-    res.status(200).send('' + modules.blocks.getSupply() / 100000000);
-  });
+  router.get('/api/blocks/totalsupply', (req, res) => {
+    res.status(200).send(`${modules.blocks.getSupply() / 100000000}`)
+  })
 
-  router.get('/api/blocks/circulatingsupply', function (req, res) {
-    res.status(200).send('' + modules.blocks.getCirculatingSupply() / 100000000);
-  });
+  router.get('/api/blocks/circulatingsupply', (req, res) => {
+    res.status(200).send(`${modules.blocks.getCirculatingSupply() / 100000000}`)
+  })
 
-  router.get('/chains/:id', function (req, res) {
-    res.render('chains/' + req.params.id + '/index.html');
-  });
+  router.get('/chains/:id', (req, res) => {
+    res.render(`chains/${req.params.id}/index.html`)
+  })
 
-  router.use(function (req, res, next) {
-    if (req.url.indexOf('/api/') == -1 && req.url.indexOf('/peer/') == -1) {
-      return res.redirect('/');
+  router.use((req, res, next) => {
+    if (req.url.indexOf('/api/') === -1 && req.url.indexOf('/peer/') === -1) {
+      return res.redirect('/')
     }
-    next();
-    // res.status(500).send({ success: false, error: 'api not found' });
-  });
+    return next()
+  })
 
-  library.network.app.use('/', router);
+  library.network.app.use('/', router)
 }
 
-// Public methods
-
-Server.prototype.sandboxApi = function (call, args, cb) {
-  sandboxHelper.callMethod(shared, call, args, cb);
+Server.prototype.sandboxApi = (call, args, cb) => {
+  sandboxHelper.callMethod(shared, call, args, cb)
 }
 
-// Events
-Server.prototype.onBind = function (scope) {
-  modules = scope;
+Server.prototype.onBind = (scope) => {
+  modules = scope
 }
 
-Server.prototype.onBlockchainReady = function () {
-  private.loaded = true;
+Server.prototype.onBlockchainReady = () => {
+  priv.loaded = true
 }
 
-Server.prototype.cleanup = function (cb) {
-  private.loaded = false;
-  cb();
+Server.prototype.cleanup = (cb) => {
+  priv.loaded = false
+  cb()
 }
 
-// Shared
-
-// Export
-module.exports = Server;
+module.exports = Server
