@@ -6,7 +6,7 @@ module.exports = {
     node: true
   },
   rules: {
-    "semi": [2, "never"],
+    semi: [2, "never"],
     "no-console": "off",
     "no-undef": 0,
     "no-new": 0,
