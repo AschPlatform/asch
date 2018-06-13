@@ -11,8 +11,6 @@ const Router = require('../utils/router.js');
 const sandboxHelper = require('../utils/sandbox.js');
 const utils = require('../utils')
 
-require('array.prototype.find'); // Old node fix
-
 // Private fields
 var modules, library, self, private = {}, shared = {};
 

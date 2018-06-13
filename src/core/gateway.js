@@ -1,29 +1,27 @@
-const sandboxHelper = require('../utils/sandbox.js')
-const slots = require('../utils/slots.js')
-const Router = require('../utils/router.js')
 const PIFY = require('util').promisify
 const utils = require('../utils')
 const gatewayLib = require('asch-gateway')
 
-var modules, library, self, private = {}, shared = {};
-
-private.version, private.osName, private.port;
+let modules
+let library
+let self
+const priv = {}
 
 const GatewayLogType = {
   IMPORT_ADDRESS: 1,
   DEPOSIT: 2,
   WITHDRAWAL: 3,
-  SEND_WITHDRAWAL: 4
+  SEND_WITHDRAWAL: 4,
 }
 
 async function getGatewayAccountByOutAddress(addresses, coldAccount) {
-  let accountMap = {}
-  for (let i of addresses) {
+  const accountMap = {}
+  for (const i of addresses) {
     let account
     if (coldAccount.address === i) {
       account = coldAccount.accountExtrsInfo.redeemScript
     } else {
-      let gatewayAccount = await app.sdb.findOne('GatewayAccount', { condition: { outAddress: i } })
+      const gatewayAccount = await app.sdb.findOne('GatewayAccount', { condition: { outAddress: i } })
       if (!gatewayAccount) throw new Error('Input address have no gateway account')
       account = JSON.parse(gatewayAccount.attachment).redeemScript
     }
@@ -33,76 +31,71 @@ async function getGatewayAccountByOutAddress(addresses, coldAccount) {
 }
 
 function Gateway(cb, scope) {
-  library = scope;
-  self = this;
-  self.__private = private;
+  library = scope
+  self = this
 
-  let gatewayConfig = global.Config.gateway.rpc
+  const gatewayConfig = global.Config.gateway.rpc
 
-  if (!!gatewayConfig.username) {
+  if (gatewayConfig.username) {
     self.client = new gatewayLib.bitcoin.Client(
       gatewayConfig.username,
       gatewayConfig.password,
       'testnet',
       gatewayConfig.port,
-      gatewayConfig.host
+      gatewayConfig.host,
     )
     self.gatewayUtil = new gatewayLib.bitcoin.Utils('testnet')
   }
 
-  setImmediate(cb, null, self);
+  setImmediate(cb, null, self)
 }
 
-private.importAddress = function (address) {
-  return new Promise((resolve, reject) => {
-    self.client.importAddress(address, function (err, result) {
+priv.importAddress = address =>
+  new Promise((resolve, reject) =>
+    self.client.importAddress(address, (err, result) => {
+      if (err) reject(err)
+      else resolve(result)
+    }))
+
+priv.getTransactionsFromBlockHeight = height =>
+  new Promise((resolve, reject) => {
+    self.client.getTransactionsFromBlockHeight(height, (err, result) => {
       if (err) reject(err)
       else resolve(result)
     })
   })
-}
 
-private.getTransactionsFromBlockHeight = function (height) {
-  return new Promise((resolve, reject) => {
-    self.client.getTransactionsFromBlockHeight(height, function (err, result) {
+priv.createNewTransaction = (multiAccount, output, spentTids, fee) =>
+  new Promise((resolve, reject) => {
+    self.client.createNewTransaction(multiAccount, output, spentTids, fee, (err, result) => {
       if (err) reject(err)
       else resolve(result)
     })
   })
-}
 
-private.createNewTransaction = function (multiAccount, output, spentTids, fee) {
-  return new Promise((resolve, reject) => {
-    self.client.createNewTransaction(multiAccount, output, spentTids, fee, function (err, result) {
+priv.sendRawTransaction = t =>
+  new Promise((resolve, reject) => {
+    self.client.sendRawTransaction(t, (err, result) => {
       if (err) reject(err)
       else resolve(result)
     })
   })
-}
 
-private.sendRawTransaction = function (t) {
-  return new Promise((resolve, reject) => {
-    self.client.sendRawTransaction(t, function (err, result) {
-      if (err) reject(err)
-      else resolve(result)
-    })
-  })
-}
-
-private.getSpentTids = async function (gateway) {
+priv.getSpentTids = async (gateway) => {
   let spentTids = []
-  let latestWithdrawals = await app.sdb.find('GatewayWithdrawal', { gateway: gateway }, 10, { seq: -1 })
-  for (let w of latestWithdrawals) {
-    if (!w.outTransaction) continue
-    const ot = JSON.parse(w.outTransaction)
-    const rawTransaction = ot.txhex
-    const tids = self.gatewayUtil.getSpentTidsFromRawTransaction(rawTransaction)
-    spentTids = spentTids.concat(tids)
+  const latestWithdrawals = await app.sdb.find('GatewayWithdrawal', { gateway }, 10, { seq: -1 })
+  for (const w of latestWithdrawals) {
+    if (w.outTransaction) {
+      const ot = JSON.parse(w.outTransaction)
+      const rawTransaction = ot.txhex
+      const tids = self.gatewayUtil.getSpentTidsFromRawTransaction(rawTransaction)
+      spentTids = spentTids.concat(tids)
+    }
   }
   return spentTids
 }
 
-Gateway.prototype.importAccounts = async function () {
+Gateway.prototype.importAccounts = async () => {
   const GATEWAY = global.Config.gateway.name
   if (modules.loader.syncing() || !GATEWAY || !self.client) {
     return
@@ -117,13 +110,13 @@ Gateway.prototype.importAccounts = async function () {
   } else {
     lastImportAddressLog = app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.IMPORT_ADDRESS, seq: 0 })
   }
-  //query( model, condition, fields, limit, offset, sort, join )
-  let gatewayAccounts = await app.sdb.find('GatewayAccount', { gateway: GATEWAY, seq: { $gt: lastSeq } }, 100, { seq: 1 })
+  // query( model, condition, fields, limit, offset, sort, join )
+  const gatewayAccounts = await app.sdb.find('GatewayAccount', { gateway: GATEWAY, seq: { $gt: lastSeq } }, 100, { seq: 1 })
   library.logger.debug('find gateway account', gatewayAccounts)
-  let len = gatewayAccounts.length
+  const len = gatewayAccounts.length
   if (len > 0) {
-    for (let a of gatewayAccounts) {
-      await private.importAddress(a.outAddress)
+    for (const a of gatewayAccounts) {
+      await priv.importAddress(a.outAddress)
     }
 
     lastImportAddressLog.seq = gatewayAccounts[len - 1].seq
@@ -131,14 +124,14 @@ Gateway.prototype.importAccounts = async function () {
   }
 }
 
-Gateway.prototype.processDeposits = async function () {
+Gateway.prototype.processDeposits = async () => {
   const GATEWAY = global.Config.gateway.name
   if (modules.loader.syncing() || !GATEWAY || !self.client) {
     return
   }
   const CURRENCY = 'BTC'
 
-  let validators = await app.sdb.findAll('GatewayMember', { gateway: GATEWAY, elected: 1 })
+  const validators = await app.sdb.findAll('GatewayMember', { gateway: GATEWAY, elected: 1 })
   if (!validators || !validators.length) {
     library.logger.error('Validators not found')
     return
@@ -156,21 +149,21 @@ Gateway.prototype.processDeposits = async function () {
   lastDepositLog = lastDepositLog ||
     app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.DEPOSIT, seq: 0 })
 
-  let lastSeq = lastDepositLog.seq
-  let ret = await private.getTransactionsFromBlockHeight(lastSeq)
+  const lastSeq = lastDepositLog.seq
+  const ret = await priv.getTransactionsFromBlockHeight(lastSeq)
   if (!ret || !ret.transactions) {
     library.logger.error('Failed to get gateway transactions')
     return
   }
 
-  let outTransactions = ret.transactions.filter(ot => ot.category === 'receive' && ot.confirmations >= 1)
+  const outTransactions = ret.transactions.filter(ot => ot.category === 'receive' && ot.confirmations >= 1)
     .sort((l, r) => l.height - r.height)
 
   library.logger.debug('get gateway transactions', outTransactions)
-  let len = outTransactions.length
+  const len = outTransactions.length
   if (len > 0) {
-    for (let ot of outTransactions) {
-      let isAccountOpened = await app.sdb.exists('GatewayAccount', { outAddress: ot.address })
+    for (const ot of outTransactions) {
+      const isAccountOpened = await app.sdb.exists('GatewayAccount', { outAddress: ot.address })
       if (!isAccountOpened) {
         library.logger.warn('unknow address', { address: ot.address, gateway: GATEWAY, t: ot })
         continue
@@ -185,11 +178,11 @@ Gateway.prototype.processDeposits = async function () {
           type: 402,
           secret: global.Config.gateway.secret,
           fee: 10000000,
-          args: [GATEWAY, ot.address, CURRENCY, String(ot.amount * 100000000), ot.txid]
+          args: [GATEWAY, ot.address, CURRENCY, String(ot.amount * 100000000), ot.txid],
         }
         await PIFY(modules.transactions.addTransactionUnsigned)(params)
       }
-      const onError = function (err) {
+      const onError = (err) => {
         library.logger.error('process gateway deposit error, will retry...', err)
       }
       try {
@@ -204,76 +197,76 @@ Gateway.prototype.processDeposits = async function () {
   }
 }
 
-Gateway.prototype.processWithdrawals = async function () {
+Gateway.prototype.processWithdrawals = async () => {
   const GATEWAY = global.Config.gateway.name
   if (modules.loader.syncing() || !GATEWAY || !self.client) {
     return
   }
-  let PAGE_SIZE = 25
-  let validators = await app.sdb.findAll('GatewayMember', { gateway: GATEWAY, elected: 1 })
+  const PAGE_SIZE = 25
+  const validators = await app.sdb.findAll('GatewayMember', { gateway: GATEWAY, elected: 1 })
   if (!validators || !validators.length) {
     library.logger.error('Validators not found')
     return
   }
   library.logger.debug('find gateway validators', validators)
 
-  let outPublicKeys = validators.map((v) => v.outPublicKey).sort((l, r) => l - r)
-  let unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
-  let multiAccount = app.gateway.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
+  const outPublicKeys = validators.map(v => v.outPublicKey).sort((l, r) => l - r)
+  const unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
+  const multiAccount = app.gateway.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
   library.logger.debug('gateway validators cold account', multiAccount)
 
-  let withdrawalLogKey = app.sdb.getEntityKey('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL })
+  const withdrawalLogKey = app.sdb.getEntityKey('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL })
   let lastWithdrawalLog = await app.sdb.get('GatewayLog', withdrawalLogKey)
   library.logger.debug('find ==========WITHDRAWAL============ log', lastWithdrawalLog)
 
   lastWithdrawalLog = lastWithdrawalLog ||
     app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.WITHDRAWAL, seq: 0 })
 
-  let lastSeq = lastWithdrawalLog.seq
+  const lastSeq = lastWithdrawalLog.seq
 
-  let withdrawals = await app.sdb.find('GatewayWithdrawal', { gateway: GATEWAY, seq: { $gt: lastSeq } }, PAGE_SIZE)
+  const withdrawals = await app.sdb.find('GatewayWithdrawal', { gateway: GATEWAY, seq: { $gt: lastSeq } }, PAGE_SIZE)
   library.logger.debug('get gateway withdrawals', withdrawals)
   if (!withdrawals || !withdrawals.length) {
     return
   }
 
-  let account = {
-    privateKey: global.Config.gateway.outSecret
+  const account = {
+    privKey: global.Config.gateway.outSecret,
   }
-  let spentTids = await private.getSpentTids(GATEWAY)
+  let spentTids = await priv.getSpentTids(GATEWAY)
   for (let w of withdrawals) {
     if (w.ready) continue
     async function processWithdrawal() {
       let contractParams = null
       w = await app.sdb.get('GatewayWithdrawal', w.tid)
       if (!w.outTransaction) {
-        let output = [{ address: w.recipientId, value: Number(w.amount) }]
+        const output = [{ address: w.recipientId, value: Number(w.amount) }]
         library.logger.debug('gateway spent tids', spentTids)
-        let ot = await private.createNewTransaction(multiAccount, output, spentTids, Number(w.fee))
+        const ot = await priv.createNewTransaction(multiAccount, output, spentTids, Number(w.fee))
         spentTids = spentTids.concat(self.gatewayUtil.getSpentTidsFromRawTransaction(ot.txhex))
         library.logger.debug('create withdrawl out transaction', ot)
 
-        let inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
+        const inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
         library.logger.debug('input account info', inputAccountInfo)
 
-        let ots = self.gatewayUtil.signTransaction(ot, account, inputAccountInfo)
+        const ots = self.gatewayUtil.signTransaction(ot, account, inputAccountInfo)
         library.logger.debug('sign withdrawl out transaction', ots)
 
         contractParams = {
           type: 404,
           secret: global.Config.gateway.secret,
           fee: 10000000,
-          args: [w.tid, JSON.stringify(ot), JSON.stringify(ots)]
+          args: [w.tid, JSON.stringify(ot), JSON.stringify(ots)],
         }
       } else {
-        let ot = JSON.parse(w.outTransaction)
-        let inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
-        let ots = self.gatewayUtil.signTransaction(ot, account, inputAccountInfo)
+        const ot = JSON.parse(w.outTransaction)
+        const inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
+        const ots = self.gatewayUtil.signTransaction(ot, account, inputAccountInfo)
         contractParams = {
           type: 405,
           secret: global.Config.gateway.secret,
           fee: 10000000,
-          args: [w.tid, JSON.stringify(ots)]
+          args: [w.tid, JSON.stringify(ots)],
         }
       }
       await PIFY(modules.transactions.addTransactionUnsigned)(contractParams)
@@ -292,16 +285,16 @@ Gateway.prototype.processWithdrawals = async function () {
   app.sdb.saveLocalChanges()
 }
 
-Gateway.prototype.sendWithdrawals = async function () {
+Gateway.prototype.sendWithdrawals = async () => {
   const GATEWAY = global.Config.gateway.name
   if (modules.loader.syncing() || !GATEWAY || !self.client) {
     return
   }
   const PAGE_SIZE = 25
   let lastSeq = 0
-  let logKey = app.sdb.getEntityKey('GatewayLog', {
+  const logKey = app.sdb.getEntityKey('GatewayLog', {
     gateway: GATEWAY,
-    type: GatewayLogType.SEND_WITHDRAWAL
+    type: GatewayLogType.SEND_WITHDRAWAL,
   })
   let lastLog = app.sdb.getCached('GatewayLog', logKey)
   library.logger.debug('find ======SEND_WITHDRAWAL====== log', lastLog)
@@ -310,25 +303,25 @@ Gateway.prototype.sendWithdrawals = async function () {
   } else {
     lastLog = app.sdb.create('GatewayLog', { gateway: GATEWAY, type: GatewayLogType.SEND_WITHDRAWAL, seq: 0 })
   }
-  let withdrawals = await app.sdb.findAll('GatewayWithdrawal', {
+  const withdrawals = await app.sdb.findAll('GatewayWithdrawal', {
     condition: {
       gateway: GATEWAY,
-      seq: { $gt: lastSeq }
+      seq: { $gt: lastSeq },
     },
     limit: PAGE_SIZE,
     sort: {
-      seq: 1
-    }
+      seq: 1,
+    },
   })
   library.logger.debug('get gateway withdrawals', withdrawals)
   if (!withdrawals || !withdrawals.length) {
     return
   }
-  let validators = await app.sdb.findAll('GatewayMember', {
+  const validators = await app.sdb.findAll('GatewayMember', {
     condition: {
       gateway: GATEWAY,
-      elected: 1
-    }
+      elected: 1,
+    },
   })
   if (!validators) {
     library.logger.error('Validators not found')
@@ -336,33 +329,33 @@ Gateway.prototype.sendWithdrawals = async function () {
   }
   library.logger.debug('find gateway validators', validators)
 
-  let outPublicKeys = validators.map((v) => v.outPublicKey).sort((l, r) => l - r)
-  let unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
-  let multiAccount = app.gateway.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
+  const outPublicKeys = validators.map(v => v.outPublicKey).sort((l, r) => l - r)
+  const unlockNumber = Math.floor(outPublicKeys.length / 2) + 1
+  const multiAccount = app.gateway.createMultisigAddress(GATEWAY, unlockNumber, outPublicKeys, true)
   library.logger.debug('gateway validators cold account', multiAccount)
 
-  for (let w of withdrawals) {
+  for (const w of withdrawals) {
     if (!w.outTransaction) {
       library.logger.debug('out transaction not created')
       return
     }
-    let preps = await app.sdb.findAll('GatewayWithdrawalPrep', { condition: { wid: w.tid } })
+    const preps = await app.sdb.findAll('GatewayWithdrawalPrep', { condition: { wid: w.tid } })
     if (preps.length < unlockNumber) {
       library.logger.debug('not enough signature')
       return
     }
-    let ot = JSON.parse(w.outTransaction)
-    let ots = []
+    const ot = JSON.parse(w.outTransaction)
+    const ots = []
     for (let i = 0; i < unlockNumber; i++) {
       ots.push(JSON.parse(preps[i].signature))
     }
 
     async function sendWithdrawal() {
-      let inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
+      const inputAccountInfo = await getGatewayAccountByOutAddress(ot.input, multiAccount)
       library.logger.debug('before build transaction')
-      let finalTransaction = self.gatewayUtil.buildTransaction(ot, ots, inputAccountInfo)
+      const finalTransaction = self.gatewayUtil.buildTransaction(ot, ots, inputAccountInfo)
       library.logger.debug('before send raw tarnsaction', finalTransaction)
-      let tid = await private.sendRawTransaction(finalTransaction)
+      const tid = await priv.sendRawTransaction(finalTransaction)
       return tid
     }
     const onError = function (err) {
@@ -375,7 +368,7 @@ Gateway.prototype.sendWithdrawals = async function () {
         type: 406,
         secret: global.Config.gateway.secret,
         fee: 1000000,
-        args: [w.tid, tid]
+        args: [w.tid, tid],
       }
       await PIFY(modules.transactions.addTransactionUnsigned)(submitOidParams)
     } catch (e) {
@@ -386,7 +379,7 @@ Gateway.prototype.sendWithdrawals = async function () {
   }
 }
 
-Gateway.prototype.onBlockchainReady = function () {
+Gateway.prototype.onBlockchainReady = () => {
   if (global.Config.gateway) {
     utils.loopAsyncFunction(self.importAccounts.bind(self), 10 * 1000)
     utils.loopAsyncFunction(self.processDeposits.bind(self), 60 * 1000)
@@ -397,8 +390,8 @@ Gateway.prototype.onBlockchainReady = function () {
   }
 }
 
-Gateway.prototype.onBind = function (scope) {
-  modules = scope;
+Gateway.prototype.onBind = (scope) => {
+  modules = scope
 }
 
-module.exports = Gateway;
+module.exports = Gateway

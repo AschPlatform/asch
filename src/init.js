@@ -248,9 +248,9 @@ module.exports = function init(options, done) {
             return value
           }
 
-        if (isNaN(value) || parseInt(value) != value || isNaN(parseInt(value, radix))) {
-          return value
-        }
+          if (isNaN(value) || parseInt(value) != value || isNaN(parseInt(value, radix))) {
+            return value
+          }
 
           return Number.parseInt(value, radix)
         },

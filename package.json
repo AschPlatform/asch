@@ -9,8 +9,6 @@
   "author": "Qingfeng Shan <sqf1225@foxmail.com>",
   "dependencies": {
     "@kadenceproject/kadence": "https://github.com/AschPlatform/kadence/tarball/v3.3.0+asch.2",
-    "array.prototype.find": "1.0.0",
-    "array.prototype.findindex": "2.0.0",
     "asch-gateway": "https://github.com/AschPlatform/asch-gateway-dist/tarball/develop",
     "asch-js": "https://github.com/AschPlatform/asch-js/tarball/develop",
     "asch-sandbox": "https://github.com/AschPlatform/asch-sandbox-dist/tarball/develop",
@@ -26,7 +24,6 @@
     "compression": "1.6.1",
     "cors": "2.7.1",
     "daemon": "1.1.0",
-    "decompress-zip": "https://github.com/AschPlatform/decompress-zip/tarball/v0.2.0+asch.1",
     "ejs": "2.5.7",
     "express": "4.14.0",
     "express-domain-middleware": "0.1.0",

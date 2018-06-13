@@ -1,528 +1,403 @@
-var crypto = require('crypto');
-var util = require('util');
-var async = require('async');
-var ed = require('../utils/ed.js');
-var bignum = require('bignumber');
-var Router = require('../utils/router.js');
-var slots = require('../utils/slots.js');
-var BlockStatus = require("../utils/block-status.js");
-var constants = require('../utils/constants.js');
-var sandboxHelper = require('../utils/sandbox.js');
-var addressHelper = require('../utils/address.js')
-var PIFY = util.promisify
-let jsonSql = require('json-sql')({ separatedValues: false })
+const crypto = require('crypto')
+const util = require('util')
+const ed = require('../utils/ed.js')
+const Router = require('../utils/router.js')
+const slots = require('../utils/slots.js')
+const BlockStatus = require('../utils/block-status.js')
+const sandboxHelper = require('../utils/sandbox.js')
 
-require('array.prototype.find'); // Old node fix
-
-// Private fields
-var modules, library, self, private = {}, shared = {};
+let modules
+let library
+let self
+const priv = {}
+const shared = {}
 
 const BOOK_KEEPER_NAME = 'round_bookkeeper'
 
-private.loaded = false;
-private.blockStatus = new BlockStatus();
-private.keypairs = {};
-private.forgingEanbled = true;
+priv.loaded = false
+priv.blockStatus = new BlockStatus()
+priv.keypairs = {}
+priv.forgingEanbled = true
 
 function Delegates(cb, scope) {
-  library = scope;
-  self = this;
-  self.__private = private;
-  private.attachApi();
+  library = scope
+  self = this
+  priv.attachApi()
 
-  setImmediate(cb, null, self);
+  setImmediate(cb, null, self)
 }
 
-private.attachApi = function () {
-  var router = new Router();
+priv.attachApi = () => {
+  const router = new Router()
 
-  router.use(function (req, res, next) {
-    if (modules && private.loaded) return next();
-    res.status(500).send({ success: false, error: "Blockchain is loading" });
-  });
+  router.use((req, res, next) => {
+    if (modules && priv.loaded) return next()
+    return res.status(500).send({ success: false, error: 'Blockchain is loading' })
+  })
 
   router.map(shared, {
-    "get /count": "count",
-    "get /voters": "getVoters",
-    "get /get": "getDelegate",
-    "get /": "getDelegates",
-  });
+    'get /count': 'count',
+    'get /voters': 'getVoters',
+    'get /get': 'getDelegate',
+    'get /': 'getDelegates',
+  })
 
   if (process.env.DEBUG) {
+    router.get('/forging/disableAll', (req, res) => {
+      self.disableForging()
+      return res.json({ success: true })
+    })
 
-    router.get('/forging/disableAll', function (req, res) {
-      self.disableForging();
-      return res.json({ success: true });
-    });
-
-    router.get('/forging/enableAll', function (req, res) {
-      self.enableForging();
-      return res.json({ success: true });
-    });
+    router.get('/forging/enableAll', (req, res) => {
+      self.enableForging()
+      return res.json({ success: true })
+    })
   }
 
-  router.post('/forging/enable', function (req, res) {
-    var body = req.body;
+  router.post('/forging/enable', (req, res) => {
+    const body = req.body
     library.scheme.validate(body, {
-      type: "object",
+      type: 'object',
       properties: {
         secret: {
-          type: "string",
+          type: 'string',
           minLength: 1,
-          maxLength: 100
+          maxLength: 100,
         },
         publicKey: {
-          type: "string",
-          format: "publicKey"
-        }
+          type: 'string',
+          format: 'publicKey',
+        },
       },
-      required: ["secret"]
-    }, function (err) {
+      required: ['secret'],
+    }, (err) => {
       if (err) {
-        return res.json({ success: false, error: err[0].message });
+        return res.json({ success: false, error: err[0].message })
       }
 
-      var ip = req.connection.remoteAddress;
+      const ip = req.connection.remoteAddress
 
-      if (library.config.forging.access.whiteList.length > 0 && library.config.forging.access.whiteList.indexOf(ip) < 0) {
-        return res.json({ success: false, error: "Access denied" });
+      if (library.config.forging.access.whiteList.length > 0 &&
+        library.config.forging.access.whiteList.indexOf(ip) < 0) {
+        return res.json({ success: false, error: 'Access denied' })
       }
 
-      var keypair = ed.MakeKeypair(crypto.createHash('sha256').update(body.secret, 'utf8').digest());
+      const keypair = ed.MakeKeypair(crypto.createHash('sha256').update(body.secret, 'utf8').digest())
 
       if (body.publicKey) {
-        if (keypair.publicKey.toString('hex') != body.publicKey) {
-          return res.json({ success: false, error: "Invalid passphrase" });
+        if (keypair.publicKey.toString('hex') !== body.publicKey) {
+          return res.json({ success: false, error: 'Invalid passphrase' })
         }
       }
 
-      if (private.keypairs[keypair.publicKey.toString('hex')]) {
-        return res.json({ success: false, error: "Forging is already enabled" });
+      if (priv.keypairs[keypair.publicKey.toString('hex')]) {
+        return res.json({ success: false, error: 'Forging is already enabled' })
       }
 
-      modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') }, function (err, account) {
-        if (err) {
-          return res.json({ success: false, error: err.toString() });
+      return modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') }, (err2, account) => {
+        if (err2) {
+          return res.json({ success: false, error: err2.toString() })
         }
         if (account && account.isDelegate) {
-          private.keypairs[keypair.publicKey.toString('hex')] = keypair;
-          library.logger.info("Forging enabled on account: " + account.address);
-          return res.json({ success: true, address: account.address });
-        } else {
-          return res.json({ success: false, error: "Delegate not found" });
+          priv.keypairs[keypair.publicKey.toString('hex')] = keypair
+          library.logger.info(`Forging enabled on account: ${account.address}`)
+          return res.json({ success: true, address: account.address })
         }
-      });
-    });
-  });
+        return res.json({ success: false, error: 'Delegate not found' })
+      })
+    })
+  })
 
-  router.post('/forging/disable', function (req, res) {
-    var body = req.body;
+  router.post('/forging/disable', (req, res) => {
+    const body = req.body
     library.scheme.validate(body, {
-      type: "object",
+      type: 'object',
       properties: {
         secret: {
-          type: "string",
+          type: 'string',
           minLength: 1,
-          maxLength: 100
+          maxLength: 100,
         },
         publicKey: {
-          type: "string",
-          format: "publicKey"
-        }
+          type: 'string',
+          format: 'publicKey',
+        },
       },
-      required: ["secret"]
-    }, function (err) {
+      required: ['secret'],
+    }, (err) => {
       if (err) {
-        return res.json({ success: false, error: err[0].message });
+        return res.json({ success: false, error: err[0].message })
       }
 
-      var ip = req.connection.remoteAddress;
+      const ip = req.connection.remoteAddress
 
-      if (library.config.forging.access.whiteList.length > 0 && library.config.forging.access.whiteList.indexOf(ip) < 0) {
-        return res.json({ success: false, error: "Access denied" });
+      if (library.config.forging.access.whiteList.length > 0 &&
+          library.config.forging.access.whiteList.indexOf(ip) < 0) {
+        return res.json({ success: false, error: 'Access denied' })
       }
 
-      var keypair = ed.MakeKeypair(crypto.createHash('sha256').update(body.secret, 'utf8').digest());
+      const keypair = ed.MakeKeypair(crypto.createHash('sha256').update(body.secret, 'utf8').digest())
 
       if (body.publicKey) {
-        if (keypair.publicKey.toString('hex') != body.publicKey) {
-          return res.json({ success: false, error: "Invalid passphrase" });
+        if (keypair.publicKey.toString('hex') !== body.publicKey) {
+          return res.json({ success: false, error: 'Invalid passphrase' })
         }
       }
 
-      if (!private.keypairs[keypair.publicKey.toString('hex')]) {
-        return res.json({ success: false, error: "Delegate not found" });
+      if (!priv.keypairs[keypair.publicKey.toString('hex')]) {
+        return res.json({ success: false, error: 'Delegate not found' })
       }
 
-      modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') }, function (err, account) {
-        if (err) {
-          return res.json({ success: false, error: err.toString() });
+      return modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') }, (err2, account) => {
+        if (err2) {
+          return res.json({ success: false, error: err2.toString() })
         }
         if (account && account.isDelegate) {
-          delete private.keypairs[keypair.publicKey.toString('hex')];
-          library.logger.info("Forging disabled on account: " + account.address);
-          return res.json({ success: true, address: account.address });
-        } else {
-          return res.json({ success: false, error: "Delegate not found" });
+          delete priv.keypairs[keypair.publicKey.toString('hex')]
+          library.logger.info(`Forging disabled on account: ${account.address}`)
+          return res.json({ success: true, address: account.address })
         }
-      });
-    });
-  });
+        return res.json({ success: false, error: 'Delegate not found' })
+      })
+    })
+  })
 
-  router.get('/forging/status', function (req, res) {
-    var query = req.query;
+  router.get('/forging/status', (req, res) => {
+    const query = req.query
     library.scheme.validate(query, {
-      type: "object",
+      type: 'object',
       properties: {
         publicKey: {
-          type: "string",
-          format: "publicKey"
-        }
+          type: 'string',
+          format: 'publicKey',
+        },
       },
-      required: ["publicKey"]
-    }, function (err) {
+      required: ['publicKey'],
+    }, (err) => {
       if (err) {
-        return res.json({ success: false, error: err[0].message });
+        return res.json({ success: false, error: err[0].message })
       }
 
-      return res.json({ success: true, enabled: !!private.keypairs[query.publicKey] });
-    });
-  });
+      return res.json({ success: true, enabled: !!priv.keypairs[query.publicKey] })
+    })
+  })
 
-  library.network.app.use('/api/delegates', router);
-  library.network.app.use(function (err, req, res, next) {
-    if (!err) return next();
-    library.logger.error(req.url, err.toString());
-    res.status(500).send({ success: false, error: err.toString() });
-  });
+  library.network.app.use('/api/delegates', router)
+  library.network.app.use((err, req, res, next) => {
+    if (!err) return next()
+    library.logger.error(req.url, err.toString())
+    return res.status(500).send({ success: false, error: err.toString() })
+  })
 }
 
-private.getBlockSlotData = function (slot, height, cb) {
-  self.generateDelegateList(height, function (err, activeDelegates) {
+priv.getBlockSlotData = (slot, height, cb) => {
+  self.generateDelegateList(height, (err, activeDelegates) => {
     if (err) {
-      return cb(err);
+      return cb(err)
     }
-    var currentSlot = slot;
-    var lastSlot = slots.getLastSlot(currentSlot);
+    const lastSlot = slots.getLastSlot(slot)
 
-    for (; currentSlot < lastSlot; currentSlot += 1) {
-      var delegate_pos = currentSlot % slots.delegates;
+    for (let currentSlot = slot; currentSlot < lastSlot; currentSlot += 1) {
+      const delegatePos = currentSlot % slots.delegates
 
-      var delegate_id = activeDelegates[delegate_pos];
+      const delegateKey = activeDelegates[delegatePos]
 
-      if (delegate_id && private.keypairs[delegate_id]) {
-        return cb(null, { time: slots.getSlotTime(currentSlot), keypair: private.keypairs[delegate_id] });
+      if (delegateKey && priv.keypairs[delegateKey]) {
+        return cb(null, {
+          time: slots.getSlotTime(currentSlot),
+          keypair: priv.keypairs[delegateKey],
+        })
       }
     }
-    cb(null, null);
-  });
+    return cb(null, null)
+  })
 }
 
-private.loop = function (cb) {
-  if (!private.forgingEanbled) {
-    library.logger.trace('Loop:', 'forging disabled');
-    return setImmediate(cb);
+priv.loop = (cb) => {
+  if (!priv.forgingEanbled) {
+    library.logger.trace('Loop:', 'forging disabled')
+    return setImmediate(cb)
   }
-  if (!Object.keys(private.keypairs).length) {
-    library.logger.trace('Loop:', 'no delegates');
-    return setImmediate(cb);
-  }
-
-  if (!private.loaded || modules.loader.syncing()) {
-    library.logger.trace('Loop:', 'node not ready');
-    return setImmediate(cb);
+  if (!Object.keys(priv.keypairs).length) {
+    library.logger.trace('Loop:', 'no delegates')
+    return setImmediate(cb)
   }
 
-  var currentSlot = slots.getSlotNumber();
-  var lastBlock = modules.blocks.getLastBlock();
+  if (!priv.loaded || modules.loader.syncing()) {
+    library.logger.trace('Loop:', 'node not ready')
+    return setImmediate(cb)
+  }
 
-  if (currentSlot == slots.getSlotNumber(lastBlock.timestamp)) {
-    // library.logger.debug('Loop:', 'lastBlock is in the same slot');
-    return setImmediate(cb);
+  const currentSlot = slots.getSlotNumber()
+  const lastBlock = modules.blocks.getLastBlock()
+
+  if (currentSlot === slots.getSlotNumber(lastBlock.timestamp)) {
+    return setImmediate(cb)
   }
 
   if (Date.now() % 10000 > 5000) {
-    library.logger.trace('Loop:', 'maybe too late to collect votes');
-    return setImmediate(cb);
+    library.logger.trace('Loop:', 'maybe too late to collect votes')
+    return setImmediate(cb)
   }
 
-  private.getBlockSlotData(currentSlot, lastBlock.height + 1, function (err, currentBlockData) {
+  return priv.getBlockSlotData(currentSlot, lastBlock.height + 1, (err, currentBlockData) => {
     if (err || currentBlockData === null) {
-      library.logger.trace('Loop:', 'skipping slot');
-      return setImmediate(cb);
+      library.logger.trace('Loop:', 'skipping slot')
+      return setImmediate(cb)
     }
 
-    library.sequence.add(function generateBlock(cb) {
-      (async function () {
-        try {
-          if (slots.getSlotNumber(currentBlockData.time) == slots.getSlotNumber() &&
-            modules.blocks.getLastBlock().timestamp < currentBlockData.time) {
-            await modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time)
-          }
-          cb()
-        } catch (e) {
-          cb(e)
+    return library.sequence.add(done => (async () => {
+      try {
+        if (slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber() &&
+          modules.blocks.getLastBlock().timestamp < currentBlockData.time) {
+          await modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time)
         }
-      })()
-    }, function (err) {
-      if (err) {
-        library.logger.error("Failed generate block within slot:", err);
+        done()
+      } catch (e) {
+        cb(e)
       }
-      return setImmediate(cb);
-    });
-  });
+    })(), (err2) => {
+      if (err2) {
+        library.logger.error('Failed generate block within slot:', err2)
+      }
+      cb()
+    })
+  })
 }
 
-private.loadMyDelegates = function (cb) {
-  var secrets = [];
+priv.loadMyDelegates = (cb) => {
+  let secrets = []
   if (library.config.forging.secret) {
-    secrets = util.isArray(library.config.forging.secret) ? library.config.forging.secret : [library.config.forging.secret];
+    secrets = util.isArray(library.config.forging.secret)
+      ? library.config.forging.secret : [library.config.forging.secret]
   }
 
-  (async function () {
+  return (async () => {
     try {
-      let delegates = app.sdb.getAllCached('Delegate')
+      const delegates = app.sdb.getAllCached('Delegate')
       if (!delegates || !delegates.length) {
         return cb('Delegates not found in db')
       }
-      let delegateMap = new Map
-      for (let d of delegates) {
+      const delegateMap = new Map()
+      for (const d of delegates) {
         delegateMap.set(d.publicKey, d)
       }
-      for (let secret of secrets) {
-        let keypair = ed.MakeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
-        let publicKey = keypair.publicKey.toString('hex')
+      for (const secret of secrets) {
+        const keypair = ed.MakeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest())
+        const publicKey = keypair.publicKey.toString('hex')
         if (delegateMap.has(publicKey)) {
-          private.keypairs[publicKey] = keypair
-          library.logger.info("Forging enabled on account: " + delegateMap.get(publicKey).address);
+          priv.keypairs[publicKey] = keypair
+          library.logger.info(`Forging enabled on account: ${delegateMap.get(publicKey).address}`)
         } else {
-          library.logger.info("Delegate with this public key not found: " + keypair.publicKey.toString('hex'));
+          library.logger.info(`Delegate with this public key not found: ${keypair.publicKey.toString('hex')}`)
         }
       }
-      cb()
+      return cb()
     } catch (e) {
-      cb(e)
+      return cb(e)
     }
   })()
 }
 
-Delegates.prototype.getActiveDelegateKeypairs = function (height, cb) {
-  self.generateDelegateList(height, function (err, delegates) {
+Delegates.prototype.getActiveDelegateKeypairs = (height, cb) => {
+  self.generateDelegateList(height, (err, delegates) => {
     if (err) {
-      return cb(err);
+      return cb(err)
     }
-    var results = [];
-    for (var key in private.keypairs) {
+    const results = []
+    for (const key in priv.keypairs) {
       if (delegates.indexOf(key) !== -1) {
-        results.push(private.keypairs[key]);
+        results.push(priv.keypairs[key])
       }
     }
-    cb(null, results);
-  });
+    return cb(null, results)
+  })
 }
 
-Delegates.prototype.validateProposeSlot = function (propose, cb) {
-  self.generateDelegateList(propose.height, function (err, activeDelegates) {
+Delegates.prototype.validateProposeSlot = (propose, cb) => {
+  self.generateDelegateList(propose.height, (err, activeDelegates) => {
     if (err) {
-      return cb(err);
+      return cb(err)
     }
-    var currentSlot = slots.getSlotNumber(propose.timestamp);
-    var delegateKey = activeDelegates[currentSlot % slots.delegates];
+    const currentSlot = slots.getSlotNumber(propose.timestamp)
+    const delegateKey = activeDelegates[currentSlot % slots.delegates]
 
-    if (delegateKey && propose.generatorPublicKey == delegateKey) {
-      return cb();
+    if (delegateKey && propose.generatorPublicKey === delegateKey) {
+      return cb()
     }
 
-    cb("Failed to validate propose slot");
-  });
+    return cb('Failed to validate propose slot')
+  })
 }
 
 // Public methods
-Delegates.prototype.generateDelegateList = function (height, cb) {
-  (async function () {
-    try {
-      var truncDelegateList = self.getBookkeeper()
-      var seedSource = modules.round.calc(height).toString();
+Delegates.prototype.generateDelegateList = (height, cb) => (async () => {
+  try {
+    const truncDelegateList = self.getBookkeeper()
+    const seedSource = modules.round.calc(height).toString()
 
-      var currentSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
-      for (var i = 0, delCount = truncDelegateList.length; i < delCount; i++) {
-        for (var x = 0; x < 4 && i < delCount; i++ , x++) {
-          var newIndex = currentSeed[x] % delCount;
-          var b = truncDelegateList[newIndex];
-          truncDelegateList[newIndex] = truncDelegateList[i];
-          truncDelegateList[i] = b;
-        }
-        currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
+    let currentSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest()
+    for (let i = 0, delCount = truncDelegateList.length; i < delCount; i++) {
+      for (let x = 0; x < 4 && i < delCount; i++, x++) {
+        const newIndex = currentSeed[x] % delCount
+        const b = truncDelegateList[newIndex]
+        truncDelegateList[newIndex] = truncDelegateList[i]
+        truncDelegateList[i] = b
       }
-
-      cb(null, truncDelegateList);
-    } catch (e) {
-      cb('Failed to get bookkeeper: ' + e)
+      currentSeed = crypto.createHash('sha256').update(currentSeed).digest()
     }
-  })()
-}
 
-Delegates.prototype.checkDelegates = function (publicKey, votes, cb) {
-  if (util.isArray(votes)) {
-    modules.accounts.getAccount({ publicKey: publicKey }, function (err, account) {
-      if (err) {
-        return cb(err);
-      }
-      if (!account) {
-        return cb("Account not found");
-      }
-
-      var existing_votes = account.delegates ? account.delegates.length : 0;
-      var additions = 0, removals = 0;
-
-      async.eachSeries(votes, function (action, cb) {
-        var math = action[0];
-
-        if (math !== '+' && math !== '-') {
-          return cb("Invalid math operator");
-        }
-
-        if (math == '+') {
-          additions += 1;
-        } else if (math == '-') {
-          removals += 1;
-        }
-
-        var publicKey = action.slice(1);
-
-        try {
-          new Buffer(publicKey, "hex");
-        } catch (e) {
-          return cb("Invalid public key");
-        }
-
-        if (math == "+" && (account.delegates !== null && account.delegates.indexOf(publicKey) != -1)) {
-          return cb("Failed to add vote, account has already voted for this delegate");
-        }
-        if (math == "-" && (account.delegates === null || account.delegates.indexOf(publicKey) === -1)) {
-          return cb("Failed to remove vote, account has not voted for this delegate");
-        }
-
-        modules.accounts.getAccount({ publicKey: publicKey, isDelegate: 1 }, function (err, account) {
-          if (err) {
-            return cb(err);
-          }
-
-          if (!account) {
-            return cb("Delegate not found");
-          }
-
-          cb();
-        });
-      }, function (err) {
-        if (err) {
-          return cb(err);
-        }
-        var total_votes = (existing_votes + additions) - removals;
-        if (total_votes > 101) {
-          var exceeded = total_votes - 101;
-          return cb("Maximum number of 101 votes exceeded (" + exceeded + " too many).");
-        } else {
-          return cb();
-        }
-      })
-    });
-  } else {
-    setImmediate(cb, "Please provide an array of votes");
+    cb(null, truncDelegateList)
+  } catch (e) {
+    cb(`Failed to get bookkeeper: ${e}`)
   }
-}
+})()
 
-Delegates.prototype.checkUnconfirmedDelegates = function (publicKey, votes, cb) {
-  if (util.isArray(votes)) {
-    modules.accounts.getAccount({ publicKey: publicKey }, function (err, account) {
-      if (err) {
-        return cb(err);
-      }
-      if (!account) {
-        return cb("Account not found");
-      }
-
-      async.eachSeries(votes, function (action, cb) {
-        var math = action[0];
-
-        if (math !== '+' && math !== '-') {
-          return cb("Invalid math operator");
-        }
-
-        var publicKey = action.slice(1);
-
-
-        try {
-          new Buffer(publicKey, "hex");
-        } catch (e) {
-          return cb("Invalid public key");
-        }
-
-        if (math == "+" && (account.u_delegates !== null && account.u_delegates.indexOf(publicKey) != -1)) {
-          return cb("Failed to add vote, account has already voted for this delegate");
-        }
-        if (math == "-" && (account.u_delegates === null || account.u_delegates.indexOf(publicKey) === -1)) {
-          return cb("Failed to remove vote, account has not voted for this delegate");
-        }
-
-        modules.accounts.getAccount({ publicKey: publicKey, isDelegate: 1 }, function (err, account) {
-          if (err) {
-            return cb(err);
-          }
-
-          if (!account) {
-            return cb("Delegate not found");
-          }
-
-          cb();
-        });
-      }, cb)
-    });
-  } else {
-    return setImmediate(cb, "Please provide an array of votes");
-  }
-}
-
-Delegates.prototype.fork = function (block, cause) {
+Delegates.prototype.fork = (block, cause) => {
   library.logger.info('Fork', {
     delegate: block.delegate,
-    block: { id: block.id, timestamp: block.timestamp, height: block.height, prevBlockId: block.prevBlockId },
-    cause: cause
-  });
+    block: {
+      id: block.id,
+      timestamp: block.timestamp,
+      height: block.height,
+      prevBlockId: block.prevBlockId,
+    },
+    cause,
+  })
 }
 
-Delegates.prototype.validateBlockSlot = function (block, cb) {
-  self.generateDelegateList(block.height, function (err, activeDelegates) {
+Delegates.prototype.validateBlockSlot = (block, cb) => {
+  self.generateDelegateList(block.height, (err, activeDelegates) => {
     if (err) {
-      return cb(err);
+      return cb(err)
     }
-    var currentSlot = slots.getSlotNumber(block.timestamp);
-    var delegateKey = activeDelegates[currentSlot % 101];
+    const currentSlot = slots.getSlotNumber(block.timestamp)
+    const delegateKey = activeDelegates[currentSlot % 101]
 
     if (delegateKey && block.delegate === delegateKey) {
-      return cb();
+      return cb()
     }
 
-    cb("Failed to verify slot, expected delegate: " + delegateKey);
-  });
+    return cb(`Failed to verify slot, expected delegate: ${delegateKey}`)
+  })
 }
 
-Delegates.prototype.getDelegates = function (query, cb) {
-  let delegates = app.sdb.getAllCached('Delegate').map((d) => Object.assign({}, d))
+Delegates.prototype.getDelegates = (query, cb) => {
+  let delegates = app.sdb.getAllCached('Delegate').map(d => Object.assign({}, d))
   if (!delegates || !delegates.length) return cb('No delegates')
 
   delegates = delegates.sort(self.compare)
 
-  let lastBlock = modules.blocks.getLastBlock();
-  let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
+  const lastBlock = modules.blocks.getLastBlock()
+  const totalSupply = priv.blockStatus.calcSupply(lastBlock.height)
   for (let i = 0; i < delegates.length; ++i) {
-    let d = delegates[i]
+    const d = delegates[i]
     d.rate = i + 1
-    delegates[i].approval = ((d.votes / totalSupply) * 100).toFixed(2);
+    delegates[i].approval = ((d.votes / totalSupply) * 100).toFixed(2)
 
-    var percent = 100 - (d.missedBlocks / (d.producedBlocks + d.missedBlocks) / 100);
-    percent = percent || 0;
-    delegates[i].productivity = parseFloat(Math.floor(percent * 100) / 100).toFixed(2);
+    let percent = 100 - (d.missedBlocks / (d.producedBlocks + d.missedBlocks) / 100)
+    percent = percent || 0
+    delegates[i].productivity = parseFloat(Math.floor(percent * 100) / 100).toFixed(2)
 
     delegates[i].vote = delegates[i].votes
     delegates[i].missedblocks = delegates[i].missedBlocks
@@ -531,164 +406,161 @@ Delegates.prototype.getDelegates = function (query, cb) {
   return cb(null, delegates)
 }
 
-Delegates.prototype.sandboxApi = function (call, args, cb) {
-  sandboxHelper.callMethod(shared, call, args, cb);
+Delegates.prototype.sandboxApi = (call, args, cb) => {
+  sandboxHelper.callMethod(shared, call, args, cb)
 }
 
-Delegates.prototype.enableForging = function () {
-  private.forgingEanbled = true;
+Delegates.prototype.enableForging = () => {
+  priv.forgingEanbled = true
 }
 
-Delegates.prototype.disableForging = function () {
-  private.forgingEanbled = false;
+Delegates.prototype.disableForging = () => {
+  priv.forgingEanbled = false
 }
 
 // Events
-Delegates.prototype.onBind = function (scope) {
-  modules = scope;
+Delegates.prototype.onBind = (scope) => {
+  modules = scope
 }
 
-Delegates.prototype.onBlockchainReady = function () {
-  private.loaded = true;
+Delegates.prototype.onBlockchainReady = () => {
+  priv.loaded = true
 
-  private.loadMyDelegates(function nextLoop(err) {
+  priv.loadMyDelegates(function nextLoop(err) {
     if (err) {
-      library.logger.error("Failed to load delegates", err);
+      library.logger.error('Failed to load delegates', err)
     }
 
-    private.loop(function () {
-      setTimeout(nextLoop, 100);
-    });
-
-  });
+    priv.loop(() => {
+      setTimeout(nextLoop, 100)
+    })
+  })
 }
 
-Delegates.prototype.compare = function (l, r) {
-  return (l.votes !== r.votes) ? r.votes - l.votes : l.publicKey < r.publicKey ? 1 : -1
+Delegates.prototype.compare = (l, r) => {
+  if (l.votes !== r.votes) {
+    return r.votes - l.votes
+  }
+  return l.publicKey < r.publicKey ? 1 : -1
 }
 
-Delegates.prototype.cleanup = function (cb) {
-  private.loaded = false;
-  cb();
+Delegates.prototype.cleanup = (cb) => {
+  priv.loaded = false
+  cb()
 }
 
-Delegates.prototype.getTopDelegates = function () {
-  let allDelegates = app.sdb.getAllCached('Delegate')
+Delegates.prototype.getTopDelegates = () => {
+  const allDelegates = app.sdb.getAllCached('Delegate')
   return allDelegates.sort(self.compare).map(d => d.publicKey).slice(0, 101)
 }
 
-Delegates.prototype.getBookkeeperAddresses = function () {
-  let bookkeeper = self.getBookkeeper()
-  let addresses = new Set
-  for (let i of bookkeeper) {
-    let address = modules.accounts.generateAddressByPublicKey(i)
+Delegates.prototype.getBookkeeperAddresses = () => {
+  const bookkeeper = self.getBookkeeper()
+  const addresses = new Set()
+  for (const i of bookkeeper) {
+    const address = modules.accounts.generateAddressByPublicKey(i)
     addresses.add(address)
   }
   return addresses
 }
 
-Delegates.prototype.getBookkeeper = function () {
-  let item = app.sdb.getCached('Variable', BOOK_KEEPER_NAME)
+Delegates.prototype.getBookkeeper = () => {
+  const item = app.sdb.getCached('Variable', BOOK_KEEPER_NAME)
   if (!item) throw new Error('Bookkeeper variable not found')
   return JSON.parse(item.value)
 }
 
-Delegates.prototype.updateBookkeeper = function (delegates) {
-  delegates = delegates || self.getTopDelegates()
-  let value = JSON.stringify(delegates)
-  let bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME) ||
-    app.sdb.create('Variable', BOOK_KEEPER_NAME, { key: BOOK_KEEPER_NAME, value: value })
+Delegates.prototype.updateBookkeeper = (delegates) => {
+  const value = JSON.stringify(delegates || self.getTopDelegates())
+  const bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME) ||
+    app.sdb.create('Variable', BOOK_KEEPER_NAME, { key: BOOK_KEEPER_NAME, value })
 
   bookKeeper.value = value
 }
 
-// Shared
-shared.getDelegate = function (req, cb) {
-  var query = req.body;
+shared.getDelegate = (req, cb) => {
+  const query = req.body
   library.scheme.validate(query, {
-    type: "object",
+    type: 'object',
     properties: {
       publicKey: {
-        type: "string"
+        type: 'string',
       },
       name: {
-        type: "string"
+        type: 'string',
       },
       address: {
-        type: "string"
-      }
-    }
-  }, function (err) {
+        type: 'string',
+      },
+    },
+  }, (err) => {
     if (err) {
-      return cb(err[0].message);
+      return cb(err[0].message)
     }
 
-    modules.delegates.getDelegates(query, function (err, delegates) {
-      if (err) {
-        return cb(err);
+    return modules.delegates.getDelegates(query, (err2, delegates) => {
+      if (err2) {
+        return cb(err2)
       }
 
-      var delegate = delegates.find(function (d) {
+      const delegate = delegates.find((d) => {
         if (query.publicKey) {
-          return d.publicKey == query.publicKey;
+          return d.publicKey === query.publicKey
         } else if (query.address) {
-          return d.address == query.address;
+          return d.address === query.address
         } else if (query.name) {
-          return d.name == query.name;
+          return d.name === query.name
         }
 
-        return false;
-      });
+        return false
+      })
 
       if (delegate) {
-        cb(null, { delegate: delegate });
-      } else {
-        cb("Delegate not found");
+        return cb(null, { delegate })
       }
-    });
-  });
+      return cb('Delegate not found')
+    })
+  })
 }
 
-shared.count = function (req, cb) {
-  (async function () {
-    try {
-      let count = app.sdb.getAllCached('Delegate').length
-      return cb(null, { count })
-    } catch (e) {
-      library.logger.error('get delegate count error', e)
-      return cb("Failed to count delegates");
-    }
-  })()
-}
+shared.count = (req, cb) => (async () => {
+  try {
+    const count = app.sdb.getAllCached('Delegate').length
+    return cb(null, { count })
+  } catch (e) {
+    library.logger.error('get delegate count error', e)
+    return cb('Failed to count delegates')
+  }
+})()
 
-shared.getVoters = function (req, cb) {
-  var query = req.body;
+shared.getVoters = (req, cb) => {
+  const query = req.body
   library.scheme.validate(query, {
     type: 'object',
     properties: {
       name: {
-        type: "string",
-        maxLength: 50
-      }
+        type: 'string',
+        maxLength: 50,
+      },
     },
-    required: ['name']
-  }, function (err) {
+    required: ['name'],
+  }, (err) => {
     if (err) {
-      return cb(err[0].message);
+      return cb(err[0].message)
     }
 
-    (async function () {
+    return (async () => {
       try {
-        let votes = await app.sdb.findAll('Vote', { condition: { delegate: query.name } })
+        const votes = await app.sdb.findAll('Vote', { condition: { delegate: query.name } })
         if (!votes || !votes.length) return cb(null, { accounts: [] })
 
-        let addresses = votes.map((v) => v.address)
-        let accounts = await app.sdb.findAll('Account', { condition: { address: { $in: addresses } } })
-        let lastBlock = modules.blocks.getLastBlock();
-        let totalSupply = private.blockStatus.calcSupply(lastBlock.height);
-        for (let a of accounts) {
+        const addresses = votes.map(v => v.address)
+        const accounts = await app.sdb.findAll('Account', { condition: { address: { $in: addresses } } })
+        const lastBlock = modules.blocks.getLastBlock()
+        const totalSupply = priv.blockStatus.calcSupply(lastBlock.height)
+        for (const a of accounts) {
           a.balance = a.xas
-          a.weightRatio = a.weight / totalSupply * 100
+          a.weightRatio = (a.weight * 100) / totalSupply
         }
         return cb(null, { accounts })
       } catch (e) {
@@ -696,49 +568,24 @@ shared.getVoters = function (req, cb) {
         return cb('Server error')
       }
     })()
-  });
+  })
 }
 
-shared.getDelegates = function (req, cb) {
-  var query = req.body;
-  library.scheme.validate(query, {
-    type: 'object',
-    properties: {
-      limit: {
-        type: "integer",
-        minimum: 0,
-        maximum: 101
-      },
-      offset: {
-        type: "integer",
-        minimum: 0
-      }
-    }
-  }, function (err) {
-    if (err) {
-      return cb(err[0].message);
-    }
+shared.getDelegates = (req, cb) => {
+  const query = req.body
+  const offset = Number(query.offset || 0)
+  const limit = Number(query.limit || 0)
+  if (Number.isNaN(limit) || Number.isNaN(offset)) {
+    return cb('Invalid params')
+  }
 
-    let offset = query.offset || 0
-    let limit = query.limit || 20;
-
-    self.getDelegates({}, function (err, delegates) {
-      if (err) return cb(err)
-      return cb(null, {
-        totalCount: delegates.length,
-        delegates: delegates.slice(offset, offset + limit)
-      })
+  return self.getDelegates({}, (err, delegates) => {
+    if (err) return cb(err)
+    return cb(null, {
+      totalCount: delegates.length,
+      delegates: delegates.slice(offset, offset + limit),
     })
-  });
+  })
 }
 
-shared.getFee = function (req, cb) {
-  var query = req.body;
-  var fee = null;
-
-  fee = 100 * constants.fixedPoint;
-
-  cb(null, { fee: fee })
-}
-
-module.exports = Delegates;
+module.exports = Delegates
