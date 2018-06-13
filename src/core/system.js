@@ -1,112 +1,88 @@
-var os = require("os");
-var sandboxHelper = require('../utils/sandbox.js');
-var slots = require('../utils/slots.js');
-var Router = require('../utils/router.js');
+const os = require('os')
+const sandboxHelper = require('../utils/sandbox.js')
+const slots = require('../utils/slots.js')
+const Router = require('../utils/router.js')
 
-// Private fields
-var modules, library, self, private = {}, shared = {};
+let modules
+let library
+let self
+const priv = {}
+const shared = {}
 
-private.version, private.osName, private.port;
-
-// Constructor
 function System(cb, scope) {
-  library = scope;
-  self = this;
-  self.__private = private;
+  library = scope
+  self = this
 
-  private.version = library.config.version;
-  private.port = library.config.port;
-  private.magic = library.config.magic;
-  private.osName = os.platform() + os.release();
-  
-  private.attachApi();
+  priv.version = library.config.version
+  priv.port = library.config.port
+  priv.magic = library.config.magic
+  priv.osName = os.platform() + os.release()
 
-  setImmediate(cb, null, self);
+  priv.attachApi()
+
+  setImmediate(cb, null, self)
 }
 
-// Private methods
-private.attachApi = function () {
-  var router = new Router();
+priv.attachApi = () => {
+  const router = new Router()
 
-  router.use(function (req, res, next) {
-    if (modules) return next();
-    res.status(500).send({ success: false, error: "Blockchain is loading" });
-  });
+  router.use((req, res, next) => {
+    if (modules) return next()
+    return res.status(500).send({ success: false, error: 'Blockchain is loading' })
+  })
 
   router.map(shared, {
-    "get /": "getSystemInfo"
-  });
+    'get /': 'getSystemInfo',
+  })
 
-  router.use(function (req, res, next) {
-    res.status(500).send({ success: false, error: "API endpoint not found" });
-  });
+  router.use((req, res) => {
+    res.status(500).send({ success: false, error: 'API endpoint not found' })
+  })
 
-  library.network.app.use('/api/system', router);
-  library.network.app.use(function (err, req, res, next) {
-    if (!err) return next();
-    library.logger.error(req.url, err.toString());
-    res.status(500).send({ success: false, error: err.toString() });
-  });
+  library.network.app.use('/api/system', router)
+  library.network.app.use((err, req, res, next) => {
+    if (!err) return next()
+    library.logger.error(req.url, err.toString())
+    return res.status(500).send({ success: false, error: err.toString() })
+  })
 }
 
-
-//Shared methods
-
-shared.getSystemInfo = function (req, cb) {
-
-  var lastBlock = modules.blocks.getLastBlock();
-  // var systemInfo = shell.getOsInfo();
-
+shared.getSystemInfo = (req, cb) => {
+  const lastBlock = modules.blocks.getLastBlock()
   return cb(null, {
-    os: os.platform() +"_"+ os.release(),    
+    os: `${os.platform()}_${os.release()}`,
     version: library.config.version,
-    timestamp : Date.now(),
+    timestamp: Date.now(),
 
-    lastBlock:{
+    lastBlock: {
       height: lastBlock.height,
-      timestamp : slots.getRealTime(lastBlock.timestamp),
-      behind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) +1)
+      timestamp: slots.getRealTime(lastBlock.timestamp),
+      behind: slots.getNextSlot() - (slots.getSlotNumber(lastBlock.timestamp) + 1),
     },
 
     // systemLoad:{
     //   cores : systemInfo.cpucore,
     //   loadAverage : systemInfo.loadavg,
-    //   freeMem: systemInfo.memfreemb, 
+    //   freeMem: systemInfo.memfreemb,
     //   totalMem: systemInfo.memtotalmb
     // }
-  });  
+  })
 }
 
-// Private methods
+System.prototype.getOS = () => priv.osName
 
+System.prototype.getVersion = () => priv.version
 
-// Public methods
-System.prototype.getOS = function () {
-  return private.osName;
+System.prototype.getPort = () => priv.port
+
+System.prototype.getMagic = () => priv.magic
+
+System.prototype.sandboxApi = (call, args, cb) => {
+  sandboxHelper.callMethod(shared, call, args, cb)
 }
 
-System.prototype.getVersion = function () {
-  return private.version;
+System.prototype.onBind = (scope) => {
+  modules = scope
 }
 
-System.prototype.getPort = function () {
-  return private.port;
-}
-
-System.prototype.getMagic = function () {
-  return private.magic;
-}
-
-System.prototype.sandboxApi = function (call, args, cb) {
-  sandboxHelper.callMethod(shared, call, args, cb);
-}
-
-// Events
-System.prototype.onBind = function (scope) {
-  modules = scope;
-}
-
-// Shared
-
-// Export
-module.exports = System;
+module.exports = System
