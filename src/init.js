@@ -38,7 +38,7 @@ const moduleNames = [
   'chains',
   'blocks',
   'gateway',
-];
+]
 
 const CIPHERS = `
   ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:
@@ -55,17 +55,22 @@ function getPublicIp() {
       ifaces[ifname].forEach((iface) => {
         if (iface.family !== 'IPv4' || iface.internal !== false) {
           // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
-          return;
+          return
         }
         if (!ip.isPrivate(iface.address)) {
           publicIp = iface.address
         }
-      });
-    });
+      })
+    })
   } catch (e) {
     throw e
   }
   return publicIp
+}
+
+function isNumberOrNumberString(value) {
+  return !(Number.isNaN(value) || Number.isNaN(parseInt(value, 10)) ||
+    String(parseInt(value, 10)) !== String(value))
 }
 
 module.exports = function init(options, done) {
@@ -99,11 +104,11 @@ module.exports = function init(options, done) {
         try {
           b = Buffer.from(str, 'hex')
         } catch (e) {
-          return false;
+          return false
         }
 
         return b && b.length > 0
-      });
+      })
 
       ZSchema.registerFormat('publicKey', (str) => {
         if (str.length === 0) {
@@ -117,7 +122,7 @@ module.exports = function init(options, done) {
         } catch (e) {
           return false
         }
-      });
+      })
 
       ZSchema.registerFormat('splitarray', (str) => {
         try {
@@ -126,11 +131,11 @@ module.exports = function init(options, done) {
         } catch (e) {
           return false
         }
-      });
+      })
 
       ZSchema.registerFormat('signature', (str) => {
         if (str.length === 0) {
-          return true;
+          return true
         }
 
         try {
@@ -151,7 +156,7 @@ module.exports = function init(options, done) {
         return true
       })
 
-      ZSchema.registerFormat('checkInt', value => ! (isNaN(value) || parseInt(value) != value || isNaN(parseInt(value, 10))) )
+      ZSchema.registerFormat('checkInt', value => !isNumberOrNumberString(value))
 
       cb(null, new ZSchema())
     },
@@ -178,7 +183,7 @@ module.exports = function init(options, done) {
           ciphers: CIPHERS,
         }, app)
 
-        sslio = socketio(sslServer);
+        sslio = socketio(sslServer)
       }
 
       cb(null, {
@@ -197,7 +202,7 @@ module.exports = function init(options, done) {
         onWarning: (current) => {
           scope.logger.warn('DB queue', current)
         },
-      });
+      })
       cb(null, sequence)
     }],
 
@@ -207,7 +212,7 @@ module.exports = function init(options, done) {
         onWarning: (current) => {
           scope.logger.warn('Main queue', current)
         },
-      });
+      })
       cb(null, sequence)
     }],
 
@@ -217,7 +222,7 @@ module.exports = function init(options, done) {
         onWarning: (current) => {
           scope.logger.warn('Balance queue', current)
         },
-      });
+      })
       cb(null, sequence)
     }],
 
@@ -248,7 +253,7 @@ module.exports = function init(options, done) {
             return value
           }
 
-          if (isNaN(value) || parseInt(value) != value || isNaN(parseInt(value, radix))) {
+          if (!isNumberOrNumberString(value)) {
             return value
           }
 
@@ -267,7 +272,7 @@ module.exports = function init(options, done) {
 
         res.setHeader('X-Frame-Options', 'DENY')
         res.setHeader('Content-Security-Policy', 'frame-ancestors \'none\'')
-        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Origin', '*')
         res.setHeader(
           'Access-Control-Allow-Headers',
           'Origin, Content-Length,  X-Requested-With, Content-Type, Accept, request-node-status',
@@ -287,10 +292,10 @@ module.exports = function init(options, done) {
 
         const forbidden = isApiOrPeer && (
           (whiteList.length > 0 && whiteList.indexOf(ip) < 0) ||
-          (blackList.length > 0 && blackList.indexOf(ip) >= 0));
+          (blackList.length > 0 && blackList.indexOf(ip) >= 0))
 
         if (isApiOrPeer && forbidden) {
-          res.sendStatus(403);
+          res.sendStatus(403)
         } else if (isApiOrPeer && req.headers['request-node-status'] === 'yes') {
           // Add server status info to response header
           const lastBlock = scope.modules.blocks.getLastBlock()
@@ -338,7 +343,7 @@ module.exports = function init(options, done) {
             if (typeof (module[eventName]) === 'function') {
               module[eventName].apply(module[eventName], [...restArgs])
             }
-          });
+          })
           this.emit(topic, ...restArgs)
         }
       }
@@ -384,7 +389,7 @@ module.exports = function init(options, done) {
 
             d.on('error', (err) => {
               scope.logger.fatal(`Domain ${name}`, { message: err.message, stack: err.stack })
-            });
+            })
 
             d.run(() => {
               scope.logger.debug('Loading module', name)
@@ -399,4 +404,4 @@ module.exports = function init(options, done) {
         })
       }],
   }, done)
-};
+}

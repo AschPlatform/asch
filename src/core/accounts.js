@@ -243,7 +243,7 @@ shared.newAccount = (req, cb) => {
   cb(null, {
     secret,
     publicKey: keypair.publicKey.toString('hex'),
-    privKey: keypair.privKey.toString('hex'),
+    privKey: keypair.privateKey.toString('hex'),
     address,
   })
 }
