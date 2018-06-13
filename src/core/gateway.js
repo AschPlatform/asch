@@ -231,7 +231,7 @@ Gateway.prototype.processWithdrawals = async () => {
   }
 
   const account = {
-    privKey: global.Config.gateway.outSecret,
+    privateKey: global.Config.gateway.outSecret,
   }
   let spentTids = await priv.getSpentTids(GATEWAY)
   for (let w of withdrawals) {
