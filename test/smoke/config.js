@@ -244,4 +244,37 @@ module.exports = {
       unlockDelegates: 3,
     },
   ],
+
+  testGroup: {
+    name: 'test_group',
+    min: 5,
+    max: 7,
+    m: 3,
+    updateInterval: 6,
+    members: [{
+      address: 'AMySpLqC4bEgQ8VoYK1iWNEEuhRtjS59Bt',
+      secret: 'rifle token wink squirrel various timber announce blue vacant laptop coach display',
+      publicKey: '30620e9f06c11fdb4466b3bfcc031568de60a518da07cd5daffbac0d4c6b3858',
+    },
+    {
+      address: 'A3gmKrzbTALHpJv2SDZ2SaoyA44Ei9miJC',
+      secret: 'fiscal enforce genre noble citizen witness cheese reform pupil bachelor adult unveil',
+      publicKey: '4b6d5f364ca307dad36b82e18bf74ad6ffc6aaf8db0453d86c099f533444bc56',
+    },
+    {
+      address: 'AB5fFHae3syga1R81Ef797vUo3gFrNkQ3y',
+      secret: 'claim ring travel couple chunk calm stable need robust satoshi market dutch',
+      publicKey: 'ff436eacb020e290bf30246740c925a86d66689a28ef497388046e76b0685e85',
+    },
+    {
+      address: 'AJwotHuyfLsFvii2t1vqZaVHpgwMdgxYN9',
+      secret: 'sound gym page cross shoot erosion energy beyond slender stage west drift',
+      publicKey: 'e04b10a06d9929d6e5346ed822d0c4abe3b0c339b09cad22801eaa89be2dd5fa',
+    },
+    {
+      address: 'ABnDYHEQzs6B8CGWk79n8vHKNAwp2QjyTz',
+      secret: 'drum long ranch jealous access steak garlic hair neglect educate visual steel',
+      publicKey: '663352b58924f203bd831579e4d83314a6f44c5a090ef1460bb80e1e67280cba',
+    }],
+  },
 }

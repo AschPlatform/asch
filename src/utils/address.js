@@ -3,34 +3,34 @@ const base58check = require('./base58check')
 
 const NORMAL_PREFIX = 'A'
 const CHAIN_PREFIX = 'C'
-const MULTI_PREFIX = 'M'
+const GROUP_PREFIX = 'G'
 
 const VALID_PREFIX = [
   NORMAL_PREFIX,
   CHAIN_PREFIX,
-  MULTI_PREFIX,
+  GROUP_PREFIX,
 ]
 
 const TYPE = {
   NONE: 0,
   NORMAL: 1,
   CHAIN: 2,
-  MULTISIG: 3,
+  GROUP: 3,
 }
 
 const PREFIX_MAP = {}
 PREFIX_MAP[NORMAL_PREFIX] = TYPE.NORMAL
 PREFIX_MAP[CHAIN_PREFIX] = TYPE.CHAIN
-PREFIX_MAP[MULTI_PREFIX] = TYPE.MULTISIG
+PREFIX_MAP[GROUP_PREFIX] = TYPE.GROUP
 
-function generateRawBase58CheckAddress(publicKeys) {
-  if (!publicKeys || !publicKeys.length) throw new Error('Invalid publickeys')
+function generateRawBase58CheckAddress(hashes) {
+  if (!hashes || !hashes.length) throw new Error('Invalid hashes')
   let h1 = null
-  for (let k of publicKeys) {
-    if (typeof k === 'string') {
-      k = Buffer.from(k, 'hex')
+  for (let h of hashes) {
+    if (typeof h === 'string') {
+      h = Buffer.from(h, 'hex')
     }
-    h1 = crypto.createHash('sha256').update(k)
+    h1 = crypto.createHash('sha256').update(h)
   }
   const h2 = crypto.createHash('ripemd160').update(h1.digest()).digest()
   return base58check.encode(h2)
@@ -81,11 +81,12 @@ module.exports = {
     return NORMAL_PREFIX + generateRawBase58CheckAddress([publicKey])
   },
 
-  generateChainAddress(publicKey) {
-    return CHAIN_PREFIX + generateRawBase58CheckAddress([publicKey])
+  generateChainAddress(hash) {
+    return CHAIN_PREFIX + generateRawBase58CheckAddress([hash])
   },
 
-  generateMultisigAddress(publicKeys) {
-    return MULTI_PREFIX + generateRawBase58CheckAddress(publicKeys)
+  generateGroupAddress(name) {
+    const hash = crypto.createHash('sha256').update(name).digest()
+    return GROUP_PREFIX + generateRawBase58CheckAddress([hash])
   },
 }

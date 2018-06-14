@@ -16,6 +16,7 @@ module.exports = function (router) {
     if (defined(req.query.type)) condition.type = Number(req.query.type)
     if (defined(req.query.height)) condition.height = Number(req.query.height)
     if (defined(req.query.senderId)) condition.senderId = req.query.senderId
+    if (defined(req.query.accountId)) condition.accountId = req.query.accountId
     if (defined(req.query.message)) condition.message = req.query.message
     let count = await app.sdb.count('Transaction', condition)
     if (count > 0) {

@@ -250,6 +250,7 @@ function main() {
       }
       scope.bus.message('bind', scope.modules)
       global.modules = scope.modules
+      global.library = scope
 
       scope.logger.info('Modules ready and launched')
       if (!scope.config.publicIp) {

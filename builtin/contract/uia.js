@@ -5,7 +5,7 @@ module.exports = {
     if (!/^[A-Za-z]{1,16}$/.test(name)) return 'Invalid issuer name'
     if (desc.length > 4096) return 'Invalid issuer description'
 
-    let senderId = this.trs.senderId
+    let senderId = this.sender.address
     app.sdb.lock('uia.registerIssuer@' + senderId)
     let exists = await app.sdb.exists('Issuer', { name: name })
     if (exists) return 'Issuer name already exists'
@@ -27,7 +27,7 @@ module.exports = {
     if (precision > 16 || precision < 0) return 'Invalid asset precision'
     app.validate('amount', maximum)
 
-    let issuer = await app.sdb.findOne('Issuer', { condition: { issuerId: this.trs.senderId } })
+    let issuer = await app.sdb.findOne('Issuer', { condition: { issuerId: this.sender.address } })
     if (!issuer) return 'Account is not an issuer'
 
     let fullName = issuer.name + '.' + symbol
@@ -44,7 +44,7 @@ module.exports = {
       maximum: maximum,
       precision: precision,
       quantity: '0',
-      issuerId: this.trs.senderId
+      issuerId: this.sender.address
     })
   },
 
@@ -54,18 +54,18 @@ module.exports = {
 
     let asset = await app.sdb.get('Asset', name)
     if (!asset) return 'Asset not exists'
-    if (asset.issuerId !== this.trs.senderId) return 'Permission denied'
+    if (asset.issuerId !== this.sender.address) return 'Permission denied'
 
     let quantity = bignum(asset.quantity).plus(amount)
     if (quantity.gt(asset.maximum)) return 'Exceed issue limit'
 
     asset.quantity = quantity.toString(10)
-    app.balances.increase(this.trs.senderId, name, amount)
+    app.balances.increase(this.sender.address, name, amount)
   },
 
   transfer: async function (currency, amount, recipient) {
     app.validate('amount', amount)
-    let senderId = this.trs.senderId
+    let senderId = this.sender.address
     let balance = app.balances.get(senderId, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
 

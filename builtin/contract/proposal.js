@@ -156,21 +156,21 @@ module.exports = {
       activated: 0,
       height: this.block.height,
       endHeight: endHeight,
-      senderId: this.trs.senderId
+      senderId: this.sender.address
     })
   },
 
   vote: async function (pid) {
-    if (!app.isCurrentBookkeeper(this.trs.senderId)) return 'Permission denied'
+    if (!app.isCurrentBookkeeper(this.sender.address)) return 'Permission denied'
     let proposal = await app.sdb.findOne('Proposal', { condition: { tid: pid } })
     if (!proposal) return 'Proposal not found'
     if (this.block.height - proposal.height > 8640 * 30) return 'Proposal expired'
-    let exists = await app.sdb.exists('ProposalVote', { voter: this.trs.senderId, pid: pid })
+    let exists = await app.sdb.exists('ProposalVote', { voter: this.sender.address, pid: pid })
     if (exists) return 'Already voted'
     app.sdb.create('ProposalVote', {
       tid: this.trs.id,
       pid: pid,
-      voter: this.trs.senderId
+      voter: this.sender.address
     })
   },
 

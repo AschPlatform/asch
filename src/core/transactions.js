@@ -219,7 +219,13 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async (transaction) 
     if (self.processedTrsCache.has(transaction.id)) {
       throw new Error('Transaction already processed')
     }
-
+    if (self.pool.has(transaction.id)) {
+      throw new Error('Transaction already in the pool')
+    }
+    const exists = await app.sdb.exists('Transaction', { id: transaction.id })
+    if (exists) {
+      throw new Error('Transaction already confirmed')
+    }
     await self.applyUnconfirmedTransactionAsync(transaction)
     self.pool.add(transaction)
     return transaction
@@ -233,34 +239,60 @@ Transactions.prototype.processUnconfirmedTransactionAsync = async (transaction) 
 Transactions.prototype.applyUnconfirmedTransactionAsync = async (transaction) => {
   library.logger.debug('apply unconfirmed trs', transaction)
 
-  if (self.pool.has(transaction.id)) {
-    throw new Error('Transaction already in the pool')
-  }
-
-  if (!transaction.senderId) {
-    transaction.senderId = modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
-  }
   const height = modules.blocks.getLastBlock().height
-
-  const sender = await app.sdb.get('Account', transaction.senderId)
-  if (!sender) throw new Error('Sender account not found')
-
-  const exists = await app.sdb.exists('Transaction', { id: transaction.id })
-  if (exists) {
-    throw new Error('Transaction already confirmed')
-  }
-
   const block = {
     height: height + 1,
+  }
+
+  const senderId = transaction.senderId
+  const accountId = transaction.accountId
+  if (!senderId && !accountId) {
+    throw new Error('Missing sender address')
+  }
+
+  let requestor = null
+  let sender = null
+
+  if (senderId) {
+    if (!app.util.address.isNormalAddress(senderId)) {
+      throw new Error('Invalid sender address')
+    }
+
+    const senderPublicKey = transaction.senderPublicKey
+    if (modules.accounts.generateAddressByPublicKey(senderPublicKey) !== senderId) {
+      throw new Error('Invalid senderPublicKey')
+    }
+
+    requestor = await app.sdb.get('Account', senderId)
+    if (!requestor) {
+      if (height > 0) throw new Error('Requestor account not found')
+
+      requestor = app.sdb.create('Account', {
+        address: senderId,
+        name: '',
+        xas: 0,
+      })
+    }
+  }
+
+  if (accountId) {
+    if (app.util.address.isNormalAddress(accountId)) {
+      throw new Error('Invalid account address')
+    }
+    sender = await app.sdb.get('Account', accountId)
+    if (!sender) throw new Error('Sender account not found')
+  } else {
+    sender = requestor
   }
 
   const context = {
     trs: transaction,
     block,
     sender,
+    requestor,
   }
   if (height > 0) {
-    const error = library.base.transaction.verify(context)
+    const error = await library.base.transaction.verify(context)
     if (error) throw new Error(error)
   }
 
@@ -324,7 +356,7 @@ shared.getTransactions = (req, cb) => {
     const limit = query.limit || 100
     const offset = query.offset || 0
 
-    const condition = { }
+    const condition = {}
     if (query.senderId) {
       condition.senderId = query.senderId
     }
@@ -472,6 +504,7 @@ shared.addTransactionUnsigned = (req, cb) => {
           secret: query.secret,
           fee: query.fee,
           type: query.type,
+          accountId: query.accountId || null,
           args: query.args || null,
           message: query.message || null,
           secondKeyPair,

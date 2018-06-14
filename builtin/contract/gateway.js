@@ -1,9 +1,9 @@
 const bignum = require('bignumber')
 
 module.exports = {
-  openAccount: async function (gateway) {
-    app.sdb.lock('gateway.openAccount@' + this.trs.senderId)
-    let exists = await app.sdb.exists('GatewayAccount', { address: this.trs.senderId })
+  async openAccount(gateway) {
+    app.sdb.lock('gateway.openAccount@' + this.sender.address)
+    let exists = await app.sdb.exists('GatewayAccount', { address: this.sender.address })
     if (exists) return 'Account already opened'
     let validators = await app.sdb.findAll('GatewayMember', { condition: { gateway: gateway, elected: 1 } })
     if (!validators || !validators.length) return 'Gateway validators not found'
@@ -18,7 +18,7 @@ module.exports = {
     let account = app.gateway.createMultisigAddress(gateway, unlockNumber, outPublicKeys)
     let seq = Number(app.autoID.increment('gate_account_seq'))
     app.sdb.create('GatewayAccount', {
-      address: this.trs.senderId,
+      address: this.sender.address,
       gateway: gateway,
       outAddress: account.address,
       attachment: account.accountExtrsInfo,
@@ -29,8 +29,8 @@ module.exports = {
   },
 
   registerMember: async function (gateway, publicKey, desc) {
-    let senderId = this.trs.senderId
-    app.sdb.lock('basic.account@' + this.trs.senderId)
+    let senderId = this.sender.address
+    app.sdb.lock('basic.account@' + this.sender.address)
     let sender = this.sender
     if (!sender.name) return 'Account have not a name'
     if (sender.role) return 'Account already have a role'
@@ -40,7 +40,7 @@ module.exports = {
 
     sender.role = app.AccountRole.GATEWAY_VALIDATOR
     app.sdb.create('GatewayMember', {
-      address: this.trs.senderId,
+      address: this.sender.address,
       gateway: gateway,
       outPublicKey: publicKey,
       desc: desc,
@@ -55,7 +55,7 @@ module.exports = {
 
     let validator = await app.sdb.findOne('GatewayMember', {
       condition: {
-        address: this.trs.senderId,
+        address: this.sender.address,
       }
     })
     if (!validator || !validator.elected || validator.gateway !== gateway) return 'Permission denied'
@@ -63,7 +63,7 @@ module.exports = {
     // const depositKey = 'gateway.deposit@' + [currency, oid].join(':')
     // console.log('------------------lock', depositKey, app.sdb.blockSession.holdLocks.keys())
     // app.sdb.lock(depositKey)
-    const signerKey = 'gateway.deposit@' + [this.trs.senderId, currency, oid].join(':')
+    const signerKey = 'gateway.deposit@' + [this.sender.address, currency, oid].join(':')
     app.sdb.lock(signerKey)
 
     let gatewayAccount = await app.sdb.findOne('GatewayAccount', { condition: { outAddress: address } })
@@ -104,7 +104,7 @@ module.exports = {
   withdrawal: async function (address, gateway, currency, amount, fee) {
     app.validate('amount', fee)
     app.validate('amount', amount)
-    let balance = app.balances.get(this.trs.senderId, currency)
+    let balance = app.balances.get(this.sender.address, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
 
     let outAmount = bignum(amount).sub(fee)
@@ -112,7 +112,7 @@ module.exports = {
 
     if (!app.gateway.isValidAddress(gateway, address)) return 'Invalid withdrawal address'
 
-    app.balances.decrease(this.trs.senderId, currency, amount)
+    app.balances.decrease(this.sender.address, currency, amount)
     let seq = Number(app.autoID.increment('gate_withdrawal_seq'))
 
     app.sdb.create('GatewayWithdrawal', {
@@ -122,7 +122,7 @@ module.exports = {
       gateway: gateway,
       currency: currency,
       amount: outAmount.toString(),
-      senderId: this.trs.senderId,
+      senderId: this.sender.address,
       recipientId: address,
       fee: fee,
       signs: 0,
@@ -140,7 +140,7 @@ module.exports = {
 
     let validator = await app.sdb.findOne('GatewayMember', {
       condition: {
-        address: this.trs.senderId,
+        address: this.sender.address,
       }
     })
     if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
@@ -149,13 +149,13 @@ module.exports = {
     withdrawal.signs += 1
     app.sdb.create('GatewayWithdrawalPrep', {
       wid: wid,
-      signer: this.trs.senderId,
+      signer: this.sender.address,
       signature: ots
     })
   },
 
   submitWithdrawalSignature: async function (wid, signature) {
-    app.sdb.lock('gateway.gatewayWithdrawalSignature@' + [this.trs.senderId, wid].join(':'))
+    app.sdb.lock('gateway.gatewayWithdrawalSignature@' + [this.sender.address, wid].join(':'))
     let withdrawal = await app.sdb.get('GatewayWithdrawal', wid)
     if (!withdrawal) return 'Gateway withdrawal not exist'
     if (!withdrawal.outTransaction) return 'Out transaction not exist'
@@ -163,12 +163,12 @@ module.exports = {
 
     let validator = await app.sdb.findOne('GatewayMember', {
       condition: {
-        address: this.trs.senderId,
+        address: this.sender.address,
       }
     })
     if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
 
-    if (await app.sdb.exists('GatewayWithdrawalPrep', { wid: wid, signer: this.trs.senderId })) {
+    if (await app.sdb.exists('GatewayWithdrawalPrep', { wid: wid, signer: this.sender.address })) {
       return 'Duplicated withdrawal signature'
     }
 
@@ -184,7 +184,7 @@ module.exports = {
 
     app.sdb.create('GatewayWithdrawalPrep', {
       wid: wid,
-      signer: this.trs.senderId,
+      signer: this.sender.address,
       signature: signature
     })
   },
@@ -200,7 +200,7 @@ module.exports = {
 
     let validator = await app.sdb.findOne('GatewayMember', {
       condition: {
-        address: this.trs.senderId,
+        address: this.sender.address,
       }
     })
     if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'

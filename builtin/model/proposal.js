@@ -8,7 +8,7 @@ module.exports = {
     { name: 'desc', type: 'Text' },
     { name: 'topic', type: 'String', length: 256 },
     { name: 'content', type: 'Text' },
-    { name: 'activated', type: 'Number', default: 0 },
+    { name: 'activated', type: 'Number', default: 0 , index: true },
     { name: 'endHeight', type: 'BigInt', index: true },
     { name: 'height', type: 'BigInt' }
   ]

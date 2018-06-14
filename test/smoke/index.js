@@ -41,13 +41,16 @@ async function sendMoneyToAccounts() {
   for (const i of config.gatewayAccounts) {
     addresses.push(i.address)
   }
+  for (const i of config.testGroup.members) {
+    addresses.push(i.address)
+  }
   console.log(`send money to ${addresses.length} accounts`)
   await node.giveMoneyAndWaitAsync(addresses)
 }
 
 async function init() {
   await initDelegates()
-  await sendMoneyToAccounts()
+  //await sendMoneyToAccounts()
 }
 
 async function testUIA() {
@@ -355,12 +358,84 @@ async function testChain() {
   await node.onNewBlockAsync()
 }
 
+async function testGroup() {
+  // step 1: register group
+  const group = config.testGroup
+  const members = []
+  for (const m of group.members) {
+    members.push({ address: m.address, weight: 1 })
+  }
+  let trs = {
+    secret: gDelegates[0].secret,
+    type: 6,
+    fee: 500000000,
+    args: [
+      group.name,
+      members,
+      group.min,
+      group.max,
+      group.m,
+      group.updateInterval,
+    ],
+  }
+  console.log(`register group: ${group.name}`)
+  //await node.transactionUnsignedAsync(trs)
+  //await node.onNewBlockAsync()
+
+  // step 2: send money to group and the requestor account
+  console.log('send money to the group and requestor account')
+  //await node.giveMoneyAndWaitAsync([group.name, group.members[0].address])
+
+  // step 3: request group transaction
+  const groupAccount = (await node.apiGetAsync(`/v2/accounts/${group.name}`)).body.account
+  console.log('get group account', groupAccount)
+  trs = {
+    secret: group.members[0].secret,
+    type: 1,
+    fee: 20000000,
+    accountId: groupAccount.address,
+    args: [
+      11230,
+      group.members[1].address,
+    ],
+  }
+
+  const tid = (await node.transactionUnsignedAsync(trs)).body.transactionId
+  await node.onNewBlockAsync()
+
+  // step 4: vote for group transaction
+  for (let i = 0; i < 3; ++i) {
+    const member = group.members[i]
+    trs = {
+      secret: member.secret,
+      type: 500,
+      fee: 0,
+      args: [tid],
+    }
+    console.log(`group member ${member.address} vote for transaction: ${tid}`)
+    await node.transactionUnsignedAsync(trs)
+  }
+  await node.onNewBlockAsync()
+
+  // step 5: activate group transaction
+  trs = {
+    secret: group.members[0].secret,
+    type: 501,
+    fee: 0,
+    args: [tid],
+  }
+  console.log(`activate group transaction: ${tid}`)
+  await node.transactionUnsignedAsync(trs)
+  await node.onNewBlockAsync()
+}
+
 async function main() {
   await init()
-  await testUIA()
-  await testAgent()
-  await testGateway()
-  await testChain()
+  // await testUIA()
+  // await testAgent()
+  // await testGateway()
+  // await testChain()
+  await testGroup()
 }
 
 (async () => {

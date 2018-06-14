@@ -29,6 +29,7 @@ function calc(height) {
 Transaction.prototype.create = function (data) {
   var trs = {
     type: data.type,
+    accountId: data.accountId,
     senderPublicKey: data.keypair.publicKey.toString('hex'),
     timestamp: slots.getTime(),
     message: data.message,
@@ -89,7 +90,12 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
   bb.writeInt(trs.type);
   bb.writeInt(trs.timestamp);
   bb.writeLong(trs.fee);
-  bb.writeString(trs.senderId)
+  if (trs.senderId) {
+    bb.writeString(trs.senderId)
+  }
+  if (trs.accountId) {
+    bb.writeString(trs.accountId)
+  }
 
   if (trs.message) bb.writeString(trs.message);
   if (trs.args) {
@@ -126,19 +132,35 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
   return bb.toBuffer();
 }
 
-Transaction.prototype.verifyNormalSignature = function (trs, sender) {
-  if (!this.verifySignature(trs, trs.senderPublicKey, trs.signatures[0])) {
+Transaction.prototype.verifyNormalSignature = function (trs, requestor, bytes) {
+  if (!this.verifyBytes(bytes, trs.senderPublicKey, trs.signatures[0])) {
     return 'Invalid signature'
   }
-  if (sender.secondPublicKey) {
-    if (!this.verifySignature(trs, sender.secondPublicKey, trs.secondSignature)) {
+  if (requestor.secondPublicKey) {
+    if (!this.verifyBytes(bytes, requestor.secondPublicKey, trs.secondSignature)) {
       return 'Invalid second signature'
     }
   }
 }
 
-Transaction.prototype.verifyMultiSignature = function (trs, sender) {
-  let bytes = this.getBytes(trs, true, true)
+Transaction.prototype.verifyGroupSignature = async (trs, sender, bytes) => {
+  let group = await app.sdb.findOne('Group', { name: sender.name })
+  if (!group) return 'Group not found'
+  let groupMembers = await app.sdb.findAll('GroupMember', { group: sender.name })
+  if (!groupMembers) return 'Group members not found'
+  let memberMap = new Map()
+  for (const item of groupMembers) {
+    memberMap.set(item.member, item)
+  }
+  let totalWeight = 0
+  for (let ks of trs.signatures) {
+    let k = ks.substr(0, 74)
+    let address = addressHelper.generateBase58CheckAddress(k)
+    if (!memberMap.has(address)) return 'Invalid member address'
+    totalWeight += memberMap.get(address).weight
+  }
+  if (totalWeight < group.m) return 'Signature weight not enough'
+
   for (let ks of trs.signatures) {
     if (ks.length !== 192) return 'Invalid key-signature format'
     let key = ks.substr(0, 64)
@@ -149,9 +171,37 @@ Transaction.prototype.verifyMultiSignature = function (trs, sender) {
   }
 }
 
-Transaction.prototype.verify = function (context) {
-  const trs = context.trs
-  const sender = context.sender
+Transaction.prototype.verifyChainSignature = async (trs, sender, bytes) => {
+  let chain = await app.sdb.findOne('Chain', { condition: { address: sender.accountId } })
+  if (!chain) return 'Chain not found'
+  let validators = await app.sdb.findAll('ChainDelegate', { condition: { address: sender.accountId } })
+  if (!validators || !validators.length) return 'Chain delegates not found'
+
+  let validatorPublicKeySet = new Set
+  for (let v of validators) {
+    validatorPublicKeySet.add(v.delegate)
+  }
+  let validSignatureNumber = 0
+  for (let s of trs.signatures) {
+    let k = s.substr(0, 64)
+    if (validatorPublicKeySet.has(k)) {
+      validSignatureNumber++
+    }
+  }
+  if (validSignatureNumber < chain.unlockNumber) return 'Signature not enough'
+
+  for (let ks of trs.signatures) {
+    if (ks.length !== 192) return 'Invalid key-signature format'
+    let key = ks.substr(0, 64)
+    let signature = ks.substr(64, 192)
+    if (!this.verifyBytes(bytes, key, signature)) {
+      return 'Invalid multi signatures'
+    }
+  }
+}
+
+Transaction.prototype.verify = async function (context) {
+  const { trs, sender, requestor } = context
   if (slots.getSlotNumber(trs.timestamp) > slots.getSlotNumber()) {
     return "Invalid transaction timestamp"
   }
@@ -160,28 +210,36 @@ Transaction.prototype.verify = function (context) {
     return "Invalid function"
   }
 
-  let feeCalculator = feeCalculators[trs.type]
-  if (!feeCalculator) return 'Fee calculator not found'
-  let minFee = 100000000 * feeCalculator(trs)
-  if (trs.fee < minFee) return 'Fee not enough'
+  if (sender === requestor || !requestor) {
+    let feeCalculator = feeCalculators[trs.type]
+    if (!feeCalculator) return 'Fee calculator not found'
+    let minFee = 100000000 * feeCalculator(trs)
+    if (trs.fee < minFee) return 'Fee not enough'
+  }
 
   let id = this.getId(trs)
   if (trs.id !== id) {
     return 'Invalid transaction id'
   }
 
-  let ADDRESS_TYPE = app.util.address.TYPE
-  let addrType = app.util.address.getType(trs.senderId)
-
   try {
-    if (addrType === ADDRESS_TYPE.NORMAL) {
-      return this.verifyNormalSignature(trs, sender)
-    } else if (addrType === ADDRESS_TYPE.CHAIN) {
-      return this.verifyMultiSignature(trs, sender)
-    } else if (addrType === ADDRESS_TYPE.MULTISIG) {
-      return this.verifyMultiSignature(trs, sender)
-    } else if (addrType === ADDRESS_TYPE.NONE) {
-      return 'Unknow address type'
+    let bytes = this.getBytes(trs, true, true)
+    if (trs.senderId) {
+      let error = this.verifyNormalSignature(trs, requestor, bytes)
+      if (error) return error
+    }
+    if (trs.accountId && trs.signatures && trs.signatures.length > 1) {
+      let ADDRESS_TYPE = app.util.address.TYPE
+      let addrType = app.util.address.getType(trs.accountId)
+      if (addrType === ADDRESS_TYPE.CHAIN) {
+        let error = this.verifyChainSignature(trs, sender, bytes)
+        if (error) return error
+      } else if (addrType === ADDRESS_TYPE.GROUP) {
+        let error = this.verifyGroupSignature(trs, sender, bytes)
+        if (error) return error
+      } else {
+        return 'Invalid account type'
+      }
     }
   } catch (e) {
     library.logger.error('verify signature excpetion', e)
@@ -194,23 +252,6 @@ Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
 
   try {
     var bytes = this.getBytes(trs, true, true);
-    var res = this.verifyBytes(bytes, publicKey, signature);
-  } catch (e) {
-    throw Error(e.toString());
-  }
-
-  return res;
-}
-
-Transaction.prototype.verifySecondSignature = function (trs, publicKey, signature) {
-  if (!private.types[trs.type]) {
-    throw Error('Unknown transaction type ' + trs.type);
-  }
-
-  if (!signature) return false;
-
-  try {
-    var bytes = this.getBytes(trs, false, true);
     var res = this.verifyBytes(bytes, publicKey, signature);
   } catch (e) {
     throw Error(e.toString());
@@ -239,14 +280,7 @@ Transaction.prototype.verifyBytes = function (bytes, publicKey, signature) {
 }
 
 Transaction.prototype.apply = async function (context) {
-  const block = context.block
-  const trs = context.trs
-  let sender = context.sender
-  if (block.height !== 0) {
-    if (!sender.xas || sender.xas < trs.fee) throw new Error('Insufficient balance')
-    sender.xas -= trs.fee
-  }
-
+  const { block, trs, sender, requestor } = context
   let name = app.getContractName(trs.type)
   if (!name) {
     throw new Error('Unsupported transaction type: ' + trs.type)
@@ -260,6 +294,22 @@ Transaction.prototype.apply = async function (context) {
     throw new Error('Contract not found')
   }
 
+  if (block.height !== 0) {
+    if (requestor && sender && requestor !== sender) {
+      const requestorFee = 20000000
+      if (requestor.xas < requestorFee) throw new Error('Insufficient requestor balance')
+      requestor.xas -= requestorFee
+      trs.executed = 0
+      return
+    } else if (sender) {
+      if (sender.xas < trs.fee) throw new Error('Insufficient requestor balance')
+      sender.xas -= trs.fee
+    } else {
+      throw new Error('Unexpected sender account')
+    }
+  }
+
+  trs.executed = 1
   let error = await fn.apply(context, trs.args)
   if (error) {
     throw new Error(error)
@@ -290,6 +340,7 @@ Transaction.prototype.objectNormalize = function (trs) {
     }
   }
 
+  // FIXME
   var report = this.scope.scheme.validate(trs, {
     type: "object",
     properties: {
@@ -297,14 +348,14 @@ Transaction.prototype.objectNormalize = function (trs) {
       height: { type: "integer" },
       type: { type: "integer" },
       timestamp: { type: "integer" },
-      // senderPublicKey: { type: "string", format: "publicKey" },
+      senderId: { type: "string" },
       fee: { type: "integer", minimum: 0, maximum: constants.totalAmount },
       secondSignature: { type: "string", format: "signature" },
       signatures: { type: "array" },
       // args: { type: "array" },
       message: { type: "string", maxLength: 256 }
     },
-    required: ['type', 'timestamp', 'senderPublicKey', 'signatures']
+    required: ['type', 'timestamp', 'senderId', 'signatures']
   });
 
   if (!report) {

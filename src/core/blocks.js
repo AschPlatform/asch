@@ -244,32 +244,10 @@ Blocks.prototype.applyBlock = async (block) => {
 
   try {
     for (const transaction of block.transactions) {
-      transaction.senderId =
-        modules.accounts.generateAddressByPublicKey(transaction.senderPublicKey)
-
       if (appliedTransactions[transaction.id]) {
         throw new Error(`Duplicate transaction in block: ${transaction.id}`)
       }
-
-      const senderId = transaction.senderId
-      let sender = await app.sdb.get('Account', senderId)
-      if (!sender) {
-        if (block.height === 0) {
-          sender = app.sdb.create('Account', {
-            address: senderId,
-            name: '',
-            xas: 0,
-          })
-        } else {
-          throw new Error('Sender account not found')
-        }
-      }
-      const context = {
-        trs: transaction,
-        block,
-        sender,
-      }
-      await library.base.transaction.apply(context)
+      await modules.transactions.applyUnconfirmedTransactionAsync(transaction)
       // TODO not just remove, should mark as applied
       // modules.blockchain.transactions.removeUnconfirmedTransaction(transaction.id)
       appliedTransactions[transaction.id] = transaction
@@ -420,20 +398,6 @@ Blocks.prototype.applyRound = async (block) => {
     app.sdb.getCached('Delegate', addr).missedBlocks += 1
   }
 
-  const fees = round.fees
-  const rewards = round.rewards
-  const ratio = 1
-
-  const actualFees = Math.floor(fees * ratio)
-  const feeAverage = Math.floor(actualFees / delegates.length)
-  const feeRemainder = actualFees - (feeAverage * delegates.length)
-  // let feeFounds = fees - actualFees
-
-  const actualRewards = Math.floor(rewards * ratio)
-  const rewardAverage = Math.floor(actualRewards / delegates.length)
-  const rewardRemainder = actualRewards - (rewardAverage * delegates.length)
-  // let rewardFounds = rewards - actualRewards
-
   async function updateDelegate(pk, fee, reward) {
     const addr = modules.accounts.generateAddressByPublicKey(pk)
     const d = app.sdb.getCached('Delegate', addr)
@@ -444,15 +408,38 @@ Blocks.prototype.applyRound = async (block) => {
     account.xas += (fee + reward)
   }
 
-  for (const fd of forgedDelegates) {
-    await updateDelegate(fd, feeAverage, rewardAverage)
-  }
-  await updateDelegate(block.delegate, feeRemainder, rewardRemainder)
+  const fees = round.fees
+  const rewards = round.rewards
+  const councilControl = 1
+  if (councilControl) {
+    const councilAddress = 'GADQ2bozmxjBfYHDQx3uwtpwXmdhafUdkN'
+    const account = await app.sdb.get('Account', councilAddress) ||
+      app.sdb.create('Account', { xas: 0, address: councilAddress, name: '' })
+    const totalIncome = fees + rewards
+    account.xas += totalIncome
+  } else {
+    const ratio = 1
 
-  // let totalClubFounds = feeFounds + rewardFounds
-  // app.logger.info('Asch witness club get new founds: ' + totalClubFounds)
-  // // FIXME dapp id
-  // app.balances.increase('club_dapp_id', 'XAS', totalClubFounds)
+    const actualFees = Math.floor(fees * ratio)
+    const feeAverage = Math.floor(actualFees / delegates.length)
+    const feeRemainder = actualFees - (feeAverage * delegates.length)
+    // let feeFounds = fees - actualFees
+
+    const actualRewards = Math.floor(rewards * ratio)
+    const rewardAverage = Math.floor(actualRewards / delegates.length)
+    const rewardRemainder = actualRewards - (rewardAverage * delegates.length)
+    // let rewardFounds = rewards - actualRewards
+
+    for (const fd of forgedDelegates) {
+      await updateDelegate(fd, feeAverage, rewardAverage)
+    }
+    await updateDelegate(block.delegate, feeRemainder, rewardRemainder)
+
+    // let totalClubFounds = feeFounds + rewardFounds
+    // app.logger.info('Asch witness club get new founds: ' + totalClubFounds)
+    // // FIXME dapp id
+    // app.balances.increase('club_dapp_id', 'XAS', totalClubFounds)
+  }
 
   if (block.height % 101 === 0) {
     modules.delegates.updateBookkeeper()
@@ -553,10 +540,10 @@ Blocks.prototype.generateBlock = async (keypair, timestamp) => {
   if (library.base.consensus.hasEnoughVotes(localVotes)) {
     modules.transactions.clearUnconfirmed()
     await self.processBlock(block, { local: true, broadcast: true, votes: localVotes })
-    library.logger.log(`Forged new block id: ${id} 
-      height: ${height} 
-      round: ${modules.round.calc(height)} 
-      slot: ${slots.getSlotNumber(block.timestamp)} 
+    library.logger.log(`Forged new block id: ${id},
+      height: ${height},
+      round: ${modules.round.calc(height)},
+      slot: ${slots.getSlotNumber(block.timestamp)},
       reward: ${priv.blockStatus.calcReward(block.height)}`)
     return null
   }
@@ -594,9 +581,9 @@ Blocks.prototype.onReceiveBlock = (block, votes) => {
 
   library.sequence.add((cb) => {
     if (block.prevBlockId === priv.lastBlock.id && priv.lastBlock.height + 1 === block.height) {
-      library.logger.info(`Received new block id: ${block.id} 
-        height: ${block.height} 
-        round: ${modules.round.calc(modules.blocks.getLastBlock().height)} 
+      library.logger.info(`Received new block id: ${block.id}
+        height: ${block.height}
+        round: ${modules.round.calc(modules.blocks.getLastBlock().height)}
         slot: ${slots.getSlotNumber(block.timestamp)}`)
       return (async () => {
         const pendingTrsMap = new Map()
@@ -735,10 +722,10 @@ Blocks.prototype.onReceiveVotes = (votes) => {
         try {
           modules.transactions.clearUnconfirmed()
           await self.processBlock(block, { votes: totalVotes, local: true, broadcast: true })
-          library.logger.log(`Forged new block id: ${id} 
-            height: ${height} 
-            round: ${modules.round.calc(height)} 
-            slot: ${slots.getSlotNumber(block.timestamp)} 
+          library.logger.log(`Forged new block id: ${id},
+            height: ${height},
+            round: ${modules.round.calc(height)},
+            slot: ${slots.getSlotNumber(block.timestamp)},
             reward: ${priv.blockStatus.calcReward(block.height)}`)
         } catch (e) {
           library.logger.error(`Failed to process confirmed block height: ${height} id: ${id} error: ${err}`)
@@ -769,6 +756,7 @@ Blocks.prototype.onBind = (scope) => {
       const count = app.sdb.blocksCount
       app.logger.info('Blocks found:', count)
       if (!count) {
+        self.setLastBlock({ height: -1 })
         await self.processBlock(genesisblock.block, {})
       } else {
         const block = await app.sdb.getBlockByHeight(count - 1)

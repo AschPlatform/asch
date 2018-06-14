@@ -263,6 +263,15 @@ module.exports = async function runtime(options) {
 
   app.isCurrentBookkeeper = addr => modules.delegates.getBookkeeperAddresses().has(addr)
 
+  app.executeContract = async (context) => {
+    const error = await library.base.transaction.apply(context)
+    if (!error) {
+      const trs = await app.sdb.get('Transaction', context.trs.id)
+      trs.executed = 1
+    }
+    return error
+  }
+
   app.AccountRole = AccountRole
 
   const { baseDir } = options.appConfig
@@ -291,7 +300,7 @@ module.exports = async function runtime(options) {
   app.contractTypeMapping[3] = 'basic.setPassword'
   app.contractTypeMapping[4] = 'basic.lock'
   app.contractTypeMapping[5] = 'basic.unlock'
-  app.contractTypeMapping[6] = 'basic.setMultisignature'
+  app.contractTypeMapping[6] = 'basic.registerGroup'
   app.contractTypeMapping[7] = 'basic.registerAgent'
   app.contractTypeMapping[8] = 'basic.setAgent'
   app.contractTypeMapping[9] = 'basic.cancelAgent'
@@ -322,4 +331,10 @@ module.exports = async function runtime(options) {
   app.contractTypeMapping[404] = 'gateway.submitWithdrawalTransaction'
   app.contractTypeMapping[405] = 'gateway.submitWithdrawalSignature'
   app.contractTypeMapping[406] = 'gateway.submitOutTransactionId'
+
+  app.contractTypeMapping[500] = 'group.vote'
+  app.contractTypeMapping[501] = 'group.activate'
+  app.contractTypeMapping[502] = 'group.addMember'
+  app.contractTypeMapping[503] = 'group.removeMember'
+  app.contractTypeMapping[504] = 'group.replaceMember'
 }
