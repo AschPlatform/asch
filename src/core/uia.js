@@ -1,38 +1,40 @@
-var ByteBuffer = require('bytebuffer')
-var bignum = require('bignumber')
-var crypto = require('crypto')
-var async = require('async')
-var ed = require('../utils/ed.js')
-var extend = require('extend')
-var jsonSql = require('json-sql')()
+const crypto = require('crypto')
+const async = require('async')
+const ed = require('../utils/ed.js')
+const extend = require('extend')
+const jsonSql = require('json-sql')()
+
 jsonSql.setDialect('sqlite')
-var constants = require('../utils/constants.js')
-var slots = require('../utils/slots.js')
-var Router = require('../utils/router.js')
-var sandboxHelper = require('../utils/sandbox.js')
-var flagsHelper = {}
-var addressHelper = require('../utils/address.js')
-var amountHelper = require('../utils/amount.js')
+const constants = require('../utils/constants.js')
+const Router = require('../utils/router.js')
+const sandboxHelper = require('../utils/sandbox.js')
+
+const flagsHelper = {}
+const addressHelper = require('../utils/address.js')
+const amountHelper = require('../utils/amount.js')
 
 // Private fields
-var modules, library, self, private = {}, shared = {}
+let modules
+let library
+let self
+const priv = {}
+const shared = {}
 
 // Constructor
 function UIA(cb, scope) {
   library = scope
   self = this
-  self.__private = private
-  private.attachApi()
+  priv.attachApi()
   cb(null, self)
 }
 
 // Private methods
-private.attachApi = function () {
-  var router = new Router()
+priv.attachApi = () => {
+  const router = new Router()
 
-  router.use(function (req, res, next) {
+  router.use((req, res, next) => {
     if (modules) return next()
-    res.status(500).send({ success: false, error: 'Blockchain is loading' })
+    return res.status(500).send({ success: false, error: 'Blockchain is loading' })
   })
 
   router.map(shared, {
@@ -51,101 +53,103 @@ private.attachApi = function () {
     'put /transfers': 'transferAsset',
   })
 
-  router.use(function (req, res, next) {
+  router.use((req, res) => {
     res.status(500).send({ success: false, error: 'API endpoint not found' })
   })
 
   library.network.app.use('/api/uia', router)
-  library.network.app.use(function (err, req, res, next) {
+  library.network.app.use((err, req, res, next) => {
     if (!err) return next()
     library.logger.error(req.url, err)
-    res.status(500).send({ success: false, error: err.toString() })
+    return res.status(500).send({ success: false, error: err.toString() })
   })
 }
 
 // Public methods
-UIA.prototype.sandboxApi = function (call, args, cb) {
+UIA.prototype.sandboxApi = (call, args, cb) => {
   sandboxHelper.callMethod(shared, call, args, cb)
 }
 
 // Events
-UIA.prototype.onBind = function (scope) {
+UIA.prototype.onBind = (scope) => {
   modules = scope
 }
 
-private.queryTransactions = function (query, cb) {
-  var func = 'list'
-  var param = query
-  var list = true
+priv.queryTransactions = (query, cb) => {
+  let func = 'list'
+  let param = query
+  let list = true
   if (typeof query.id !== 'undefined') {
     func = 'getById'
     param = query.id
     list = false
   }
 
-  modules.transactions[func](param, function (err, data) {
-    if (err) return cb('Failed to get transactions: ' + err)
+  modules.transactions[func](param, (err, data) => {
+    if (err) return cb(`Failed to get transactions: ${err}`)
 
     if (!list) data = { transactions: [data] }
-    var sqls = []
-    var typeToTable = {
+    const sqls = []
+    const typeToTable = {
       9: {
         table: 'issuers',
-        fields: ['transactionId', 'name', 'desc']
+        fields: ['transactionId', 'name', 'desc'],
       },
       10: {
         table: 'assets',
-        fields: ['transactionId', 'name', 'desc', 'maximum', 'precision', 'strategy']
+        fields: ['transactionId', 'name', 'desc', 'maximum', 'precision', 'strategy'],
       },
       11: {
         table: 'flags',
-        fields: ['transactionId', 'currency', 'flagType', 'flag']
+        fields: ['transactionId', 'currency', 'flagType', 'flag'],
       },
       12: {
         table: 'acls',
-        fields: ['transactionId', 'currency', 'operator', 'flag', 'list']
+        fields: ['transactionId', 'currency', 'operator', 'flag', 'list'],
       },
       13: {
         table: 'issues',
-        fields: ['transactionId', 'currency', 'amount']
+        fields: ['transactionId', 'currency', 'amount'],
       },
       14: {
         table: 'transfers',
-        fields: ['transactionId', 'currency', 'amount']
-      }
+        fields: ['transactionId', 'currency', 'amount'],
+      },
     }
-    data.transactions.forEach(function (trs) {
+    data.transactions.forEach((trs) => {
       if (!typeToTable[trs.type]) {
         return
       }
       trs.t_id = trs.id
       sqls.push({
-        query: 'select ' + typeToTable[trs.type].fields.join(',') + ' from ' + typeToTable[trs.type].table + ' where transactionId="' + trs.id + '"',
-        fields: typeToTable[trs.type].fields
+        query: `select ${typeToTable[trs.type].fields.join(',')} from ${typeToTable[trs.type].table} where transactionId="${trs.id}"`,
+        fields: typeToTable[trs.type].fields,
       })
     })
-    async.mapSeries(sqls, function (sql, next) {
+    async.mapSeries(sqls, (sql, next) => {
       library.dbLite.query(sql.query, {}, sql.fields, next)
-    }, function (err, rows) {
-      if (err) return cb('Failed to get transaction assets: ' + err)
+    }, (sqlErr, rows) => {
+      if (sqlErr) return cb(`Failed to get transaction assets: ${sqlErr}`)
 
       for (let i = 0; i < rows.length; ++i) {
-        if (rows[i].length == 0) continue
-        var t = data.transactions[i]
-        var type = t.type
-        var table = typeToTable[type].table
-        var asset = rows[i][0]
-        for (let k in asset) {
-          asset[table + '_' + k] = asset[k]
+        if (rows[i].length === 0) continue
+        const t = data.transactions[i]
+        const type = t.type
+        const table = typeToTable[type].table
+        const asset = rows[i][0]
+        for (const k in asset) {
+          if (asset[k] || true) {
+            asset[`${table}_${k}`] = asset[k]
+          }
         }
-        if (asset.transactionId == t.id) {
+        if (asset.transactionId === t.id) {
           asset.t_id = asset.transactionId
           t.asset = library.base.transaction.dbReadAsset(t.type, asset)
         }
         delete t.t_id
       }
-      var assetNames = new Set
-      data.transactions.forEach(function (trs) {
+      let assetNames = new Set()
+      data.transactions.forEach((trs) => {
         if (trs.type === 13) {
           assetNames.add(trs.asset.uiaIssue.currency)
         } else if (trs.type === 14) {
@@ -153,219 +157,218 @@ private.queryTransactions = function (query, cb) {
         }
       })
       assetNames = Array.from(assetNames)
-      async.mapSeries(assetNames, function (name, next) {
+      async.mapSeries(assetNames, (name, next) => {
         library.model.getAssetByName(name, next)
-      }, function (err, assets) {
-        if (err) return cb('Failed to asset info: ' + err)
-        var precisionMap = new Map
-        assets.forEach(function (a) {
+      }, (assetErr, assets) => {
+        if (assetErr) return cb(`Failed to asset info: ${assetErr}`)
+        const precisionMap = new Map()
+        assets.forEach((a) => {
           precisionMap.set(a.name, a.precision)
         })
-        data.transactions.forEach(function (trs) {
-          var obj = null
+        data.transactions.forEach((trs) => {
+          let obj = null
           if (trs.type === 13) {
             obj = trs.asset.uiaIssue
           } else if (trs.type === 14) {
             obj = trs.asset.uiaTransfer
           }
           if (obj != null && precisionMap.has(obj.currency)) {
-            var precision = precisionMap.get(obj.currency)
+            const precision = precisionMap.get(obj.currency)
             obj.amountShow = amountHelper.calcRealAmount(obj.amount, precision)
             obj.precision = precision
           }
         })
-        cb(null, data)
+        return cb(null, data)
       })
+      return null
     })
+    return null
   })
 }
 
 // Shared
-shared.getFee = function (req, cb) {
-  var fee = null
+shared.getFee = (req, cb) => {
+  let fee = null
 
   // FIXME(qingfeng)
   fee = 5 * constants.fixedPoint
-
-  cb(null, { fee: fee })
+  cb(null, { fee })
 }
 
-shared.getIssuers = function (req, cb) {
-  var query = req.body
+shared.getIssuers = (req, cb) => {
+  const query = req.body
   library.scheme.validate(query, {
     type: 'object',
     properties: {
       limit: {
         type: 'integer',
         minimum: 0,
-        maximum: 100
+        maximum: 100,
       },
       offset: {
         type: 'integer',
-        minimum: 0
+        minimum: 0,
+      },
+    },
+  }, (err) => {
+    if (err) return cb(`Invalid parameters: ${err[0]}`)
+    return (async () => {
+      try {
+        const count = await app.sdb.count('issuers', {})
+        const issues = await app.sdb.find('issuers', {}, { limit, offset })
+        return cb(null, { count, issues })
+      } catch (dbErr) {
+        return cb(`Failed to get issuers: ${dbErr}`)
       }
-    }
-  }, function (err) {
-    if (err) return cb('Invalid parameters: ' + err[0])
-
-    library.model.count('issuers', null, function (err, count) {
-      if (err) return cb('Failed to get count: ' + err)
-
-      library.model.getIssuers(query, ['name', 'desc', 'issuerId'], function (err, results) {
-        if (err) return cb('Failed to get issuers: ' + err)
-
-        cb(null, {
-          issuers: results,
-          count: count
-        })
-      })
-    })
+    })()
   })
 }
 
-shared.getIssuerByAddress = function (req, cb) {
+shared.getIssuerByAddress = (req, cb) => {
   if (!req.params || !addressHelper.isAddress(req.params.address)) {
     return cb('Invalid address')
   }
-  library.model.getIssuerByAddress(req.params.address, ['name', 'desc'], function (err, issuer) {
-    if (err) return cb('Database error: ' + err)
-    if (!issuer) return cb('Issuer not found')
-    cb(null, { issuer: issuer })
-  })
+  return (async () => {
+    try {
+      const issues = await app.sdb.find('issuers', { address: req.params.address })
+      if (!issuers || issuers.length === 0) return cb('Issuer not found')
+      return cb(null, { issuer: issues[0] })
+    } catch (dbErr) {
+      return cb(`Failed to get issuer: ${dbErr}`)
+    }
+  })()
 }
 
-shared.getIssuer = function (req, cb) {
+shared.getIssuer = (req, cb) => {
   if (req.params && addressHelper.isAddress(req.params.name)) {
     req.params.address = req.params.name
     return shared.getIssuerByAddress(req, cb)
   }
-  var query = req.params
+  const query = req.params
   library.scheme.validate(query, {
     type: 'object',
     properties: {
       name: {
         type: 'string',
         minLength: 1,
-        maxLength: 16
-      }
+        maxLength: 16,
+      },
     },
-    required: ['name']
-  }, function (err) {
-    if (err) return cb('Invalid parameters: ' + err[0])
+    required: ['name'],
+  }, (err) => {
+    if (err) return cb(`Invalid parameters: ${err[0]}`)
 
-    library.model.getIssuerByName(query.name, ['name', 'desc', 'issuerId'], function (err, issuer) {
-      if (!issuer || err) return cb('Issuer not found')
-      cb(null, { issuer: issuer })
-    })
+    return (async () => {
+      try {
+        const issues = await app.sdb.find('issuers', { name: req.params.name })
+        if (!issuers || issuers.length === 0) return cb('Issuer not found')
+        return cb(null, { issuer: issues[0] })
+      } catch (dbErr) {
+        return cb(`Failed to get issuers: ${dbErr}`)
+      }
+    })()
   })
+  return null
 }
 
-shared.getIssuerAssets = function (req, cb) {
+shared.getIssuerAssets = (req, cb) => {
   if (!req.params || !req.params.name || req.params.name.length > 32) {
-    return cb(' Invalid parameters')
+    cb(' Invalid parameters')
+    return
   }
-  var query = req.body
+  const query = req.body
   library.scheme.validate(query, {
     type: 'object',
     properties: {
       limit: {
         type: 'integer',
         minimum: 0,
-        maximum: 100
+        maximum: 100,
       },
       offset: {
         type: 'integer',
-        minimum: 0
+        minimum: 0,
+      },
+    },
+  }, (err) => {
+    if (err) return cb(`Invalid parameters: ${err[0]}`)
+
+    return (async () => {
+      try {
+        const condition = { issuerName: req.params.name }
+        const count = await app.sdb.count('assets', condition)
+        const assets = await app.sdb.find('assets', condition, { limit: query.limit, offset: query.offset })
+        return cb(null, { count, assets })
+      } catch (dbErr) {
+        return cb(`Failed to get assets: ${dbErr}`)
       }
-    }
-  }, function (err) {
-    if (err) return cb('Invalid parameters: ' + err[0])
-
-    library.model.count('assets', { issuerName: req.params.name }, function (err, count) {
-      if (err) return cb('Failed to get count: ' + err)
-
-      var filter = {
-        condition: { issuerName: req.params.name },
-        limit: query.limit,
-        offset: query.offset
-      }
-      library.model.getAssets(filter, function (err, results) {
-        if (err) return cb('Failed to get assets: ' + err)
-
-        cb(null, {
-          assets: results,
-          count: count
-        })
-      })
-    })
+    })()
   })
 }
 
-shared.getAssets = function (req, cb) {
-  var query = req.body
+shared.getAssets = (req, cb) => {
+  const query = req.body
   library.scheme.validate(query, {
     type: 'object',
     properties: {
       limit: {
         type: 'integer',
         minimum: 0,
-        maximum: 100
+        maximum: 100,
       },
       offset: {
         type: 'integer',
-        minimum: 0
+        minimum: 0,
+      },
+    },
+  }, (err) => {
+    if (err) return cb(`Invalid parameters: ${err[0]}`)
+    return (async () => {
+      try {
+        const condition = {}
+        const count = await app.sdb.count('assets', condition)
+        const assets = await app.sdb.find('assets', condition, { limit: query.limit, offset: query.offset })
+        return cb(null, { count, assets })
+      } catch (dbErr) {
+        return cb(`Failed to get assets: ${dbErr}`)
       }
-    }
-  }, function (err) {
-    if (err) return cb('Invalid parameters: ' + err[0])
-
-    library.model.count('assets', null, function (err, count) {
-      if (err) return cb('Failed to get count: ' + err)
-
-      var filter = {
-        limit: query.limit,
-        offset: query.offset
-      }
-      library.model.getAssets(filter, function (err, results) {
-        if (err) return cb('Failed to get assets: ' + err)
-
-        cb(null, {
-          assets: results,
-          count: count
-        })
-      })
-    })
+    })()
   })
 }
 
-shared.getAsset = function (req, cb) {
-  var query = req.params
+shared.getAsset = (req, cb) => {
+  const query = req.params
   library.scheme.validate(query, {
     type: 'object',
     properties: {
       name: {
         type: 'string',
         minLength: 1,
-        maxLength: 32
-      }
+        maxLength: 32,
+      },
     },
-    required: ['name']
-  }, function (err) {
-    if (err) return cb('Invalid parameters: ' + err[0])
+    required: ['name'],
+  }, (err) => {
+    if (err) cb(`Invalid parameters: ${err[0]}`)
 
-    library.model.getAssetByName(query.name, function (err, asset) {
-      if (err) return cb('Failed to get asset: ' + err)
-      if (!asset) return cb('Asset not found')
-      cb(null, { asset: asset })
-    })
+    return (async () => {
+      try {
+        const condition = { name: query.name }
+        const assets = await app.sdb.find('assets', condition)
+        if (!assets || assets.length === 0) return cb('Asset not found')
+        return cb(null, { asset: assets[0] })
+      } catch (dbErr) {
+        return cb(`Failed to get asset: ${dbErr}`)
+      }
+    })()
   })
 }
 
-shared.getAssetAcl = function (req, cb) {
+shared.getAssetAcl = (req, cb) => {
   if (!req.params || !req.params.name || !req.params.flag) {
     return cb('Invalid parameters')
   }
-  var query = extend({}, req.body, req.params)
+  const query = extend({}, req.body, req.params)
   query.flag = Number(query.flag)
   library.scheme.validate(query, {
     type: 'object',
@@ -373,155 +376,148 @@ shared.getAssetAcl = function (req, cb) {
       limit: {
         type: 'integer',
         minimum: 0,
-        maximum: 100
+        maximum: 100,
       },
       offset: {
         type: 'integer',
-        minimum: 0
+        minimum: 0,
+      },
+    },
+  }, (err) => {
+    if (err) return cb(`Invalid parameters: ${err[0]}`)
+
+    const table = flagsHelper.getAclTable(query.flag)
+    return (async () => {
+      try {
+        const condition = { currency: query.name }
+        const count = await app.sdb.count(table, condition)
+        const resultRange = { limit: query.limit, offset: query.offset }
+        const results = await app.sdb.find(table, condition, resultRange)
+        return cb(null, { count, list: results })
+      } catch (dbErr) {
+        return cb(`Failed to get acl: ${dbErr}`)
       }
-    }
-  }, function (err) {
-    if (err) return cb('Invalid parameters: ' + err[0])
-
-    var table = flagsHelper.getAclTable(query.flag)
-    library.model.count(table, { currency: query.name }, function (err, count) {
-      if (err) return cb('Failed to get count: ' + err)
-
-      var filter = {
-        limit: query.limit,
-        offset: query.offset
-      }
-      library.model.getAssetAcl(table, query.name, filter, function (err, results) {
-        if (err) return cb('Failed to get acl: ' + err)
-
-        cb(null, {
-          list: results,
-          count: count
-        })
-      })
-    })
+    })()
   })
+  return null
 }
 
-shared.getBalances = function (req, cb) {
+shared.getBalances = (req, cb) => {
   if (!req.params || !addressHelper.isAddress(req.params.address)) {
     return cb('Invalid address')
   }
-  var query = req.body
+  const query = req.body
   library.scheme.validate(query, {
     type: 'object',
     properties: {
       limit: {
         type: 'integer',
         minimum: 0,
-        maximum: 100
+        maximum: 100,
       },
       offset: {
         type: 'integer',
-        minimum: 0
+        minimum: 0,
+      },
+    },
+  }, (err) => {
+    if (err) return cb(`Invalid parameters: ${err[0]}`)
+
+    return (async () => {
+      try {
+        const condition = { address: req.params.address }
+        const count = await app.sdb.count(table, condition)
+        const resultRange = { limit: query.limit, offset: query.offset }
+        const balances = await app.sdb.find(table, condition, resultRange)
+        return cb(null, { count, balances })
+      } catch (dbErr) {
+        return cb(`Failed to get balances: ${dbErr}`)
       }
-    }
-  }, function (err) {
-    if (err) return cb('Invalid parameters: ' + err[0])
-
-    var condition = {
-      address: req.params.address
-    }
-    library.model.count('mem_asset_balances', condition, function (err, count) {
-      if (err) return cb('Failed to get count: ' + err)
-
-      var filter = {
-        limit: query.limit,
-        offset: query.offset
-      }
-      library.model.getAccountBalances(req.params.address, filter, function (err, results) {
-        if (err) return cb('Failed to get balances: ' + err)
-
-        cb(null, {
-          balances: results,
-          count: count
-        })
-      })
-    })
+    })()
   })
+  return null
 }
 
-shared.getBalance = function (req, cb) {
+shared.getBalance = (req, cb) => {
   if (!req.params) return cb('Invalid parameters')
   if (!addressHelper.isAddress(req.params.address)) return cb('Invalid address')
   if (!req.params.currency || req.params.currency.length > 22) return cb('Invalid currency')
 
-  library.model.getAccountBalances(req.params.address, req.params.currency, function (err, results) {
-    if (err) return cb('Failed to get balance: ' + err)
-    if (!results || results.length == 0) return cb('Balance info not found')
-    cb(null, { balance: results[0] })
-  })
+  return (async () => {
+    try {
+      const condition = { address: req.params.address, currency: req.params.currency }
+      const balances = await app.sdb.find('balances', condition)
+      if (!balances || balances.length === 0) return cb('Balance info not found')
+      return cb(null, { balance: balances[0] })
+    } catch (dbErr) {
+      return cb(`Failed to get issuers: ${dbErr}`)
+    }
+  })()
 }
 
-shared.getMyTransactions = function (req, cb) {
+shared.getMyTransactions = (req, cb) => {
   if (!req.params || !addressHelper.isAddress(req.params.address)) {
     return cb('Invalid parameters')
   }
-  var query = req.body
-  library.scheme.validate(query, {
+  const query = req.body
+  return library.scheme.validate(query, {
     type: 'object',
     properties: {
       limit: {
         type: 'integer',
         minimum: 0,
-        maximum: 100
+        maximum: 100,
       },
       offset: {
         type: 'integer',
-        minimum: 0
-      }
-    }
-  }, function (err) {
-    if (err) return cb('Invalid parameters: ' + err[0])
+        minimum: 0,
+      },
+    },
+  }, (err) => {
+    if (err) return cb(`Invalid parameters: ${err[0]}`)
     if (req.params.currency) {
       query.currency = req.params.currency
     } else {
       query.uia = 1
     }
     query.ownerAddress = req.params.address
-    private.queryTransactions(query, cb)
+    return priv.queryTransactions(query, cb)
   })
 }
 
-shared.getTransactions = function (req, cb) {
+shared.getTransactions = (req, cb) => {
   if (!req.params || !req.params.currency) {
     return cb('Invalid parameters')
   }
-  var single = false
-  var query = req.body
+  let single = false
+  const query = req.body
   if (req.params.currency.length === 64) {
     query.id = req.params.currency
     single = true
   } else {
     query.currency = req.params.currency
   }
-  library.scheme.validate(query, {
+  return library.scheme.validate(query, {
     type: 'object',
     properties: {
       limit: {
         type: 'integer',
         minimum: 0,
-        maximum: 100
+        maximum: 100,
       },
       offset: {
         type: 'integer',
-        minimum: 0
-      }
-    }
-  }, function (err) {
-    if (err) return cb('Invalid parameters: ' + err[0])
-    private.queryTransactions(query, function (err, data) {
-      if (err) return cb(err)
+        minimum: 0,
+      },
+    },
+  }, (err) => {
+    if (err) return cb(`Invalid parameters: ${err[0]}`)
+    return priv.queryTransactions(query, (queryErr, data) => {
+      if (queryErr) return cb(queryErr)
       if (single) {
         return cb(null, { transaction: data.transactions[0] })
-      } else {
-        return cb(null, data)
       }
+      return cb(null, data)
     })
   })
 }
@@ -542,168 +538,162 @@ shared.issueAsset = function (req, cb) {
   cb(null, req)
 }
 
-shared.transferAsset = function (req, cb) {
-  var body = req.body;
-  library.scheme.validate(body, {
-    type: "object",
+shared.transferAsset = (req, cb) => {
+  const body = req.body
+  return library.scheme.validate(body, {
+    type: 'object',
     properties: {
       secret: {
-        type: "string",
+        type: 'string',
         minLength: 1,
-        maxLength: 100
+        maxLength: 100,
       },
       currency: {
-        type: "string",
-        maxLength: 22
+        type: 'string',
+        maxLength: 22,
       },
       amount: {
-        type: "string",
-        maxLength: 50
+        type: 'string',
+        maxLength: 50,
       },
       recipientId: {
-        type: "string",
-        minLength: 1
+        type: 'string',
+        minLength: 1,
       },
       publicKey: {
-        type: "string",
-        format: "publicKey"
+        type: 'string',
+        format: 'publicKey',
       },
       secondSecret: {
-        type: "string",
+        type: 'string',
         minLength: 1,
-        maxLength: 100
+        maxLength: 100,
       },
       multisigAccountPublicKey: {
-        type: "string",
-        format: "publicKey"
+        type: 'string',
+        format: 'publicKey',
       },
       message: {
-        type: "string",
-        maxLength: 256
-      }
+        type: 'string',
+        maxLength: 256,
+      },
     },
-    required: ["secret", "amount", "recipientId", "currency"]
-  }, function (err) {
-    if (err) {
-      return cb(err[0].message + ': ' + err[0].path);
-    }
+    required: ['secret', 'amount', 'recipientId', 'currency'],
+  }, (err) => {
+    if (err) return cb(`${err[0].message}: ${err[0].path}`)
 
-    var hash = crypto.createHash('sha256').update(body.secret, 'utf8').digest();
-    var keypair = ed.MakeKeypair(hash);
+    const hash = crypto.createHash('sha256').update(body.secret, 'utf8').digest()
+    const keypair = ed.MakeKeypair(hash)
 
     if (body.publicKey) {
-      if (keypair.publicKey.toString('hex') != body.publicKey) {
-        return cb("Invalid passphrase");
+      if (keypair.publicKey.toString('hex') !== body.publicKey) {
+        return cb('Invalid passphrase')
       }
     }
 
-    library.sequence.add(function (cb) {
-      if (body.multisigAccountPublicKey && body.multisigAccountPublicKey != keypair.publicKey.toString('hex')) {
-        modules.accounts.getAccount({ publicKey: body.multisigAccountPublicKey }, function (err, account) {
-          if (err) {
-            return cb(err.toString());
-          }
+    return library.sequence.add((callback) => {
+      if (body.multisigAccountPublicKey && body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
+        const condition = { publicKey: body.multisigAccountPublicKey }
+        modules.accounts.getAccount(condition, (multisigErr, account) => {
+          if (multisigErr) return callback(multisigErr.toString())
 
-          if (!account) {
-            return cb("Multisignature account not found");
-          }
+          if (!account) return callback('Multisignature account not found')
 
           if (!account.multisignatures || !account.multisignatures) {
-            return cb("Account does not have multisignatures enabled");
+            return callback('Account does not have multisignatures enabled')
           }
 
           if (account.multisignatures.indexOf(keypair.publicKey.toString('hex')) < 0) {
-            return cb("Account does not belong to multisignature group");
+            return callback('Account does not belong to multisignature group')
           }
 
-          modules.accounts.getAccount({ publicKey: keypair.publicKey }, function (err, requester) {
-            if (err) {
-              return cb(err.toString());
+          modules.accounts.getAccount({ publicKey: keypair.publicKey }, (getErr, requester) => {
+            if (getErr) {
+              return callback(err.toString())
             }
 
             if (!requester || !requester.publicKey) {
-              return cb("Invalid requester");
+              return callback('Invalid requester')
             }
 
             if (requester.secondSignature && !body.secondSecret) {
-              return cb("Invalid second passphrase");
+              return callback('Invalid second passphrase')
             }
 
-            if (requester.publicKey == account.publicKey) {
-              return cb("Invalid requester");
+            if (requester.publicKey === account.publicKey) {
+              return callback('Invalid requester')
             }
 
-            var secondKeypair = null;
+            let secondKeypair = null
 
             if (requester.secondSignature) {
-              var secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest();
-              secondKeypair = ed.MakeKeypair(secondHash);
+              const secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest()
+              secondKeypair = ed.MakeKeypair(secondHash)
             }
 
             try {
-              var transaction = library.base.transaction.create({
+              const transaction = library.base.transaction.create({
                 amount: body.amount,
                 currency: body.currency,
                 sender: account,
                 recipientId: body.recipientId,
-                keypair: keypair,
+                keypair,
                 requester: keypair,
-                secondKeypair: secondKeypair,
-                message: body.message
-              });
+                secondKeypair,
+                message: body.message,
+              })
+              modules.transactions.processUnconfirmedTransaction(transaction, cb)
             } catch (e) {
-              return cb(e.toString());
+              return callback(e.toString())
             }
-            modules.transactions.processUnconfirmedTransaction(transaction, cb);
-          });
-        });
+          })
+        })
       } else {
-        modules.accounts.getAccount({ publicKey: keypair.publicKey.toString('hex') }, function (err, account) {
-          if (err) {
-            return cb(err.toString());
+        const condition = { publicKey: keypair.publicKey.toString('hex') }
+        modules.accounts.getAccount(condition, (getErr, account) => {
+          if (getErr) {
+            return callback(getErr.toString())
           }
           if (!account) {
-            return cb("Account not found");
+            return callback('Account not found')
           }
 
           if (account.secondSignature && !body.secondSecret) {
-            return cb("Invalid second passphrase");
+            return callback('Invalid second passphrase')
           }
 
-          var secondKeypair = null;
+          let secondKeypair = null
 
           if (account.secondSignature) {
-            var secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest();
-            secondKeypair = ed.MakeKeypair(secondHash);
+            const secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest()
+            secondKeypair = ed.MakeKeypair(secondHash)
           }
 
           try {
-            var transaction = library.base.transaction.create({
+            const transaction = library.base.transaction.create({
               currency: body.currency,
               amount: body.amount,
               sender: account,
               recipientId: body.recipientId,
-              keypair: keypair,
-              secondKeypair: secondKeypair,
-              message: body.message
-            });
+              keypair,
+              secondKeypair,
+              message: body.message,
+            })
+            modules.transactions.processUnconfirmedTransaction(transaction, cb)
           } catch (e) {
-            return cb(e.toString());
+            return callback(e.toString())
           }
-          modules.transactions.processUnconfirmedTransaction(transaction, cb);
-        });
+        })
       }
-    }, function (err, transaction) {
-      if (err) {
-        return cb(err.toString());
-      }
+    }, (seqErr, transaction) => {
+      if (seqErr) return cb(err.toString())
 
-      cb(null, { transactionId: transaction[0].id });
-    });
-  });
+      return cb(null, { transactionId: transaction[0].id })
+    })
+  })
 }
 
-shared.updateFlags = function (req, cb) {
+shared.updateFlags = (req, cb) => {
   cb(null, req)
 }
 
