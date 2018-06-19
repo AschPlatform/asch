@@ -3,7 +3,7 @@ function defined(obj) {
 }
 
 module.exports = function (router) {
-  router.get('/', async function (req) {
+  router.get('/', async (req) => {
     let offset = req.query.offset ? Number(req.query.offset) : 0
     let limit = req.query.limit ? Number(req.query.limit) : 20
     let sort = {}
@@ -16,7 +16,6 @@ module.exports = function (router) {
     if (defined(req.query.type)) condition.type = Number(req.query.type)
     if (defined(req.query.height)) condition.height = Number(req.query.height)
     if (defined(req.query.senderId)) condition.senderId = req.query.senderId
-    if (defined(req.query.accountId)) condition.accountId = req.query.accountId
     if (defined(req.query.message)) condition.message = req.query.message
     let count = await app.sdb.count('Transaction', condition)
     if (count > 0) {
@@ -25,7 +24,7 @@ module.exports = function (router) {
     return { transactions, count }
   })
 
-  router.get('/:id', async function (req) {
+  router.get('/:id', async (req) => {
     let trs = await app.sdb.findOne('Transaction', { condition: { id: req.params.id } })
     if (!trs) throw new Error('Transaction no found')
     return { transaction: trs }

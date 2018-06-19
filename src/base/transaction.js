@@ -29,14 +29,19 @@ function calc(height) {
 Transaction.prototype.create = function (data) {
   var trs = {
     type: data.type,
-    accountId: data.accountId,
+    senderId: data.senderId,
     senderPublicKey: data.keypair.publicKey.toString('hex'),
     timestamp: slots.getTime(),
     message: data.message,
     args: data.args,
     fee: data.fee
   };
-  trs.senderId = addressHelper.generateBase58CheckAddress(trs.senderPublicKey)
+  const signerId = addressHelper.generateBase58CheckAddress(trs.senderPublicKey)
+  if (trs.senderId) {
+    trs.requestorId = signerId
+  } else {
+    trs.senderId = signerId
+  }
   trs.signatures = [this.sign(data.keypair, trs)];
 
   if (data.secondKeypair) {
@@ -90,11 +95,9 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
   bb.writeInt(trs.type);
   bb.writeInt(trs.timestamp);
   bb.writeLong(trs.fee);
-  if (trs.senderId) {
-    bb.writeString(trs.senderId)
-  }
-  if (trs.accountId) {
-    bb.writeString(trs.accountId)
+  bb.writeString(trs.senderId)
+  if (trs.requestorId) {
+    bb.writeString(trs.requestorId)
   }
 
   if (trs.message) bb.writeString(trs.message);
@@ -143,10 +146,10 @@ Transaction.prototype.verifyNormalSignature = function (trs, requestor, bytes) {
   }
 }
 
-Transaction.prototype.verifyGroupSignature = async (trs, sender, bytes) => {
+Transaction.prototype.verifyGroupSignature = async function(trs, sender, bytes) {
   let group = await app.sdb.findOne('Group', { name: sender.name })
   if (!group) return 'Group not found'
-  let groupMembers = await app.sdb.findAll('GroupMember', { group: sender.name })
+  let groupMembers = await app.sdb.findAll('GroupMember', { name: sender.name })
   if (!groupMembers) return 'Group members not found'
   let memberMap = new Map()
   for (const item of groupMembers) {
@@ -154,7 +157,7 @@ Transaction.prototype.verifyGroupSignature = async (trs, sender, bytes) => {
   }
   let totalWeight = 0
   for (let ks of trs.signatures) {
-    let k = ks.substr(0, 74)
+    let k = ks.substr(0, 64)
     let address = addressHelper.generateBase58CheckAddress(k)
     if (!memberMap.has(address)) return 'Invalid member address'
     totalWeight += memberMap.get(address).weight
@@ -171,10 +174,10 @@ Transaction.prototype.verifyGroupSignature = async (trs, sender, bytes) => {
   }
 }
 
-Transaction.prototype.verifyChainSignature = async (trs, sender, bytes) => {
-  let chain = await app.sdb.findOne('Chain', { condition: { address: sender.accountId } })
+Transaction.prototype.verifyChainSignature = async function (trs, sender, bytes) {
+  let chain = await app.sdb.findOne('Chain', { condition: { address: sender.senderId } })
   if (!chain) return 'Chain not found'
-  let validators = await app.sdb.findAll('ChainDelegate', { condition: { address: sender.accountId } })
+  let validators = await app.sdb.findAll('ChainDelegate', { condition: { address: sender.senderId } })
   if (!validators || !validators.length) return 'Chain delegates not found'
 
   let validatorPublicKeySet = new Set
@@ -224,18 +227,18 @@ Transaction.prototype.verify = async function (context) {
 
   try {
     let bytes = this.getBytes(trs, true, true)
-    if (trs.senderId) {
+    if (trs.senderPublicKey) {
       let error = this.verifyNormalSignature(trs, requestor, bytes)
       if (error) return error
     }
-    if (trs.accountId && trs.signatures && trs.signatures.length > 1) {
+    if (!trs.senderPublicKey && trs.signatures && trs.signatures.length > 1) {
       let ADDRESS_TYPE = app.util.address.TYPE
-      let addrType = app.util.address.getType(trs.accountId)
+      let addrType = app.util.address.getType(trs.senderId)
       if (addrType === ADDRESS_TYPE.CHAIN) {
-        let error = this.verifyChainSignature(trs, sender, bytes)
+        let error = await this.verifyChainSignature(trs, sender, bytes)
         if (error) return error
       } else if (addrType === ADDRESS_TYPE.GROUP) {
-        let error = this.verifyGroupSignature(trs, sender, bytes)
+        let error = await this.verifyGroupSignature(trs, sender, bytes)
         if (error) return error
       } else {
         return 'Invalid account type'

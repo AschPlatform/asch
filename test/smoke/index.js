@@ -50,7 +50,7 @@ async function sendMoneyToAccounts() {
 
 async function init() {
   await initDelegates()
-  //await sendMoneyToAccounts()
+  await sendMoneyToAccounts()
 }
 
 async function testUIA() {
@@ -379,12 +379,12 @@ async function testGroup() {
     ],
   }
   console.log(`register group: ${group.name}`)
-  //await node.transactionUnsignedAsync(trs)
-  //await node.onNewBlockAsync()
+  await node.transactionUnsignedAsync(trs)
+  await node.onNewBlockAsync()
 
   // step 2: send money to group and the requestor account
   console.log('send money to the group and requestor account')
-  //await node.giveMoneyAndWaitAsync([group.name, group.members[0].address])
+  await node.giveMoneyAndWaitAsync([group.name, group.members[0].address])
 
   // step 3: request group transaction
   const groupAccount = (await node.apiGetAsync(`/v2/accounts/${group.name}`)).body.account
@@ -393,7 +393,7 @@ async function testGroup() {
     secret: group.members[0].secret,
     type: 1,
     fee: 20000000,
-    accountId: groupAccount.address,
+    senderId: groupAccount.address,
     args: [
       11230,
       group.members[1].address,
@@ -427,14 +427,36 @@ async function testGroup() {
   console.log(`activate group transaction: ${tid}`)
   await node.transactionUnsignedAsync(trs)
   await node.onNewBlockAsync()
+
+  // step 6: remove group member
+  trs = node.asch.transaction.createMultiSigTransaction({
+    type: 503,
+    fee: 100000000,
+    senderId: groupAccount.address,
+    args: [
+      group.members[0].address,
+      group.m - 1,
+    ],
+  })
+  trs.signatures = []
+  for (let i = 0; i < 3; i++) {
+    trs.signatures.push(node.asch.transaction.signMultiSigTransaction(trs, group.members[i].secret))
+  }
+  console.log(`remove group member: ${group.members[0].address}`)
+  await node.submitTransactionAsync(trs)
+  await node.onNewBlockAsync()
+
+  const groupInfo = (await node.apiGetAsync(`/v2/groups/${groupAccount.address}`)).body.group
+  node.expect(groupInfo.m === group.m - 1)
+  node.expect(groupInfo.members.length === group.members.length)
 }
 
 async function main() {
   await init()
-  // await testUIA()
-  // await testAgent()
-  // await testGateway()
-  // await testChain()
+  await testUIA()
+  await testAgent()
+  await testGateway()
+  await testChain()
   await testGroup()
 }
 
