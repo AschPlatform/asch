@@ -607,7 +607,8 @@ shared.transferAsset = (req, cb) => {
             return callback('Account does not belong to multisignature group')
           }
 
-          modules.accounts.getAccount({ publicKey: keypair.publicKey }, (getErr, requester) => {
+          const pkCondition = { publicKey: keypair.publicKey }
+          return modules.accounts.getAccount(pkCondition, (getErr, requester) => {
             if (getErr) {
               return callback(err.toString())
             }
@@ -642,49 +643,49 @@ shared.transferAsset = (req, cb) => {
                 secondKeypair,
                 message: body.message,
               })
-              modules.transactions.processUnconfirmedTransaction(transaction, cb)
+              return modules.transactions.processUnconfirmedTransaction(transaction, cb)
             } catch (e) {
               return callback(e.toString())
             }
           })
         })
-      } else {
-        const condition = { publicKey: keypair.publicKey.toString('hex') }
-        modules.accounts.getAccount(condition, (getErr, account) => {
-          if (getErr) {
-            return callback(getErr.toString())
-          }
-          if (!account) {
-            return callback('Account not found')
-          }
-
-          if (account.secondSignature && !body.secondSecret) {
-            return callback('Invalid second passphrase')
-          }
-
-          let secondKeypair = null
-
-          if (account.secondSignature) {
-            const secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest()
-            secondKeypair = ed.MakeKeypair(secondHash)
-          }
-
-          try {
-            const transaction = library.base.transaction.create({
-              currency: body.currency,
-              amount: body.amount,
-              sender: account,
-              recipientId: body.recipientId,
-              keypair,
-              secondKeypair,
-              message: body.message,
-            })
-            modules.transactions.processUnconfirmedTransaction(transaction, cb)
-          } catch (e) {
-            return callback(e.toString())
-          }
-        })
+        return null
       }
+      const condition = { publicKey: keypair.publicKey.toString('hex') }
+      return modules.accounts.getAccount(condition, (getErr, account) => {
+        if (getErr) {
+          return callback(getErr.toString())
+        }
+        if (!account) {
+          return callback('Account not found')
+        }
+
+        if (account.secondSignature && !body.secondSecret) {
+          return callback('Invalid second passphrase')
+        }
+
+        let secondKeypair = null
+
+        if (account.secondSignature) {
+          const secondHash = crypto.createHash('sha256').update(body.secondSecret, 'utf8').digest()
+          secondKeypair = ed.MakeKeypair(secondHash)
+        }
+
+        try {
+          const transaction = library.base.transaction.create({
+            currency: body.currency,
+            amount: body.amount,
+            sender: account,
+            recipientId: body.recipientId,
+            keypair,
+            secondKeypair,
+            message: body.message,
+          })
+          return modules.transactions.processUnconfirmedTransaction(transaction, cb)
+        } catch (e) {
+          return callback(e.toString())
+        }
+      })
     }, (seqErr, transaction) => {
       if (seqErr) return cb(err.toString())
 
