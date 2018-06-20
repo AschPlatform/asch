@@ -245,44 +245,41 @@ Transactions.prototype.applyUnconfirmedTransactionAsync = async (transaction) =>
   }
 
   const senderId = transaction.senderId
-  const accountId = transaction.accountId
-  if (!senderId && !accountId) {
+  const requestorId = transaction.requestorId
+  if (!senderId) {
     throw new Error('Missing sender address')
   }
 
   let requestor = null
-  let sender = null
-
-  if (senderId) {
-    if (!app.util.address.isNormalAddress(senderId)) {
-      throw new Error('Invalid sender address')
-    }
-
-    const senderPublicKey = transaction.senderPublicKey
-    if (modules.accounts.generateAddressByPublicKey(senderPublicKey) !== senderId) {
-      throw new Error('Invalid senderPublicKey')
-    }
-
-    requestor = await app.sdb.get('Account', senderId)
-    if (!requestor) {
-      if (height > 0) throw new Error('Requestor account not found')
-
-      requestor = app.sdb.create('Account', {
-        address: senderId,
-        name: '',
-        xas: 0,
-      })
-    }
+  let sender = await app.sdb.get('Account', senderId)
+  if (!sender) {
+    if (height > 0) throw new Error('Sender account not found')
+    sender = app.sdb.create('Account', {
+      address: senderId,
+      name: '',
+      xas: 0,
+    })
   }
 
-  if (accountId) {
-    if (app.util.address.isNormalAddress(accountId)) {
-      throw new Error('Invalid account address')
+  if (requestorId) {
+    if (!app.util.address.isNormalAddress(requestorId)) {
+      throw new Error('Invalid requestor address')
     }
-    sender = await app.sdb.get('Account', accountId)
-    if (!sender) throw new Error('Sender account not found')
+
+    requestor = await app.sdb.get('Account', requestorId)
+    if (!requestor) {
+      throw new Error('Requestor account not found')
+    }
   } else {
-    sender = requestor
+    requestor = sender
+  }
+
+  const senderPublicKey = transaction.senderPublicKey
+  if (senderPublicKey) {
+    const signerId = transaction.requestorId || transaction.senderId
+    if (modules.accounts.generateAddressByPublicKey(senderPublicKey) !== signerId) {
+      throw new Error('Invalid senderPublicKey')
+    }
   }
 
   const context = {
@@ -504,7 +501,7 @@ shared.addTransactionUnsigned = (req, cb) => {
           secret: query.secret,
           fee: query.fee,
           type: query.type,
-          accountId: query.accountId || null,
+          senderId: query.senderId || null,
           args: query.args || null,
           message: query.message || null,
           secondKeyPair,

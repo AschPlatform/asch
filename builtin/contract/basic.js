@@ -209,6 +209,8 @@ module.exports = {
     }
     app.sdb.create('Group', {
       name,
+      address,
+      tid: this.trs.id,
       min,
       max,
       m,
@@ -217,7 +219,7 @@ module.exports = {
     })
     for (const member of members) {
       app.sdb.create('GroupMember', {
-        group: name,
+        name,
         member: member.address,
         weight: member.weight,
       })

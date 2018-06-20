@@ -2,6 +2,7 @@ module.exports = {
   table: 'groups',
   tableFields: [
     { name: 'name', type: 'String', length: 20, primary_key: true },
+    { name: 'address', type: 'String', length: 50, index: true },
     { name: 'tid', type: 'String', length: 64 },
     { name: 'min', type: 'Number' },
     { name: 'max', type: 'Number' },
