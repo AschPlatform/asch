@@ -92,42 +92,44 @@ priv.queryTransactions = (query, cb) => {
     const sqls = []
     const typeToTable = {
       9: {
-        table: 'issuers',
+        model: 'Issuer',
         fields: ['transactionId', 'name', 'desc'],
       },
       10: {
-        table: 'assets',
+        model: 'Asset',
         fields: ['transactionId', 'name', 'desc', 'maximum', 'precision', 'strategy'],
       },
       11: {
-        table: 'flags',
+        model: 'Flag',
         fields: ['transactionId', 'currency', 'flagType', 'flag'],
       },
       12: {
-        table: 'acls',
+        model: 'Acl',
         fields: ['transactionId', 'currency', 'operator', 'flag', 'list'],
       },
       13: {
-        table: 'issues',
+        model: 'Issue',
         fields: ['transactionId', 'currency', 'amount'],
       },
       14: {
-        table: 'transfers',
+        model: 'Transfer',
         fields: ['transactionId', 'currency', 'amount'],
       },
     }
     data.transactions.forEach((trs) => {
-      if (!typeToTable[trs.type]) {
-        return
-      }
+      if (!typeToTable[trs.type]) return
+
       trs.t_id = trs.id
       sqls.push({
-        query: `select ${typeToTable[trs.type].fields.join(',')} from ${typeToTable[trs.type].table} where transactionId="${trs.id}"`,
+        model: typeToTable[trs.type].model,
         fields: typeToTable[trs.type].fields,
       })
     })
-    async.mapSeries(sqls, (sql, next) => {
-      library.dbLite.query(sql.query, {}, sql.fields, next)
+    return async.mapSeries(sqls, (sql, next) => {
+      // FIXME: to fix this function
+      next()
+      // app.sdb.findAll({ })
+      // library.dbLite.query(sql.query, {}, sql.fields, next)
     }, (sqlErr, rows) => {
       if (sqlErr) return cb(`Failed to get transaction assets: ${sqlErr}`)
 
@@ -157,7 +159,7 @@ priv.queryTransactions = (query, cb) => {
         }
       })
       assetNames = Array.from(assetNames)
-      async.mapSeries(assetNames, (name, next) => {
+      return async.mapSeries(assetNames, (name, next) => {
         library.model.getAssetByName(name, next)
       }, (assetErr, assets) => {
         if (assetErr) return cb(`Failed to asset info: ${assetErr}`)
@@ -180,9 +182,7 @@ priv.queryTransactions = (query, cb) => {
         })
         return cb(null, data)
       })
-      return null
     })
-    return null
   })
 }
 
@@ -214,8 +214,9 @@ shared.getIssuers = (req, cb) => {
     if (err) return cb(`Invalid parameters: ${err[0]}`)
     return (async () => {
       try {
-        const count = await app.sdb.count('issuers', {})
-        const issues = await app.sdb.find('issuers', {}, { limit, offset })
+        const limitAndOffset = { limit: query.limit || 100, offset: query.offset || 0 }
+        const count = await app.sdb.count('Issuer', {})
+        const issues = await app.sdb.find('Issuer', {}, limitAndOffset)
         return cb(null, { count, issues })
       } catch (dbErr) {
         return cb(`Failed to get issuers: ${dbErr}`)
@@ -230,7 +231,7 @@ shared.getIssuerByAddress = (req, cb) => {
   }
   return (async () => {
     try {
-      const issues = await app.sdb.find('issuers', { address: req.params.address })
+      const issues = await app.sdb.find('Issuer', { address: req.params.address })
       if (!issuers || issuers.length === 0) return cb('Issuer not found')
       return cb(null, { issuer: issues[0] })
     } catch (dbErr) {
@@ -260,7 +261,7 @@ shared.getIssuer = (req, cb) => {
 
     return (async () => {
       try {
-        const issues = await app.sdb.find('issuers', { name: req.params.name })
+        const issuers = await app.sdb.find('Issuer', { name: req.params.name })
         if (!issuers || issuers.length === 0) return cb('Issuer not found')
         return cb(null, { issuer: issues[0] })
       } catch (dbErr) {
@@ -295,9 +296,10 @@ shared.getIssuerAssets = (req, cb) => {
 
     return (async () => {
       try {
+        const limitAndOffset = { limit: query.limit || 100, offset: query.offset || 0 }
         const condition = { issuerName: req.params.name }
-        const count = await app.sdb.count('assets', condition)
-        const assets = await app.sdb.find('assets', condition, { limit: query.limit, offset: query.offset })
+        const count = await app.sdb.count('Asset', condition)
+        const assets = await app.sdb.find('Asset', condition, limitAndOffset)
         return cb(null, { count, assets })
       } catch (dbErr) {
         return cb(`Failed to get assets: ${dbErr}`)
@@ -326,8 +328,9 @@ shared.getAssets = (req, cb) => {
     return (async () => {
       try {
         const condition = {}
-        const count = await app.sdb.count('assets', condition)
-        const assets = await app.sdb.find('assets', condition, { limit: query.limit, offset: query.offset })
+        const limitAndOffset = { limit: query.limit || 100, offset: query.offset || 0 }
+        const count = await app.sdb.count('Asset', condition)
+        const assets = await app.sdb.find('Asset', condition, limitAndOffset)
         return cb(null, { count, assets })
       } catch (dbErr) {
         return cb(`Failed to get assets: ${dbErr}`)
@@ -354,7 +357,7 @@ shared.getAsset = (req, cb) => {
     return (async () => {
       try {
         const condition = { name: query.name }
-        const assets = await app.sdb.find('assets', condition)
+        const assets = await app.sdb.find('Asset', condition)
         if (!assets || assets.length === 0) return cb('Asset not found')
         return cb(null, { asset: assets[0] })
       } catch (dbErr) {
@@ -386,13 +389,13 @@ shared.getAssetAcl = (req, cb) => {
   }, (err) => {
     if (err) return cb(`Invalid parameters: ${err[0]}`)
 
-    const table = flagsHelper.getAclTable(query.flag)
+    const model = flagsHelper.getAclTable(query.flag)
     return (async () => {
       try {
         const condition = { currency: query.name }
-        const count = await app.sdb.count(table, condition)
+        const count = await app.sdb.count(model, condition)
         const resultRange = { limit: query.limit, offset: query.offset }
-        const results = await app.sdb.find(table, condition, resultRange)
+        const results = await app.sdb.find(model, condition, resultRange)
         return cb(null, { count, list: results })
       } catch (dbErr) {
         return cb(`Failed to get acl: ${dbErr}`)
