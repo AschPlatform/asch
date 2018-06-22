@@ -134,6 +134,7 @@ node app.js --help
 - [asch-cli](https://github.com/AschPlatform/asch-cli)
 - [asch-js](https://github.com/AschPlatform/asch-js)
 - [asch-sandbox](https://github.com/AschPlatform/asch-sandbox-dist)
+- [asch-redeploy](https://github.com/AschPlatform/asch-redeploy)
 - [asch-explorer] website: [explorer.asch.io/](https://explorer.asch.io/)
 
 ## License
