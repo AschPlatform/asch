@@ -367,6 +367,11 @@ Chains.prototype.message = (chain, body, cb) => {
   self.request(chain, 'post', '/message', { query: body }, cb)
 }
 
+Chains.prototype.getInstalledIds = (cb) => {
+  priv.getInstalledIds( cb )
+}
+
+
 Chains.prototype.request = (chain, method, uriPath, query, cb) => {
   if (!priv.sandboxes[chain]) {
     return cb('Chain not found')
