@@ -18,7 +18,7 @@ And the development of Dapp involves all of these types of network simultaneousl
 npm install -g asch-cli
 ```
 
-## 2 Setup asch
+## 3 Setup asch
 ```
 # clone asch
 git clone https://github.com/aschplatform/asch.git asch && cd asch && npm install && cd ..
@@ -36,7 +36,7 @@ node app.js
 ```
 
 
-## 4 Start The Frontend Application (optional)
+## 5 Start The Frontend Application (optional)
 
 To access the localnet via a graphical user interface (GUI) start the frontend application. Be sure to have the localnet up and running.
 
@@ -61,7 +61,7 @@ Now you can access the frontend application on the address ```localhost:4096```.
 *NOTE:* You don't need to start a http-server. Asch is already providing one for you.
 
 
-## 5 Prepare Account For Dapp Registration
+## 6 Prepare Account For Dapp Registration
 
 First create a new local asch-account.
 
@@ -100,7 +100,7 @@ We need **100 XAS** to register a dapp. Our new account has **0 XAS**. The **gen
 ```
 
 
-## 6 Create A Dapp Metadata File
+## 7 Create A Dapp Metadata File
 
 First we have to create 5 delegate accounts:
 
@@ -200,7 +200,7 @@ This step created the `asch-test-dapp/dapp.json` file.
 ```
 
 
-## 6 Register The Dapp On The Localnet
+## 8 Register The Dapp On The Localnet
 
 Until now we only have generated file (`asch-test-dapp/dapp.json`). Now we want to register this dapp metadata file on the localnet. We register the dapp with **our** newly generated address.
 
@@ -243,7 +243,7 @@ Use browser access `http://localhost:4096/api/dapps/get?id=<dapp Id>`, you can q
 }
 ```
 
-## 7 Install the dapp on the localnet
+## 9 Install the dapp on the localnet
 
 Finally it is time to install the dapp on the localnet.
 
@@ -300,12 +300,12 @@ Then write the passwords of the 5 delegates into the dapp configuration file `as
 > node app.js
 ```
 
-## 8 Access The Dapp In Your Browser
+## 10 Access The Dapp In Your Browser
 
 Now you can access the dapp like a website `localhost:4096/dapps/<DappID>/` in your browser.
 
 
-## 9 Set Dapp Genesis Password
+## 11 Set Dapp Genesis Password
 
 Under `asch/config.json` set the genesis password for your dapp. Input your `<dapp Id>` and the secret of your 
 
@@ -331,7 +331,7 @@ Under `asch/config.json` set the genesis password for your dapp. Input your `<da
 In the future when the DApp is published in testnet or mainnet, it still needs a machine that configures the primary password. NOTE: Only one machine is required.
 
 
-## 10 The folder structure
+## 12 The folder structure
 
 Now we can see that there is a new folder added under `asch/dapps`, named as the DApp ID just created.
 
@@ -379,7 +379,7 @@ Developers need to create a new contact to run business logic. That's all.
 
 
 
-## 11 Dapp Deposit
+## 13 Dapp Deposit
 
 In this project, we are able to conduct multiple tasks such as deposit, in-chain transfer, and withdraw.
 
