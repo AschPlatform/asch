@@ -23,7 +23,7 @@ npm install -g asch-cli
 # clone asch
 git clone https://github.com/aschplatform/asch.git asch && cd asch && npm install && cd ..
 ```
-## 4 Start localnet
+## 3 Start localnet
 
 Run your own local asch node.
 
