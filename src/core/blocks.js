@@ -846,9 +846,9 @@ shared.getFullBlock = (req, cb) => {
       try {
         let block
         if (query.id) {
-          block = await app.getBlockById(query.id, true)
+          block = await app.sdb.getBlockById(query.id, true)
         } else if (query.height) {
-          block = await app.getBlock(query.height, true)
+          block = await app.sdb.getBlockByHeight(query.height, true)
         }
 
         if (!block) return cb('Block not found')

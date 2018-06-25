@@ -289,7 +289,7 @@ shared.open2 = (req, cb) => {
 }
 
 shared.getBalance = (req, cb) => {
-  const { query } = req
+  const query  = req.body
   library.scheme.validate(query, {
     type: 'object',
     properties: {

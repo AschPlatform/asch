@@ -43,13 +43,14 @@ priv.attachApi = () => {
     'get /issuers/:name/assets': 'getIssuerAssets',
     'get /assets': 'getAssets',
     'get /assets/:name': 'getAsset',
-    'get /assets/:name/acl/:flag': 'getAssetAcl',
     'get /balances/:address': 'getBalances',
     'get /balances/:address/:currency': 'getBalance',
+    /*
+    'get /assets/:name/acl/:flag': 'getAssetAcl',
     'get /transactions/my/:address/': 'getMyTransactions',
     'get /transactions/my/:address/:currency': 'getMyTransactions',
     'get /transactions/:currency': 'getTransactions',
-
+    */
     'put /transfers': 'transferAsset',
   })
 
@@ -367,43 +368,6 @@ shared.getAsset = (req, cb) => {
   })
 }
 
-shared.getAssetAcl = (req, cb) => {
-  if (!req.params || !req.params.name || !req.params.flag) {
-    return cb('Invalid parameters')
-  }
-  const query = extend({}, req.body, req.params)
-  query.flag = Number(query.flag)
-  library.scheme.validate(query, {
-    type: 'object',
-    properties: {
-      limit: {
-        type: 'integer',
-        minimum: 0,
-        maximum: 100,
-      },
-      offset: {
-        type: 'integer',
-        minimum: 0,
-      },
-    },
-  }, (err) => {
-    if (err) return cb(`Invalid parameters: ${err[0]}`)
-
-    const model = flagsHelper.getAclTable(query.flag)
-    return (async () => {
-      try {
-        const condition = { currency: query.name }
-        const count = await app.sdb.count(model, condition)
-        const resultRange = { limit: query.limit, offset: query.offset }
-        const results = await app.sdb.find(model, condition, resultRange)
-        return cb(null, { count, list: results })
-      } catch (dbErr) {
-        return cb(`Failed to get acl: ${dbErr}`)
-      }
-    })()
-  })
-  return null
-}
 
 shared.getBalances = (req, cb) => {
   if (!req.params || !addressHelper.isAddress(req.params.address)) {
@@ -429,9 +393,9 @@ shared.getBalances = (req, cb) => {
     return (async () => {
       try {
         const condition = { address: req.params.address }
-        const count = await app.sdb.count(table, condition)
+        const count = await app.sdb.count('Balance', condition)
         const resultRange = { limit: query.limit, offset: query.offset }
-        const balances = await app.sdb.find(table, condition, resultRange)
+        const balances = await app.sdb.find('Balance', condition, resultRange)
         return cb(null, { count, balances })
       } catch (dbErr) {
         return cb(`Failed to get balances: ${dbErr}`)
@@ -449,7 +413,7 @@ shared.getBalance = (req, cb) => {
   return (async () => {
     try {
       const condition = { address: req.params.address, currency: req.params.currency }
-      const balances = await app.sdb.find('balances', condition)
+      const balances = await app.sdb.find('Balance', condition)
       if (!balances || balances.length === 0) return cb('Balance info not found')
       return cb(null, { balance: balances[0] })
     } catch (dbErr) {
