@@ -6,7 +6,7 @@ const Router = require('../utils/router.js')
 const sandboxHelper = require('../utils/sandbox.js')
 const addressHelper = require('../utils/address.js')
 
-const PIFY = util.promiseify
+const PIFY = util.promisify
 
 // priv fields
 let modules
