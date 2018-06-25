@@ -371,8 +371,6 @@ Blocks.prototype.saveBlockTransactions = (block) => {
   app.logger.trace('Blocks#saveBlockTransactions height', block.height)
   for (const trs of block.transactions) {
     trs.height = block.height
-    trs.args = JSON.stringify(trs.args)
-    trs.signatures = JSON.stringify(trs.signatures)
     app.sdb.create('Transaction', trs)
   }
   app.logger.trace('Blocks#save transactions')
