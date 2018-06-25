@@ -1,26 +1,26 @@
 async function getAssetMap(assetNames) {
-  let assetMap = new Map
-  let assetNameList = Array.from(assetNames.keys())
-  let uiaNameList = assetNameList.filter((n) => n.indexOf('.') !== -1)
-  let gaNameList = assetNameList.filter((n) => n.indexOf('.') === -1)
+  const assetMap = new Map()
+  const assetNameList = Array.from(assetNames.keys())
+  const uiaNameList = assetNameList.filter(n => n.indexOf('.') !== -1)
+  const gaNameList = assetNameList.filter(n => n.indexOf('.') === -1)
 
   if (uiaNameList && uiaNameList.length) {
-    let assets = await app.sdb.findAll('Asset', {
+    const assets = await app.sdb.findAll('Asset', {
       condition: {
-        name: { $in: uiaNameList }
-      }
+        name: { $in: uiaNameList },
+      },
     })
-    for (let a of assets) {
+    for (const a of assets) {
       assetMap.set(a.name, a)
     }
   }
   if (gaNameList && gaNameList.length) {
-    let gatewayAssets = await app.sdb.findAll('GatewayCurrency', {
+    const gatewayAssets = await app.sdb.findAll('GatewayCurrency', {
       condition: {
-        symbol: { $in: gaNameList }
-      }
+        symbol: { $in: gaNameList },
+      },
     })
-    for (let a of gatewayAssets) {
+    for (const a of gatewayAssets) {
       assetMap.set(a.symbol, a)
     }
   }
@@ -28,29 +28,29 @@ async function getAssetMap(assetNames) {
 }
 
 async function getTransactionMap(tids) {
-  let trsMap = new Map
-  let trs = await app.sdb.findAll('Transaction', {
+  const trsMap = new Map()
+  const trs = await app.sdb.findAll('Transaction', {
     condition: {
-      id: { $in: tids }
-    }
+      id: { $in: tids },
+    },
   })
-  for (let t of trs) {
+  for (const t of trs) {
     trsMap.set(t.id, t)
   }
   return trsMap
 }
 
-module.exports = function (router) {
+module.exports = (router) => {
   router.get('/', async (req) => {
-    let ownerId = req.query.ownerId
-    let currency = req.query.currency
-    let condition = {}
-    let limit = Number(req.query.limit) || 10
-    let offset = Number(req.query.offset) || 0
+    const ownerId = req.query.ownerId
+    const currency = req.query.currency
+    const condition = {}
+    const limit = Number(req.query.limit) || 10
+    const offset = Number(req.query.offset) || 0
     if (ownerId) {
       condition.$or = {
         senderId: ownerId,
-        recipientId: ownerId
+        recipientId: ownerId,
       }
     }
     if (currency) {
@@ -62,25 +62,25 @@ module.exports = function (router) {
     if (req.query.recipientId) {
       condition.recipientId = req.query.recipientId
     }
-    let count = await app.sdb.count('Transfer', condition)
+    const count = await app.sdb.count('Transfer', condition)
     let transfers = []
     if (count > 0) {
       transfers = await app.sdb.findAll('Transfer', {
-        condition: condition,
-        limit: limit,
-        offset: offset,
-        sort: { timestamp: -1 }
+        condition,
+        limit,
+        offset,
+        sort: { timestamp: -1 },
       })
-      let assetNames = new Set
-      for (let t of transfers) {
+      const assetNames = new Set()
+      for (const t of transfers) {
         if (t.currency !== 'XAS') {
           assetNames.add(t.currency)
         }
       }
-      let assetMap = await getAssetMap(assetNames)
-      let tids = transfers.map((t) => t.tid)
-      let trsMap = await getTransactionMap(tids)
-      for (let t of transfers) {
+      const assetMap = await getAssetMap(assetNames)
+      const tids = transfers.map(t => t.tid)
+      const trsMap = await getTransactionMap(tids)
+      for (const t of transfers) {
         if (t.currency !== 'XAS') {
           t.asset = assetMap.get(t.currency)
         }

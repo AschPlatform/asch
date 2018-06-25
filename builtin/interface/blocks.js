@@ -1,2 +1,2 @@
-module.exports = function (router) {
+module.exports = (router) => {
 }

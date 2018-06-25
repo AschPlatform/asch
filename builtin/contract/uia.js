@@ -1,13 +1,13 @@
 const bignum = require('bignumber')
 
 module.exports = {
-  registerIssuer: async function (name, desc) {
+  async registerIssuer(name, desc) {
     if (!/^[A-Za-z]{1,16}$/.test(name)) return 'Invalid issuer name'
     if (desc.length > 4096) return 'Invalid issuer description'
 
-    let senderId = this.sender.address
-    app.sdb.lock('uia.registerIssuer@' + senderId)
-    let exists = await app.sdb.exists('Issuer', { name: name })
+    const senderId = this.sender.address
+    app.sdb.lock(`uia.registerIssuer@${senderId}`)
+    let exists = await app.sdb.exists('Issuer', { name })
     if (exists) return 'Issuer name already exists'
 
     exists = await app.sdb.exists('Issuer', { issuerId: senderId })
@@ -16,22 +16,23 @@ module.exports = {
     app.sdb.create('Issuer', {
       tid: this.trs.id,
       issuerId: senderId,
-      name: name,
-      desc: desc
+      name,
+      desc,
     })
+    return null
   },
 
-  registerAsset: async function (symbol, desc, maximum, precision) {
+  async registerAsset(symbol, desc, maximum, precision) {
     if (!/^[A-Z]{3,6}$/.test(symbol)) return 'Invalid symbol'
     if (desc.length > 4096) return 'Invalid asset description'
     if (precision > 16 || precision < 0) return 'Invalid asset precision'
     app.validate('amount', maximum)
 
-    let issuer = await app.sdb.findOne('Issuer', { condition: { issuerId: this.sender.address } })
+    const issuer = await app.sdb.findOne('Issuer', { condition: { issuerId: this.sender.address } })
     if (!issuer) return 'Account is not an issuer'
 
-    let fullName = issuer.name + '.' + symbol
-    app.sdb.lock('uia.registerAsset@' + fullName)
+    const fullName = `${issuer.name}.${symbol}`
+    app.sdb.lock(`uia.registerAsset@${fullName}`)
 
     exists = await app.sdb.exists('Asset', { name: fullName })
     if (exists) return 'Asset already exists'
@@ -40,33 +41,35 @@ module.exports = {
       tid: this.trs.id,
       timestamp: this.trs.timestamp,
       name: fullName,
-      desc: desc,
-      maximum: maximum,
-      precision: precision,
+      desc,
+      maximum,
+      precision,
       quantity: '0',
-      issuerId: this.sender.address
+      issuerId: this.sender.address,
     })
+    return null
   },
 
-  issue: async function (name, amount) {
+  async issue(name, amount) {
     app.validate('amount', amount)
-    app.sdb.lock('uia.issue@' + name)
+    app.sdb.lock(`uia.issue@${name}`)
 
-    let asset = await app.sdb.get('Asset', name)
+    const asset = await app.sdb.get('Asset', name)
     if (!asset) return 'Asset not exists'
     if (asset.issuerId !== this.sender.address) return 'Permission denied'
 
-    let quantity = bignum(asset.quantity).plus(amount)
+    const quantity = bignum(asset.quantity).plus(amount)
     if (quantity.gt(asset.maximum)) return 'Exceed issue limit'
 
     asset.quantity = quantity.toString(10)
     app.balances.increase(this.sender.address, name, amount)
+    return null
   },
 
-  transfer: async function (currency, amount, recipient) {
+  async transfer(currency, amount, recipient) {
     app.validate('amount', amount)
-    let senderId = this.sender.address
-    let balance = app.balances.get(senderId, currency)
+    const senderId = this.sender.address
+    const balance = app.balances.get(senderId, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
 
     let recipientAddress
@@ -75,7 +78,7 @@ module.exports = {
       recipientAddress = recipient
     } else {
       recipientName = recipient
-      let recipientAccount = await app.sdb.findOne('Account', { condition: { name: recipient } })
+      const recipientAccount = await app.sdb.findOne('Account', { condition: { name: recipient } })
       if (!recipientAccount) return 'Recipient name not exist'
       recipientAddress = recipientAccount.address
     }
@@ -83,12 +86,13 @@ module.exports = {
     app.balances.transfer(currency, amount, senderId, recipientAddress)
     app.sdb.create('Transfer', {
       tid: this.trs.id,
-      senderId: senderId,
+      senderId,
       recipientId: recipientAddress,
-      recipientName: recipientName,
-      currency: currency,
-      amount: amount,
-      timestamp: this.trs.timestamp
+      recipientName,
+      currency,
+      amount,
+      timestamp: this.trs.timestamp,
     })
-  }
+    return null
+  },
 }

@@ -1,5 +1,3 @@
-const crypto = require('crypto')
-
 async function doCancelVote(account) {
   const voteList = await app.sdb.findAll('Vote', { condition: { address: account.address } })
   if (voteList && voteList.length > 0 && account.weight > 0) {
