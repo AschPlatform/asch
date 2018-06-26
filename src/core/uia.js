@@ -71,6 +71,34 @@ UIA.prototype.sandboxApi = (call, args, cb) => {
   sandboxHelper.callMethod(shared, call, args, cb)
 }
 
+function trimPrecision( amount, precision ) {
+  let s = amount.toString()
+  return parseInt(s.substr(0, s.length - precision))
+}
+
+UIA.prototype.toV1Asset = ( asset ) => {
+  if (!asset) return asset
+
+  return {
+    "name": asset.name,
+    "desc": asset.desc,
+    "maximum": asset.maximum,
+    "precision": asset.precision,
+    "quantity": asset.quantity,
+    "issuerId": asset.issuerId,
+    "height": asset.height,
+    "writeoff": false,
+    "maximumShow": trimPrecision(asset.maximum, asset.precision),
+    "quantityShow": trimPrecision(asset.quantity, asset.precision)
+
+    // "strategy"  => missing
+    // "acl" => missing
+    // "allowWriteoff" => missing
+    // "allowWhitelist" => missing
+    // "allowBlacklist" => missing
+  }
+}
+
 // Events
 UIA.prototype.onBind = (scope) => {
   modules = scope

@@ -7,6 +7,7 @@ const Router = require('../utils/router.js')
 const slots = require('../utils/slots.js')
 const sandboxHelper = require('../utils/sandbox.js')
 const PIFY = require('util').promisify
+const isArray = require('util').isArray
 
 let genesisblock = null
 let modules
@@ -77,6 +78,37 @@ priv.getIdSequence2 = (height, cb) => {
       return cb(e)
     }
   })()
+}
+
+Blocks.prototype.toAPIV1Blocks = ( blocks ) => {  
+  return ( blocks && isArray(blocks) && blocks.length > 0 ) ? 
+    blocks.map( b => Blocks.prototype.toAPIV1Block(b) ):
+    []
+}
+
+Blocks.prototype.toAPIV1Block = ( block ) => {  
+  if (!block)  return undefined
+  return {
+    "id": block.id,
+	  "version": block.version,
+	  "timestamp": block.timestamp,
+	  "height": block.height,
+	  "payloadHash": block.payloadHash,
+ 
+    "previousBlock": block.prevBlockId,
+    "numberOfTransactions": block.count,
+    "totalFee": block.fees,
+    "generatorPublicKey": block.delegate,
+    "blockSignature": block.signature,
+    "confirmations": Blocks.prototype.getLastBlock().height -  block.height,
+    "transactions" : modules.transactions.toAPIV1Transactions( block.transactions, block )
+
+    // "generatorId":  => missing
+    // "totalAmount" => missing
+    // "reward" => missing
+    // "payloadLength" => missing
+    // "totalForged" => missing
+  }
 }
 
 Blocks.prototype.getCommonBlock = (peer, height, cb) => {
@@ -790,7 +822,7 @@ shared.getBlock = (req, cb) => {
       },
       height: {
         type: 'integer',
-        minimum: 1,
+        minimum: 0,
       },
     },
   }, (err) => {
@@ -803,7 +835,7 @@ shared.getBlock = (req, cb) => {
         let block
         if (query.id) {
           block = await app.sdb.getBlockById(query.id)
-        } else if (query.height) {
+        } else if (query.height !== undefined) {
           block = await app.sdb.getBlockByHeight(query.height)
         }
 
@@ -811,7 +843,7 @@ shared.getBlock = (req, cb) => {
           return cb('Block not found')
         }
         block.reward = priv.blockStatus.calcReward(block.height)
-        return cb(null, { block })
+        return cb(null, { block: Blocks.prototype.toAPIV1Block(block) })
       } catch (e) {
         library.logger.error(e)
         return cb('Server error')
@@ -834,7 +866,7 @@ shared.getFullBlock = (req, cb) => {
       },
       height: {
         type: 'integer',
-        minimum: 1,
+        minimum: 0,
       },
     },
   }, (err) => {
@@ -847,12 +879,12 @@ shared.getFullBlock = (req, cb) => {
         let block
         if (query.id) {
           block = await app.sdb.getBlockById(query.id, true)
-        } else if (query.height) {
+        } else if (query.height !== undefined) {
           block = await app.sdb.getBlockByHeight(query.height, true)
         }
 
         if (!block) return cb('Block not found')
-        return cb(null, { block })
+        return cb(null, { block: Blocks.prototype.toAPIV1Block(block) })
       } catch (e) {
         library.logger.error('Failed to find block', e)
         return cb('Server error')
@@ -911,7 +943,7 @@ shared.getBlocks = (req, cb) => {
 
         const blocks = await app.sdb.getBlocksByHeightRange(minHeight, maxHeight)
         if (!blocks || !blocks.length) return cb('No blocks')
-        return cb(null, { count, blocks })
+        return cb(null, { count, blocks: Blocks.prototype.toAPIV1Blocks(blocks) })
       } catch (e) {
         library.logger.error('Failed to find blocks', e)
         return cb('Server error')
