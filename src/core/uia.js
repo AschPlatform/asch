@@ -12,6 +12,7 @@ const sandboxHelper = require('../utils/sandbox.js')
 const flagsHelper = {}
 const addressHelper = require('../utils/address.js')
 const amountHelper = require('../utils/amount.js')
+const isArray = require('util').isArray
 
 // Private fields
 let modules
@@ -76,7 +77,13 @@ function trimPrecision( amount, precision ) {
   return parseInt(s.substr(0, s.length - precision))
 }
 
-UIA.prototype.toV1Asset = ( asset ) => {
+UIA.prototype.toAPIV1Assets = ( assets ) => {
+  return ( assets && isArray(assets) && assets.length > 0 ) ? 
+    assets.map( a => UIA.prototype.toAPIV1Asset( a ) ):
+    []
+}
+
+UIA.prototype.toAPIV1Asset = ( asset ) => {
   if (!asset) return asset
 
   return {
@@ -329,7 +336,7 @@ shared.getIssuerAssets = (req, cb) => {
         const condition = { issuerName: req.params.name }
         const count = await app.sdb.count('Asset', condition)
         const assets = await app.sdb.find('Asset', condition, limitAndOffset)
-        return cb(null, { count, assets })
+        return cb(null, { count, assets: UIA.prototype.toAPIV1Assets(assets) })
       } catch (dbErr) {
         return cb(`Failed to get assets: ${dbErr}`)
       }
@@ -360,7 +367,7 @@ shared.getAssets = (req, cb) => {
         const limitAndOffset = { limit: query.limit || 100, offset: query.offset || 0 }
         const count = await app.sdb.count('Asset', condition)
         const assets = await app.sdb.find('Asset', condition, limitAndOffset)
-        return cb(null, { count, assets })
+        return cb(null, { count, assets: UIA.prototype.toAPIV1Assets(assets) })
       } catch (dbErr) {
         return cb(`Failed to get assets: ${dbErr}`)
       }
@@ -388,7 +395,7 @@ shared.getAsset = (req, cb) => {
         const condition = { name: query.name }
         const assets = await app.sdb.find('Asset', condition)
         if (!assets || assets.length === 0) return cb('Asset not found')
-        return cb(null, { asset: assets[0] })
+        return cb(null, { asset: UIA.prototype.toAPIV1Asset(assets[0]) })
       } catch (dbErr) {
         return cb(`Failed to get asset: ${dbErr}`)
       }
