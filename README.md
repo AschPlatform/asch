@@ -66,7 +66,7 @@ yarn install
 
 
 npm run build
-gulp build-test #This make the front-end files in public dir.
+gulp build-local #This make the front-end files in public dir.
 ```
 
 ## Installation on docker.
