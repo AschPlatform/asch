@@ -12,12 +12,15 @@ Asch documents
 
 ## Documents index
 
-- [whitepaper](./asch_whitepaper_en.md)
+- [Whitepaper](./asch_whitepaper_en.md)
 - [Install](./asch_install_en.md)
 - [Delegate & forging](./asch_delegate_forging_en.md)
 - [Command line interface](./asch_cli_usage_en.md)
 - [Http interface](./asch_http_interface_en.md)
-- [Dapp development](./asch_dapps_introduction_en.md)
+- Dapp / Sidechain
+   - [Dapp Javascript SDK](./asch_sdk_api_en.md)
+   - [Dapp Http API](./asch_dapp_default_api_en.md)
+   - [Dapp development tutorial](./asch_dapps_introduction_en.md)
 
 ## Inhaltsverzeichnis
 
