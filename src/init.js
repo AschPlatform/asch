@@ -364,10 +364,10 @@ module.exports = function init(options, done) {
           consensus: ['bus', 'scheme', 'genesisblock', (cb, scope) => {
             new Consensus(scope, cb)
           }],
-          transaction: ['bus', 'scheme', 'genesisblock', 'account', (cb, scope) => {
+          transaction: ['bus', 'scheme', 'genesisblock', (cb, scope) => {
             new Transaction(scope, cb)
           }],
-          block: ['bus', 'scheme', 'genesisblock', 'account', 'transaction', (cb, scope) => {
+          block: ['bus', 'scheme', 'genesisblock', 'transaction', (cb, scope) => {
             new Block(scope, cb)
           }],
         }, outerCallback)
