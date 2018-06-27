@@ -368,7 +368,7 @@ Chains.prototype.message = (chain, body, cb) => {
 }
 
 Chains.prototype.getInstalledIds = (cb) => {
-  priv.getInstalledIds( cb )
+  priv.getInstalledIds(cb)
 }
 
 

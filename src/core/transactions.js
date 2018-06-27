@@ -305,104 +305,106 @@ Transactions.prototype.applyUnconfirmedTransactionAsync = async (transaction) =>
   }
 }
 
-Transactions.prototype.toAPIV1Transactions = ( transArray, block ) => {
-  return ( transArray && isArray(transArray) && transArray.length > 0 ) ? 
-    transArray.map( t => Transactions.prototype.toAPIV1Transaction(t, block) ):
-    []
+Transactions.prototype.toAPIV1Transactions = (transArray, block) => {
+  if (transArray && isArray(transArray) && transArray.length > 0) {
+    return transArray.map(t => self.toAPIV1Transaction(t, block))
+  }
+  return []
 }
 
-function toV1TypeAndArgs( type, argsString ) {
+function toV1TypeAndArgs(type, argsString) {
   let v1Type
-  let args = JSON.parse(argsString)
-  let v1Args = { }
+  const args = JSON.parse(argsString)
+  const v1Args = { }
   let result = { }
-  switch( type ) {
-    case 1: //transfer
+  switch (type) {
+    case 1: // transfer
       v1Type = 0
       result = { amount: args[0], recipientId: args[1] }
       break
-    case 3: //setPassword
+    case 3: // setPassword
       v1Type = 1
       result = { senderPublicKey: args[0] }
       break
-    case 10: //registerDelegate
+    case 10: // registerDelegate
       v1Type = 2
       break
-    case 11 : //vote
+    case 11: // vote
       v1Type = 3
-      reulst = { votes : args.map(v => '+'+ v).join(',') }
+      reulst = { votes: args.map(v => `+${v}`).join(',') }
       break
-    case 12 : //unvote
+    case 12: // unvote
       v1Type = 3
-      reulst = { votes : args.map(v => '-'+ v).join(',') }
+      reulst = { votes: args.map(v => `-${v}`).join(',') }
       break
-    case 200: //register dapp
+    case 200: // register dapp
       v1Type = 5
-      //args = [ dapp.name, dapp.description, dapp.link, dapp.icon, dapp.delegates, dapp.unlockDelegates ]
-      break;
-    case 204: //deposit
+      // args = [ dapp.name, dapp.description, dapp.link,
+      // dapp.icon, dapp.delegates, dapp.unlockDelegates ]
+      break
+    case 204: // deposit
       v1Type = 6
-      //args = [ it.name, it.currency, it.amount ];
-      break;
-    case 205: //withdrawal
-      v1Type = 7 
-      //args = [ ot.name, tx.senderId, ot.currency, ot.amount, ot.outtransactionId, 1 ]
-      break;
-    case 100: //registerIssuer
+      // args = [ it.name, it.currency, it.amount ];
+      break
+    case 205: // withdrawal
+      v1Type = 7
+      // args = [ ot.name, tx.senderId, ot.currency, ot.amount, ot.outtransactionId, 1 ]
+      break
+    case 100: // registerIssuer
       v1Type = 9
-      //args = [ issuers.name, issuers.desc ];
-      break;
-    case 101: //registerAsset 
+      // args = [ issuers.name, issuers.desc ];
+      break
+    case 101: // registerAsset
       v1Type = 10
-      //args = [ asset.name, asset.desc, asset.maximum, asset.precision ]
-      break;
-    case 102: //issue
+      // args = [ asset.name, asset.desc, asset.maximum, asset.precision ]
+      break
+    case 102: // issue
       v1Type = 13
-      //args = [ issue.currency, issue.amount ];
-      break;
-    case 103: //UIA transfer
+      // args = [ issue.currency, issue.amount ];
+      break
+    case 103: // UIA transfer
       v1Type = 14
-      result = { 
-        asset: { uiaTransfer: { currency: args[0], amount: args[1] } }, 
-        recipientId: args[2] 
+      result = {
+        asset: { uiaTransfer: { currency: args[0], amount: args[1] } },
+        recipientId: args[2],
       }
-      break;
+      break
     case 4:
-      v1Type = 100 //lock
-      //args = [ tx.args[0], balance ];
-      break;
+      v1Type = 100 // lock
+      // args = [ tx.args[0], balance ];
+      break
   }
 
-  return Object.assign( result, { type: v1Type, args: v1Args, argsNew: args })
+  return Object.assign(result, { type: v1Type, args: v1Args, argsNew: args })
 }
 
-Transactions.prototype.toAPIV1Transaction = ( trans, block ) => {
-  if ( !trans ) return trans
+Transactions.prototype.toAPIV1Transaction = (trans, block) => {
+  if (!trans) return trans
 
   const signArray = JSON.parse(trans.signatures)
-  let result = {
-    "id": trans.id,
-    "height": trans.height,
-    "timestamp": trans.timestamp,
-    "senderPublicKey": trans.senderPublicKey,
-    "senderId": trans.senderId,
-    "signSignature": trans.signSignature,
-    "message": trans.message,
-    "fee": trans.fee,
+  const result = {
+    id: trans.id,
+    height: trans.height,
+    timestamp: trans.timestamp,
+    senderPublicKey: trans.senderPublicKey,
+    senderId: trans.senderId,
+    signSignature: trans.signSignature,
+    message: trans.message,
+    fee: trans.fee,
 
 
-    "blockId" : block.id,
-    "recipientId": '',
-    "amount" : 0,
-    "asset" : {},
-    "confirmations": block.confirmations,
+    blockId: block.id,
+    recipientId: '',
+    amount: 0,
+    asset: {},
+    confirmations: block.confirmations,
 
-    "type": -1,
-    "signature": signArray.length === 1 ? signArray[0] : undefined,
-    "signatures": signArray.length === 1 ? undefined : signArray,
-    "args" : {}
+    type: -1,
+    signature: signArray.length === 1 ? signArray[0] : undefined,
+    signatures: signArray.length === 1 ? undefined : signArray,
+    args: {},
   }
-  return Object.assign( result, toV1TypeAndArgs(trans.type, trans.args) )
+  return Object.assign(result, toV1TypeAndArgs(trans.type, trans.args))
 }
 
 
@@ -468,7 +470,7 @@ shared.getTransactions = (req, cb) => {
 
     (async () => {
       try {
-        let block 
+        let block
         if (query.blockId) {
           block = await app.sdb.getBlockById(query.blockId)
           if (block === undefined) {
@@ -480,7 +482,7 @@ shared.getTransactions = (req, cb) => {
         let transactions = await app.sdb.find('Transaction', condition, { limit, offset })
         if (!transactions) transactions = []
         block = modules.blocks.toAPIV1Block(block)
-        return cb(null, { transactions : Transactions.prototype.toAPIV1Transactions(transactions, block), count })
+        return cb(null, { transactions: self.toAPIV1Transactions(transactions, block), count })
       } catch (e) {
         app.logger.error('Failed to get transactions', e)
         return cb(`System error: ${e}`)
@@ -506,17 +508,17 @@ shared.getTransaction = (req, cb) => {
     if (err) {
       return cb(err[0].message)
     }
-    let callback = ( err, ret ) => 
-      (async ()=>{
-        if ( !ret || !ret.transaction ) {
-          cb( err, ret )
+    const callback = (err2, ret) =>
+      (async () => {
+        if (!ret || !ret.transaction) {
+          cb(err2, ret)
         } else {
-          let block = await app.sdb.getBlockByHeight( ret.transaction.height )
+          let block = await app.sdb.getBlockByHeight(ret.transaction.height)
           block = modules.blocks.toAPIV1Block(block)
-          cb( err, { transaction : Transactions.prototype.toAPIV1Transaction(ret.transaction, block) })
+          cb(err2, { transaction: self.toAPIV1Transaction(ret.transaction, block) })
         }
       })()
-    return Transactions.prototype.getTransaction({ params: query }, callback)
+    return self.getTransaction({ params: query }, callback)
   })
 }
 

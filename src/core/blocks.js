@@ -80,28 +80,28 @@ priv.getIdSequence2 = (height, cb) => {
   })()
 }
 
-Blocks.prototype.toAPIV1Blocks = ( blocks ) => {  
-  return ( blocks && isArray(blocks) && blocks.length > 0 ) ? 
-    blocks.map( b => Blocks.prototype.toAPIV1Block(b) ):
-    []
+Blocks.prototype.toAPIV1Blocks = (blocks) => {
+  if (blocks && isArray(blocks) && blocks.length > 0) {
+    return blocks.map(b => Blocks.prototype.toAPIV1Block(b))
+  }
+  return []
 }
 
-Blocks.prototype.toAPIV1Block = ( block ) => {  
-  if (!block)  return undefined
+Blocks.prototype.toAPIV1Block = (block) => {
+  if (!block) return undefined
   return {
-    "id": block.id,
-	  "version": block.version,
-	  "timestamp": block.timestamp,
-	  "height": block.height,
-	  "payloadHash": block.payloadHash,
- 
-    "previousBlock": block.prevBlockId,
-    "numberOfTransactions": block.count,
-    "totalFee": block.fees,
-    "generatorPublicKey": block.delegate,
-    "blockSignature": block.signature,
-    "confirmations": Blocks.prototype.getLastBlock().height -  block.height,
-    "transactions" : modules.transactions.toAPIV1Transactions( block.transactions, block )
+    id: block.id,
+    version: block.version,
+    timestamp: block.timestamp,
+    height: block.height,
+    payloadHash: block.payloadHash,
+    previousBlock: block.prevBlockId,
+    numberOfTransactions: block.count,
+    totalFee: block.fees,
+    generatorPublicKey: block.delegate,
+    blockSignature: block.signature,
+    confirmations: Blocks.prototype.getLastBlock().height - block.height,
+    transactions: modules.transactions.toAPIV1Transactions(block.transactions, block),
 
     // "generatorId":  => missing
     // "totalAmount" => missing

@@ -1,7 +1,6 @@
 const crypto = require('crypto')
 const async = require('async')
 const ed = require('../utils/ed.js')
-const extend = require('extend')
 const jsonSql = require('json-sql')()
 
 jsonSql.setDialect('sqlite')
@@ -9,7 +8,6 @@ const constants = require('../utils/constants.js')
 const Router = require('../utils/router.js')
 const sandboxHelper = require('../utils/sandbox.js')
 
-const flagsHelper = {}
 const addressHelper = require('../utils/address.js')
 const amountHelper = require('../utils/amount.js')
 const isArray = require('util').isArray
@@ -72,31 +70,29 @@ UIA.prototype.sandboxApi = (call, args, cb) => {
   sandboxHelper.callMethod(shared, call, args, cb)
 }
 
-function trimPrecision( amount, precision ) {
-  let s = amount.toString()
-  return parseInt(s.substr(0, s.length - precision))
+function trimPrecision(amount, precision) {
+  const s = amount.toString()
+  return Number.parseInt(s.substr(0, s.length - precision), 10)
 }
 
-UIA.prototype.toAPIV1Assets = ( assets ) => {
-  return ( assets && isArray(assets) && assets.length > 0 ) ? 
-    assets.map( a => UIA.prototype.toAPIV1Asset( a ) ):
-    []
-}
+UIA.prototype.toAPIV1Assets = assets => ((assets && isArray(assets) && assets.length > 0) ?
+  assets.map(a => UIA.prototype.toAPIV1Asset(a)) :
+  [])
 
-UIA.prototype.toAPIV1Asset = ( asset ) => {
+UIA.prototype.toAPIV1Asset = (asset) => {
   if (!asset) return asset
 
   return {
-    "name": asset.name,
-    "desc": asset.desc,
-    "maximum": asset.maximum,
-    "precision": asset.precision,
-    "quantity": asset.quantity,
-    "issuerId": asset.issuerId,
-    "height": asset.height,
-    "writeoff": false,
-    "maximumShow": trimPrecision(asset.maximum, asset.precision),
-    "quantityShow": trimPrecision(asset.quantity, asset.precision)
+    name: asset.name,
+    desc: asset.desc,
+    maximum: asset.maximum,
+    precision: asset.precision,
+    quantity: asset.quantity,
+    issuerId: asset.issuerId,
+    height: asset.height,
+    writeoff: false,
+    maximumShow: trimPrecision(asset.maximum, asset.precision),
+    quantityShow: trimPrecision(asset.quantity, asset.precision),
 
     // "strategy"  => missing
     // "acl" => missing
