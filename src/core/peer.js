@@ -77,22 +77,9 @@ priv.initNode = () => {
 }
 
 Peer.prototype.list = (options, cb) => {
+  // FIXME
   options.limit = options.limit || 100
   return cb(null, [])
-}
-
-Peer.prototype.listWithChain = (options, cb) => {
-  options.limit = options.limit || 100
-
-  app.db.rawQuery('select p.ip, p.port, p.state, p.os, p.version, pd.chain from peers p inner join peer_chains pd on p.id = pd.peerId  where p.state > 0 ORDER BY RANDOM() LIMIT $limit', options, {
-    ip: String,
-    port: Number,
-    state: Number,
-    os: String,
-    version: String,
-  }, (err, rows) => {
-    cb(err, rows)
-  })
 }
 
 Peer.prototype.remove = (pip, port, cb) => {
