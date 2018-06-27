@@ -20,7 +20,6 @@ const queryParser = require('./utils/express-query-int')
 const ZSchemaExpress = require('./utils/zscheme-express.js')
 const Transaction = require('./base/transaction.js')
 const Block = require('./base/block.js')
-const Account = require('./base/account.js')
 const Consensus = require('./base/consensus.js')
 const protobuf = require('./utils/protobuf.js')
 
@@ -364,9 +363,6 @@ module.exports = function init(options, done) {
           },
           consensus: ['bus', 'scheme', 'genesisblock', (cb, scope) => {
             new Consensus(scope, cb)
-          }],
-          account: ['bus', 'scheme', 'genesisblock', (cb, scope) => {
-            new Account(scope, cb)
           }],
           transaction: ['bus', 'scheme', 'genesisblock', 'account', (cb, scope) => {
             new Transaction(scope, cb)
