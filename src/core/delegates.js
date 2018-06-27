@@ -254,7 +254,7 @@ priv.loop = (cb) => {
         }
         done()
       } catch (e) {
-        cb(e)
+        done(e)
       }
     })(), (err2) => {
       if (err2) {
