@@ -5,7 +5,7 @@ const randomstring = require('randomstring')
 const ip = require('ip')
 const daemon = require('daemon')
 const tracer = require('tracer')
-const asch = require('./index.js')
+const asch = require('asch-core')
 
 const Application = asch.Application
 
