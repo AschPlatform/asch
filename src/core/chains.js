@@ -2,7 +2,6 @@ const async = require('async')
 const fs = require('fs')
 const path = require('path')
 const Sandbox = require('asch-sandbox')
-const rmdir = require('rimraf')
 const ip = require('ip')
 const Router = require('../utils/router.js')
 const sandboxHelper = require('../utils/sandbox.js')
@@ -37,23 +36,24 @@ function Chains(cb, scope) {
 
   priv.attachApi()
 
-  fs.exists(path.join(library.config.publicDir, 'chains'), (exists) => {
-    if (exists) {
-      rmdir(path.join(library.config.publicDir, 'chains'), (err) => {
-        if (err) {
-          library.logger.error(err)
-        }
+  // fs.exists(path.join(library.config.publicDir, 'chains'), (exists) => {
+  //   if (exists) {
+  //     rmdir(path.join(library.config.publicDir, 'chains'), (err) => {
+  //       if (err) {
+  //         library.logger.error(err)
+  //       }
 
-        priv.createBasePathes((err2) => {
-          setImmediate(cb, err2, self)
-        })
-      })
-    } else {
-      priv.createBasePathes((err) => {
-        setImmediate(cb, err, self)
-      })
-    }
-  })
+  //       priv.createBasePathes((err2) => {
+  //         setImmediate(cb, err2, self)
+  //       })
+  //     })
+  //   } else {
+  //     priv.createBasePathes((err) => {
+  //       setImmediate(cb, err, self)
+  //     })
+  //   }
+  // })
+  setImmediate(cb, null, self)
 }
 
 priv.attachApi = () => {
@@ -402,25 +402,25 @@ Chains.prototype.cleanup = (cb) => {
 }
 
 Chains.prototype.onBlockchainReady = () => {
-  priv.getInstalledIds((err, chains) => {
-    library.logger.debug('find local installed chains', chains)
-    if (err) {
-      library.logger.error('Failed to get installed ids', err)
-      return
-    }
-    library.logger.info(`start to launch ${chains.length} installed chains`)
-    async.eachSeries(chains, (chain, next) => {
-      const chainParams = library.config.chain.params[chain] || []
-      priv.launch({ name: chain, params: chainParams }, (err2) => {
-        if (err2) {
-          library.logger.error(`Failed to launched chain[${chain}]`, err2)
-        } else {
-          library.logger.info(`Launched chain[${chain}] successfully`)
-        }
-        next()
-      })
-    })
-  })
+  // priv.getInstalledIds((err, chains) => {
+  //   library.logger.debug('find local installed chains', chains)
+  //   if (err) {
+  //     library.logger.error('Failed to get installed ids', err)
+  //     return
+  //   }
+  //   library.logger.info(`start to launch ${chains.length} installed chains`)
+  //   async.eachSeries(chains, (chain, next) => {
+  //     const chainParams = library.config.chain.params[chain] || []
+  //     priv.launch({ name: chain, params: chainParams }, (err2) => {
+  //       if (err2) {
+  //         library.logger.error(`Failed to launched chain[${chain}]`, err2)
+  //       } else {
+  //         library.logger.info(`Launched chain[${chain}] successfully`)
+  //       }
+  //       next()
+  //     })
+  //   })
+  // })
 }
 
 Chains.prototype.onDeleteBlocksBefore = (block) => {

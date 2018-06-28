@@ -1,4 +1,5 @@
 const fs = require('fs')
+const path = require('path')
 const os = require('os')
 const domain = require('domain')
 const { EventEmitter } = require('events')
@@ -94,7 +95,12 @@ module.exports = function init(options, done) {
     },
 
     protobuf(cb) {
-      protobuf(options.protoFile, cb)
+      const protoFile = path.join(__dirname, '..', 'proto', 'index.proto')
+      if (!fs.existsSync(protoFile)) {
+        console.log('Failed: proto file not exists!')
+        return
+      }
+      protobuf(protoFile, cb)
     },
 
     scheme(cb) {

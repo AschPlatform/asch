@@ -191,7 +191,7 @@ module.exports = async function runtime(options) {
     if (error) throw new Error(error)
   }
   app.registerContract = (type, name) => {
-    if (type < 1000) throw new Error('Contract types that small than 1000 are reserved')
+    // if (type < 1000) throw new Error('Contract types that small than 1000 are reserved')
     app.contractTypeMapping[type] = name
   }
   app.getContractName = type => app.contractTypeMapping[type]
