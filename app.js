@@ -22,6 +22,7 @@ function main() {
     .option('-x, --peers [peers...]', 'Peers list')
     .option('-l, --log <level>', 'Log level')
     .option('-d, --daemon', 'Run asch node as daemon')
+    .option('--app <dir>', 'App directory')
     .option('--base <dir>', 'Base directory')
     .option('--data <dir>', 'Data directory')
     .parse(process.argv)
@@ -52,6 +53,7 @@ function main() {
   appConfig.version = version
   appConfig.baseDir = baseDir
   appConfig.dataDir = program.data || path.resolve(baseDir, 'data')
+  appConfig.appDir = program.appDir || path.resolve(baseDir, 'src')
   appConfig.buildVersion = 'DEFAULT_BUILD_TIME'
   appConfig.netVersion = process.env.NET_VERSION || 'testnet'
   appConfig.publicDir = path.join(baseDir, 'public', 'dist')
