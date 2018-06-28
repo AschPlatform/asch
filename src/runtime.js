@@ -6,13 +6,13 @@ const changeCase = require('change-case')
 const validate = require('validate.js')
 const extend = require('extend')
 const gatewayLib = require('asch-gateway')
+const { AschCore } = require('asch-smartdb')
 const slots = require('./utils/slots')
 const amountHelper = require('./utils/amount')
 const Router = require('./utils/router.js')
 const BalanceManager = require('./smartdb/balance-manager')
 const AutoIncrement = require('./smartdb/auto-increment')
 const AccountRole = require('./utils/account-role')
-const { AschCore } = require('asch-smartdb')
 
 const PIFY = util.promisify
 
@@ -21,6 +21,7 @@ class RouteWrapper {
     this.hands = []
     this.routePath = null
   }
+
   get(routePath, handler) {
     this.handlers.push({ path: routePath, method: 'get', handler })
   }
@@ -32,12 +33,15 @@ class RouteWrapper {
   post(routePath, handler) {
     this.handlers.push({ path: routePath, method: 'post', handler })
   }
+
   set path(val) {
     this.routePath = val
   }
+
   get path() {
     return this.routePath
   }
+
   get handlers() {
     return this.hands
   }
@@ -168,11 +172,11 @@ module.exports = async function runtime(options) {
     string: (value, constraints) => {
       if (constraints.length) {
         return JSON.stringify(validate({ data: value }, { data: { length: constraints.length } }))
-      } else if (constraints.isEmail) {
+      } if (constraints.isEmail) {
         return JSON.stringify(validate({ email: value }, { email: { email: true } }))
-      } else if (constraints.url) {
+      } if (constraints.url) {
         return JSON.stringify(validate({ url: value }, { url: { url: constraints.url } }))
-      } else if (constraints.number) {
+      } if (constraints.number) {
         return JSON.stringify(validate(
           { number: value },
           { number: { numericality: constraints.number } },
@@ -211,8 +215,7 @@ module.exports = async function runtime(options) {
     app.hooks[name] = func
   }
 
-  app.verifyBytes = (bytes, publicKey, signature) =>
-    app.api.crypto.verify(publicKey, signature, bytes)
+  app.verifyBytes = (bytes, publicKey, signature) => app.api.crypto.verify(publicKey, signature, bytes)
 
   app.checkMultiSignature = (bytes, allowedKeys, signatures, m) => {
     const keysigs = signatures.split(',')

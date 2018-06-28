@@ -77,8 +77,8 @@ priv.attachApi = () => {
 
       const ip = req.connection.remoteAddress
 
-      if (library.config.forging.access.whiteList.length > 0 &&
-        library.config.forging.access.whiteList.indexOf(ip) < 0) {
+      if (library.config.forging.access.whiteList.length > 0
+        && library.config.forging.access.whiteList.indexOf(ip) < 0) {
         return res.json({ success: false, error: 'Access denied' })
       }
 
@@ -131,8 +131,8 @@ priv.attachApi = () => {
 
       const ip = req.connection.remoteAddress
 
-      if (library.config.forging.access.whiteList.length > 0 &&
-          library.config.forging.access.whiteList.indexOf(ip) < 0) {
+      if (library.config.forging.access.whiteList.length > 0
+          && library.config.forging.access.whiteList.indexOf(ip) < 0) {
         return res.json({ success: false, error: 'Access denied' })
       }
 
@@ -248,8 +248,8 @@ priv.loop = (cb) => {
 
     return library.sequence.add(done => (async () => {
       try {
-        if (slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber() &&
-          modules.blocks.getLastBlock().timestamp < currentBlockData.time) {
+        if (slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber()
+          && modules.blocks.getLastBlock().timestamp < currentBlockData.time) {
           await modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time)
         }
         done()
@@ -472,8 +472,8 @@ Delegates.prototype.getBookkeeper = () => {
 
 Delegates.prototype.updateBookkeeper = (delegates) => {
   const value = JSON.stringify(delegates || self.getTopDelegates())
-  const bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME) ||
-    app.sdb.create('Variable', BOOK_KEEPER_NAME, { key: BOOK_KEEPER_NAME, value })
+  const bookKeeper = app.sdb.getCached('Variable', BOOK_KEEPER_NAME)
+    || app.sdb.create('Variable', BOOK_KEEPER_NAME, { key: BOOK_KEEPER_NAME, value })
 
   bookKeeper.value = value
 }
@@ -506,9 +506,11 @@ shared.getDelegate = (req, cb) => {
       const delegate = delegates.find((d) => {
         if (query.publicKey) {
           return d.publicKey === query.publicKey
-        } else if (query.address) {
+        }
+        if (query.address) {
           return d.address === query.address
-        } else if (query.name) {
+        }
+        if (query.name) {
           return d.name === query.name
         }
 

@@ -1,13 +1,13 @@
 const assert = require('assert')
 const crypto = require('crypto')
 const async = require('async')
+const PIFY = require('util').promisify
+const isArray = require('util').isArray
 const constants = require('../utils/constants.js')
 const BlockStatus = require('../utils/block-status.js')
 const Router = require('../utils/router.js')
 const slots = require('../utils/slots.js')
 const sandboxHelper = require('../utils/sandbox.js')
-const PIFY = require('util').promisify
-const isArray = require('util').isArray
 
 let genesisblock = null
 let modules
@@ -398,8 +398,8 @@ Blocks.prototype.applyRound = async (block) => {
   // process fee
   const roundNumber = Math.floor(((block.height + delegates.length) - 1) / delegates.length)
 
-  const round = await app.sdb.get('Round', roundNumber) ||
-    app.sdb.create('Round', { fees: 0, rewards: 0, round: roundNumber })
+  const round = await app.sdb.get('Round', roundNumber)
+    || app.sdb.create('Round', { fees: 0, rewards: 0, round: roundNumber })
 
   let transFee = 0
   for (const t of block.transactions) {
@@ -443,8 +443,8 @@ Blocks.prototype.applyRound = async (block) => {
   const councilControl = 1
   if (councilControl) {
     const councilAddress = 'GADQ2bozmxjBfYHDQx3uwtpwXmdhafUdkN'
-    const account = await app.sdb.get('Account', councilAddress) ||
-      app.sdb.create('Account', { xas: 0, address: councilAddress, name: '' })
+    const account = await app.sdb.get('Account', councilAddress)
+      || app.sdb.create('Account', { xas: 0, address: councilAddress, name: '' })
     const totalIncome = fees + rewards
     account.xas += totalIncome
   } else {
@@ -639,16 +639,16 @@ Blocks.prototype.onReceiveBlock = (block, votes) => {
           cb()
         }
       })()
-    } else if (block.prevBlockId !== priv.lastBlock.id &&
-      priv.lastBlock.height + 1 === block.height) {
+    } if (block.prevBlockId !== priv.lastBlock.id
+      && priv.lastBlock.height + 1 === block.height) {
       modules.delegates.fork(block, 1)
       return cb('Fork')
-    } else if (block.prevBlockId === priv.lastBlock.prevBlockId &&
-      block.height === priv.lastBlock.height &&
-      block.id !== priv.lastBlock.id) {
+    } if (block.prevBlockId === priv.lastBlock.prevBlockId
+      && block.height === priv.lastBlock.height
+      && block.id !== priv.lastBlock.id) {
       modules.delegates.fork(block, 5)
       return cb('Fork')
-    } else if (block.height > priv.lastBlock.height + 1) {
+    } if (block.height > priv.lastBlock.height + 1) {
       library.logger.info(`receive discontinuous block height ${block.height}`)
       modules.loader.startSyncBlocks()
       return cb()
@@ -667,9 +667,9 @@ Blocks.prototype.onReceivePropose = (propose) => {
   priv.proposeCache[propose.hash] = true
 
   library.sequence.add((cb) => {
-    if (priv.lastPropose && priv.lastPropose.height === propose.height &&
-      priv.lastPropose.generatorPublicKey === propose.generatorPublicKey &&
-      priv.lastPropose.id !== propose.id) {
+    if (priv.lastPropose && priv.lastPropose.height === propose.height
+      && priv.lastPropose.generatorPublicKey === propose.generatorPublicKey
+      && priv.lastPropose.id !== propose.id) {
       library.logger.warn(`generate different block with the same height, generator: ${propose.generatorPublicKey}`)
       return setImmediate(cb)
     }

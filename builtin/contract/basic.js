@@ -119,8 +119,8 @@ module.exports = {
     if (sender.isAgent) return 'Agent account cannot lock'
     if (sender.xas - 100000000 < amount) return 'Insufficient balance'
     if (sender.isLocked) {
-      if (height !== 0 &&
-        height < (Math.max(this.block.height, sender.lockHeight) + MIN_LOCK_HEIGHT)) {
+      if (height !== 0
+        && height < (Math.max(this.block.height, sender.lockHeight) + MIN_LOCK_HEIGHT)) {
         return 'Invalid lock height'
       }
       if (height === 0 && amount === 0) {
@@ -143,6 +143,7 @@ module.exports = {
     }
     if (amount !== 0) {
       sender.xas -= amount
+      sender.weight += amount
       if (sender.agent) {
         const agentAccount = await app.sdb.getBy('Account', { name: sender.agent })
         if (!agentAccount) return 'Agent account not found'
@@ -156,7 +157,6 @@ module.exports = {
           }
         }
       } else {
-        sender.weight += amount
         const voteList = await app.sdb.findAll('Vote', { condition: { address: senderId } })
         if (voteList && voteList.length > 0) {
           for (const voteItem of voteList) {
