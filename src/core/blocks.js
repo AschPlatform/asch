@@ -6,6 +6,7 @@ const BlockStatus = require('../utils/block-status.js')
 const Router = require('../utils/router.js')
 const slots = require('../utils/slots.js')
 const sandboxHelper = require('../utils/sandbox.js')
+const addressHelper = require('../utils/address.js')
 const PIFY = require('util').promisify
 const isArray = require('util').isArray
 
@@ -390,7 +391,7 @@ Blocks.prototype.applyRound = async (block) => {
     return
   }
 
-  const delegate = app.sdb.getCached('Delegate', modules.accounts.generateAddressByPublicKey(block.delegate))
+  const delegate = app.sdb.getCached('Delegate', addressHelper.generateNormalAddress(block.delegate))
   delegate.producedBlocks += 1
 
   const delegates = await PIFY(modules.delegates.generateDelegateList)(block.height)
@@ -424,12 +425,12 @@ Blocks.prototype.applyRound = async (block) => {
     }
   }
   for (const md of missedDelegates) {
-    const addr = modules.accounts.generateAddressByPublicKey(md)
+    const addr = addressHelper.generateNormalAddress(md)
     app.sdb.getCached('Delegate', addr).missedBlocks += 1
   }
 
   async function updateDelegate(pk, fee, reward) {
-    const addr = modules.accounts.generateAddressByPublicKey(pk)
+    const addr = addressHelper.generateNormalAddress(pk)
     const d = app.sdb.getCached('Delegate', addr)
     d.fees += fee
     d.rewards += reward
