@@ -81,7 +81,7 @@ module.exports = {
     return this.isBase58CheckAddress(address) && address[0] === GROUP_PREFIX
   },
 
-  generateBase58CheckAddress(publicKey) {
+  generateNormalAddress(publicKey) {
     return NORMAL_PREFIX + generateRawBase58CheckAddress([publicKey])
   },
 
