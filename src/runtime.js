@@ -215,7 +215,7 @@ module.exports = async function runtime(options) {
     app.hooks[name] = func
   }
 
-  app.verifyBytes = (bytes, publicKey, signature) => app.api.crypto.verify(publicKey, signature, bytes)
+  app.verifyBytes = (bytes, pk, signature) => app.api.crypto.verify(pk, signature, bytes)
 
   app.checkMultiSignature = (bytes, allowedKeys, signatures, m) => {
     const keysigs = signatures.split(',')
