@@ -36,7 +36,7 @@ Transaction.prototype.create = function (data) {
     args: data.args,
     fee: data.fee
   };
-  const signerId = addressHelper.generateBase58CheckAddress(trs.senderPublicKey)
+  const signerId = addressHelper.generateNormalAddress(trs.senderPublicKey)
   if (trs.senderId) {
     trs.requestorId = signerId
   } else {
@@ -158,7 +158,7 @@ Transaction.prototype.verifyGroupSignature = async function(trs, sender, bytes) 
   let totalWeight = 0
   for (let ks of trs.signatures) {
     let k = ks.substr(0, 64)
-    let address = addressHelper.generateBase58CheckAddress(k)
+    let address = addressHelper.generateNormalAddress(k)
     if (!memberMap.has(address)) return 'Invalid member address'
     totalWeight += memberMap.get(address).weight
   }

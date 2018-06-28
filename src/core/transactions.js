@@ -3,6 +3,7 @@ const ed = require('../utils/ed.js')
 const Router = require('../utils/router.js')
 const sandboxHelper = require('../utils/sandbox.js')
 const LimitCache = require('../utils/limit-cache.js')
+const addressHelper = require('../utils/address.js')
 const isArray = require('util').isArray
 
 // let genesisblock = null
@@ -278,7 +279,7 @@ Transactions.prototype.applyUnconfirmedTransactionAsync = async (transaction) =>
   const senderPublicKey = transaction.senderPublicKey
   if (senderPublicKey) {
     const signerId = transaction.requestorId || transaction.senderId
-    if (modules.accounts.generateAddressByPublicKey(senderPublicKey) !== signerId) {
+    if (addressHelper.generateNormalAddress(senderPublicKey) !== signerId) {
       throw new Error('Invalid senderPublicKey')
     }
   }

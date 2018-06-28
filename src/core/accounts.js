@@ -134,7 +134,7 @@ priv.openAccount2 = (publicKey, cb) => {
 }
 
 Accounts.prototype.generateAddressByPublicKey =
-  publicKey => addressHelper.generateBase58CheckAddress(publicKey)
+  publicKey => addressHelper.generateNormalAddress(publicKey)
 
 Accounts.prototype.generateAddressByPublicKey2 = (publicKey) => {
   if (!global.featureSwitch.enableUIA) {
@@ -144,7 +144,7 @@ Accounts.prototype.generateAddressByPublicKey2 = (publicKey) => {
   if (library.balanceCache.getNativeBalance(oldAddress)) {
     return oldAddress
   }
-  return addressHelper.generateBase58CheckAddress(publicKey)
+  return addressHelper.generateNormalAddress(publicKey)
 }
 
 Accounts.prototype.sandboxApi = (call, args, cb) => {
@@ -215,7 +215,7 @@ shared.open2 = (req, cb) => {
 }
 
 shared.getBalance = (req, cb) => {
-  const query  = req.body
+  const query = req.body
   library.scheme.validate(query, {
     type: 'object',
     properties: {

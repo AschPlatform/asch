@@ -5,6 +5,7 @@ const Router = require('../utils/router.js')
 const slots = require('../utils/slots.js')
 const BlockStatus = require('../utils/block-status.js')
 const sandboxHelper = require('../utils/sandbox.js')
+const addressHelper = require('../utils/address.js')
 
 let modules
 let library
@@ -458,7 +459,7 @@ Delegates.prototype.getBookkeeperAddresses = () => {
   const bookkeeper = self.getBookkeeper()
   const addresses = new Set()
   for (const i of bookkeeper) {
-    const address = modules.accounts.generateAddressByPublicKey(i)
+    const address = addressHelper.generateNormalAddress(i)
     addresses.add(address)
   }
   return addresses
