@@ -424,6 +424,7 @@ Blocks.prototype.applyRound = async (block) => {
       missedDelegates.push(fd)
     }
   }
+
   for (const md of missedDelegates) {
     const addr = addressHelper.generateNormalAddress(md)
     app.sdb.getCached('Delegate', addr).missedBlocks += 1

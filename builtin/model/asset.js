@@ -1,5 +1,6 @@
 module.exports = {
   table: 'assets',
+  memory: true,
   tableFields: [
     { name: 'name', type: 'String', length: 50, primary_key: true },
     { name: 'tid', type: 'String', length: 64, not_null: true, index: true },

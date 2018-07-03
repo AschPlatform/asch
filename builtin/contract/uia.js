@@ -67,7 +67,7 @@ module.exports = {
   },
 
   async transfer(currency, amount, recipient) {
-    app.validate('amount', amount)
+    app.validate('amount', String(amount))
     const senderId = this.sender.address
     const balance = app.balances.get(senderId, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
