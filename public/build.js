@@ -1,1 +1,0 @@
-window.Mnemonic = Mnemonic = require('bitcore-mnemonic');
