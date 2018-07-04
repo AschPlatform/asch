@@ -1,6 +1,6 @@
 module.exports = {
   table: 'chains',
-  cache: true,
+  memory: true,
   tableFields: [
     { name: 'tid', type: 'String', length: 64, not_null: true, primary_key: true },
     { name: 'name', type: 'String', length: 32, index: true },
