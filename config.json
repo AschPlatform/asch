@@ -2,7 +2,7 @@
   "port": 4096,
   "peerPort": 5096,
   "address": "0.0.0.0",
-  "publicIp": "192.168.1.20",
+  "publicIp": "0.0.0.0",
   "logLevel": "trace",
   "magic": "594fe0f3",
   "api": {
