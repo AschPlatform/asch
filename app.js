@@ -53,7 +53,7 @@ function main() {
   appConfig.version = version
   appConfig.baseDir = baseDir
   appConfig.dataDir = program.data || path.resolve(baseDir, 'data')
-  appConfig.appDir = program.appDir || path.resolve(baseDir, 'src')
+  appConfig.appDir = program.app || path.resolve(baseDir, 'src')
   appConfig.buildVersion = 'DEFAULT_BUILD_TIME'
   appConfig.netVersion = process.env.NET_VERSION || 'testnet'
   appConfig.publicDir = path.join(baseDir, 'public', 'dist')
