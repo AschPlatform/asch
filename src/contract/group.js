@@ -34,7 +34,7 @@ module.exports = {
     const requestTrs = await app.sdb.findOne('Transaction', { condition: { id: targetId } })
     if (!requestTrs) return 'Request transaction not found'
     // TODO normalize in smartdb
-    requestTrs.args = JSON.parse(requestTrs.args)
+    // requestTrs.args = JSON.parse(requestTrs.args)
 
     const account = await app.sdb.get('Account', requestTrs.senderId)
     if (!account) return 'Group account not found'
