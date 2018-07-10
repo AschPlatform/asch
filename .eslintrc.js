@@ -21,4 +21,4 @@ module.exports = {
     "no-continue": 0,
     "no-param-reassign": 0
   }
-};
+}
