@@ -10,7 +10,7 @@ function build(osVersion, netVersion) {
   const fullPath = path.join(__dirname, 'build', dir)
   shell.mkdir('-p', fullPath)
   shell.cd(fullPath)
-  shell.mkdir('-p', 'public', 'chains', 'tmp', 'logs', 'bin', 'data')
+  shell.mkdir('-p', 'public/dist', 'chains', 'tmp', 'logs', 'bin', 'data')
   shell.cd(__dirname)
   shell.cp('-r', 'package.json', 'aschd', 'init', 'app.js', 'src', fullPath)
   if (netVersion !== 'localnet') {
