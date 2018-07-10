@@ -3,8 +3,8 @@ async function getGroup(req) {
   let members = []
   if (group) {
     members = await app.sdb.findAll('GroupMember', { condition: { name: group.name } })
+    group.members = members
   }
-  group.members = members
   return { group }
 }
 

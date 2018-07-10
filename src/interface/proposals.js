@@ -36,7 +36,6 @@ module.exports = (router) => {
 
   router.get('/:pid', async (req) => {
     const proposal = await app.sdb.findOne('Proposal', { condition: { tid: req.params.pid } })
-    if (!proposal) return 'Proposal not found'
     return { proposal }
   })
 
