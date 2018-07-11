@@ -1,5 +1,5 @@
 module.exports = {
-  extends: ['airbnb-base'],
+  extends: ['asch-base'],
   rules: {
   }
 }
