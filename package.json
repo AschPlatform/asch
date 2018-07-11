@@ -18,11 +18,7 @@
   },
   "devDependencies": {
     "chai": "^3.0.0",
-    "eslint": "=4.19.1",
-    "eslint-config-airbnb": "=17.0.0",
-    "eslint-plugin-import": "=2.13.0",
-    "eslint-plugin-jsx-a11y": "=6.0.3",
-    "eslint-plugin-react": "=7.10.0",
+    "eslint-config-asch-base": "*",
     "moment": "^2.9.0",
     "shelljs": "^0.7.8",
     "should": "~4.6.0",
