@@ -2,6 +2,8 @@ const bignum = require('bignumber')
 
 module.exports = {
   async openAccount(gateway) {
+    if (!gateway || gateway.length > 10) return 'Invalid gateway name'
+
     app.sdb.lock(`gateway.openAccount@${this.sender.address}`)
     const exists = await app.sdb.exists('GatewayAccount', { address: this.sender.address })
     if (exists) return 'Account already opened'
@@ -30,6 +32,8 @@ module.exports = {
   },
 
   async registerMember(gateway, publicKey, desc) {
+    if (!gateway || gateway.length > 10) return 'Invalid gateway name'
+
     const senderId = this.sender.address
     app.sdb.lock(`basic.account@${this.sender.address}`)
     const sender = this.sender
@@ -51,6 +55,8 @@ module.exports = {
   },
 
   async deposit(gateway, address, currency, amount, oid) {
+    if (!gateway || gateway.length > 10) return 'Invalid gateway name'
+    if (!currency) return 'Invalid currency'
     app.validate('amount', amount)
 
     if (!await app.sdb.exists('GatewayCurrency', { symbol: currency })) return 'Currency not supported'
@@ -105,6 +111,9 @@ module.exports = {
   },
 
   async withdrawal(address, gateway, currency, amount, fee) {
+    if (!gateway || gateway.length > 10) return 'Invalid gateway name'
+    if (!currency) return 'Invalid currency'
+
     app.validate('amount', fee)
     app.validate('amount', amount)
     const balance = app.balances.get(this.sender.address, currency)

@@ -82,8 +82,9 @@ module.exports = {
   },
 
   async setName(name) {
-    const reg = /^[a-z0-9_]{2,20}$/
-    if (!reg.test(name)) return 'Invalid name'
+    // const reg = /^[a-z0-9_]{2,20}$/
+    // if (!reg.test(name)) return 'Invalid name'
+    app.validate('name', name)
 
     const senderId = this.sender.address
     app.sdb.lock(`basic.account@${senderId}`)
@@ -97,6 +98,8 @@ module.exports = {
   },
 
   async setPassword(publicKey) {
+    app.validate('publickey', publicKey)
+
     // FIXME validate publicKey
     if (!app.util.address.isNormalAddress(this.sender.address)) {
       return 'Invalid account type'
@@ -109,6 +112,9 @@ module.exports = {
   },
 
   async lock(height, amount) {
+    if (!Number.isInteger(height)) return 'Height should be integer'
+    if (!Number.isInteger(amount)) return 'Amount should be integer'
+
     height = Number(height)
     amount = Number(amount)
     const senderId = this.sender.address
@@ -193,6 +199,28 @@ module.exports = {
   },
 
   async registerGroup(name, members, min, max, m, updateInterval) {
+    app.validate('name', name)
+    // rule: min, max, m, updateInterval should be integer
+    // rule：min >=3, min < max, updateInterval > 1
+    if (!Number.isInteger(min)) return 'Min should be integer'
+    if (!Number.isInteger(max)) return 'Max should be integer'
+    if (!Number.isInteger(m)) return 'M should be integer'
+    if (!Number.isInteger(updateInterval)) return 'UpdateInterval should be integer'
+    
+    if (min < 3) return 'Min should be greater than 3'
+    if (min >= max) return 'Max should be greater than min'
+    if (updateInterval < 1) return 'UpdateInterval should be greater than 1'
+
+    for (const member of members) {
+      // member.weight should be integer
+      // member.address should have valid address format
+      app.validate('name', member.name)
+      if (!Number.isInteger(member.weight)) return 'Member weight should be integer'
+      if (!app.util.address.isNormalAddress(member.address)) {
+        return 'Invalid member address'
+      }
+    }
+
     // FIXME validate params
     app.sdb.lock(`basic.setName@${name}`)
     if (await app.sdb.exists('Account', { name })) return 'Name already registered'
@@ -253,6 +281,8 @@ module.exports = {
     if (sender.isAgent) return 'Agent cannot set agent'
     if (sender.agent) return 'Agent already set'
     if (!sender.isLocked) return 'Account is not locked'
+
+    app.validate('name', agent)
 
     const agentAccount = await app.sdb.getBy('Account', { name: agent })
     if (!agentAccount) return 'Agent account not found'
