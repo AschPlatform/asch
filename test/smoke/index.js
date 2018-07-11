@@ -1,14 +1,14 @@
-const node = require('../variables.js')
+const lib = require('../lib.js')
 const config = require('./config.js')
 
 const gDelegates = []
 
 async function initDelegates() {
   console.log('init delegate accounts ...')
-  for (const secret of node.config.forging.secret) {
-    gDelegates.push(node.genNormalAccount(secret))
+  for (const secret of lib.config.forging.secret) {
+    gDelegates.push(lib.getNormalAccount(secret))
   }
-  const allDelegates = (await node.apiGetAsync('/delegates?limit=101')).body.delegates
+  const allDelegates = (await lib.apiGetAsync('/delegates?limit=101')).body.delegates
 
   const addressMap = new Map()
   for (const d of allDelegates) {
@@ -20,7 +20,7 @@ async function initDelegates() {
 }
 
 async function sendMoneyToAccounts() {
-  await node.giveMoneyAsync(gDelegates[0].address, 5000000000000000)
+  await lib.giveMoneyAsync(gDelegates[0].address, 5000000000000000)
 
   const addresses = gDelegates.map(d => d.address)
   for (const i of config.issuers) {
@@ -45,7 +45,7 @@ async function sendMoneyToAccounts() {
     addresses.push(i.address)
   }
   console.log(`send money to ${addresses.length} accounts`)
-  await node.giveMoneyAndWaitAsync(addresses)
+  await lib.giveMoneyAndWaitAsync(addresses)
 }
 
 async function init() {
@@ -62,9 +62,9 @@ async function testUIA() {
       args: [issuer.name, issuer.desc],
     }
     console.log('register issuer:', issuer.name)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
   for (const issuer of config.issuers) {
     for (const asset of issuer.assets) {
       const trs = {
@@ -79,10 +79,10 @@ async function testUIA() {
         ],
       }
       console.log('register asset:', asset.name)
-      await node.transactionUnsignedAsync(trs)
+      await lib.transactionUnsignedAsync(trs)
     }
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
   for (const issuer of config.issuers) {
     for (const asset of issuer.assets) {
       const trs = {
@@ -95,10 +95,10 @@ async function testUIA() {
         ],
       }
       console.log('issue asset:', asset.name)
-      await node.transactionUnsignedAsync(trs)
+      await lib.transactionUnsignedAsync(trs)
     }
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
   for (const issuer of config.issuers) {
     for (const asset of issuer.assets) {
       const trs = {
@@ -112,10 +112,10 @@ async function testUIA() {
         ],
       }
       console.log('transfer asset:', asset.name)
-      await node.transactionUnsignedAsync(trs)
+      await lib.transactionUnsignedAsync(trs)
     }
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 }
 
 async function testAgent() {
@@ -127,9 +127,9 @@ async function testAgent() {
       args: [agent.name],
     }
     console.log('set agent name:', agent.name)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 
   for (const agent of config.agents) {
     const trs = {
@@ -139,14 +139,14 @@ async function testAgent() {
       args: [],
     }
     console.log('register agent:', agent.name)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 
   for (const agent of config.agents) {
     for (const clientele of agent.clienteles) {
       const uri = `/v2/accounts/${clientele.address}`
-      const balance = (await node.apiGetAsync(uri)).body.account.xas
+      const balance = (await lib.apiGetAsync(uri)).body.account.xas
       const trs = {
         secret: clientele.secret,
         type: 4,
@@ -154,10 +154,10 @@ async function testAgent() {
         args: [balance, 10000],
       }
       console.log('lock clientele:', clientele.address)
-      await node.transactionUnsignedAsync(trs)
+      await lib.transactionUnsignedAsync(trs)
     }
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 
   for (const agent of config.agents) {
     for (const clientele of agent.clienteles) {
@@ -168,10 +168,10 @@ async function testAgent() {
         args: [agent.name],
       }
       console.log('set agent for:', clientele.address)
-      await node.transactionUnsignedAsync(trs)
+      await lib.transactionUnsignedAsync(trs)
     }
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 }
 
 async function testGateway() {
@@ -188,8 +188,8 @@ async function testGateway() {
     ],
   }
   console.log('submit proposal:', config.proposals[0].title)
-  let proposalId = (await node.transactionUnsignedAsync(trs)).body.transactionId
-  await node.onNewBlockAsync()
+  let proposalId = (await lib.transactionUnsignedAsync(trs)).body.transactionId
+  await lib.onNewBlockAsync()
 
   for (const d of gDelegates) {
     trs = {
@@ -199,9 +199,9 @@ async function testGateway() {
       args: [proposalId],
     }
     console.log('vote for proposal:', proposalId, config.proposals[0].title, 'by', d.name)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 
   trs = {
     secret: gDelegates[0].secret,
@@ -210,8 +210,8 @@ async function testGateway() {
     args: [proposalId],
   }
   console.log('activate proposal:', config.proposals[0].title)
-  await node.transactionUnsignedAsync(trs)
-  await node.onNewBlockAsync()
+  await lib.transactionUnsignedAsync(trs)
+  await lib.onNewBlockAsync()
 
   trs = {
     secret: config.proposals[1].account.secret,
@@ -226,8 +226,8 @@ async function testGateway() {
     ],
   }
   console.log('submit proposal: ', config.proposals[1].title)
-  proposalId = (await node.transactionUnsignedAsync(trs)).body.transactionId
-  await node.onNewBlockAsync()
+  proposalId = (await lib.transactionUnsignedAsync(trs)).body.transactionId
+  await lib.onNewBlockAsync()
 
   for (const validator of config.bitcoinValidators) {
     trs = {
@@ -237,9 +237,9 @@ async function testGateway() {
       args: [validator.name],
     }
     console.log('set name for gateway validator:', validator.aschAccount.address)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 
   for (const validator of config.bitcoinValidators) {
     trs = {
@@ -253,9 +253,9 @@ async function testGateway() {
       ],
     }
     console.log('register gateway validator:', validator.aschAccount.address)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 
   for (let i = 0; i < 10; ++i) {
     const d = gDelegates[i]
@@ -266,7 +266,7 @@ async function testGateway() {
       args: [proposalId],
     }
     console.log('vote for proposal:', proposalId, config.proposals[1].title, 'by', d.name)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
 
   trs = {
@@ -282,8 +282,8 @@ async function testGateway() {
     ],
   }
   console.log('submit proposal: ', config.proposals[2].title)
-  proposalId = (await node.transactionUnsignedAsync(trs)).body.transactionId
-  await node.onNewBlockAsync()
+  proposalId = (await lib.transactionUnsignedAsync(trs)).body.transactionId
+  await lib.onNewBlockAsync()
 
   for (const d of gDelegates) {
     trs = {
@@ -293,9 +293,9 @@ async function testGateway() {
       args: [proposalId],
     }
     console.log('vote for proposal:', proposalId, config.proposals[2].title, 'by', d.name)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 
   trs = {
     secret: gDelegates[0].secret,
@@ -304,8 +304,8 @@ async function testGateway() {
     args: [proposalId],
   }
   console.log('activate proposal:', config.proposals[2].title)
-  await node.transactionUnsignedAsync(trs)
-  await node.onNewBlockAsync()
+  await lib.transactionUnsignedAsync(trs)
+  await lib.onNewBlockAsync()
 
   for (const ga of config.gatewayAccounts) {
     trs = {
@@ -315,9 +315,9 @@ async function testGateway() {
       args: ['bitcoin'],
     }
     console.log('open gateway account for:', ga.address)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 }
 
 async function testChain() {
@@ -336,9 +336,9 @@ async function testChain() {
       ],
     }
     console.log('register chain:', chain.name)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 
   for (const chain of config.chains) {
     const currencyFullName = `${config.issuers[0].name}.${config.issuers[0].assets[0].name}`
@@ -353,9 +353,9 @@ async function testChain() {
       ],
     }
     console.log(`deposit ${currencyFullName} to chain ${chain.name}`)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 }
 
 async function testGroup() {
@@ -379,15 +379,15 @@ async function testGroup() {
     ],
   }
   console.log(`register group: ${group.name}`)
-  await node.transactionUnsignedAsync(trs)
-  await node.onNewBlockAsync()
+  await lib.transactionUnsignedAsync(trs)
+  await lib.onNewBlockAsync()
 
   // step 2: send money to group and the requestor account
   console.log('send money to the group and requestor account')
-  await node.giveMoneyAndWaitAsync([group.name, group.members[0].address])
+  await lib.giveMoneyAndWaitAsync([group.name, group.members[0].address])
 
   // step 3: request group transaction
-  const groupAccount = (await node.apiGetAsync(`/v2/accounts/${group.name}`)).body.account
+  const groupAccount = (await lib.apiGetAsync(`/v2/accounts/${group.name}`)).body.account
   console.log('get group account', groupAccount)
   trs = {
     secret: group.members[0].secret,
@@ -400,8 +400,8 @@ async function testGroup() {
     ],
   }
 
-  const tid = (await node.transactionUnsignedAsync(trs)).body.transactionId
-  await node.onNewBlockAsync()
+  const tid = (await lib.transactionUnsignedAsync(trs)).body.transactionId
+  await lib.onNewBlockAsync()
 
   // step 4: vote for group transaction
   for (let i = 0; i < 3; ++i) {
@@ -413,9 +413,9 @@ async function testGroup() {
       args: [tid],
     }
     console.log(`group member ${member.address} vote for transaction: ${tid}`)
-    await node.transactionUnsignedAsync(trs)
+    await lib.transactionUnsignedAsync(trs)
   }
-  await node.onNewBlockAsync()
+  await lib.onNewBlockAsync()
 
   // step 5: activate group transaction
   trs = {
@@ -425,11 +425,11 @@ async function testGroup() {
     args: [tid],
   }
   console.log(`activate group transaction: ${tid}`)
-  await node.transactionUnsignedAsync(trs)
-  await node.onNewBlockAsync()
+  await lib.transactionUnsignedAsync(trs)
+  await lib.onNewBlockAsync()
 
   // step 6: remove group member
-  trs = node.asch.transaction.createMultiSigTransaction({
+  trs = lib.AschJS.transaction.createMultiSigTransaction({
     type: 503,
     fee: 100000000,
     senderId: groupAccount.address,
@@ -440,15 +440,16 @@ async function testGroup() {
   })
   trs.signatures = []
   for (let i = 0; i < 3; i++) {
-    trs.signatures.push(node.asch.transaction.signMultiSigTransaction(trs, group.members[i].secret))
+    const sig = lib.AschJS.transaction.signMultiSigTransaction(trs, group.members[i].secret)
+    trs.signatures.push(sig)
   }
   console.log(`remove group member: ${group.members[0].address}`)
-  await node.submitTransactionAsync(trs)
-  await node.onNewBlockAsync()
+  await lib.submitTransactionAsync(trs)
+  await lib.onNewBlockAsync()
 
-  const groupInfo = (await node.apiGetAsync(`/v2/groups/${groupAccount.address}`)).body.group
-  node.expect(groupInfo.m === group.m - 1)
-  node.expect(groupInfo.members.length === group.members.length)
+  const groupInfo = (await lib.apiGetAsync(`/v2/groups/${groupAccount.address}`)).body.group
+  lib.expect(groupInfo.m === group.m - 1)
+  lib.expect(groupInfo.members.length === group.members.length)
 }
 
 async function main() {

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node app.js",
-    "test": "./node_modules/.bin/mocha --require mocha-babel"
+    "test": "jest"
   },
   "author": "Qingfeng Shan <sqf1225@foxmail.com>",
   "dependencies": {
@@ -17,11 +17,10 @@
     "tracer": "=0.8.12"
   },
   "devDependencies": {
-    "chai": "^3.0.0",
     "eslint-config-asch-base": "*",
+    "jest": "^23.4.0",
     "moment": "^2.9.0",
     "shelljs": "^0.7.8",
-    "should": "~4.6.0",
     "supertest": "^1.0.1"
   }
 }
