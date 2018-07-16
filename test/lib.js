@@ -1,6 +1,8 @@
 const supertest = require('supertest')
 const AschJS = require('asch-js')
 const config = require('../config')
+const request = require('request');
+const async = require('async');
 
 const baseUrl = `http://${config.address}:${config.port}`
 const api = supertest(`${baseUrl}/api`)
@@ -95,10 +97,10 @@ function transaction(trs, cb) {
 }
 
 function apiGet(path, cb) {
-  api.get(path)
-    .expect('Content-Type', /json/)
-    .expect(200)
-    .end(cb)
+  api.get(path).end(cb)
+    // .expect('Content-Type', /json/)
+    // .expect(200)
+    // .end(cb)
 }
 
 function transactionUnsigned(trs, cb) {
@@ -138,6 +140,22 @@ async function giveMoneyAndWaitAsync(addresses) {
   await PIFY(onNewBlock)()
 }
 
+function getBalance(params, cb) {
+  api.get('/accounts/getBalance?address=' + params)
+    .set('Accept', 'application/json')
+    .expect('Content-Type', /json/)
+    .expect(200)
+    .end(cb)
+}
+
+function getAccount(params, cb) {
+  api.get('/accounts?address=' + params)
+    .set('Accept', 'application/json')
+    .expect('Content-Type', /json/)
+    .expect(200)
+    .end(cb)
+}
+
 module.exports = {
   onNewBlock,
   onNewBlockAsync: PIFY(onNewBlock),
@@ -155,4 +173,6 @@ module.exports = {
   AschJS,
   config,
   sleep,
+  getBalanceAsync: PIFY(getBalance),
+  getAccountAsync: PIFY(getAccount),
 }

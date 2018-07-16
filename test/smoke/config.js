@@ -1,4 +1,10 @@
 module.exports = {
+  Gaccount: {
+    'address': 'APSu9NhiCTtvRGx1EpkeKNubiApiBWMf7T',
+    'publicKey': '56a2ef5646bbfcc0747101864d53da961363a20aec8344f6cb078a0fc47030e8',
+    'secret': 'token exhibit rich scare arch devote trash scout element label room master',
+    'balance': 10000000000000000
+  },
   issuers: [
     {
       account: {
