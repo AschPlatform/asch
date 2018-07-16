@@ -51,6 +51,7 @@ module.exports = {
   },
 
   async issue(name, amount) {
+    if (!/^[A-Za-z]{1,16}.[A-Z]{3,6}$/.test(name)) return 'Invalid currency'
     app.validate('amount', amount)
     app.sdb.lock(`uia.issue@${name}`)
 
@@ -67,6 +68,7 @@ module.exports = {
   },
 
   async transfer(currency, amount, recipient) {
+    if (!/^[A-Za-z]{1,16}.[A-Z]{3,6}$/.test(currency)) return 'Invalid currency'
     app.validate('amount', String(amount))
     const senderId = this.sender.address
     const balance = app.balances.get(senderId, currency)

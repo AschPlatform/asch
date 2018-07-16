@@ -67,6 +67,12 @@ module.exports = {
     return error
   },
   async addMember(address, weight, m) {
+    if (!app.util.address.isNormalAddress(address)) {
+      return 'Invalid address'
+    }
+    if (!Number.isInteger(weight)) return 'Weight should be integer'
+    if (!Number.isInteger(m)) return 'M should be integer'
+
     requireGroupAddress(this.sender.address)
     requireNormalAddress(address)
     app.sdb.lock(`group.addMember@${address}`)
@@ -86,6 +92,11 @@ module.exports = {
     return null
   },
   async removeMember(address, m) {
+    if (!app.util.address.isNormalAddress(address)) {
+      return 'Invalid address'
+    }
+    if (!Number.isInteger(m)) return 'M should be integer'
+
     requireGroupAddress(this.sender.address)
     app.sdb.lock(`group.removeMember@${address}`)
     const memberItem = await app.sdb.getBy('GroupMember', { member: address })
