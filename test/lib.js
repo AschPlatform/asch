@@ -1,10 +1,20 @@
 const supertest = require('supertest')
+const async = require('async')
 const AschJS = require('asch-js')
+const request = require('request')
 const config = require('../config')
+const package = require('../package.json')
 
 const baseUrl = `http://${config.address}:${config.port}`
 const api = supertest(`${baseUrl}/api`)
+const peer = supertest(`${baseUrl}/peer`)
 const PIFY = require('util').promisify
+
+const GENESIS_ACCOUNT = {
+  address: 'APSu9NhiCTtvRGx1EpkeKNubiApiBWMf7T',
+  publicKey: '56a2ef5646bbfcc0747101864d53da961363a20aec8344f6cb078a0fc47030e8',
+  secret: 'token exhibit rich scare arch devote trash scout element label room master',
+}
 
 function randomCoin() {
   return Math.floor(Math.random() * (10000 * 100000000)) + (1000 * 100000000)
@@ -83,7 +93,7 @@ function getNormalAccount(secret) {
 function transaction(trs, cb) {
   peer.post('/transactions')
     .set('Accept', 'application/json')
-    .set('version', version)
+    .set('version', package.version)
     .set('magic', config.magic)
     .set('port', config.port)
     .send({
@@ -117,7 +127,7 @@ function giveMoney(address, amount, cb) {
   api.put('/transactions')
     .set('Accept', 'application/json')
     .send({
-      secret: Gaccount.password,
+      secret: GENESIS_ACCOUNT.secret,
       fee: 10000000,
       type: 1,
       args: [amount, address],
@@ -139,6 +149,7 @@ async function giveMoneyAndWaitAsync(addresses) {
 }
 
 module.exports = {
+  GENESIS_ACCOUNT,
   onNewBlock,
   onNewBlockAsync: PIFY(onNewBlock),
   randomCoin,

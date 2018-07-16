@@ -1,3 +1,5 @@
+
+const assert = require('assert')
 const lib = require('../lib.js')
 const config = require('./config.js')
 
@@ -444,12 +446,12 @@ async function testGroup() {
     trs.signatures.push(sig)
   }
   console.log(`remove group member: ${group.members[0].address}`)
-  await lib.submitTransactionAsync(trs)
+  await lib.transactionAsync(trs)
   await lib.onNewBlockAsync()
 
   const groupInfo = (await lib.apiGetAsync(`/v2/groups/${groupAccount.address}`)).body.group
-  lib.expect(groupInfo.m === group.m - 1)
-  lib.expect(groupInfo.members.length === group.members.length)
+  assert(groupInfo.m === group.m - 1)
+  assert(groupInfo.members.length === group.members.length)
 }
 
 async function main() {
