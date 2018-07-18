@@ -57,6 +57,7 @@ module.exports = {
   async deposit(gateway, address, currency, amount, oid) {
     if (!gateway || gateway.length > 10) return 'Invalid gateway name'
     if (!currency) return 'Invalid currency'
+    if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', amount)
 
     if (!await app.sdb.exists('GatewayCurrency', { symbol: currency })) return 'Currency not supported'
@@ -113,9 +114,11 @@ module.exports = {
   async withdrawal(address, gateway, currency, amount, fee) {
     if (!gateway || gateway.length > 10) return 'Invalid gateway name'
     if (!currency) return 'Invalid currency'
-
+    if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
+    if (!Number.isInteger(fee) || fee <= 0) return 'Fee should be positive integer'
     app.validate('amount', fee)
     app.validate('amount', amount)
+    
     const balance = app.balances.get(this.sender.address, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
 
