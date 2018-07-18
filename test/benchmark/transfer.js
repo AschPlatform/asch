@@ -16,12 +16,13 @@ const config = {
   amount: (() => Math.floor(10000 * Math.random())),
 }
 
-const xasTransfer = async (address, amount) => {
+const xasTransfer = async (address, amount, message) => {
+  console.log(`transfer ${amount} to ${address}: ${message}`)
   const params = {
     secret: config.secret,
     type: 1,
     fee: 10000000,
-    message: 'xas transfer test',
+    message,
     args: [amount, address],
   }
   const res = await lib.transactionUnsignedAsync(params)
@@ -36,13 +37,11 @@ const xasTransfer = async (address, amount) => {
     for (let i = 0; i < 1000; i++) {
       const j = i % 10
       const amount = config.amount()
-      const result = await xasTransfer(accounts[j], amount)
-      const data = result.body
+      const result = await xasTransfer(accounts[j], amount, i.toString())
+      const res = result.body
 
-      if (data.success) {
-        console.log(`${i} transfer to ${accounts[j]} ${amount}`)
-      } else {
-        console.log('address:', accounts[i], ' error: ', result.data)
+      if (!res.success) {
+        console.log('address:', accounts[i], ' error: ', res.error)
       }
     }
     console.log(process.uptime() - startTime)
