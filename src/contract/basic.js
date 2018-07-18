@@ -37,22 +37,19 @@ function isUniq(arr) {
 
 module.exports = {
   async transfer(amount, recipient) {
-    // FIXME validate recipient is valid address
     if (!recipient) return 'Invalid recipient'
+    // Verify amount should be positive integer
+    if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', String(amount))
 
-    // FIXME validate permission
-    // FIXME validate currency
-    // FIXME validate amount
-
     amount = Number(amount)
-
     const sender = this.sender
     const senderId = sender.address
     if (this.block.height > 0 && sender.xas < amount) return 'Insufficient balance'
     sender.xas -= amount
 
     let recipientAccount
+    // Validate recipient is valid address
     if (app.util.address.isNormalAddress(recipient)) {
       recipientAccount = await app.sdb.get('Account', recipient)
       if (recipientAccount) {
@@ -82,8 +79,6 @@ module.exports = {
   },
 
   async setName(name) {
-    // const reg = /^[a-z0-9_]{2,20}$/
-    // if (!reg.test(name)) return 'Invalid name'
     app.validate('name', name)
 
     const senderId = this.sender.address
@@ -100,7 +95,7 @@ module.exports = {
   async setPassword(publicKey) {
     app.validate('publickey', publicKey)
 
-    // FIXME validate publicKey
+    // Validate publicKey
     if (!app.util.address.isNormalAddress(this.sender.address)) {
       return 'Invalid account type'
     }
@@ -112,8 +107,8 @@ module.exports = {
   },
 
   async lock(height, amount) {
-    if (!Number.isInteger(height)) return 'Height should be integer'
-    if (!Number.isInteger(amount)) return 'Amount should be integer'
+    if (!Number.isInteger(height) || height <= 0) return 'Height should be positive integer'
+    if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
 
     height = Number(height)
     amount = Number(amount)
@@ -202,10 +197,10 @@ module.exports = {
     app.validate('name', name)
     // rule: min, max, m, updateInterval should be integer
     // rule：min >=3, min < max, updateInterval > 1
-    if (!Number.isInteger(min)) return 'Min should be integer'
-    if (!Number.isInteger(max)) return 'Max should be integer'
-    if (!Number.isInteger(m)) return 'M should be integer'
-    if (!Number.isInteger(updateInterval)) return 'UpdateInterval should be integer'
+    if (!Number.isInteger(min) || min <= 0) return 'Min should be positive integer'
+    if (!Number.isInteger(max) || max <= 0) return 'Max should be positive integer'
+    if (!Number.isInteger(m) || m <= 0) return 'M should be positive integer'
+    if (!Number.isInteger(updateInterval) || updateInterval <= 0) return 'UpdateInterval should be positive integer'
     
     if (min < 3) return 'Min should be greater than 3'
     if (min >= max) return 'Max should be greater than min'
@@ -215,13 +210,12 @@ module.exports = {
       // member.weight should be integer
       // member.address should have valid address format
       app.validate('name', member.name)
-      if (!Number.isInteger(member.weight)) return 'Member weight should be integer'
+      if (!Number.isInteger(member.weight) || member.weight <= 0) return 'Member weight should be positive integer'
       if (!app.util.address.isNormalAddress(member.address)) {
         return 'Invalid member address'
       }
     }
 
-    // FIXME validate params
     app.sdb.lock(`basic.setName@${name}`)
     if (await app.sdb.exists('Account', { name })) return 'Name already registered'
     const address = app.util.address.generateGroupAddress(name)

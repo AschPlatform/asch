@@ -6,7 +6,7 @@ module.exports = {
     if (!/^[A-Za-z0-9-_.@]{1,32}$/.test(name)) return 'Invalid chain name'
     if (!desc || desc.length > 160) return 'Invalid description'
     if (!delegates || !isArray(delegates) ) return 'Invalid delegates'
-    if (!Number.isInteger(unlockNumber)) return 'Unlock number should be integer'
+    if (!Number.isInteger(unlockNumber) || unlockNumber <= 0) return 'Unlock number should be positive integer'
     if (unlockNumber < 3) return 'Unlock number should be greater than 3'
     
     const tid = this.trs.id
@@ -54,6 +54,7 @@ module.exports = {
   async deposit(chainName, currency, amount) {
     if (!chainName) return 'Invalid chain name'
     if (!currency) return 'Invalid currency'
+    if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', String(amount))
 
     const chain = await app.sdb.findOne('Chain', { condition: { name: chainName } })
@@ -89,6 +90,7 @@ module.exports = {
     if (!recipient) return 'Invalid recipient'
     if (!chainName) return 'Invalid chain name'
     if (!currency) return 'Invalid currency'
+    if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', String(amount))
 
     const chain = await app.sdb.findOne('Chain', { condition: { name: chainName } })

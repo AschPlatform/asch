@@ -136,7 +136,8 @@ module.exports = {
     if (!/^[A-Za-z0-9_\-+!@$% ]{10,100}$/.test(title)) return 'Invalid proposal title'
     if (desc.length > 4096) return 'Invalid proposal description'
     if (VALID_TOPICS.indexOf(topic) === -1) return 'Invalid proposal topic'
-    if (!Number.isInteger(endHeight) || endHeight < this.block.height + 8640) return 'Invalid proposal finish date'
+    if (!Number.isInteger(endHeight) || endHeight < 0) return 'EndHeight should be positive integer'
+    if (endHeight < this.block.height + 8640) return 'Invalid proposal finish date'
 
     if (topic === 'gateway_register') {
       await validateGatewayRegister(content, this)
