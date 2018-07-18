@@ -58,6 +58,17 @@ function main() {
   appConfig.netVersion = process.env.NET_VERSION || 'testnet'
   appConfig.publicDir = path.join(baseDir, 'public', 'dist')
 
+  if (!fs.existsSync(appConfig.dataDir)) {
+    fs.mkdirSync(appConfig.dataDir)
+  }
+  const publicRootDir = path.join(baseDir, 'public')
+  if (!fs.existsSync(publicRootDir)) {
+    fs.mkdirSync(publicRootDir)
+  }
+  if (!fs.existsSync(appConfig.publicDir)) {
+    fs.mkdirSync(appConfig.publicDir)
+  }
+
   global.Config = appConfig
 
   let genesisblockFile = path.join(baseDir, 'genesisBlock.json')
