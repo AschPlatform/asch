@@ -1,4 +1,3 @@
-const bignum = require('bignumber')
 
 module.exports = {
   async registerIssuer(name, desc) {
@@ -59,7 +58,7 @@ module.exports = {
     if (!asset) return 'Asset not exists'
     if (asset.issuerId !== this.sender.address) return 'Permission denied'
 
-    const quantity = bignum(asset.quantity).plus(amount)
+    const quantity = app.util.bignumber(asset.quantity).plus(amount)
     if (quantity.gt(asset.maximum)) return 'Exceed issue limit'
 
     asset.quantity = quantity.toString(10)

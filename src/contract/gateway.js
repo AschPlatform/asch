@@ -1,4 +1,3 @@
-const bignum = require('bignumber')
 
 module.exports = {
   async openAccount(gateway) {
@@ -119,7 +118,7 @@ module.exports = {
     const balance = app.balances.get(this.sender.address, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
 
-    const outAmount = bignum(amount).sub(fee)
+    const outAmount = app.util.bignumber(amount).sub(fee)
     if (outAmount.lte(0)) return 'Invalid amount'
 
     if (!app.gateway.isValidAddress(gateway, address)) return 'Invalid withdrawal address'
