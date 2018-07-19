@@ -106,7 +106,7 @@ module.exports = {
       if (!group) return 'Group not found'
       group.m = m
     }
-    app.sdb.delete('GroupMember', memberItem)
+    app.sdb.del('GroupMember', memberItem)
     return null
   },
   async replaceMember(from, to, weight, m) {
