@@ -201,7 +201,7 @@ module.exports = {
     if (!Number.isInteger(max) || max <= 0) return 'Max should be positive integer'
     if (!Number.isInteger(m) || m <= 0) return 'M should be positive integer'
     if (!Number.isInteger(updateInterval) || updateInterval <= 0) return 'UpdateInterval should be positive integer'
-    
+
     if (min < 3) return 'Min should be greater than 3'
     if (min >= max) return 'Max should be greater than min'
     if (updateInterval < 1) return 'UpdateInterval should be greater than 1'
