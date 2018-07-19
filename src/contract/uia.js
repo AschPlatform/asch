@@ -91,6 +91,7 @@ module.exports = {
     app.balances.transfer(currency, amount, senderId, recipientAddress)
     app.sdb.create('Transfer', {
       tid: this.trs.id,
+      height: this.block.height,
       senderId,
       recipientId: recipientAddress,
       recipientName,
