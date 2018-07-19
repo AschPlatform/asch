@@ -451,7 +451,7 @@ async function testGroup() {
 
   const groupInfo = (await lib.apiGetAsync(`/v2/groups/${groupAccount.address}`)).body.group
   assert(groupInfo.m === group.m - 1)
-  assert(groupInfo.members.length === group.members.length)
+  assert(groupInfo.members.length === group.members.length - 1)
 }
 
 async function main() {
