@@ -8,5 +8,6 @@ module.exports = {
     { name: 'currency', type: 'String', length: 30, not_null: true, index: true },
     { name: 'amount', type: 'String', length: 50, not_null: true },
     { name: 'timestamp', type: 'Number', index: true },
+    { name: 'height', type: 'BigInt', not_null: true, index: true },
   ]
 }

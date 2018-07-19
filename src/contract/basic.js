@@ -68,6 +68,7 @@ module.exports = {
     }
     app.sdb.create('Transfer', {
       tid: this.trs.id,
+      height: this.block.height,
       senderId,
       recipientId: recipientAccount.address,
       recipientName: recipientAccount.name,
