@@ -114,7 +114,7 @@ module.exports = {
     if (!gateway || gateway.length > 10) return 'Invalid gateway name'
     if (!currency) return 'Invalid currency'
     // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
-    if (!Number.isInteger(fee) || fee <= 0) return 'Fee should be positive integer'
+    // if (!Number.isInteger(fee) || fee <= 0) return 'Fee should be positive integer'
     app.validate('amount', fee)
     app.validate('amount', amount)
 
