@@ -5,10 +5,10 @@ module.exports = {
     if (!name || name.length > 32) return 'Invalid chain name'
     if (!/^[A-Za-z0-9-_.@]{1,32}$/.test(name)) return 'Invalid chain name'
     if (!desc || desc.length > 160) return 'Invalid description'
-    if (!delegates || !isArray(delegates) ) return 'Invalid delegates'
+    if (!delegates || !isArray(delegates)) return 'Invalid delegates'
     if (!Number.isInteger(unlockNumber) || unlockNumber <= 0) return 'Unlock number should be positive integer'
     if (unlockNumber < 3) return 'Unlock number should be greater than 3'
-    
+
     const tid = this.trs.id
     const chainAddress = app.util.address.generateChainAddress(tid)
 

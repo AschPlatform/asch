@@ -118,7 +118,7 @@ module.exports = {
     if (!Number.isInteger(fee) || fee <= 0) return 'Fee should be positive integer'
     app.validate('amount', fee)
     app.validate('amount', amount)
-    
+
     const balance = app.balances.get(this.sender.address, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
 
