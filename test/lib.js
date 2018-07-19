@@ -11,9 +11,9 @@ const peer = supertest(`${baseUrl}/peer`)
 const PIFY = require('util').promisify
 
 const GENESIS_ACCOUNT = {
-  address: 'APSu9NhiCTtvRGx1EpkeKNubiApiBWMf7T',
-  publicKey: '56a2ef5646bbfcc0747101864d53da961363a20aec8344f6cb078a0fc47030e8',
-  secret: 'token exhibit rich scare arch devote trash scout element label room master',
+  address: 'ABuH9VHV3cFi9UKzcHXGMPGnSC4QqT2cZ5',
+  publicKey: '116025d5664ce153b02c69349798ab66144edd2a395e822b13587780ac9c9c09',
+  secret: 'stone elephant caught wrong spend traffic success fetch inside blush virtual element',
 }
 
 function randomCoin() {
