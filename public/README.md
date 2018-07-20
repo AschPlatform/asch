@@ -14,27 +14,32 @@
 
 ## Build
 
-```
+```bash
 yarn install
 ```
 
-### Realtime build for local dev
+### Realtime build for local development
 
-```
+```bash
 sudo apt install ruby-sass
 gulp serve
 ```
-
 Then access localhost:8080 to debug the ui with static mock http interface
+
+### Build for localnet
+
+```bash
+gulp build-local
+```
 
 ### Build for testnet
 
-```
+```bash
 gulp build-test
 ```
 
 ### Build for mainnet
 
-```
+```bash
 gulp build-main
 ```
