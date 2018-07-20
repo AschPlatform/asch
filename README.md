@@ -52,6 +52,10 @@ git clone https://github.com/AschPlatform/asch && cd asch && chmod u+x aschd
 npm install
 ```
 
+## Documentation
+
+[asch-docs](https://github.com/AschPlatform/asch-docs)
+
 ## Web Wallet
 
 ```
@@ -130,7 +134,6 @@ node app.js --help
 
 ## Releated projects
 
-- [asch-docs](https://github.com/AschPlatform/asch/tree/master/docs)
 - [asch-cli](https://github.com/AschPlatform/asch-cli)
 - [asch-js](https://github.com/AschPlatform/asch-js)
 - [asch-sandbox](https://github.com/AschPlatform/asch-sandbox-dist)
