@@ -18,7 +18,8 @@
   },
   "devDependencies": {
     "eslint-config-asch-base": "*",
-    "jest": "^23.4.0",
+    "jest": "=23.4.1",
+    "debug": "=3.1.0",
     "moment": "^2.9.0",
     "shelljs": "^0.7.8",
     "supertest": "^1.0.1"

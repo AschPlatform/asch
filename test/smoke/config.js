@@ -1,9 +1,8 @@
 module.exports = {
-  Gaccount: {
-    'address': 'APSu9NhiCTtvRGx1EpkeKNubiApiBWMf7T',
-    'publicKey': '56a2ef5646bbfcc0747101864d53da961363a20aec8344f6cb078a0fc47030e8',
-    'secret': 'token exhibit rich scare arch devote trash scout element label room master',
-    'balance': 10000000000000000
+  AccountRole: {
+    DELEGATE: 1,
+    AGENT: 2,
+    GATEWAY_VALIDATOR: 3,
   },
   issuers: [
     {
@@ -115,6 +114,74 @@ module.exports = {
           publicKey: '55e43e32b4559c8081842b8124d7939805a5db76ffee925add5032ff954414ef',
         },
       ],
+    },
+    {
+      name: 'agent003',
+      address: 'AJ4tnCr33zbFt7JXzTuidngjXujUntm3eE',
+      secret: 'accuse mix rocket lake ribbon absorb gauge sport glove divert interest switch',
+      publicKey: '3d27c5ca13f6c99333f6587c4d82d86457e8272f851d1ca611dc1c3f21821cc9',
+      clienteles: [
+        {
+          address: 'A7AWYBk521vyknBuW8HVnzoNzTKMF58y4c',
+          secret: 'doctor either olive sample involve lunch problem act garage concert pilot feel',
+          publicKey: '59b91f06ea1b361f69210eac136c661c668374ada0bfee7d811aebeaf2ad8242',
+        },
+        {
+          address: 'ALE8jp3HoHRt6v9y9RoCTHpVsi4J1nMPCA',
+          secret: 'inhale junk topic domain stick asthma install topic item extend fish destroy',
+          publicKey: 'df154258d1ab87dfd515dea08e9b0d80071d8ebb8579b77f6b91ae4a29f79785',
+        },
+        {
+          address: 'AP6aVjENoBVu881vE2XN4AcN2dU4pXVXez',
+          secret: 'daring pilot garlic exit amount solid master deny more bargain stay select',
+          publicKey: 'edd5793ee4e53362429cc63966e86e876735b5cb35bb6a42e260499ee612c65d',
+        },
+      ],
+    },
+  ],
+
+  delegates: [
+    {
+      name: 'del001',
+      address: 'AKU86yNjqhwLdczdS8YHMPQtpVz8Mj3nts',
+      secret: 'hole change fringe violin trim often birth jump because afraid shoulder remove',
+      publicKey: '6bffe05bd0e41991e1da9504785a3d3c99706b61cc0cf481d3ad888aa881c898',
+    },
+    {
+      name: 'del002',
+      address: 'A7eF1kgtoSC1FBaE9H15kW6KNuX99J4jZq',
+      secret: 'alpha swap decide sibling lyrics dice speak robust bounce vocal logic rail',
+      publicKey: '72445adde2b01655d3b1c11567c525a96517832120972db1be512766541b390e',
+    },
+    {
+      name: 'del003',
+      address: 'A3cccXy2jHcYSr5KoGCRCgva1shhMZPDSY',
+      secret: 'stamp over grow above rib ball craft find aim bike eagle action',
+      publicKey: 'edaf7f4fb040bd7a0b38e409e320e36e46869559013b9b9855e0ad0ddcad3167',
+    },
+    {
+      name: 'del004',
+      address: 'A62cxKbvegwe1fWzUXWPrD9phshbHvV1kr',
+      secret: 'shoot online maze shrimp fork field income item pig culture prosper genre',
+      publicKey: 'c73ce9cb44650d9a7da13f33ffabd8d77667ecd996c4c0c6ba0ce4bf62ae7b21',
+    },
+  ],
+
+  recipients: [
+    {
+      address: 'AFZoxR99nijbyErhAm8w4PYYWRN7yTRypB',
+      secret: 'inspire glad bright friend gift pumpkin sunset kite aunt finger menu balance',
+      publicKey: 'a13ee4acca8c5dd51d02c49a44794b83f607adc9c17f468d51c77b620165cbd1',
+    },
+    {
+      address: 'AazWMF8AN6Yu8RoSKB7LiJrEEo9x1eK9E',
+      secret: 'fluid check letter lazy pretty outdoor pizza mouse trend century tongue average',
+      publicKey: 'b059998e7edfe32dabe3c837eecd3071888023311f852cb09d77fe6b9268ed17',
+    },
+    {
+      address: 'A6snY7EfvBKY6hdqeYfUqv1CA4z49BokjG',
+      secret: 'elegant appear gas sphere tackle chef radio street chalk spy huge bench',
+      publicKey: '6da574a236ea8f6b8231ce46253a3c45b8a54e1ac7e3f9f2a26fce17debea042',
     },
   ],
 
@@ -282,5 +349,17 @@ module.exports = {
       secret: 'drum long ranch jealous access steak garlic hair neglect educate visual steel',
       publicKey: '663352b58924f203bd831579e4d83314a6f44c5a090ef1460bb80e1e67280cba',
     }],
+    newMembers: [
+      {
+        address: 'AKrGHLBFjCvV17baYrSGkC611Je2JWiXrk',
+        secret: 'between issue deputy across veteran marble depart strike fetch title drive pigeon',
+        publicKey: '38f0e83721a64b9742367e434045315211bf454181eaf5e53ccd1c4bce63b8c6',
+      },
+      {
+        address: 'AKmPGXKUpBfzuJ88Lhf3UMKWGftWp4JrrE',
+        secret: 'subject rare join sea enforce angry armed wing advance wire another there',
+        publicKey: '67db0d039bcc0921ba3273ceb78d776d37bfd402ab75422b03b9114bdbe8d24b',
+      },
+    ],
   },
 }

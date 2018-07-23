@@ -1,3 +1,4 @@
+const PIFY = require('util').promisify
 const supertest = require('supertest')
 const async = require('async')
 const AschJS = require('asch-js')
@@ -5,15 +6,31 @@ const request = require('request')
 const config = require('../config')
 const pkg = require('../package.json')
 
+const addressHelper = require('./utils/address.js')
+
 const baseUrl = `http://${config.address}:${config.port}`
 const api = supertest(`${baseUrl}/api`)
 const peer = supertest(`${baseUrl}/peer`)
-const PIFY = require('util').promisify
 
 const GENESIS_ACCOUNT = {
   address: 'ABuH9VHV3cFi9UKzcHXGMPGnSC4QqT2cZ5',
   publicKey: '116025d5664ce153b02c69349798ab66144edd2a395e822b13587780ac9c9c09',
   secret: 'stone elephant caught wrong spend traffic success fetch inside blush virtual element',
+}
+
+function genNormalAccount(password) {
+  const pwd = password || randomPassword()
+  const keys = AschJS.crypto.getKeys(pwd)
+  return {
+    address: addressHelper.generateNormalAddress(keys.publicKey),
+    publicKey: keys.publicKey,
+    password: pwd,
+    secret: pwd,
+  }
+}
+
+function generateGroupAddress(name) {
+  return addressHelper.generateGroupAddress(name)
 }
 
 function randomCoin() {
@@ -105,10 +122,10 @@ function transaction(trs, cb) {
 }
 
 function apiGet(path, cb) {
-  api.get(path).end(cb)
-  // .expect('Content-Type', /json/)
-  // .expect(200)
-  // .end(cb)
+  api.get(path)
+    .expect('Content-Type', /json/)
+    .expect(200)
+    .end(cb)
 }
 
 function transactionUnsigned(trs, cb) {
@@ -116,6 +133,24 @@ function transactionUnsigned(trs, cb) {
     .send(trs)
     .expect('Content-Type', /json/)
     .expect(200)
+    .end((err, res) => {
+      if (err) return cb(err)
+      if (!res.body.success) return cb(res.body.error)
+      return cb(null, res)
+    })
+}
+
+function submitTransaction(trs, cb) {
+  peer.post('/transactions')
+    .set('Accept', 'application/json')
+    .set('magic', config.magic)
+    .set('port', config.port)
+    .send({
+      transaction: trs,
+    })
+    .expect('Content-Type', /json/)
+    .expect(200)
+    // .end(cb);
     .end((err, res) => {
       if (err) return cb(err)
       if (!res.body.success) return cb(res.body.error)
@@ -185,4 +220,7 @@ module.exports = {
   sleep,
   getBalanceAsync: PIFY(getBalance),
   getAccountAsync: PIFY(getAccount),
+  genNormalAccount,
+  submitTransactionAsync: PIFY(submitTransaction),
+  generateGroupAddress,
 }
