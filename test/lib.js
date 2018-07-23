@@ -177,6 +177,7 @@ module.exports = {
   giveMoney,
   giveMoneyAsync: PIFY(giveMoney),
   giveMoneyAndWaitAsync,
+  api,
   apiGet,
   apiGetAsync: PIFY(apiGet),
   AschJS,
