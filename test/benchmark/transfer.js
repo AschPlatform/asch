@@ -1,7 +1,7 @@
 const lib = require('../lib')
 
 const config = {
-  secret: 'token exhibit rich scare arch devote trash scout element label room master',
+  secret: lib.GENESIS_ACCOUNT.secret,
   toAddresses: [
     'AomLjz8o6oPuDZh3JTnaRGGLb7DCfDeyv',
     'AAeGidJncxS2BQgyK284Hasga7965m5EaQ',
