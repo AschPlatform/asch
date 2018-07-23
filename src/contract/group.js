@@ -85,7 +85,7 @@ module.exports = {
       group.m = m
     }
     app.sdb.create('GroupMember', {
-      group: this.sender.name,
+      name: this.sender.name,
       member: address,
       weight,
     })
@@ -106,7 +106,7 @@ module.exports = {
       if (!group) return 'Group not found'
       group.m = m
     }
-    app.sdb.delete('GroupMember', memberItem)
+    app.sdb.del('GroupMember', memberItem)
     return null
   },
   async replaceMember(from, to, weight, m) {
@@ -115,20 +115,28 @@ module.exports = {
     if (!Number.isInteger(weight) || weight <= 0) return 'Weight should be positive integer'
     if (!Number.isInteger(m) || m <= 0) return 'M should be positive integer'
 
-    requireGroupAddress(this.sender.address)
-    requireGroupAddress(to)
-    const groupMember = await app.sdb.getBy('GroupMember', { member: from })
-    if (!groupMember) return 'Group member not found'
-    if (groupMember.name !== this.sender.name) return 'Permission denied'
-    groupMember.member = to
-    if (groupMember.weight !== weight) {
-      groupMember.weight = weight
-    }
     if (m) {
       const group = await app.sdb.get('Group', this.sender.name)
       if (!group) return 'Group not found'
       group.m = m
     }
+
+    requireGroupAddress(this.sender.address)
+    requireNormalAddress(to)
+    const groupMember = await app.sdb.getBy('GroupMember', { member: from })
+    if (!groupMember) return 'Group member not found'
+    if (groupMember.name !== this.sender.name) return 'Permission denied'
+    // groupMember.member = to
+    // if (groupMember.weight !== weight) {
+    //   groupMember.weight = weight
+    // }
+    app.sdb.del('GroupMember', groupMember)
+    app.sdb.create('GroupMember', {
+      name: groupMember.name,
+      member: to,
+      weight,
+    })
+
     return null
   },
 }
