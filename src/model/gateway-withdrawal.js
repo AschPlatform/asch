@@ -3,7 +3,7 @@ module.exports = {
   tableFields: [
     { name: 'tid', type: 'String', length: 64, primary_key: true },
     { name: 'timestamp', type: 'Number', not_null: true, index: true },
-    { name: 'gateway', type: 'String', length: 10, index: true },
+    { name: 'gateway', type: 'String', length: 20, index: true },
     { name: 'senderId', type: 'String', length: 50, index: true },
     { name: 'recipientId', type: 'String', length: 50 },
     { name: 'currency', type: 'String', length: 10, index: true },
