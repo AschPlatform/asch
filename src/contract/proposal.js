@@ -33,35 +33,42 @@ async function doGatewayRegister(params, context) {
 
 async function doGatewayInit(params) {
   for (const m of params.members) {
-    const dbItem = await app.sdb.get('GatewayMember', m)
+    const dbItem = await app.sdb.load('GatewayMember', m)
     dbItem.elected = 1
+    app.sdb.update('GatewayMember', m, { elected : 1 })
   }
-  const gateway = await app.sdb.get('Gateway', params.gateway)
+  const gateway = await app.sdb.load('Gateway', params.gateway)
   gateway.activated = 1
+  app.sdb.update('Gateway', params.gateway, { activated : 1 })
 }
 
 async function doGatewayUpdateMember(params) {
   app.sdb.lock(`gateway@${params.gateway}`)
-  const gateway = await app.sdb.get('Gateway', params.gateway)
+  const gateway = await app.sdb.load('Gateway', params.gateway)
   if (!gateway) throw new Error('Gateway not found')
 
   if (this.block.height - gateway.lastUpdateHeight < gateway.updateInterval) {
     throw new Error('Time not arrived')
   }
   gateway.version += 1
-  const fromValidator = await app.sdb.get('GatewayMember', params.from)
-  fromValidator.elected = 0
+  app.sdb.update('Gateway', params.gateway, { version : gateway.version })
 
-  const toValidator = await app.sdb.get('GatewayMember', params.to)
+  const fromValidator = await app.sdb.load('GatewayMember', params.from)
+  fromValidator.elected = 0
+  app.sdb.update('GatewayMember', params.from, { elected : 0 })
+
+  const toValidator = await app.sdb.load('GatewayMember', params.to)
   toValidator.elected = 1
+  app.sdb.update('GatewayMember', params.to, { elected : 1 })
 }
 
 async function doGatewayRevoke(params) {
   app.sdb.lock(`gateway@${params.gateway}`)
-  const gateway = await app.sdb.get('Gateway', params.gateway)
+  const gateway = await app.sdb.load('Gateway', params.gateway)
   if (!gateway) throw new Error('Gateway not found')
 
   gateway.revoked = 1
+  app.sdb.update('Gateway', params.gateway, { revoked : 1 })
 }
 
 async function validateGatewayRegister(content/* , context */) {
@@ -179,7 +186,7 @@ module.exports = {
   },
 
   async activate(pid) {
-    const proposal = await app.sdb.get('Proposal', pid)
+    const proposal = await app.sdb.load('Proposal', pid)
     if (!proposal) return 'Proposal not found'
 
     if (proposal.activated) return 'Already activated'
@@ -194,6 +201,7 @@ module.exports = {
     if (validVoteCount <= ((101 * 2) / 3)) return 'Vote not enough'
 
     const topic = proposal.topic
+    // fixme make content as Json type ??
     const content = JSON.parse(proposal.content)
 
     let unknownTopic = false
@@ -212,6 +220,8 @@ module.exports = {
       return 'Unknown propose topic'
     }
     proposal.activated = 1
+    app.sdb.update('Proposal', pid, { activated : 1 })
+    
     return null
   },
 }

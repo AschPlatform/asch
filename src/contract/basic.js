@@ -2,24 +2,31 @@ async function doCancelVote(account) {
   const voteList = await app.sdb.findAll('Vote', { condition: { address: account.address } })
   if (voteList && voteList.length > 0 && account.weight > 0) {
     for (const voteItem of voteList) {
-      const delegate = await app.sdb.getBy('Delegate', { name: voteItem.delegate })
+      const delegate = await app.sdb.load('Delegate', { name: voteItem.delegate })
       delegate.votes -= account.weight
+      app.sdb.update('Delegate', delegate.address, { votes : delegate.votes })
     }
   }
 }
 
 async function doCancelAgent(sender, agentAccount) {
-  const clientele = await app.sdb.getBy('AgentClientele', { agent: sender.agent, clientele: sender.address })
+  const clientele = await app.sdb.load('AgentClientele', { agent: sender.agent, clientele: sender.address })
   const cancelWeight = sender.weight
   agentAccount.agentWeight -= cancelWeight
+  app.sdb.update('Account', agentAccount.address, { agentWeight : agentAccount.agentWeight })
+
   sender.agent = ''
+  app.sdb.update('Account', sender.address, { agent : '' })
+
   app.sdb.del('AgentClientele', clientele)
 
   const voteList = await app.sdb.findAll('Vote', { condition: { address: agentAccount.address } })
   if (voteList && voteList.length > 0 && cancelWeight > 0) {
     for (const voteItem of voteList) {
-      const delegate = await app.sdb.getBy('Delegate', { name: voteItem.delegate })
+      // fixme ?? load from memory or db ???
+      const delegate = await app.sdb.load('Delegate', { name: voteItem.delegate })
       delegate.votes -= cancelWeight
+      app.sdb.update('Delegate', delegate.address, { votes : delegate.votes })
     }
   }
 }
@@ -51,21 +58,24 @@ module.exports = {
     let recipientAccount
     // Validate recipient is valid address
     if (app.util.address.isNormalAddress(recipient)) {
-      recipientAccount = await app.sdb.get('Account', recipient)
+      recipientAccount = await app.sdb.load('Account', recipient)
       if (recipientAccount) {
         recipientAccount.xas += amount
       } else {
         recipientAccount = app.sdb.create('Account', {
           address: recipient,
           xas: amount,
-          name: '',
+          name: null,
         })
       }
     } else {
-      recipientAccount = await app.sdb.getBy('Account', { name: recipient })
+      recipientAccount = await app.sdb.load('Account', { name: recipient })
       if (!recipientAccount) return 'Recipient name not exist'
       recipientAccount.xas += amount
     }
+    app.sdb.update('Account', recipientAccount.address, { xas : recipientAccount.xas })
+    app.sdb.update('Account', sender.address, { xas: sender.xas })
+
     app.sdb.create('Transfer', {
       tid: this.trs.id,
       height: this.block.height,
@@ -86,10 +96,12 @@ module.exports = {
     app.sdb.lock(`basic.account@${senderId}`)
     app.sdb.lock(`basic.setName@${name}`)
 
-    const exists = await app.sdb.exists('Account', { name })
+    const exists = await app.sdb.load('Account', { name })
     if (exists) return 'Name already registered'
     if (this.sender.name) return 'Name already set'
     this.sender.name = name
+    app.sdb.update('Account', this.sender.address, { name })
+
     return null
   },
 
@@ -146,24 +158,29 @@ module.exports = {
     if (amount !== 0) {
       sender.xas -= amount
       sender.weight += amount
+      app.sdb.update('Account', sender)
+
       if (sender.agent) {
-        const agentAccount = await app.sdb.getBy('Account', { name: sender.agent })
+        const agentAccount = await app.sdb.load('Account', { name: sender.agent })
         if (!agentAccount) return 'Agent account not found'
         agentAccount.agentWeight += amount
+        app.sdb.update('Account', agendAccount.address, { agentWeight : agentAccount.agentWeight })
 
         const voteList = await app.sdb.findAll('Vote', { condition: { address: agentAccount.address } })
         if (voteList && voteList.length > 0) {
           for (const voteItem of voteList) {
-            const delegate = await app.sdb.getBy('Delegate', { name: voteItem.delegate })
+            const delegate = await app.sdb.load('Delegate', { name: voteItem.delegate })
             delegate.votes += amount
+            app.sdb.update('Delegate', delegate.address, { votes : delegate.votes })
           }
         }
       } else {
         const voteList = await app.sdb.findAll('Vote', { condition: { address: senderId } })
         if (voteList && voteList.length > 0) {
           for (const voteItem of voteList) {
-            const delegate = await app.sdb.getBy('Delegate', { name: voteItem.delegate })
+            const delegate = await app.sdb.load('Delegate', { name: voteItem.delegate })
             delegate.votes += amount
+            app.sdb.update('Delegate', delegate.address, { votes : delegate.votes })
           }
         }
       }
@@ -182,7 +199,7 @@ module.exports = {
     if (!sender.agent) {
       await doCancelVote(sender)
     } else {
-      const agentAccount = await app.sdb.getBy('Account', { name: sender.agent })
+      const agentAccount = await app.sdb.load('Account', { name: sender.agent })
       if (!agentAccount) return 'Agent account not found'
 
       await doCancelAgent(sender, agentAccount)
@@ -191,6 +208,8 @@ module.exports = {
     sender.lockHeight = 0
     sender.xas += sender.weight
     sender.weight = 0
+    app.sdb.update('Account', sender)
+
     return null
   },
 
@@ -220,7 +239,7 @@ module.exports = {
     app.sdb.lock(`basic.setName@${name}`)
     if (await app.sdb.exists('Account', { name })) return 'Name already registered'
     const address = app.util.address.generateGroupAddress(name)
-    const account = await app.sdb.get('Account', address)
+    const account = await app.sdb.load('Account', address)
     if (!account) {
       app.sdb.create('Account', {
         address,
@@ -266,6 +285,7 @@ module.exports = {
       tid: this.trs.id,
       timestamp: this.trs.timestamp,
     })
+    app.sdb.update('Account', sender)
     return null
   },
 
@@ -279,7 +299,7 @@ module.exports = {
 
     app.validate('name', agent)
 
-    const agentAccount = await app.sdb.getBy('Account', { name: agent })
+    const agentAccount = await app.sdb.load('Account', { name: agent })
     if (!agentAccount) return 'Agent account not found'
     if (!agentAccount.isAgent) return 'Not an agent'
 
@@ -287,13 +307,17 @@ module.exports = {
     if (voteExist) return 'Account already voted'
 
     sender.agent = agent
+    app.sdb.update('Account', sender.address, { agent : sender.agent })
+
     agentAccount.agentWeight += sender.weight
+    app.sdb.update('Account', agentAccount.address, { agentWeight : agentAccount.agentWeight })
 
     const agentVoteList = await app.sdb.findAll('Vote', { condition: { address: agentAccount.address } })
     if (agentVoteList && agentVoteList.length > 0 && sender.weight > 0) {
       for (const voteItem of agentVoteList) {
-        const delegate = await app.sdb.getBy('Delegate', { name: voteItem.delegate })
+        const delegate = await app.sdb.load('Delegate', { name: voteItem.delegate })
         delegate.votes += sender.weight
+        app.sdb.update('Delegate', delegate.address, { votes : delegate.votes })
       }
     }
     app.sdb.create('AgentClientele', {
@@ -310,7 +334,7 @@ module.exports = {
     const sender = this.sender
     if (!sender.agent) return 'Agent is not set'
 
-    const agentAccount = await app.sdb.getBy('Account', { name: sender.agent })
+    const agentAccount = await app.sdb.load('Account', { name: sender.agent })
     if (!agentAccount) return 'Agent account not found'
 
     await doCancelAgent(sender, agentAccount)
@@ -338,6 +362,8 @@ module.exports = {
     })
     sender.isDelegate = 1
     sender.role = app.AccountRole.DELEGATE
+    app.sdb.update('Account', sender)
+
     return null
   },
 
@@ -372,8 +398,9 @@ module.exports = {
     }
 
     for (const name of delegates) {
-      const delegate = await app.sdb.getBy('Delegate', { name })
+      const delegate = await app.sdb.load('Delegate', { name })
       delegate.votes += (sender.weight + sender.agentWeight)
+      app.sdb.update('Delegate', delegate.address, { votes : delegate.votes })
       app.sdb.create('Vote', {
         address: senderId,
         delegate: name,
@@ -413,9 +440,11 @@ module.exports = {
     }
 
     for (const name of delegates) {
-      const delegate = await app.sdb.getBy('Delegate', { name })
+      const delegate = await app.sdb.load('Delegate', { name })
       delegate.votes -= (sender.weight + sender.agentWeight)
-      const voteItem = await app.sdb.getBy('Vote', { address: senderId, delegate: name })
+      app.sdb.update('Delegate', delegate.address, { votes : delegate.votes })
+
+      const voteItem = await app.sdb.load('Vote', { address: senderId, delegate: name })
       app.sdb.del('Vote', voteItem)
     }
     return null
