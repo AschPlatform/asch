@@ -163,7 +163,7 @@ module.exports = {
 
     withdrawal.outTransaction = ot
     withdrawal.signs += 1
-    app.sdb.update('GatewayWithdrawal', { outTransaction: ot, signs : withdrawal.signs + 1 }, { wid })
+    app.sdb.update('GatewayWithdrawal', { outTransaction: ot, signs: withdrawal.signs + 1 }, { wid })
     app.sdb.create('GatewayWithdrawalPrep', {
       wid,
       signer: this.sender.address,

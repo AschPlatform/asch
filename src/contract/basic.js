@@ -4,15 +4,13 @@ async function doCancelVote(account) {
     for (const voteItem of voteList) {
       const delegate = await app.sdb.load('Delegate', { name: voteItem.delegate })
       delegate.votes -= account.weight
-      app.sdb.update('Delegate', delegate.address, { votes : delegate.votes })
+      app.sdb.update('Delegate', delegate.address, { votes: delegate.votes })
     }
   }
 }
 
 async function doCancelAgent(sender, agentAccount) {
   const agentClienteleKey = { agent: sender.agent, clientele: sender.address }
-  const clientele = await app.sdb.load('AgentClientele', )
-
   const cancelWeight = sender.weight
   agentAccount.agentWeight -= cancelWeight
   app.sdb.increase('Account', { agentWeight: -cancelWeight }, { address: agentAccount.address })
@@ -24,8 +22,7 @@ async function doCancelAgent(sender, agentAccount) {
   const voteList = await app.sdb.findAll('Vote', { condition: { address: agentAccount.address } })
   if (voteList && voteList.length > 0 && cancelWeight > 0) {
     for (const voteItem of voteList) {
-      // fixme ?? load from memory or db ???
-      app.sdb.increase('Delegate', { votes : -cancelWeight },  { name: voteItem.delegate })
+      app.sdb.increase('Delegate', { votes: -cancelWeight }, { name: voteItem.delegate })
     }
   }
 }
@@ -72,8 +69,8 @@ module.exports = {
       if (!recipientAccount) return 'Recipient name not exist'
       recipientAccount.xas += amount
     }
-    app.sdb.update('Account', { xas : recipientAccount.xas }, { address: recipientAccount.address })
-    app.sdb.update('Account', { xas: sender.xas }, { address : sender.address })
+    app.sdb.update('Account', { xas: recipientAccount.xas }, { address: recipientAccount.address })
+    app.sdb.update('Account', { xas: sender.xas }, { address: sender.address })
 
     app.sdb.create('Transfer', {
       tid: this.trs.id,
@@ -157,7 +154,7 @@ module.exports = {
     if (amount !== 0) {
       sender.xas -= amount
       sender.weight += amount
-      app.sdb.update('Account', sender, { address : sender.address })
+      app.sdb.update('Account', sender, { address: sender.address })
 
       if (sender.agent) {
         const agentAccount = await app.sdb.load('Account', { name: sender.agent })
@@ -167,14 +164,14 @@ module.exports = {
         const voteList = await app.sdb.findAll('Vote', { condition: { address: agentAccount.address } })
         if (voteList && voteList.length > 0) {
           for (const voteItem of voteList) {
-            app.sdb.increase('Delegate', { votes : amount }, { name: voteItem.delegate })
+            app.sdb.increase('Delegate', { votes: amount }, { name: voteItem.delegate })
           }
         }
       } else {
         const voteList = await app.sdb.findAll('Vote', { condition: { address: senderId } })
         if (voteList && voteList.length > 0) {
           for (const voteItem of voteList) {
-            app.sdb.increase('Delegate', { votes : amount }, { name: voteItem.delegate })
+            app.sdb.increase('Delegate', { votes: amount }, { name: voteItem.delegate })
           }
         }
       }
@@ -301,13 +298,13 @@ module.exports = {
     if (voteExist) return 'Account already voted'
 
     sender.agent = agent
-    app.sdb.update('Account', { agent : sender.agent }, { address: senderId })
-    app.sdb.increase('Account', { agentWeight: sender.weight }, { address : agentAccount.address })
+    app.sdb.update('Account', { agent: sender.agent }, { address: senderId })
+    app.sdb.increase('Account', { agentWeight: sender.weight }, { address: agentAccount.address })
 
     const agentVoteList = await app.sdb.findAll('Vote', { condition: { address: agentAccount.address } })
     if (agentVoteList && agentVoteList.length > 0 && sender.weight > 0) {
       for (const voteItem of agentVoteList) {
-        app.sdb.increase('Delegate', { votes: sender.weight},  { name: voteItem.delegate })
+        app.sdb.increase('Delegate', { votes: sender.weight }, { name: voteItem.delegate })
       }
     }
     app.sdb.create('AgentClientele', {

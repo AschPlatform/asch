@@ -34,9 +34,9 @@ async function doGatewayRegister(params, context) {
 async function doGatewayInit(params) {
   for (const m of params.members) {
     // TODO: ....check m is address
-    app.sdb.update('GatewayMember', { elected : 1 }, { address: m })
+    app.sdb.update('GatewayMember', { elected: 1 }, { address: m })
   }
-  app.sdb.update('Gateway', { activated : 1 }, { name: params.gateway })
+  app.sdb.update('Gateway', { activated: 1 }, { name: params.gateway })
 }
 
 async function doGatewayUpdateMember(params) {
@@ -48,9 +48,9 @@ async function doGatewayUpdateMember(params) {
     throw new Error('Time not arrived')
   }
 
-  app.sdb.increase('Gateway', { version : 1}, { name: params.gateway })
-  app.sdb.update('GatewayMember', { elected : 0 }, { address: params.from})
-  app.sdb.update('GatewayMember', { elected : 1 }, { address: params.to})
+  app.sdb.increase('Gateway', { version: 1 }, { name: params.gateway })
+  app.sdb.update('GatewayMember', { elected: 0 }, { address: params.from })
+  app.sdb.update('GatewayMember', { elected: 1 }, { address: params.to })
 }
 
 async function doGatewayRevoke(params) {
@@ -59,7 +59,7 @@ async function doGatewayRevoke(params) {
   if (!gateway) throw new Error('Gateway not found')
 
   gateway.revoked = 1
-  app.sdb.update('Gateway', { revoked : 1 }, { name: params.gateway })
+  app.sdb.update('Gateway', { revoked: 1 }, { name: params.gateway })
 }
 
 async function validateGatewayRegister(content/* , context */) {
@@ -211,8 +211,8 @@ module.exports = {
       return 'Unknown propose topic'
     }
     proposal.activated = 1
-    app.sdb.update('Proposal', { activated : 1 }, { tid: pid })
-    
+    app.sdb.update('Proposal', { activated: 1 }, { tid: pid })
+
     return null
   },
 }

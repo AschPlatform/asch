@@ -75,7 +75,7 @@ module.exports = {
       const chainAccount = await app.sdb.load('Account', chain.address)
       chainAccount.xas += amount
       app.sdb.update('Account', { xas: sender.xas }, { address: sender.address })
-      app.sdb.update('Account', { xas: chainAccount.xas } , { address: chainAccount.address })
+      app.sdb.update('Account', { xas: chainAccount.xas }, { address: chainAccount.address })
     }
     app.sdb.create('Deposit', {
       tid: this.trs.id,
