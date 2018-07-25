@@ -57,7 +57,7 @@ module.exports = {
     app.validate('amount', amount)
     app.sdb.lock(`uia.issue@${name}`)
 
-    const asset = await app.sdb.get('Asset', name)
+    const asset = await app.sdb.load('Asset', name)
     if (!asset) return 'Asset not exists'
     if (asset.issuerId !== this.sender.address) return 'Permission denied'
 
@@ -65,6 +65,8 @@ module.exports = {
     if (quantity.gt(asset.maximum)) return 'Exceed issue limit'
 
     asset.quantity = quantity.toString(10)
+    app.sdb.update('Asset', { quantity: asset.quantity }, { name })
+
     app.balances.increase(this.sender.address, name, amount)
     return null
   },

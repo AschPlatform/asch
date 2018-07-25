@@ -18,7 +18,7 @@ module.exports = {
     exists = await app.sdb.exists('Chain', { link })
     if (exists) return 'Chain link already registered'
 
-    app.sdb.create('Account', { address: chainAddress, xas: 0, name: '' })
+    app.sdb.create('Account', { address: chainAddress, xas: 0, name: null })
     app.sdb.create('Chain', {
       tid,
       address: chainAddress,
@@ -72,8 +72,10 @@ module.exports = {
       if (sender.xas < amount) return 'Insufficient balance'
       sender.xas -= amount
 
-      const chainAccount = await app.sdb.get('Account', chain.address)
+      const chainAccount = await app.sdb.load('Account', chain.address)
       chainAccount.xas += amount
+      app.sdb.update('Account', { xas: sender.xas }, { address: sender.address })
+      app.sdb.update('Account', { xas: chainAccount.xas }, { address: chainAccount.address })
     }
     app.sdb.create('Deposit', {
       tid: this.trs.id,
@@ -108,16 +110,18 @@ module.exports = {
       const sender = this.sender
       if (sender.xas < amount) return 'Insufficient balance'
       sender.xas -= amount
-      const account = await app.sdb.get('Account', recipient)
+      const account = await app.sdb.load('Account', recipient)
       if (!account) {
         app.sdb.create('Account', {
           address: recipient,
           xas: amount,
-          name: '',
+          name: null,
         })
       } else {
         account.xas += amount
       }
+      app.sdb.update('Account', { xas: sender.xas }, { address: sender.address })
+      app.sdb.update('Account', { xas: account.xas }, { address: account.address })
     }
     app.sdb.create('Withdrawal', {
       tid: this.trs.id,

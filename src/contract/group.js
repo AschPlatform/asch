@@ -14,9 +14,9 @@ module.exports = {
   async vote(targetId) {
     const senderId = this.sender.address
     app.sdb.lock(`group.vote@${senderId}`)
-    const requestTrs = await app.sdb.get('Transaction', targetId)
+    const requestTrs = await app.sdb.load('Transaction', targetId)
     if (!requestTrs) return 'Request transaction not found'
-    const groupAccount = await app.sdb.get('Account', requestTrs.senderId)
+    const groupAccount = await app.sdb.load('Account', requestTrs.senderId)
     if (!groupAccount) return 'Group account not found'
     const isMember = await app.sdb.exists('GroupMember', { name: groupAccount.name, member: senderId })
     if (!isMember) return 'Sender account is not group member'
@@ -36,7 +36,7 @@ module.exports = {
     // TODO normalize in smartdb
     // requestTrs.args = JSON.parse(requestTrs.args)
 
-    const account = await app.sdb.get('Account', requestTrs.senderId)
+    const account = await app.sdb.load('Account', requestTrs.senderId)
     if (!account) return 'Group account not found'
 
     const members = await app.sdb.findAll('GroupMember', { condition: { name: account.name } })
@@ -54,7 +54,7 @@ module.exports = {
         totalWeight += m.weight
       }
     }
-    const group = await app.sdb.get('Group', account.name)
+    const group = await app.sdb.load('Group', account.name)
     if (totalWeight < group.m) return 'Vote weight not enough'
 
     const context = {
@@ -80,9 +80,10 @@ module.exports = {
       throw new Error('Already is group member')
     }
     if (m) {
-      const group = await app.sdb.get('Group', this.sender.name)
+      const group = await app.sdb.load('Group', this.sender.name)
       if (!group) return 'Group not found'
       group.m = m
+      app.sdb.update('Group', { m }, { name: this.sender.name })
     }
     app.sdb.create('GroupMember', {
       name: this.sender.name,
@@ -99,12 +100,13 @@ module.exports = {
 
     requireGroupAddress(this.sender.address)
     app.sdb.lock(`group.removeMember@${address}`)
-    const memberItem = await app.sdb.getBy('GroupMember', { member: address })
+    const memberItem = await app.sdb.load('GroupMember', { member: address })
     if (!memberItem) return 'Not a group member'
     if (m) {
-      const group = await app.sdb.get('Group', this.sender.name)
+      const group = await app.sdb.load('Group', { name: this.sender.name })
       if (!group) return 'Group not found'
       group.m = m
+      app.sdb.update('Group', { m }, { name: this.sender.name })
     }
     app.sdb.del('GroupMember', memberItem)
     return null
@@ -116,14 +118,15 @@ module.exports = {
     if (!Number.isInteger(m) || m <= 0) return 'M should be positive integer'
 
     if (m) {
-      const group = await app.sdb.get('Group', this.sender.name)
+      const group = await app.sdb.load('Group', { name: this.sender.name })
       if (!group) return 'Group not found'
       group.m = m
+      app.sdb.update('Group', { m }, { name: this.sender.name })
     }
 
     requireGroupAddress(this.sender.address)
     requireNormalAddress(to)
-    const groupMember = await app.sdb.getBy('GroupMember', { member: from })
+    const groupMember = await app.sdb.load('GroupMember', { member: from })
     if (!groupMember) return 'Group member not found'
     if (groupMember.name !== this.sender.name) return 'Permission denied'
     // groupMember.member = to

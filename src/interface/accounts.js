@@ -10,7 +10,7 @@ module.exports = (router) => {
     const account = await app.sdb.findOne('Account', { condition })
     let unconfirmedAccount = null
     if (account) {
-      unconfirmedAccount = await app.sdb.get('Account', account.address)
+      unconfirmedAccount = await app.sdb.load('Account', account.address)
     } else {
       unconfirmedAccount = null
     }
