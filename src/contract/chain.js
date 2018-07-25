@@ -74,8 +74,8 @@ module.exports = {
 
       const chainAccount = await app.sdb.load('Account', chain.address)
       chainAccount.xas += amount
-      app.sdb.update('Account', sender.address, { xas: sender.xas })
-      app.sdb.update('Account', chainAccount.address, { xas: chainAccount.xas })
+      app.sdb.update('Account', { xas: sender.xas }, { address: sender.address })
+      app.sdb.update('Account', { xas: chainAccount.xas } , { address: chainAccount.address })
     }
     app.sdb.create('Deposit', {
       tid: this.trs.id,
@@ -120,8 +120,8 @@ module.exports = {
       } else {
         account.xas += amount
       }
-      app.sdb.update('Account', sender.address, { xas: sender.xas })
-      app.sdb.update('Account', account.address, { xas: account.xas })
+      app.sdb.update('Account', { xas: sender.xas }, { address: sender.address })
+      app.sdb.update('Account', { xas: account.xas }, { address: account.address })
     }
     app.sdb.create('Withdrawal', {
       tid: this.trs.id,

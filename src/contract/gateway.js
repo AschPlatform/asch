@@ -85,8 +85,8 @@ module.exports = {
     if (await app.sdb.exists('GatewayDepositSigner', { key: signerKey })) return 'Already submitted'
     app.sdb.create('GatewayDepositSigner', { key: signerKey })
 
-    const cond = { currency, oid }
-    let deposit = await app.sdb.load('GatewayDeposit', cond)
+    const dipositKey = { currency, oid }
+    let deposit = await app.sdb.load('GatewayDeposit', dipositKey)
     if (!deposit) {
       deposit = app.sdb.create('GatewayDeposit', {
         tid: this.trs.id,
@@ -106,7 +106,7 @@ module.exports = {
         deposit.processed = 1
         app.balances.increase(gatewayAccount.address, currency, amount)
       }
-      app.sdb.update('GatewayDeposit', deposit)
+      app.sdb.update('GatewayDeposit', deposit, dipositKey)
     }
     return null
   },
@@ -163,7 +163,7 @@ module.exports = {
 
     withdrawal.outTransaction = ot
     withdrawal.signs += 1
-    app.sdb.update('GatewayWithdrawal', withdrawal)
+    app.sdb.update('GatewayWithdrawal', { outTransaction: ot, signs : withdrawal.signs + 1 }, { wid })
     app.sdb.create('GatewayWithdrawalPrep', {
       wid,
       signer: this.sender.address,
@@ -199,7 +199,7 @@ module.exports = {
     if (withdrawal.signs > validatorCount / 2) {
       withdrawal.ready = 1
     }
-    app.sdb.update('GatewayWithdrawal', withdrawal)
+    app.sdb.update('GatewayWithdrawal', withdrawal, { wid })
     app.sdb.create('GatewayWithdrawalPrep', {
       wid,
       signer: this.sender.address,
@@ -224,7 +224,7 @@ module.exports = {
     })
     if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
     withdrawal.oid = oid
-    app.sdb.update('GatewayWithdrawal', wid, { oid })
+    app.sdb.update('GatewayWithdrawal', { oid }, { wid })
     return null
   },
 }

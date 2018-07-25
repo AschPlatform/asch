@@ -83,7 +83,7 @@ module.exports = {
       const group = await app.sdb.load('Group', this.sender.name)
       if (!group) return 'Group not found'
       group.m = m
-      app.sdb.update('Group', this.sender.name, { m })
+      app.sdb.update('Group', { m }, { name: this.sender.name })
     }
     app.sdb.create('GroupMember', {
       name: this.sender.name,
@@ -103,10 +103,10 @@ module.exports = {
     const memberItem = await app.sdb.load('GroupMember', { member: address })
     if (!memberItem) return 'Not a group member'
     if (m) {
-      const group = await app.sdb.load('Group', this.sender.name)
+      const group = await app.sdb.load('Group', { name: this.sender.name })
       if (!group) return 'Group not found'
       group.m = m
-      app.sdb.update('Group', this.sender.name, { m })
+      app.sdb.update('Group', { m }, { name: this.sender.name })
     }
     app.sdb.del('GroupMember', memberItem)
     return null
@@ -118,10 +118,10 @@ module.exports = {
     if (!Number.isInteger(m) || m <= 0) return 'M should be positive integer'
 
     if (m) {
-      const group = await app.sdb.load('Group', this.sender.name)
+      const group = await app.sdb.load('Group', { name: this.sender.name })
       if (!group) return 'Group not found'
       group.m = m
-      app.sdb.update('Group', this.sender.name, { m })
+      app.sdb.update('Group', { m }, { name: this.sender.name })
     }
 
     requireGroupAddress(this.sender.address)

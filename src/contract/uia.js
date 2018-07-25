@@ -65,7 +65,7 @@ module.exports = {
     if (quantity.gt(asset.maximum)) return 'Exceed issue limit'
 
     asset.quantity = quantity.toString(10)
-    app.sdb.update('Asset', name, { quantity: asset.quantity })
+    app.sdb.update('Asset', { quantity: asset.quantity }, { name })
 
     app.balances.increase(this.sender.address, name, amount)
     return null
