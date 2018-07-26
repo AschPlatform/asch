@@ -28,13 +28,11 @@ function buildTransactions(n) {
   return trs
 }
 
-(async function main() {
-  try {
-    const trs = buildTransactions(10)
-    console.time('time usage')
-    await submitTransactions(trs)
-    console.timeEnd('time usage')
-  } catch (e) {
-    console.log('error:', e)
-  }
-}())
+async function main() {
+  const trs = buildTransactions(10)
+  console.time('time usage')
+  await submitTransactions(trs)
+  console.timeEnd('time usage')
+}
+
+main().catch(console.error)

@@ -29,23 +29,21 @@ const xasTransfer = async (address, amount, message) => {
   return res
 }
 
-(async function main() {
-  try {
-    const accounts = config.toAddresses
-    const startTime = process.uptime()
+async function main() {
+  const accounts = config.toAddresses
+  const startTime = process.uptime()
 
-    for (let i = 0; i < 1000; i++) {
-      const j = i % 10
-      const amount = config.amount()
-      const result = await xasTransfer(accounts[j], amount, i.toString())
-      const res = result.body
+  for (let i = 0; i < 1000; i++) {
+    const j = i % 10
+    const amount = config.amount()
+    const result = await xasTransfer(accounts[j], amount, i.toString())
+    const res = result.body
 
-      if (!res.success) {
-        console.log('address:', accounts[i], ' error: ', res.error)
-      }
+    if (!res.success) {
+      console.log('address:', accounts[i], ' error: ', res.error)
     }
-    console.log(process.uptime() - startTime)
-  } catch (e) {
-    console.log(e)
   }
-}())
+  console.log(process.uptime() - startTime)
+}
+
+main().catch(console.error)

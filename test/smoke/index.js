@@ -463,10 +463,4 @@ async function main() {
   await testGroup()
 }
 
-(async () => {
-  try {
-    await main()
-  } catch (e) {
-    console.log(e)
-  }
-})()
+main().catch(console.error)

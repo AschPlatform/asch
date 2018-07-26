@@ -134,10 +134,4 @@ async function main() {
   await lib.onNewBlockAsync()
 }
 
-(async () => {
-  try {
-    await main()
-  } catch (e) {
-    console.error(e)
-  }
-})()
+main().catch(console.error)
