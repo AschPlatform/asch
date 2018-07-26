@@ -85,7 +85,7 @@ module.exports = {
     if (await app.sdb.exists('GatewayDepositSigner', { key: signerKey })) return 'Already submitted'
     app.sdb.create('GatewayDepositSigner', { key: signerKey })
 
-    const dipositKey = { currency, oid }
+    const dipositKey = { oid }
     let deposit = await app.sdb.load('GatewayDeposit', dipositKey)
     if (!deposit) {
       deposit = app.sdb.create('GatewayDeposit', {

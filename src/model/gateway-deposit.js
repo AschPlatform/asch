@@ -9,6 +9,6 @@ module.exports = {
     { name: 'amount', type: 'String', length: 50 },
     { name: 'confirmations', type: 'Number' },
     { name: 'processed', type: 'Number' },
-    { name: 'oid', type: 'String', length: 64 , index: true }
+    { name: 'oid', type: 'String', length: 64 , unique: true }
   ]
 }
