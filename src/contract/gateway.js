@@ -43,6 +43,7 @@ module.exports = {
     if (exists) return 'Account already is a gateway member'
 
     sender.role = app.AccountRole.GATEWAY_VALIDATOR
+    app.sdb.update('Account', { role: app.AccountRole.GATEWAY_VALIDATOR }, { address: this.sender.address })
     app.sdb.create('GatewayMember', {
       address: this.sender.address,
       gateway,
