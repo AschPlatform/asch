@@ -30,11 +30,12 @@ module.exports = {
     return null
   },
   async activate(targetId) {
+    app.sdb.lock(`group.activate@${targetId}`)
     const senderId = this.sender.address
     const requestTrs = await app.sdb.findOne('Transaction', { condition: { id: targetId } })
     if (!requestTrs) return 'Request transaction not found'
-    // TODO normalize in smartdb
-    // requestTrs.args = JSON.parse(requestTrs.args)
+
+    if (requestTrs.executed) return 'Transaction already executed'
 
     const account = await app.sdb.load('Account', requestTrs.senderId)
     if (!account) return 'Group account not found'
@@ -75,7 +76,8 @@ module.exports = {
 
     requireGroupAddress(this.sender.address)
     requireNormalAddress(address)
-    app.sdb.lock(`group.addMember@${address}`)
+    app.sdb.lock(`group.member@${address}`)
+    app.sdb.lock(`group.member@${this.sender.name}`)
     if (await app.sdb.exists('GroupMember', { member: address })) {
       throw new Error('Already is group member')
     }
@@ -99,7 +101,8 @@ module.exports = {
     if (!Number.isInteger(m) || m <= 0) return 'M should be positive integer'
 
     requireGroupAddress(this.sender.address)
-    app.sdb.lock(`group.removeMember@${address}`)
+    app.sdb.lock(`group.member@${address}`)
+    app.sdb.lock(`group.member@${this.sender.name}`)
     const memberItem = await app.sdb.load('GroupMember', { member: address })
     if (!memberItem) return 'Not a group member'
     if (m) {
@@ -108,10 +111,13 @@ module.exports = {
       group.m = m
       app.sdb.update('Group', { m }, { name: this.sender.name })
     }
-    app.sdb.del('GroupMember', memberItem)
+    app.sdb.del('GroupMember', { member: address })
     return null
   },
   async replaceMember(from, to, weight, m) {
+    app.sdb.lock(`group.member@${from}`)
+    app.sdb.lock(`group.member@${to}`)
+    app.sdb.lock(`group.member@${this.sender.name}`)
     if (!from) return 'Invalid member from'
     if (!to) return 'Invalid member to'
     if (!Number.isInteger(weight) || weight <= 0) return 'Weight should be positive integer'
@@ -133,7 +139,7 @@ module.exports = {
     // if (groupMember.weight !== weight) {
     //   groupMember.weight = weight
     // }
-    app.sdb.del('GroupMember', groupMember)
+    app.sdb.del('GroupMember', { member: from })
     app.sdb.create('GroupMember', {
       name: groupMember.name,
       member: to,

@@ -429,8 +429,7 @@ module.exports = {
       const votes = -(sender.weight + sender.agentWeight)
       app.sdb.increase('Delegate', { votes }, { name })
 
-      const voteItem = await app.sdb.load('Vote', { address: senderId, delegate: name })
-      app.sdb.del('Vote', voteItem)
+      app.sdb.del('Vote', { address: senderId, delegate: name })
     }
     return null
   },
