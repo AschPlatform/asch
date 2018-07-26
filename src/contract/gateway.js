@@ -1,7 +1,7 @@
 
 module.exports = {
   async openAccount(gateway) {
-    if (!gateway || gateway.length > 10) return 'Invalid gateway name'
+    if (!gateway) return 'Invalid gateway name'
 
     app.sdb.lock(`gateway.openAccount@${this.sender.address}`)
     const exists = await app.sdb.exists('GatewayAccount', { address: this.sender.address })
@@ -31,7 +31,7 @@ module.exports = {
   },
 
   async registerMember(gateway, publicKey, desc) {
-    if (!gateway || gateway.length > 10) return 'Invalid gateway name'
+    if (!gateway) return 'Invalid gateway name'
 
     const senderId = this.sender.address
     app.sdb.lock(`basic.account@${this.sender.address}`)
@@ -55,7 +55,7 @@ module.exports = {
   },
 
   async deposit(gateway, address, currency, amount, oid) {
-    if (!gateway || gateway.length > 10) return 'Invalid gateway name'
+    if (!gateway) return 'Invalid gateway name'
     if (!currency) return 'Invalid currency'
     // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', amount)
@@ -86,7 +86,7 @@ module.exports = {
     if (await app.sdb.exists('GatewayDepositSigner', { key: signerKey })) return 'Already submitted'
     app.sdb.create('GatewayDepositSigner', { key: signerKey })
 
-    const dipositKey = { currency, oid }
+    const dipositKey = { oid }
     let deposit = await app.sdb.load('GatewayDeposit', dipositKey)
     if (!deposit) {
       deposit = app.sdb.create('GatewayDeposit', {
@@ -113,7 +113,7 @@ module.exports = {
   },
 
   async withdrawal(address, gateway, currency, amount, fee) {
-    if (!gateway || gateway.length > 10) return 'Invalid gateway name'
+    if (!gateway) return 'Invalid gateway name'
     if (!currency) return 'Invalid currency'
     // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     // if (!Number.isInteger(fee) || fee <= 0) return 'Fee should be positive integer'

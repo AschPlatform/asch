@@ -56,7 +56,7 @@ module.exports = {
     if (app.util.address.isNormalAddress(recipient)) {
       recipientAccount = await app.sdb.load('Account', recipient)
       if (recipientAccount) {
-        recipientAccount.xas += amount
+        app.sdb.update('Account', { xas: recipientAccount.xas }, { address: recipientAccount.address })
       } else {
         recipientAccount = app.sdb.create('Account', {
           address: recipient,
@@ -67,9 +67,8 @@ module.exports = {
     } else {
       recipientAccount = await app.sdb.load('Account', { name: recipient })
       if (!recipientAccount) return 'Recipient name not exist'
-      recipientAccount.xas += amount
+      app.sdb.update('Account', { xas: recipientAccount.xas }, { address: recipientAccount.address })
     }
-    app.sdb.update('Account', { xas: recipientAccount.xas }, { address: recipientAccount.address })
     app.sdb.update('Account', { xas: sender.xas }, { address: sender.address })
 
     app.sdb.create('Transfer', {
