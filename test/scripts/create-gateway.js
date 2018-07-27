@@ -128,6 +128,9 @@ async function main() {
   const initTid = await initGateway(GC.initProposal, lib.GENESIS_ACCOUNT)
   await voteProposal(initTid, delegates)
 
+  for (const a of GC.gatewayAccounts) {
+    await openGatewayAccount(a)
+  }
   for (const v of GC.validators) {
     await openGatewayAccount(v.innerAccount)
   }
