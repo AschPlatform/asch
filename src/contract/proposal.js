@@ -32,6 +32,7 @@ async function doGatewayRegister(params, context) {
 }
 
 async function doGatewayInit(params) {
+  app.sdb.lock(`gateway@${params.gateway}`)
   for (const m of params.members) {
     // TODO: ....check m is address
     app.sdb.update('GatewayMember', { elected: 1 }, { address: m })
