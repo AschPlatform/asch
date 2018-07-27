@@ -49,14 +49,13 @@ module.exports = {
     const sender = this.sender
     const senderId = sender.address
     if (this.block.height > 0 && sender.xas < amount) return 'Insufficient balance'
-    sender.xas -= amount
 
     let recipientAccount
     // Validate recipient is valid address
     if (app.util.address.isNormalAddress(recipient)) {
       recipientAccount = await app.sdb.load('Account', recipient)
       if (recipientAccount) {
-        app.sdb.update('Account', { xas: recipientAccount.xas }, { address: recipientAccount.address })
+        app.sdb.increase('Account', { xas: amount }, { address: recipientAccount.address })
       } else {
         recipientAccount = app.sdb.create('Account', {
           address: recipient,
@@ -67,9 +66,9 @@ module.exports = {
     } else {
       recipientAccount = await app.sdb.load('Account', { name: recipient })
       if (!recipientAccount) return 'Recipient name not exist'
-      app.sdb.update('Account', { xas: recipientAccount.xas }, { address: recipientAccount.address })
+      app.sdb.update('Account', { xas: amount }, { address: recipientAccount.address })
     }
-    app.sdb.update('Account', { xas: sender.xas }, { address: sender.address })
+    app.sdb.increase('Account', { xas: -amount }, { address: sender.address })
 
     app.sdb.create('Transfer', {
       tid: this.trs.id,
@@ -89,7 +88,6 @@ module.exports = {
 
     const senderId = this.sender.address
     app.sdb.lock(`basic.account@${senderId}`)
-    app.sdb.lock(`basic.setName@${name}`)
 
     const exists = await app.sdb.load('Account', { name })
     if (exists) return 'Name already registered'
