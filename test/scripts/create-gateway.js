@@ -123,7 +123,7 @@ async function main() {
 
   await voteProposal(registerTid, delegates)
 
-  registerValidators(GC.validators)
+  await registerValidators(GC.validators)
 
   const initTid = await initGateway(GC.initProposal, lib.GENESIS_ACCOUNT)
   await voteProposal(initTid, delegates)
