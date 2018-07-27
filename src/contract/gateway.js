@@ -162,9 +162,7 @@ module.exports = {
     })
     if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
 
-    withdrawal.outTransaction = ot
-    withdrawal.signs += 1
-    app.sdb.update('GatewayWithdrawal', { outTransaction: ot, signs: withdrawal.signs + 1 }, { wid })
+    app.sdb.update('GatewayWithdrawal', { outTransaction: ot, signs: withdrawal.signs + 1 }, { tid: wid })
     app.sdb.create('GatewayWithdrawalPrep', {
       wid,
       signer: this.sender.address,
@@ -196,11 +194,10 @@ module.exports = {
       elected: 1,
     })
 
-    withdrawal.signs += 1
+    app.sdb.increase('GatewayWithdrawal', { signs: 1 }, { tid: wid })
     if (withdrawal.signs > validatorCount / 2) {
-      withdrawal.ready = 1
+      app.sdb.update('GatewayWithdrawal', { ready: 1 }, { tid: wid })
     }
-    app.sdb.update('GatewayWithdrawal', withdrawal, { wid })
     app.sdb.create('GatewayWithdrawalPrep', {
       wid,
       signer: this.sender.address,
@@ -225,7 +222,7 @@ module.exports = {
     })
     if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
     withdrawal.oid = oid
-    app.sdb.update('GatewayWithdrawal', { oid }, { wid })
+    app.sdb.update('GatewayWithdrawal', { oid }, { tid: wid })
     return null
   },
 }
