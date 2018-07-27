@@ -10,7 +10,7 @@ async function doCancelVote(account) {
 }
 
 async function doCancelAgent(sender, agentAccount) {
-  const agentClienteleKey = { agent: sender.agent, clientele: sender.address }
+  const agentClienteleKey = { clientele: sender.address }
   const cancelWeight = sender.weight
   agentAccount.agentWeight -= cancelWeight
   app.sdb.increase('Account', { agentWeight: -cancelWeight }, { address: agentAccount.address })
