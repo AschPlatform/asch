@@ -326,7 +326,7 @@ module.exports = {
 
   async registerDelegate() {
     const senderId = this.sender.address
-    app.sdb.lock(`basic.account@${senderId}`)
+    if (this.block.height > 0) app.sdb.lock(`basic.account@${senderId}`)
     const sender = this.sender
     if (!sender) return 'Account not found'
     if (!sender.name) return 'Account has not a name'
