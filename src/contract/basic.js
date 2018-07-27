@@ -101,13 +101,11 @@ module.exports = {
   async setPassword(publicKey) {
     app.validate('publickey', publicKey)
 
-    // Validate publicKey
     if (!app.util.address.isNormalAddress(this.sender.address)) {
       return 'Invalid account type'
     }
     const senderId = this.sender.address
     app.sdb.lock(`basic.account@${senderId}`)
-    app.sdb.lock(`basic.setPassword@${senderId}`)
     if (this.sender.secondPublicKey) return 'Password already set'
     this.sender.secondPublicKey = publicKey
     app.sdb.update('Account', { secondPublicKey: publicKey }, { address: this.sender.address })
@@ -122,7 +120,6 @@ module.exports = {
     amount = Number(amount)
     const senderId = this.sender.address
     app.sdb.lock(`basic.account@${senderId}`)
-    app.sdb.lock(`basic.role@${senderId}`)
 
     const MIN_LOCK_HEIGHT = 8640 * 30
     const sender = this.sender
@@ -227,8 +224,7 @@ module.exports = {
       }
     }
 
-    app.sdb.lock(`basic.setName@${name}`)
-    if (await app.sdb.exists('Account', { name })) return 'Name already registered'
+    if (await app.sdb.load('Account', { name })) return 'Name already registered'
     const address = app.util.address.generateGroupAddress(name)
     const account = await app.sdb.load('Account', address)
     if (!account) {
@@ -260,8 +256,7 @@ module.exports = {
 
   async registerAgent() {
     const senderId = this.sender.address
-    // app.sdb.lock(`basic.account@${senderId}`)
-    app.sdb.lock(`basic.role@${senderId}`)
+    app.sdb.lock(`basic.account@${senderId}`)
     const sender = this.sender
     if (sender.role) return 'Agent already have a role'
     if (!sender.name) return 'Agent must have a name'
@@ -331,8 +326,7 @@ module.exports = {
 
   async registerDelegate() {
     const senderId = this.sender.address
-    app.sdb.lock(`basic.role@${senderId}`)
-    app.sdb.lock(`basic.registerDelegate@${senderId}`)
+    app.sdb.lock(`basic.account@${senderId}`)
     const sender = this.sender
     if (!sender) return 'Account not found'
     if (!sender.name) return 'Account has not a name'
@@ -359,7 +353,6 @@ module.exports = {
   async vote(delegates) {
     const senderId = this.sender.address
     app.sdb.lock(`basic.account@${senderId}`)
-    app.sdb.lock(`basic.role@${senderId}`)
 
     const sender = this.sender
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
@@ -401,7 +394,6 @@ module.exports = {
   async unvote(delegates) {
     const senderId = this.sender.address
     app.sdb.lock(`account@${senderId}`)
-    app.sdb.lock(`basic.role@${senderId}`)
 
     const sender = this.sender
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
