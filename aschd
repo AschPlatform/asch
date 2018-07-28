@@ -2,7 +2,11 @@
 
 readonly PROG_DIR=$(pwd)
 readonly PID_FILE=$PROG_DIR/asch.pid
-readonly IPS=("https://www.asch.io/downloads-International" "http://125.32.110.138:9999/downloads-Chinese" "http://39.107.52.143-Chinese")
+readonly IPS=(
+  "https://www.asch.io/downloads-International"
+  "http://125.32.110.138:9999/downloads-Chinese"
+  "http://39.107.52.143-Chinese"
+  )
 
 function read_port() {
   echo `cat $PROG_DIR/config.json |grep '"port"'|head -n 1| awk -F "[:,]" '{print$2}'|tr -d ' '`
@@ -78,7 +82,7 @@ function chosenode(){
     echo "This node has no data,please run aschd again and chose the other node!"
     exit 2
   fi
-  
+
   ip=$(echo ${IPS[$num]} | awk -F- '{print $1}')
   var=$(curl -sL -m 10 "$ip/$meta_file")
   Name=$(echo $var| awk '{print $1}')
@@ -184,7 +188,7 @@ function upgrade() {
       Version=$(echo $var| awk '{print $4}')
       Size=$(echo $var| awk '{print $5}')
 
-      echo $i. $ip [$memo] "Version:"$Version "Date:"$Date  "Size:"$Size 
+      echo $i. $ip [$memo] "Version:"$Version "Date:"$Date  "Size:"$Size
     else
       status[$i]="N"
       memo="No data,do not use."
@@ -220,7 +224,7 @@ function upgrade() {
     fi
   done
   rm -rf $extractedDir tmp/$latestName
-  newVersion=`./aschd version`  
+  newVersion=`./aschd version`
   echo "Upgrade to $newVersion done."
   ./aschd start
 }
