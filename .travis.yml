@@ -25,4 +25,3 @@ before_script:
      - pwd
 script:
      - bash ./test/multi-nodes/multiNodes.sh
-
