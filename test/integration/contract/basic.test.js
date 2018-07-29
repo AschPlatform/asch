@@ -47,7 +47,7 @@ describe('basic contracts', () => {
 
   test('verify negative transfer', async () => {
     debug('Into negative transfer test ...')
-    const expectedError = 'Amount should be positive integer'
+    const expectedError = 'Amount should be integer'
     const address = config.agents[0].address
     const amount = -25000000000
     const f = 10000000

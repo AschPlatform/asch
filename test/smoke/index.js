@@ -17,7 +17,9 @@ async function initDelegates() {
     addressMap.set(d.address, d)
   }
   for (const d of gDelegates) {
-    d.name = addressMap.get(d.address).name
+    if (addressMap.get(d.address)) {
+      d.name = addressMap.get(d.address).name
+    }
   }
 }
 
