@@ -66,7 +66,7 @@ module.exports = {
     } else {
       recipientAccount = await app.sdb.load('Account', { name: recipient })
       if (!recipientAccount) return 'Recipient name not exist'
-      app.sdb.update('Account', { xas: amount }, { address: recipientAccount.address })
+      app.sdb.increase('Account', { xas: amount }, { address: recipientAccount.address })
     }
     app.sdb.increase('Account', { xas: -amount }, { address: sender.address })
 
