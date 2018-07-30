@@ -16,6 +16,11 @@ module.exports = {
     app.sdb.lock(`group.vote@${senderId}`)
     const requestTrs = await app.sdb.load('Transaction', targetId)
     if (!requestTrs) return 'Request transaction not found'
+    if (!app.util.transactionMode.isRequestMode(requestTrs.mode)) return 'Invalid transaction mode'
+
+    const requestTrsState = await app.sdb.load('TransactionStatu', { tid: targetId })
+    if (requestTrsState.executed) return 'Transaction already executed'
+
     const groupAccount = await app.sdb.load('Account', requestTrs.senderId)
     if (!groupAccount) return 'Group account not found'
     const isMember = await app.sdb.exists('GroupMember', { name: groupAccount.name, member: senderId })
@@ -36,9 +41,9 @@ module.exports = {
     if (!requestTrs) return 'Request transaction not found'
 
     // if (requestTrs.mode !== app.TransactionMode.REQUEST) return 'Invalid transaction mode'
-    if (app.util.transactionMode(requestTrs.mode)) return 'Invalid transaction mode'
+    if (!app.util.transactionMode.isRequestMode(requestTrs.mode)) return 'Invalid transaction mode'
 
-    const requestTrsState = await app.sdb.load('TransactionState', { tid: targetId })
+    const requestTrsState = await app.sdb.load('TransactionStatu', { tid: targetId })
     if (requestTrsState.executed) return 'Transaction already executed'
 
     const account = await app.sdb.load('Account', requestTrs.senderId)
