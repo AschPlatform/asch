@@ -35,7 +35,11 @@ module.exports = {
     const requestTrs = await app.sdb.findOne('Transaction', { condition: { id: targetId } })
     if (!requestTrs) return 'Request transaction not found'
 
-    if (requestTrs.executed) return 'Transaction already executed'
+    // if (requestTrs.mode !== app.TransactionMode.REQUEST) return 'Invalid transaction mode'
+    if (app.util.transactionMode(requestTrs.mode)) return 'Invalid transaction mode'
+
+    const requestTrsState = await app.sdb.load('TransactionState', { tid: targetId })
+    if (requestTrsState.executed) return 'Transaction already executed'
 
     const account = await app.sdb.load('Account', requestTrs.senderId)
     if (!account) return 'Group account not found'

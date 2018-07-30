@@ -13,6 +13,7 @@ module.exports = {
     { name: 'args', type: 'Json' },
     { name: 'height', type: 'BigInt', not_null: true, index: true },
     { name: 'message', type: 'String', length: 256, index: true },
-    { name: 'executed', type: 'Number', not_null: true, index: true, default: 1 },
+    { name: 'mode', type: 'Number', index: true, default: 0 },
+    // { name: 'executed', type: 'Number', not_null: true, index: true, default: 1 },
   ]
 }
