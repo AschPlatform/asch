@@ -360,10 +360,14 @@ module.exports = {
 
     delegates = delegates.split(',')
     if (!delegates || !delegates.length) return 'Invalid delegates'
+    if (delegates.length > 33) return 'Voting limit exceeded'
     if (!isUniq(delegates)) return 'Duplicated vote item'
 
     const currentVotes = await app.sdb.findAll('Vote', { condition: { address: senderId } })
     if (currentVotes) {
+      if (currentVotes.length + delegates.length > 101) {
+        return 'Maximum number of votes exceeded'
+      }
       const currentVotedDelegates = new Set()
       for (const v of currentVotes) {
         currentVotedDelegates.add(v.delegate)
@@ -401,6 +405,7 @@ module.exports = {
 
     delegates = delegates.split(',')
     if (!delegates || !delegates.length) return 'Invalid delegates'
+    if (delegates.length > 33) return 'Voting limit exceeded'
     if (!isUniq(delegates)) return 'Duplicated vote item'
 
     const currentVotes = await app.sdb.findAll('Vote', { condition: { address: senderId } })
