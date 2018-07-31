@@ -12,7 +12,7 @@ const Application = asch.Application
 function main() {
   process.stdin.resume()
 
-  const version = '1.4.0-beta'
+  const version = '1.4.0'
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')
@@ -68,6 +68,9 @@ function main() {
 
   if (program.port) {
     appConfig.port = program.port
+  }
+  if (!appConfig.peerPort) {
+    appConfig.peerPort = appConfig.port + 1
   }
 
   if (program.address) {
