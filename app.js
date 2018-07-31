@@ -41,15 +41,6 @@ function main() {
     return
   }
 
-  if (!appConfig.chain.masterpassword) {
-    appConfig.chain.masterpassword = randomstring.generate({
-      length: 12,
-      readable: true,
-      charset: 'alphanumeric',
-    })
-    fs.writeFileSync(appConfigFile, JSON.stringify(appConfig, null, 2), 'utf8')
-  }
-
   appConfig.version = version
   appConfig.baseDir = baseDir
   appConfig.dataDir = program.data || path.resolve(baseDir, 'data')

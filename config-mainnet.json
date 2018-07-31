@@ -39,9 +39,5 @@
       "cert": "./ssl/server.crt"
     }
   },
-  "chain": {
-    "masterpassword": "ytfACAMegjrK",
-    "params": {}
-  },
   "gateway": {}
 }
