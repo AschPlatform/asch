@@ -16,7 +16,7 @@ module.exports = (router) => {
     const installedIds = await promisify(modules.chains.getInstalledIds).call()
     if (installedIds.length === 0) return { count: 0, chains: [] }
 
-    const condition = { tid: { $in: installedIds } }
+    const condition = { name: { $in: installedIds } }
     const count = await app.sdb.count('Chain', condition)
     const chains = await app.sdb.findAll('Chain', { condition, limit, offset })
     return { count, chains }
