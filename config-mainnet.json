@@ -1,5 +1,6 @@
 {
   "port": 8192,
+  "peerPort": 8193,
   "address": "0.0.0.0",
   "publicIp": "",
   "logLevel": "log",
@@ -38,8 +39,9 @@
       "cert": "./ssl/server.crt"
     }
   },
-  "dapp": {
-    "masterpassword": "",
+  "chain": {
+    "masterpassword": "ytfACAMegjrK",
     "params": {}
-  }
+  },
+  "gateway": {}
 }
