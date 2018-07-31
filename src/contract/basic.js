@@ -2,9 +2,7 @@ async function doCancelVote(account) {
   const voteList = await app.sdb.findAll('Vote', { condition: { address: account.address } })
   if (voteList && voteList.length > 0 && account.weight > 0) {
     for (const voteItem of voteList) {
-      const delegate = await app.sdb.load('Delegate', { name: voteItem.delegate })
-      delegate.votes -= account.weight
-      app.sdb.update('Delegate', delegate.address, { votes: delegate.votes })
+      app.sdb.increase('Delegate', { votes: -account.weight }, { name: voteItem.delegate })
     }
   }
 }
