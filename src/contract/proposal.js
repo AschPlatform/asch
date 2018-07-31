@@ -40,12 +40,12 @@ async function doGatewayInit(params) {
   app.sdb.update('Gateway', { activated: 1 }, { name: params.gateway })
 }
 
-async function doGatewayUpdateMember(params) {
+async function doGatewayUpdateMember(params, context) {
   app.sdb.lock(`gateway@${params.gateway}`)
   const gateway = await app.sdb.load('Gateway', params.gateway)
   if (!gateway) throw new Error('Gateway not found')
 
-  if (this.block.height - gateway.lastUpdateHeight < gateway.updateInterval) {
+  if (context.block.height - gateway.lastUpdateHeight < gateway.updateInterval) {
     throw new Error('Time not arrived')
   }
 
