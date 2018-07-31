@@ -345,7 +345,7 @@ module.exports = {
     })
     sender.isDelegate = 1
     sender.role = app.AccountRole.DELEGATE
-    app.sdb.update('Account', { idDelegate: 1, role: app.AccountRole.DELEGATE }, { address: senderId })
+    app.sdb.update('Account', { isDelegate: 1, role: app.AccountRole.DELEGATE }, { address: senderId })
 
     return null
   },
