@@ -72,7 +72,8 @@ module.exports = {
   },
 
   async transfer(currency, amount, recipient) {
-    if (!/^[A-Za-z]{1,16}.[A-Z]{3,6}$/.test(currency)) return 'Invalid currency'
+    if (currency.length > 30) return 'Invalid currency'
+    // if (!/^[A-Za-z]{1,16}.[A-Z]{3,6}$/.test(currency)) return 'Invalid currency'
     // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', String(amount))
     const senderId = this.sender.address
