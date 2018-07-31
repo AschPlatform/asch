@@ -156,7 +156,7 @@ module.exports = {
       if (sender.agent) {
         const agentAccount = await app.sdb.load('Account', { name: sender.agent })
         if (!agentAccount) return 'Agent account not found'
-        app.sdb.increase('Account', { agentWeight: amount }, { address: agendAccount.address })
+        app.sdb.increase('Account', { agentWeight: amount }, { address: agentAccount.address })
 
         const voteList = await app.sdb.findAll('Vote', { condition: { address: agentAccount.address } })
         if (voteList && voteList.length > 0) {
