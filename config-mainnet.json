@@ -3,7 +3,7 @@
   "peerPort": 8193,
   "address": "0.0.0.0",
   "publicIp": "",
-  "logLevel": "log",
+  "logLevel": "info",
   "magic": "5f5b3cf5",
   "api": {
     "access": {
