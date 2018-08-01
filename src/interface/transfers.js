@@ -87,6 +87,14 @@ module.exports = (router) => {
         t.transaction = trsMap.get(t.tid)
       }
     }
+    for (const t of transfers) {
+      if (t.amount) {
+        const pos = t.amount.indexOf('.')
+        if (pos !== -1) {
+          t.amount = t.amount.slice(0, pos)
+        }
+      }
+    }
     return { count, transfers }
   })
 }
