@@ -4,8 +4,9 @@ readonly PROG_DIR=$(pwd)
 readonly PID_FILE=$PROG_DIR/asch.pid
 readonly IPS=(
   "https://www.asch.io/downloads-International"
-  "http://125.32.110.138:9999/downloads-Chinese"
-  "http://39.107.52.143-Chinese"
+  "http://47.75.26.122/-Hongkong"
+  "http://125.32.110.138:9999/downloads-China"
+  "http://39.107.52.143-China"
   )
 
 function read_port() {
@@ -65,7 +66,7 @@ function restart() {
 
 function ismainnet(){
   magic=$(cat $PROG_DIR/config.json | grep magic | awk -F: '{print $2}' | cut -d \" -f2)
-  net="testnet"
+  net="mainnet"
   echo "net is $net"
 }
 
@@ -137,10 +138,10 @@ function rebuild() {
   fi
 
   ./aschd stop
+  rm -rf ./data
+  echo "Extracting snapshot..."
   tar zxf $Name
-  rm $Name
-  mv ./$DB ./blockchain.db
-  ./aschd start
+  #./aschd start
 }
 
 function version() {
@@ -218,7 +219,7 @@ function upgrade() {
   echo "Copying new files ..."
   for file in `ls $extractedDir`
   do
-    if [ "$file" != "config.json" -a "$file" != "blockchain.db" ]; then
+    if [ "$file" != "config.json" ]; then
     echo "copy $extractedDir/$file ..."
     cp -r $extractedDir/$file ./
     fi
@@ -226,7 +227,7 @@ function upgrade() {
   rm -rf $extractedDir tmp/$latestName
   newVersion=`./aschd version`
   echo "Upgrade to $newVersion done."
-  ./aschd start
+  #./aschd start
 }
 
 function enable() {
