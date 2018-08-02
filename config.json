@@ -1,6 +1,6 @@
 {
   "port": 4096,
-  "peerPort": 5096,
+  "peerPort": 4097,
   "address": "0.0.0.0",
   "publicIp": "0.0.0.0",
   "logLevel": "debug",
