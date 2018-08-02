@@ -286,7 +286,7 @@ describe('group test', () => {
 
   test('verify negative group replaceMember', async () => {
     debug('Into negative group replaceMember test ...')
-    const expectedError = 'Sender account not found'
+    const expectedError = 'Sender public key not provided'
     trs = lib.AschJS.transaction.createMultiSigTransaction({
       type: 504,
       fee: 100000000,

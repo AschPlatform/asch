@@ -174,7 +174,7 @@ describe('uia test', () => {
       type: 103,
       fee: 10000000,
       args: [
-        `${issuer.name}.xxxx`,
+        'AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDD',
         '100000',
         config.agents[0].address,
       ],

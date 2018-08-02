@@ -3,7 +3,7 @@
   "peerPort": 5096,
   "address": "0.0.0.0",
   "publicIp": "0.0.0.0",
-  "logLevel": "trace",
+  "logLevel": "debug",
   "magic": "594fe0f3",
   "api": {
     "access": {
