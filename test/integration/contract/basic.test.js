@@ -145,7 +145,7 @@ describe('basic contracts', () => {
 
   test('verify negative setPassword', async () => {
     debug('Into negative setPassword test ...')
-    const expectedError = 'Faied to verify signature'
+    const expectedError = 'Second signature not provided'
     const scrt = config.agents[1].secret
     const publicKey = config.agents[0].publicKey + 1
     const trs = {
