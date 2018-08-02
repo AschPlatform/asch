@@ -98,6 +98,7 @@ describe('group test', () => {
         11230,
         group.members[1].address,
       ],
+      mode: 1,
     }
 
     tid = (await lib.transactionUnsignedAsync(trs)).body.transactionId
