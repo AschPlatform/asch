@@ -20,7 +20,9 @@ build
 package-lock.json
 .vs/
 .vscode
-public/*
+public/node_modules  
+public/npm-debug.log 
+public/.quasar
 !public/dist/
 public/dist/*
 !public/dist/chains/

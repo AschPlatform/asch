@@ -54,19 +54,24 @@ npm install
 
 ## Web Wallet
 
+### first install yarn
 ```
-cd public/
+$ npm install --global yarn 
+```
 
-npm install bower -g
-npm install browserify -g
-npm install gulp  -g
+### Then, install Quasar CLI. Make sure you have Node >=8 and NPM >=5 installed on your machine.
+```
+# Node.js >= 8.9.0 is required.
+$ yarn global add quasar-cli
+# or:
+$ npm install -g quasar-cli
+```
 
-npm install
-# angular chose "angular#~1.5.3 which resolved to 1.5.11 and is required by ASCH"
-bower install
-
-npm run build
-gulp build-test #This make the front-end files in public dir.
+### Finally, build teh front-end files
+```
+$ cd public/
+$ yarn install
+$ quasar build #This make the front-end files in public dir.
 ```
 
 ## Installation on docker.
