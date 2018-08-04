@@ -1,0 +1,59 @@
+{
+  "name": "asch_wallet",
+  "version": "1.0.0",
+  "description": "New Asch Wallet",
+  "productName": "Asch Wallet",
+  "cordovaId": "org.asch.wallet",
+  "author": "mrcaos <mrcaos@foxmail.com>",
+  "private": true,
+  "scripts": {
+    "lint": "eslint --ext .js,.vue src",
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "dependencies": {
+    "asch-js": "^1.3.10",
+    "autoprefixer": "^8.1.0",
+    "axios": "^0.17.1",
+    "bignumber.js": "^6.0.0",
+    "bip39": "^2.5.0",
+    "lodash": "^4.17.5",
+    "quasar": "0.0.18",
+    "transform-runtime": "0.0.0",
+    "vue-clipboards": "^1.2.1",
+    "vue-i18n": "^7.3.3",
+    "vue-qr": "^1.2.8",
+    "vuelidate": "^0.6.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "8.2.1",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-stage-2": "^6.24.1",
+    "devtron": "1.4.0",
+    "electron": "1.7.9",
+    "electron-debug": "1.4.0",
+    "electron-devtools-installer": "2.2.1",
+    "electron-packager": "9.1.0",
+    "eslint": "4.15.0",
+    "eslint-config-standard": "10.2.1",
+    "eslint-friendly-formatter": "3.0.0",
+    "eslint-loader": "1.7.1",
+    "eslint-plugin-html": "^3.2.2",
+    "eslint-plugin-import": "2.7.0",
+    "eslint-plugin-node": "5.2.0",
+    "eslint-plugin-promise": "3.4.0",
+    "eslint-plugin-standard": "3.0.1",
+    "eslint-plugin-vue": "4.0.0",
+    "quasar-cli": "^0.15.12"
+  },
+  "engines": {
+    "node": ">= 8.9.0",
+    "npm": ">= 5.6.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 10"
+  ]
+}
