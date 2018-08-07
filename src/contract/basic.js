@@ -50,7 +50,7 @@ module.exports = {
 
     let recipientAccount
     // Validate recipient is valid address
-    if (app.util.address.isNormalAddress(recipient)) {
+    if (recipient && recipient.length > 30) {
       recipientAccount = await app.sdb.load('Account', recipient)
       if (recipientAccount) {
         app.sdb.increase('Account', { xas: amount }, { address: recipientAccount.address })
