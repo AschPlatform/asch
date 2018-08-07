@@ -87,7 +87,7 @@ module.exports = {
     requireNormalAddress(address)
     app.sdb.lock(`group.member@${address}`)
     app.sdb.lock(`group.member@${this.sender.name}`)
-    if (await app.sdb.exists('GroupMember', { member: address })) {
+    if (await app.sdb.exists('GroupMember', { member: address, name: this.sender.name })) {
       throw new Error('Already is group member')
     }
     if (m) {
@@ -112,7 +112,7 @@ module.exports = {
     requireGroupAddress(this.sender.address)
     app.sdb.lock(`group.member@${address}`)
     app.sdb.lock(`group.member@${this.sender.name}`)
-    const memberItem = await app.sdb.load('GroupMember', { member: address })
+    const memberItem = await app.sdb.load('GroupMember', { member: address, name: this.sender.name })
     if (!memberItem) return 'Not a group member'
     if (m) {
       const group = await app.sdb.load('Group', { name: this.sender.name })
@@ -120,41 +120,7 @@ module.exports = {
       group.m = m
       app.sdb.update('Group', { m }, { name: this.sender.name })
     }
-    app.sdb.del('GroupMember', { member: address })
+    app.sdb.del('GroupMember', { member: address, name: this.sender.name })
     return null
-  },
-  async replaceMember(from, to, weight, m) {
-    app.sdb.lock(`group.member@${from}`)
-    app.sdb.lock(`group.member@${to}`)
-    app.sdb.lock(`group.member@${this.sender.name}`)
-    if (!from) return 'Invalid member from'
-    if (!to) return 'Invalid member to'
-    if (!Number.isInteger(weight) || weight <= 0) return 'Weight should be positive integer'
-    if (!Number.isInteger(m) || m <= 0) return 'M should be positive integer'
-
-    if (m) {
-      const group = await app.sdb.load('Group', { name: this.sender.name })
-      if (!group) return 'Group not found'
-      group.m = m
-      app.sdb.update('Group', { m }, { name: this.sender.name })
-    }
-
-    requireGroupAddress(this.sender.address)
-    requireNormalAddress(to)
-    const groupMember = await app.sdb.load('GroupMember', { member: from })
-    if (!groupMember) return 'Group member not found'
-    if (groupMember.name !== this.sender.name) return 'Permission denied'
-    // groupMember.member = to
-    // if (groupMember.weight !== weight) {
-    //   groupMember.weight = weight
-    // }
-    app.sdb.del('GroupMember', { member: from })
-    app.sdb.create('GroupMember', {
-      name: groupMember.name,
-      member: to,
-      weight,
-    })
-
-    return null
-  },
+  }
 }
