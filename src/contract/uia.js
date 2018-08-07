@@ -73,6 +73,7 @@ module.exports = {
 
   async transfer(currency, amount, recipient) {
     if (currency.length > 30) return 'Invalid currency'
+    if (!recipient || recipient.length > 50) return 'Invalid recipient'
     // if (!/^[A-Za-z]{1,16}.[A-Z]{3,6}$/.test(currency)) return 'Invalid currency'
     // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', String(amount))
@@ -82,7 +83,7 @@ module.exports = {
 
     let recipientAddress
     let recipientName = ''
-    if (app.util.address.isNormalAddress(recipient)) {
+    if (recipient.length > 30) {
       recipientAddress = recipient
     } else {
       recipientName = recipient
