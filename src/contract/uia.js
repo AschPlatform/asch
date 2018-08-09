@@ -83,7 +83,8 @@ module.exports = {
 
     let recipientAddress
     let recipientName = ''
-    if (recipient.length > 30) {
+    if (recipient && (app.util.address.isNormalAddress(recipient) ||
+                      app.util.address.isGroupAddress(recipient))) {
       recipientAddress = recipient
     } else {
       recipientName = recipient
