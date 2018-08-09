@@ -4,7 +4,7 @@ module.exports = {
     if (!gateway) return 'Invalid gateway name'
 
     app.sdb.lock(`gateway.openAccount@${this.sender.address}`)
-    const exists = await app.sdb.exists('GatewayAccount', { address: this.sender.address })
+    const exists = await app.sdb.exists('GatewayAccount', { gateway, address: this.sender.address })
     if (exists) return 'Account already opened'
     const validators = await app.sdb.findAll('GatewayMember', { condition: { gateway, elected: 1 } })
     if (!validators || !validators.length) return 'Gateway validators not found'
