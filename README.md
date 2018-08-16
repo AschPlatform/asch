@@ -52,23 +52,6 @@ git clone https://github.com/AschPlatform/asch && cd asch && chmod u+x aschd
 npm install
 ```
 
-## Web Wallet
-
-```
-cd public/
-
-npm install bower -g
-npm install browserify -g
-npm install gulp  -g
-
-npm install
-# angular chose "angular#~1.5.3 which resolved to 1.5.11 and is required by ASCH"
-bower install
-
-npm run build
-gulp build-test #This make the front-end files in public dir.
-```
-
 ## Installation on docker.
 
 [Please install Docker firstly](https://store.docker.com/search?offering=community&type=edition)
@@ -89,7 +72,9 @@ cd asch && node app.js
 or
 cd asch && ./aschd start
 ```
-Then you can open ```http://localhost:4096``` in you browser.
+
+### Web Wallet
+Then you can open ```http://localhost:4096``` in your browser to visit the Web Wallet.
 
 ## Usage
 

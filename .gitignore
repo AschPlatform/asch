@@ -21,8 +21,8 @@ package-lock.json
 .vs/
 .vscode
 public/*
-!public/dist/
 public/dist/*
+!public/dist/.gitkeep
 !public/dist/chains/
 public/dist/chains/*
 !public/dist/chains/.gitkeep
