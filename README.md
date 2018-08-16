@@ -116,15 +116,12 @@ node app.js --help
 
 ## Default localnet genesis account
 
-```
-// This is the genesis account of localnet and one hundred million XAS in it.
+This is the genesis account of localnet and one hundred million XAS in it.  
+```js
 {
-  "keypair": {
-    "publicKey": "8065a105c785a08757727fded3a06f8f312e73ad40f1f3502e0232ea42e67efd",
-    "privateKey": "a64af28537545301f66579604628b55c7a7a102752bbd8f0b0d152f9754e78d58065a105c785a08757727fded3a06f8f312e73ad40f1f3502e0232ea42e67efd"
-  },
-  "address": "14762548536863074694",
-  "secret": "someone manual strong movie roof episode eight spatial brown soldier soup motor" // password
+  "address": "ABuH9VHV3cFi9UKzcHXGMPGnSC4QqT2cZ5",
+  "publicKey": "116025d5664ce153b02c69349798ab66144edd2a395e822b13587780ac9c9c09",
+  "secret": "stone elephant caught wrong spend traffic success fetch inside blush virtual element" // password  
 }
 ```
 
