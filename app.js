@@ -101,7 +101,10 @@ function main() {
 
   if (program.log) {
     appConfig.logLevel = program.log
+  } else if (process.env.LOG_LEVEL) {
+    appConfig.logLevel = program.log
   }
+  appConfig.logLevel = program.log || process.env.LOG_LEVEL || appConfig.logLevel
 
   if (program.daemon) {
     console.log('Asch server started as daemon ...')
