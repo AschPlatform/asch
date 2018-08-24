@@ -13,14 +13,16 @@ function build(osVersion, netVersion) {
   shell.mkdir('-p', 'public/dist', 'chains', 'tmp', 'logs', 'bin', 'data')
   shell.cd(__dirname)
   shell.cp('-r', 'package.json', 'aschd', 'init', 'app.js', 'src', fullPath)
+
   if (netVersion !== 'localnet') {
     shell.sed('-i', 'testnet', netVersion, `${fullPath}/aschd`)
+    shell.sed('-i', 'testnet', netVersion, `${fullPath}/app.js`)
     shell.cp(`config-${netVersion}.json`, `${fullPath}/config.json`)
-    shell.cp(`genesisBlock-${netVersion}.json`, `${fullPath}/genesisBlock.json`)
   } else {
     shell.cp('config.json', fullPath)
-    shell.cp('genesisBlock.json', fullPath)
   }
+
+  shell.cp('genesisBlock.json', fullPath)
 
   if (osVersion === 'linux') {
     shell.cp(shell.exec('which node'), `${fullPath}/bin/`)
@@ -28,7 +30,7 @@ function build(osVersion, netVersion) {
 
   shell.cp('-r', 'app.js', 'src', fullPath)
   shell.exec(`find ${fullPath}/src -type f -print0 | xargs -0 sed -i 's/localnet/${netVersion}/g'`)
-  shell.sed('-i', 'localnet', netVersion, `${fullPath}/app.js`)
+  shell.sed('-i', 'testnet', netVersion, `${fullPath}/app.js`)
   shell.sed('-i', 'DEFAULT_BUILD_TIME', buildTime, `${fullPath}/app.js`)
   shell.exec(`cd ${fullPath} && npm install --production`)
   shell.exec(`cd ${fullPath}/.. && tar zcf ${dir}.tar.gz ${dir}`)

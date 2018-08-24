@@ -1,8 +1,9 @@
 {
   "port": 4096,
+  "peerPort": 4097,
   "address": "0.0.0.0",
-  "publicIp": "",
-  "logLevel": "log",
+  "publicIp": "0.0.0.0",
+  "logLevel": "debug",
   "magic": "594fe0f3",
   "api": {
     "access": {
@@ -11,10 +12,9 @@
   },
   "peers": {
     "list": [
-      {"ip": "45.32.19.241", "port": 4096},
-      {"ip": "45.32.62.184", "port": 4096},
-      {"ip": "45.32.22.78", "port": 4096},
-      {"ip": "45.32.248.33", "port": 4096}
+      {"ip": "101.200.84.232", "port": 4097},
+      {"ip": "101.200.123.124", "port": 4097},
+      {"ip": "47.93.137.170", "port": 4097}
     ],
     "blackList": [],
     "options": {
@@ -43,8 +43,5 @@
       "cert": "./ssl/server.crt"
     }
   },
-  "dapp": {
-    "masterpassword": "",
-    "params": {}
-  }
+  "gateway": {}
 }
