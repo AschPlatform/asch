@@ -9,16 +9,16 @@ readonly IPS=(
   "http://39.107.52.143-China"
   )
 
-function read_port() {
+function __read_port() {
   echo `cat $PROG_DIR/config.json |grep '"port"'|head -n 1| awk -F "[:,]" '{print$2}'|tr -d ' '`
 }
 
-function is_running() {
+function __is_running() {
   test -f $PID_FILE && ps -p $(cat $PID_FILE) > /dev/null
 }
 
 function status() {
-  if is_running; then
+  if __is_running; then
     echo "Asch server is running"
   else
     echo "Asch server is not running"
@@ -26,7 +26,7 @@ function status() {
 }
 
 function start() {
-  if is_running; then
+  if __is_running; then
     echo "Asch server is already started"
   else
     rm -f $PROG_DIR/asch.pid
@@ -64,17 +64,17 @@ function restart() {
   start
 }
 
-function ismainnet(){
+function __ismainnet(){
   magic=$(cat $PROG_DIR/config.json | grep magic | awk -F: '{print $2}' | cut -d \" -f2)
   net="mainnet"
   echo "net is $net"
 }
 
-function chosenode(){
+function __chosenode(){
   read -p "Please input your choice [default 0] : "  num
   num=${num:-0}
-
-  if [ $num -ge $length ];then
+  
+  if [ "$num" -ge "$length" ];then
     echo "You chosen wrong number,please run aschd again and chose the other node!"
     exit 1
   fi
@@ -91,7 +91,7 @@ function chosenode(){
 }
 
 function rebuild() {
-  ismainnet
+  __ismainnet
   meta_file=metadata_rebuild_$net.txt
 
   echo "Please select one of the following sources to use"
@@ -124,7 +124,7 @@ function rebuild() {
     fi
   done
 
-  chosenode
+  __chosenode
 
   echo "Downloading blockchain snapshot $Name..."
   /bin/rm $Name
@@ -148,7 +148,7 @@ function version() {
   node $PROG_DIR/app.js --version
 }
 
-function check_os() {
+function __check_os() {
   os_num=`cat /etc/os-release | grep '\"Ubuntu\"'  | wc -l`
   if [ $os_num -ne 1 ];then
     echo "Linux is not Ubuntu, please configure manually!" && exit 1
@@ -156,14 +156,14 @@ function check_os() {
 }
 
 function configure() {
-  check_os
+  __check_os
   sudo bash $PROG_DIR/init/install_deps.sh
   sudo bash $PROG_DIR/init/config_ntp.sh
   sudo bash $PROG_DIR/init/config_monitor.sh
 }
 
 function upgrade() {
-  ismainnet
+  __ismainnet
   meta_file=metadata_upgrade_$net.txt
 
   echo "Please select one of the following sources to use"
@@ -198,7 +198,7 @@ function upgrade() {
   done
   # echo "status",${status[*]}
 
-  chosenode
+  __chosenode
 
   mkdir -p tmp
   wget "$ip/$Name" -O tmp/$Name
@@ -232,17 +232,17 @@ function upgrade() {
 
 function enable() {
   local secret="$@"
-  local port=`read_port`
+  local port=`__read_port`
   curl -k -H "Content-Type: application/json" -X POST -d '{"secret":"'"$secret"'"}' localhost:$port/api/delegates/forging/enable
 }
 
 function main() {
   export PATH=$PROG_DIR/bin:$PATH
   local cmdType=`type -t $1`
-  if [ $cmdType == "function" ]; then
+  if [ "$cmdType" == "function" ]; then
     eval $@
   else
-    echo "Command not supported"
+    echo "Command not supported. Use one of the following commands: status, start, stop, restart, rebuild, upgrade, configure and version"
   fi
 }
 
