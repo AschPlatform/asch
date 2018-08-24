@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node app.js",
-    "test": "jest"
+    "test": "jest --globalSetup ./test/integration/setup.js --globalTeardown ./test/integration/teardown.js ./test/integration/"
   },
   "author": "Qingfeng Shan <sqf1225@foxmail.com>",
   "dependencies": {

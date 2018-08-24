@@ -3,6 +3,7 @@ const supertest = require('supertest')
 const async = require('async')
 const AschJS = require('asch-js')
 const request = require('request')
+const debug = require('debug')('LIB')
 const config = require('../config')
 const pkg = require('../package.json')
 
@@ -50,6 +51,7 @@ function getHeight(url, cb) {
     if (err || resp.statusCode !== 200) {
       return cb(err || 'Status code is not 200 (getHeight)')
     }
+    debug('get height:', body.height)
     return cb(null, body.height)
   })
 }
@@ -199,6 +201,26 @@ function getAccount(params, cb) {
     .end(cb)
 }
 
+async function failTransaction(trs) {
+  let actualError
+  try {
+    await PIFY(transactionUnsigned)(trs)
+  } catch (e) {
+    actualError = String(e)
+  }
+  return actualError
+}
+
+async function failSubmitTransaction(trs) {
+  let actualError
+  try {
+    await PIFY(submitTransaction)(trs)
+  } catch (e) {
+    actualError = String(e)
+  }
+  return actualError
+}
+
 module.exports = {
   GENESIS_ACCOUNT,
   onNewBlock,
@@ -223,4 +245,6 @@ module.exports = {
   genNormalAccount,
   submitTransactionAsync: PIFY(submitTransaction),
   generateGroupAddress,
+  failSubmitTransaction,
+  failTransaction,
 }

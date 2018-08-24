@@ -1,7 +1,8 @@
 const debug = require('debug')('BASIC')
-const setup = require('../setup')
 const config = require('../../smoke/config')
 const lib = require('../../lib')
+
+jest.setTimeout(1000000)
 
 describe('uia test', () => {
   test('Transer xas to issuers', async () => {
@@ -48,7 +49,7 @@ describe('uia test', () => {
       fee: 10000000000,
       args: ['01ChinaBank', issuer.desc],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -94,7 +95,7 @@ describe('uia test', () => {
         17,
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -137,7 +138,7 @@ describe('uia test', () => {
         asset.issueAmount,
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -179,7 +180,7 @@ describe('uia test', () => {
         config.agents[0].address,
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -228,7 +229,7 @@ describe('uia test', () => {
         2,
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -272,7 +273,7 @@ describe('uia test', () => {
         '60000000000000000',
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -320,7 +321,7 @@ describe('uia test', () => {
         1234567890,
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })

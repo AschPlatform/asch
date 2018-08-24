@@ -1,5 +1,4 @@
 const debug = require('debug')('BASIC')
-const setup = require('../setup')
 const config = require('../../smoke/config')
 const lib = require('../../lib')
 
@@ -7,6 +6,9 @@ const group = config.testGroup
 let tid
 let groupAccount
 const groupAddress = lib.generateGroupAddress(group.name)
+
+jest.setTimeout(1000000)
+
 describe('group test', () => {
   test('verify registerGroup', async () => {
     debug('Into verify registerGroup test ...')
@@ -57,7 +59,7 @@ describe('group test', () => {
         group.updateInterval,
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -132,7 +134,7 @@ describe('group test', () => {
       fee: 0,
       args: ['abcd'],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -165,7 +167,7 @@ describe('group test', () => {
       fee: 0,
       args: ['abcd'],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -205,7 +207,7 @@ describe('group test', () => {
       trs.signatures.push(lib.AschJS.transaction
         .signMultiSigTransaction(trs, group.members[i].secret))
     }
-    const error = await setup.failSubmitTransaction(trs)
+    const error = await lib.failSubmitTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -252,7 +254,7 @@ describe('group test', () => {
       trs.signatures.push(lib.AschJS.transaction
         .signMultiSigTransaction(trs, group.members[i].secret))
     }
-    const error = await setup.failSubmitTransaction(trs)
+    const error = await lib.failSubmitTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
