@@ -16,6 +16,7 @@
     "tracer": "=0.8.12"
   },
   "devDependencies": {
+    "asch-js": "https://github.com/AschPlatform/asch-js/tarball/master",
     "eslint-config-asch-base": "*",
     "jest": "=23.4.1",
     "debug": "=3.1.0",
