@@ -1,8 +1,6 @@
 const PIFY = require('util').promisify
 const supertest = require('supertest')
-const async = require('async')
 const AschJS = require('asch-js')
-const request = require('request')
 const debug = require('debug')('LIB')
 const config = require('../config')
 const pkg = require('../package.json')
@@ -38,61 +36,21 @@ function randomCoin() {
   return Math.floor(Math.random() * (10000 * 100000000)) + (1000 * 100000000)
 }
 
-function getHeight(url, cb) {
-  if (typeof url === 'function') {
-    cb = url
-    url = baseUrl
+async function _getHeight() {
+  const ret = await apiGetAsync('/blocks/getHeight')
+  debug('get height response', ret.body)
+  return ret.body.height
+}
+
+async function onNewBlockAsync(cb) {
+  const firstHeight = await _getHeight()
+  while (true) {
+    await sleep(1000)
+    let height = await _getHeight()
+    if (height > firstHeight) {
+      break
+    }
   }
-  request({
-    type: 'GET',
-    url: `${url}/api/blocks/getHeight`,
-    json: true,
-  }, (err, resp, body) => {
-    if (err || resp.statusCode !== 200) {
-      return cb(err || 'Status code is not 200 (getHeight)')
-    }
-    debug('get height:', body.height)
-    return cb(null, body.height)
-  })
-}
-
-function waitForNewBlock(height, cb) {
-  const actualHeight = height
-  async.doWhilst(
-    (next) => {
-      request({
-        type: 'GET',
-        url: `${baseUrl}/api/blocks/getHeight`,
-        json: true,
-      }, (err, resp, body) => {
-        if (err || resp.statusCode !== 200) {
-          return cb(err || 'Got incorrect status')
-        }
-
-        if (height + 1 === body.height) {
-          height = body.height
-        }
-
-        return setTimeout(next, 1000)
-      })
-    },
-    () => actualHeight === height,
-    (err) => {
-      if (err) {
-        return setImmediate(cb, err)
-      }
-      return setImmediate(cb, null, height)
-    },
-  )
-}
-
-function onNewBlock(cb) {
-  getHeight((err, height) => {
-    if (err) {
-      return cb(err)
-    }
-    return waitForNewBlock(height, cb)
-  })
 }
 
 function randomSecret() {
@@ -129,6 +87,7 @@ function apiGet(path, cb) {
     .expect(200)
     .end(cb)
 }
+const apiGetAsync = PIFY(apiGet)
 
 function transactionUnsigned(trs, cb) {
   api.put('/transactions')
@@ -182,7 +141,7 @@ async function giveMoneyAndWaitAsync(addresses) {
     if (!res || !res.body) throw new Error('Server error')
     if (!res.body.success) throw new Error(res.body.error)
   }
-  await PIFY(onNewBlock)()
+  await onNewBlockAsync()
 }
 
 function getBalance(params, cb) {
@@ -223,8 +182,7 @@ async function failSubmitTransaction(trs) {
 
 module.exports = {
   GENESIS_ACCOUNT,
-  onNewBlock,
-  onNewBlockAsync: PIFY(onNewBlock),
+  onNewBlockAsync,
   randomCoin,
   getNormalAccount,
   transaction,
@@ -236,7 +194,7 @@ module.exports = {
   giveMoneyAndWaitAsync,
   api,
   apiGet,
-  apiGetAsync: PIFY(apiGet),
+  apiGetAsync,
   AschJS,
   config,
   sleep,
