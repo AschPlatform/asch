@@ -1,6 +1,6 @@
 {
   "name": "asch",
-  "version": "1.4.4",
+  "version": "1.5.0",
   "private": true,
   "scripts": {
     "start": "node app.js",
@@ -8,7 +8,7 @@
   },
   "author": "Qingfeng Shan <sqf1225@foxmail.com>",
   "dependencies": {
-    "asch-core": "https://github.com/AschPlatform/asch-core/tarball/master",
+    "asch-core": "https://github.com/AschPlatform/asch-core/tarball/develop",
     "commander": "=2.6.0",
     "daemon": "=1.1.0",
     "ip": "=1.1.3",
