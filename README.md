@@ -23,7 +23,7 @@ More infomation please visit
 - g++
 - libssl
 
-## Installation for ubuntu 14.04.x or higher.
+## For ubuntu 14.04.x or higher.
 
 ```
 # Install dependency package
@@ -46,10 +46,21 @@ nvm install v8
 node --version
 
 # git clone sourece code
-git clone https://github.com/AschPlatform/asch && cd asch && chmod u+x aschd
+git clone https://github.com/AschPlatform/asch && cd asch
 
 # Install node packages
 npm install
+
+# Build
+> node build linux {localnet|testnet|mainnet}
+
+# Run
+> cd build/asch-linux-{version}-{localnet|testnet|mainnet}
+> chmod +x aschd
+> ./aschd start
+
+# or run
+> node app.js
 ```
 
 ## Installation on docker.
@@ -63,14 +74,6 @@ docker pull aschplatform/asch:v1.3.0
 docker run -i -t --name asch1.3.0 -p 4096:4096 aschplatform/asch:v1.3.0 /bin/bash
 root@e149b6732a48:/# cd /data/asch && ./aschd start
 Asch server started as daemon ...
-```
-
-## Run 
-
-```
-cd asch && node app.js
-or
-cd asch && ./aschd start
 ```
 
 ### Web Wallet
