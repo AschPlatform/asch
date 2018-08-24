@@ -43,6 +43,8 @@ module.exports = (router) => {
   router.get('/assets/:name', async (req) => {
     const asset = await app.sdb.findOne('Asset', { condition: { name: req.params.name } })
     if (!asset) return 'Asset not found'
+    const holders = await app.sdb.count('Balance', { currency: asset.name })
+    asset.holders = holders || 0
     return { asset }
   })
 }
