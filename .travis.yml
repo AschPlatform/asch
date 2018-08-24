@@ -4,7 +4,6 @@ os:
 env:
   - CXX=g++-4.8
 node_js:
-  - 6
   - 7
   - 8
 notifications:
@@ -23,5 +22,6 @@ addons:
       - g++-4.8
 before_script:
      - pwd
+     - mkdir -p public/dist
 script:
-     - bash ./test/multi-nodes/multiNodes.sh
+     - npm test
