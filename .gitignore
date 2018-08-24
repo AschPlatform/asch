@@ -29,3 +29,5 @@ public/dist/chains/*
 *.save
 data/*
 !data/.gitkeep
+.nyc_output
+coverage

@@ -11,7 +11,6 @@ describe('basic contracts', () => {
     const amount = 25000000000
     const f = 10000000
 
-    await lib.sleep(5000)
     // Get balance before transfer
     const originalBalance = await lib.getBalanceAsync(address)
 
