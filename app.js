@@ -1,7 +1,6 @@
 const program = require('commander')
 const path = require('path')
 const fs = require('fs')
-const randomstring = require('randomstring')
 const ip = require('ip')
 const daemon = require('daemon')
 const tracer = require('tracer')
