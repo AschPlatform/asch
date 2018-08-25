@@ -1,0 +1,81 @@
+#!/bin/bash
+
+readonly NODE_VERSION='8.9.4'
+readonly JAKE_VERSION='8.0.18'
+
+function _has_nvm() {
+  which nvm || ls ~/.nvm > /dev/null 2>&1
+}
+
+function _check_nvm() {
+  printf "checking for nvm ... "
+  if _has_nvm; then
+    echo "yes"
+    return 0
+  else
+    echo "no"
+    return 1
+  fi
+}
+
+function _check_node() {
+  printf "checking for node ... "
+  local version=`node -v 2>/dev/null`
+  if [ "$version" = "v$NODE_VERSION" ]; then
+    echo "node@$version"
+    return 0
+  else
+    echo "no"
+    return 1
+  fi
+}
+
+function _check_jake() {
+  printf "checking for jake ... "
+  local version=`jake -v 2>/dev/null`
+  if [ "$version" = "$JAKE_VERSION" ]; then
+    echo "jake@$version"
+    return 0
+  else
+    echo "no"
+    return 1
+  fi
+}
+
+function _install_nvm() {
+  echo "installing nvm ..."
+  curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
+}
+
+function _install_node() {
+  echo "installing node ..."
+  source ~/.nvm/nvm.sh
+  local cmd="nvm install v$NODE_VERSION"
+  echo $cmd
+  $cmd
+}
+
+function _npm_install() {
+  local cmd="npm install -g $1"
+  echo $cmd
+  $cmd
+}
+
+function _install_jake() {
+  echo "installing jake ..."
+  _npm_install "jake@$JAKE_VERSION"
+}
+
+function main() {
+  if _check_jake; then
+    printf ""
+  elif _check_node; then
+    _install_jake
+  elif _check_nvm; then
+    _install_node && _install_jake
+  else
+    _install_nvm && _install_node && _install_jake
+  fi
+}
+
+main $@ && echo "ok"
