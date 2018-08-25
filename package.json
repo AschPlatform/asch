@@ -4,8 +4,12 @@
   "private": true,
   "scripts": {
     "start": "node app.js",
+    "lint": "eslint .",
     "test": "LOG_LEVEL=error jest --globalSetup ./test/integration/setup.js --globalTeardown ./test/integration/teardown.js ./test/integration"
   },
+  "pre-commit": [
+    "lint"
+  ],
   "author": "Qingfeng Shan <sqf1225@foxmail.com>",
   "dependencies": {
     "asch-core": "https://github.com/AschPlatform/asch-core/tarball/develop",
@@ -17,11 +21,12 @@
   },
   "devDependencies": {
     "asch-js": "https://github.com/AschPlatform/asch-js/tarball/master",
-    "eslint-config-asch-base": "*",
-    "jest": "=23.4.1",
     "debug": "=3.1.0",
-    "moment": "^2.9.0",
-    "shelljs": "^0.7.8",
-    "supertest": "^1.0.1"
+    "eslint-config-asch-base": "https://github.com/AschPlatform/eslint-config-asch-base/tarball/master",
+    "jest": "=23.4.1",
+    "moment": "=2.9.0",
+    "pre-commit": "=1.2.2",
+    "shelljs": "=0.7.8",
+    "supertest": "=1.0.1"
   }
 }

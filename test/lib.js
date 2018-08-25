@@ -36,23 +36,6 @@ function randomCoin() {
   return Math.floor(Math.random() * (10000 * 100000000)) + (1000 * 100000000)
 }
 
-async function _getHeight() {
-  const ret = await apiGetAsync('/blocks/getHeight')
-  debug('get height response', ret.body)
-  return ret.body.height
-}
-
-async function onNewBlockAsync(cb) {
-  const firstHeight = await _getHeight()
-  while (true) {
-    await sleep(1000)
-    let height = await _getHeight()
-    if (height > firstHeight) {
-      break
-    }
-  }
-}
-
 function randomSecret() {
   return Math.random().toString(36).substring(7)
 }
@@ -87,7 +70,9 @@ function apiGet(path, cb) {
     .expect(200)
     .end(cb)
 }
-const apiGetAsync = PIFY(apiGet)
+function apiGetAsync(path) {
+  return PIFY(apiGet)(path)
+}
 
 function transactionUnsigned(trs, cb) {
   api.put('/transactions')
@@ -133,7 +118,24 @@ function giveMoney(address, amount, cb) {
     .end(cb)
 }
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function getHeight() {
+  const ret = await apiGetAsync('/blocks/getHeight')
+  debug('get height response', ret.body)
+  return ret.body.height
+}
+
+async function onNewBlockAsync() {
+  const firstHeight = await getHeight()
+  let height
+  do {
+    await sleep(1000)
+    height = await getHeight()
+  } while (height <= firstHeight)
+}
 
 async function giveMoneyAndWaitAsync(addresses) {
   for (let i = 0; i < addresses.length; i++) {
@@ -195,6 +197,7 @@ module.exports = {
   api,
   apiGet,
   apiGetAsync,
+  getHeight,
   AschJS,
   config,
   sleep,

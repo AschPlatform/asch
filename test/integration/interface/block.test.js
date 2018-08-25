@@ -5,7 +5,7 @@ jest.setTimeout(1000000)
 
 describe('block interfaces', () => {
   test('/api/v2/blocks', async () => {
-    let ret = await lib.apiGetAsync('/v2/blocks')
+    const ret = await lib.apiGetAsync('/v2/blocks')
     expect(ret.body).toBeTruthy()
     debug('get blocks length', ret.body.blocks)
     expect(ret.body.success).toEqual(true)
