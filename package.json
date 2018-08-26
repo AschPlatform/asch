@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node app.js",
     "lint": "eslint .",
+    "coverage": "nyc npm test",
     "test": "LOG_LEVEL=error jest --globalSetup ./test/integration/setup.js --globalTeardown ./test/integration/teardown.js ./test/integration"
   },
   "pre-commit": [
@@ -24,6 +25,7 @@
     "eslint-config-asch-base": "https://github.com/AschPlatform/eslint-config-asch-base/tarball/master",
     "jest": "=23.4.1",
     "moment": "=2.19.3",
+    "nyc": "=12.0.2",
     "pre-commit": "=1.2.2",
     "shelljs": "=0.7.8",
     "supertest": "=1.0.1"
