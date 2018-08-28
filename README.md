@@ -112,7 +112,7 @@ This is the genesis account of localnet and one hundred million XAS in it.
 
 ## Releated projects
 
-- [asch-docs](https://github.com/AschPlatform/asch/tree/master/docs)
+- [asch-docs](https://github.com/AschPlatform/asch-docs)
 - [asch-cli](https://github.com/AschPlatform/asch-cli)
 - [asch-js](https://github.com/AschPlatform/asch-js)
 - [asch-sandbox](https://github.com/AschPlatform/asch-sandbox-dist)
