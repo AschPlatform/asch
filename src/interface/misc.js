@@ -10,7 +10,7 @@ async function getMarketInfo(/* req */) {
 async function search(req) {
   const id = req.query.query
   if (!id) {
-    return 'Search query not provided'
+    throw new Error('Search query not provided')
   }
   const t = await app.sdb.findOne('Transaction', { condition: { id } })
   if (t) {
