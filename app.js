@@ -8,6 +8,82 @@ const asch = require('asch-core')
 
 const Application = asch.Application
 
+class Task {
+  constructor(name) {
+    this.name = name
+    this.lastIndexHeight = 1
+    this.stopped = false
+    this.delegateMap = new Map()
+  }
+  start() {
+    this.loopAsyncFunction(this.run.bind(this), 13 * 1000)
+  }
+  async run() {
+    const latestHeightIndex = await app.sdb.findAll('BlockIndex', {
+      limit: 1,
+      sort: {
+        blockHeight: -1,
+      },
+    })
+    app.logger.debug('found latest block index', latestHeightIndex)
+    if (latestHeightIndex && latestHeightIndex.length !== 0) {
+      this.lastIndexHeight = latestHeightIndex[0].blockHeight + 1
+    }
+    app.logger.info(`start to build block index from height: ${this.lastIndexHeight}`)
+    let counter = 0
+    while (true) {
+      const block = await app.sdb.getBlockByHeight(this.lastIndexHeight)
+      if (!block) {
+        app.logger.info('block index building completed')
+        break
+      }
+      const producerName = await this.getProducerNameByPublicKey(block.delegate)
+      if (!producerName) {
+        app.logger.error(`block producer name not found: ${block.delegate}`)
+        break
+      }
+      this.lastIndexHeight++
+      app.sdb.create('BlockIndex', {
+        blockHeight: block.height,
+        producerName,
+      })
+      counter++
+      if (counter === 10000) {
+        app.logger.info('10000 block index created')
+        counter = 0
+      }
+    }
+    app.sdb.saveLocalChanges()
+  }
+  async getProducerNameByPublicKey(pk) {
+    const name = this.delegateMap.get(pk)
+    if (name) {
+      return name
+    }
+    const delegate = app.sdb.getAll('Delegate').filter(d => d.publicKey === pk).pop()
+    if (!delegate) {
+      return null
+    }
+    this.delegateMap.set(pk, delegate.name)
+    return delegate.name
+  }
+  loopAsyncFunction(asyncFunc, interval) {
+    const self = this
+    setImmediate(function next() {
+      (async () => {
+        try {
+          await asyncFunc()
+        } catch (e) {
+          app.logger.error(`Failed to run task ${this.name}`, e)
+        }
+        if (!self.stopped) {
+          setTimeout(next, interval)
+        }
+      })()
+    })
+  }
+}
+
 function main() {
   process.stdin.resume()
 
@@ -173,6 +249,11 @@ function main() {
   }
   const app = new Application(options)
   app.run()
+
+  setTimeout(() => {
+    const blockIndexTask = new Task()
+    blockIndexTask.start()
+  }, 10000)
 }
 
 main()
