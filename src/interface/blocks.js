@@ -1,5 +1,5 @@
 async function getBlocksForgedBy(req) {
-  const { name } = req.params
+  const { name } = req.query
   if (!name) throw new Error('Name not provided')
   return {
     count: 89,
@@ -70,5 +70,5 @@ module.exports = (router) => {
     return { block }
   })
 
-  router.get('/forgedBy/:name', getBlocksForgedBy)
+  router.get('/forgedBy', getBlocksForgedBy)
 }
