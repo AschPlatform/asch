@@ -5,19 +5,73 @@ const ip = require('ip')
 const daemon = require('daemon')
 const tracer = require('tracer')
 const asch = require('asch-core')
+const { promisify } = require('util')
+const https = require('https')
 
 const Application = asch.Application
 
+function request(url, cb) {
+  const isDone = false
+  function done(err, data) {
+    if (!isDone) cb(err, data)
+  }
+  https.get(url, (res) => {
+    const { statusCode } = res
+
+    if (statusCode !== 200) {
+      return done(`Invalid status code: ${statusCode}`)
+    }
+
+    res.setEncoding('utf8')
+    let rawData = ''
+    res.on('data', (chunk) => { rawData += chunk })
+    res.on('end', () => {
+      try {
+        const json = JSON.parse(rawData)
+        done(null, json)
+      } catch (e) {
+        done(e)
+      }
+    })
+    return null
+  }).on('error', (e) => {
+    done(e)
+  })
+}
+
 class Task {
-  constructor(name) {
+  constructor(name, interval) {
     this.name = name
+    this.interval = interval
+  }
+  start() {
+    this.loopAsyncFunction(this.run.bind(this), this.interval)
+  }
+  loopAsyncFunction(asyncFunc, interval) {
+    const self = this
+    setImmediate(function next() {
+      (async () => {
+        try {
+          await asyncFunc()
+        } catch (e) {
+          app.logger.error(`Failed to run task ${this.name}`, e)
+        }
+        if (!self.stopped) {
+          setTimeout(next, interval)
+        }
+      })()
+    })
+  }
+}
+
+class BlockIndexTask extends Task {
+  constructor(name, interval) {
+    super(name, interval)
     this.lastIndexHeight = 1
     this.stopped = false
     this.delegateMap = new Map()
   }
-  start() {
-    this.loopAsyncFunction(this.run.bind(this), 13 * 1000)
-  }
+
   async run() {
     const latestHeightIndex = await app.sdb.findAll('BlockIndex', {
       limit: 1,
@@ -67,20 +121,15 @@ class Task {
     this.delegateMap.set(pk, delegate.name)
     return delegate.name
   }
-  loopAsyncFunction(asyncFunc, interval) {
-    const self = this
-    setImmediate(function next() {
-      (async () => {
-        try {
-          await asyncFunc()
-        } catch (e) {
-          app.logger.error(`Failed to run task ${this.name}`, e)
-        }
-        if (!self.stopped) {
-          setTimeout(next, interval)
-        }
-      })()
-    })
+}
+
+class AsyncCallbackTask extends Task {
+  constructor(name, interval, callback) {
+    super(name, interval)
+    this.callback = callback
+  }
+  async run() {
+    await this.callback()
   }
 }
 
@@ -251,8 +300,26 @@ function main() {
   app.run()
 
   setTimeout(() => {
-    const blockIndexTask = new Task()
+    const blockIndexTask = new BlockIndexTask('BuildIndex', 13 * 1000)
     blockIndexTask.start()
+
+    const getMarketInfoTask = new AsyncCallbackTask('GetMarketInfo', 10 * 1000, async () => {
+      const requestAsync = promisify(request)
+      const results = await Promise.all([
+        requestAsync('https://www.okb.com/api/v1/ticker.do?symbol=xas_usdt'),
+        requestAsync('https://www.okb.com/api/v1/ticker.do?symbol=xas_btc'),
+      ])
+      global.app.logger.debug('get market info results', results)
+      if (results.length !== 2 || !results[0].ticker || !results[1].ticker) {
+        global.app.logger.warn('invalid market info result', results)
+        return
+      }
+      global.marketInfo = {
+        priceUsdt: results[0].ticker.last,
+        priceBtc: results[1].ticker.last,
+      }
+    })
+    getMarketInfoTask.start()
   }, 10000)
 }
 

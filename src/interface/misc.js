@@ -1,8 +1,8 @@
 async function getMarketInfo(/* req */) {
   const marketInfo = {
-    priceUsdt: '0.4118',
-    priceBtc: '0.00006413',
-    totalSupply: '114855331',
+    priceUsdt: global.marketInfo.priceUsdt,
+    priceBtc: global.marketInfo.priceBtc,
+    totalSupply: modules.blocks.getSupply(),
   }
   return { marketInfo }
 }
