@@ -14,6 +14,8 @@ module.exports = (router) => {
       minHeight = offset
       maxHeight = (offset + limit) - 1
     }
+    if (minHeight < 0) minHeight = 0
+    if (maxHeight < 0) maxHeight = 0
     const withTransactions = !!query.transactions
     let blocks = await modules.blocks.getBlocks(minHeight, maxHeight, withTransactions)
     const _ = app.util.lodash
