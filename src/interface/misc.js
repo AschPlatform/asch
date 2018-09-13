@@ -42,12 +42,14 @@ async function getBlocksForgedBy(req) {
   const name = query.name
   if (!name) throw new Error('Name not provided')
   const limit = query.limit ? Number(query.limit) : 20
+  const offset = query.offset ? Number(query.offset) : 0
   const reverse = query.reverse ? Number(query.reverse) : 0
   const count = await app.sdb.count('BlockIndex', { producerName: name })
   let blockIndex = await app.sdb.findAll('BlockIndex', {
     condition: {
       producerName: name,
     },
+    offset,
     limit,
     sort: {
       blockHeight: reverse ? -1 : 1,
