@@ -41,8 +41,19 @@ function build(osVersion, netVersion) {
   shell.sed('-i', 'testnet', netVersion, `${fullPath}/app.js`)
   shell.sed('-i', 'DEFAULT_BUILD_TIME', buildTime, `${fullPath}/app.js`)
   shell.exec(`cd ${fullPath} && npm install --production`)
-  // TODO: checkout and build frontend from its git project, copy release files and cleanup.
-  shell.exec(`cd ${fullPath}/public/dist && wget -q https://downloads.asch.cn/package/frontend-mainnet-5f5b3cf5.zip && unzip -qq -o frontend-mainnet-5f5b3cf5.zip`)
+
+  console.log('installing front-end')
+  const magic = shell.exec('grep magic config.json | awk \'{print $2}\' | sed -e \'s/[",]//g\'', { silent: true }).stdout.trim()
+  const branch = shell.exec('git branch | grep \\* | cut -d \' \' -f2', { silent: true }).stdout.trim()
+  // It is quite possible that last build stop before cleanup frontend files
+  if (shell.test('-e', `${fullPath}/tmp/asch-frontend-2`)) {
+    shell.rm('-rf', `${fullPath}/tmp/asch-frontend-2`, { silent: true })
+  }
+  shell.exec(`cd ${fullPath}/tmp && pwd && git clone --single-branch -b ${branch} https://github.com/AschPlatform/asch-frontend-2.git \
+     && cd asch-frontend-2 && yarn install && pwd && sed -i '' 's/5f5b3cf5/${magic}/g' src/utils/constants.js \
+     && quasar build && cp -r dist/spa-mat/* ../../public/dist/ && rm -rf asch-frontend-2`, { silent: true })
+
+  // done, create tarball
   shell.exec(`cd ${fullPath}/.. && tar zcf ${dir}.tar.gz ${dir}`)
   shell.exec(`ls -lh ${fullPath}.tar.gz`)
 }
