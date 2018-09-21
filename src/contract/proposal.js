@@ -126,7 +126,7 @@ async function validateGatewayUpdateMember(content/* , context */) {
 async function validateGatewayContent(content/* , context */) {
   const gateway = await app.sdb.findOne('Gateway', { condition: { name: content.gateway } })
   if (!gateway) throw new Error('Gateway not found')
-  if (!gateway.revoke) throw new Error('Gateway is already revoked')
+  if (gateway.revoked) throw new Error('Gateway is already revoked')
 }
 
 module.exports = {
