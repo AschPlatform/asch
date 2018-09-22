@@ -26,12 +26,12 @@ function build(osVersion, netVersion) {
 
   shell.cp('genesisBlock.json', fullPath)
 
-  if (osVersion === 'linux') {
+  if (osVersion === 'linux' || osVersion === 'darwin') {
     shell.cp(shell.exec('which node'), `${fullPath}/bin/`)
   }
 
   shell.cp('-r', 'app.js', 'src', fullPath)
-  shell.exec(`find ${fullPath}/src -type f -print0 | xargs -0 sed -i 's/localnet/${netVersion}/g'`)
+  shell.exec(`find ${fullPath}/src -type f -print0 | xargs -0 sed -i '' 's/localnet/${netVersion}/g'`)
   shell.sed('-i', 'testnet', netVersion, `${fullPath}/app.js`)
   shell.sed('-i', 'DEFAULT_BUILD_TIME', buildTime, `${fullPath}/app.js`)
   shell.exec(`cd ${fullPath} && npm install --production`)
