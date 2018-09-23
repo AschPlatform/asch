@@ -122,5 +122,5 @@ module.exports = {
     }
     app.sdb.del('GroupMember', { member: address, name: this.sender.name })
     return null
-  }
+  },
 }

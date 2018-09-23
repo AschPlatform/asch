@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/AschPlatform/asch.svg?branch=master)](https://travis-ci.org/AschPlatform/asch)
-[![Author](https://img.shields.io/badge/author-@AschPlatform-blue.svg?style=flat)](http://github.com/AschPlatform) 
+[![Build Status](https://travis-ci.org/AschPlatform/asch.svg?branch=develop)](https://travis-ci.org/AschPlatform/asch)
+[![Author](https://img.shields.io/badge/author-@AschPlatform-blue.svg?style=flat)](http://github.com/AschPlatform)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg?style=flat)](http://aschplatform.mit-license.org)
 [![Platform](https://img.shields.io/badge/platform-Linux-green.svg?style=flat)](https://github.com/AschPlatform/asch)
 - - -
@@ -37,7 +37,7 @@ sudo apt-get install libtool libtool-bin -y
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
 # This loads nvm
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # Install node and npm for current user.
@@ -104,18 +104,18 @@ node app.js --help
 
 ## Default localnet genesis account
 
-This is the genesis account of localnet and one hundred million XAS in it.  
+This is the genesis account of localnet and one hundred million XAS in it.
 ```js
 {
   "address": "ABuH9VHV3cFi9UKzcHXGMPGnSC4QqT2cZ5",
   "publicKey": "116025d5664ce153b02c69349798ab66144edd2a395e822b13587780ac9c9c09",
-  "secret": "stone elephant caught wrong spend traffic success fetch inside blush virtual element" // password  
+  "secret": "stone elephant caught wrong spend traffic success fetch inside blush virtual element" // password
 }
 ```
 
 ## Releated projects
 
-- [asch-docs](https://github.com/AschPlatform/asch/tree/master/docs)
+- [asch-docs](https://github.com/AschPlatform/asch-docs)
 - [asch-cli](https://github.com/AschPlatform/asch-cli)
 - [asch-js](https://github.com/AschPlatform/asch-js)
 - [asch-sandbox](https://github.com/AschPlatform/asch-sandbox-dist)

@@ -1,0 +1,26 @@
+{
+  "check-coverage": false,
+  "per-file": false,
+  "lines": 80,
+  "statements": 80,
+  "functions": 80,
+  "branches": 80,
+  "include": [
+    "app.js",
+    "src/contract/*.js",
+    "src/interface/*.js"
+  ],
+  "exclude": [
+  ],
+  "reporter": [
+    "lcov",
+    "text",
+    "json",
+    "html"
+  ],
+  "extension": [
+    ".js"
+  ],
+  "cache": true,
+  "all": true
+}

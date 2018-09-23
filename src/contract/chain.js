@@ -37,18 +37,16 @@ module.exports = {
     return null
   },
 
-  async replaceDelegate(chain, from, to) {
-    // app.sdb.update('ChainDelegate', { delegate: to }, { delegate: from, chain: chain })
+  async replaceDelegate(/* chain, from, to */) {
+    return 'unsupported feature'
   },
 
-  async addDelegate(chain, key) {
-    // app.sdb.create('ChainDelegate', { chain: chain, delegate: key })
-    // app.sdb.increment('Chain', { unlockNumber: 1 }, { name: chain })
+  async addDelegate(/* chain, key */) {
+    return 'unsupported feature'
   },
 
-  async removeDelegate(chain, key) {
-    // app.sdb.del('ChainDelegate', { chain: chain, delegate: key })
-    // app.sdb.increment('Chain', { unlockNumber: -1 }, { name: chain })
+  async removeDelegate(/* chain, key */) {
+    return 'unsupported feature'
   },
 
   async deposit(chainName, currency, amount) {
