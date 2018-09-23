@@ -1,7 +1,6 @@
 const program = require('commander')
 const path = require('path')
 const fs = require('fs')
-const randomstring = require('randomstring')
 const ip = require('ip')
 const daemon = require('daemon')
 const tracer = require('tracer')
@@ -12,7 +11,7 @@ const Application = asch.Application
 function main() {
   process.stdin.resume()
 
-  const version = '1.4.4'
+  const version = '1.5.0'
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')
@@ -102,7 +101,10 @@ function main() {
 
   if (program.log) {
     appConfig.logLevel = program.log
+  } else if (process.env.LOG_LEVEL) {
+    appConfig.logLevel = program.log
   }
+  appConfig.logLevel = program.log || process.env.LOG_LEVEL || appConfig.logLevel
 
   if (program.daemon) {
     console.log('Asch server started as daemon ...')

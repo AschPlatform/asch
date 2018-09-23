@@ -1,8 +1,7 @@
 const PIFY = require('util').promisify
 const supertest = require('supertest')
-const async = require('async')
 const AschJS = require('asch-js')
-const request = require('request')
+const debug = require('debug')('LIB')
 const config = require('../config')
 const pkg = require('../package.json')
 
@@ -35,62 +34,6 @@ function generateGroupAddress(name) {
 
 function randomCoin() {
   return Math.floor(Math.random() * (10000 * 100000000)) + (1000 * 100000000)
-}
-
-function getHeight(url, cb) {
-  if (typeof url === 'function') {
-    cb = url
-    url = baseUrl
-  }
-  request({
-    type: 'GET',
-    url: `${url}/api/blocks/getHeight`,
-    json: true,
-  }, (err, resp, body) => {
-    if (err || resp.statusCode !== 200) {
-      return cb(err || 'Status code is not 200 (getHeight)')
-    }
-    return cb(null, body.height)
-  })
-}
-
-function waitForNewBlock(height, cb) {
-  const actualHeight = height
-  async.doWhilst(
-    (next) => {
-      request({
-        type: 'GET',
-        url: `${baseUrl}/api/blocks/getHeight`,
-        json: true,
-      }, (err, resp, body) => {
-        if (err || resp.statusCode !== 200) {
-          return cb(err || 'Got incorrect status')
-        }
-
-        if (height + 1 === body.height) {
-          height = body.height
-        }
-
-        return setTimeout(next, 1000)
-      })
-    },
-    () => actualHeight === height,
-    (err) => {
-      if (err) {
-        return setImmediate(cb, err)
-      }
-      return setImmediate(cb, null, height)
-    },
-  )
-}
-
-function onNewBlock(cb) {
-  getHeight((err, height) => {
-    if (err) {
-      return cb(err)
-    }
-    return waitForNewBlock(height, cb)
-  })
 }
 
 function randomSecret() {
@@ -126,6 +69,9 @@ function apiGet(path, cb) {
     .expect('Content-Type', /json/)
     .expect(200)
     .end(cb)
+}
+function apiGetAsync(path) {
+  return PIFY(apiGet)(path)
 }
 
 function transactionUnsigned(trs, cb) {
@@ -172,7 +118,24 @@ function giveMoney(address, amount, cb) {
     .end(cb)
 }
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function getHeight() {
+  const ret = await apiGetAsync('/blocks/getHeight')
+  debug('get height response', ret.body)
+  return ret.body.height
+}
+
+async function onNewBlockAsync() {
+  const firstHeight = await getHeight()
+  let height
+  do {
+    await sleep(1000)
+    height = await getHeight()
+  } while (height <= firstHeight)
+}
 
 async function giveMoneyAndWaitAsync(addresses) {
   for (let i = 0; i < addresses.length; i++) {
@@ -180,7 +143,7 @@ async function giveMoneyAndWaitAsync(addresses) {
     if (!res || !res.body) throw new Error('Server error')
     if (!res.body.success) throw new Error(res.body.error)
   }
-  await PIFY(onNewBlock)()
+  await onNewBlockAsync()
 }
 
 function getBalance(params, cb) {
@@ -199,10 +162,29 @@ function getAccount(params, cb) {
     .end(cb)
 }
 
+async function failTransaction(trs) {
+  let actualError
+  try {
+    await PIFY(transactionUnsigned)(trs)
+  } catch (e) {
+    actualError = String(e)
+  }
+  return actualError
+}
+
+async function failSubmitTransaction(trs) {
+  let actualError
+  try {
+    await PIFY(submitTransaction)(trs)
+  } catch (e) {
+    actualError = String(e)
+  }
+  return actualError
+}
+
 module.exports = {
   GENESIS_ACCOUNT,
-  onNewBlock,
-  onNewBlockAsync: PIFY(onNewBlock),
+  onNewBlockAsync,
   randomCoin,
   getNormalAccount,
   transaction,
@@ -214,7 +196,8 @@ module.exports = {
   giveMoneyAndWaitAsync,
   api,
   apiGet,
-  apiGetAsync: PIFY(apiGet),
+  apiGetAsync,
+  getHeight,
   AschJS,
   config,
   sleep,
@@ -223,4 +206,6 @@ module.exports = {
   genNormalAccount,
   submitTransactionAsync: PIFY(submitTransaction),
   generateGroupAddress,
+  failSubmitTransaction,
+  failTransaction,
 }

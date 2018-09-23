@@ -1,7 +1,8 @@
 const debug = require('debug')('BASIC')
-const setup = require('../setup')
 const config = require('../../smoke/config')
 const lib = require('../../lib')
+
+jest.setTimeout(1000000)
 
 describe('basic contracts', () => {
   test('verify transfer', async () => {
@@ -10,7 +11,6 @@ describe('basic contracts', () => {
     const amount = 25000000000
     const f = 10000000
 
-    await lib.sleep(5000)
     // Get balance before transfer
     const originalBalance = await lib.getBalanceAsync(address)
 
@@ -58,7 +58,7 @@ describe('basic contracts', () => {
       type: 1,
       args: [amount, address],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -112,7 +112,7 @@ describe('basic contracts', () => {
         name,
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -156,7 +156,7 @@ describe('basic contracts', () => {
         publicKey,
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -211,7 +211,7 @@ describe('basic contracts', () => {
       fee: f,
       args: [lockHeight, balanceWantToLock],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -251,7 +251,7 @@ describe('basic contracts', () => {
       fee: 1000000000,
       args: [],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -288,7 +288,7 @@ describe('basic contracts', () => {
       fee: f,
       args: [agentName],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -320,7 +320,7 @@ describe('basic contracts', () => {
       fee: 0,
       args: [],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -356,7 +356,7 @@ describe('basic contracts', () => {
       fee: f,
       args: [],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -392,7 +392,7 @@ describe('basic contracts', () => {
       fee: f,
       args: [delegates.join(',')],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -428,7 +428,7 @@ describe('basic contracts', () => {
       fee: f,
       args: [delegates.join(',')],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })

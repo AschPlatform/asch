@@ -3,10 +3,10 @@
 readonly PROG_DIR=$(pwd)
 readonly PID_FILE=$PROG_DIR/asch.pid
 readonly IPS=(
-  "https://www.asch.io/downloads-International"
-  "http://47.75.26.122/-Hongkong"
-  "http://125.32.110.138:9999/downloads-China"
-  "http://39.107.52.143-China"
+  "http://china.aschcdn.com-China"
+  "http://asia.aschcdn.com-Asia"
+  "http://america.aschcdn.com-America"
+  "http://europe.aschcdn.com-Europe"
   )
 
 function __read_port() {
@@ -64,23 +64,28 @@ function restart() {
   start
 }
 
-function __ismainnet(){
+
+function __getnettype(){
   magic=$(cat $PROG_DIR/config.json | grep magic | awk -F: '{print $2}' | cut -d \" -f2)
-  net="mainnet"
+  if [ "$magic" = "594fe0f3" ]; then
+    net="testnet"
+  elif [ "$magic" = "5f5b3cf5" ]; then
+    net="mainnet"
+  fi 
   echo "net is $net"
 }
 
-function __chosenode(){
+function __choosenode(){
   read -p "Please input your choice [default 0] : "  num
   num=${num:-0}
-  
-  if [ "$num" -ge "$length" ];then
-    echo "You chosen wrong number,please run aschd again and chose the other node!"
+
+  if [ $num -ge $length ];then
+    echo "Invalid number, please run aschd again and choose another node!"
     exit 1
   fi
 
   if [ i${status[$num]} = i"N" ];then
-    echo "This node has no data,please run aschd again and chose the other node!"
+    echo "This node has no data,please run aschd again and choose another node!"
     exit 2
   fi
 
@@ -91,7 +96,7 @@ function __chosenode(){
 }
 
 function rebuild() {
-  __ismainnet
+  __getnettype
   meta_file=metadata_rebuild_$net.txt
 
   echo "Please select one of the following sources to use"
@@ -163,7 +168,7 @@ function configure() {
 }
 
 function upgrade() {
-  __ismainnet
+  __getnettype
   meta_file=metadata_upgrade_$net.txt
 
   echo "Please select one of the following sources to use"

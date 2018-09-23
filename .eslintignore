@@ -1,1 +1,10 @@
 src/model/*
+test/utils
+test/scripts
+node_modules
+build
+coverage
+data
+chains
+public
+jest.config.js

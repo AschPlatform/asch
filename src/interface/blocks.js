@@ -1,5 +1,3 @@
-const _ = require('lodash')
-
 module.exports = (router) => {
   router.get('/', async (req) => {
     const query = req.query
@@ -16,8 +14,11 @@ module.exports = (router) => {
       minHeight = offset
       maxHeight = (offset + limit) - 1
     }
+    if (minHeight < 0) minHeight = 0
+    if (maxHeight < 0) maxHeight = 0
     const withTransactions = !!query.transactions
     let blocks = await modules.blocks.getBlocks(minHeight, maxHeight, withTransactions)
+    const _ = app.util.lodash
     if (needReverse) {
       blocks = _.reverse(blocks)
     }
@@ -29,16 +30,16 @@ module.exports = (router) => {
     const idOrHeight = req.params.idOrHeight
     let block
     if (idOrHeight.length === 64) {
-      let id = idOrHeight
+      const id = idOrHeight
       block = await app.sdb.getBlockById(id)
     } else {
-      let height = Number(idOrHeight)
+      const height = Number(idOrHeight)
       if (Number.isInteger(height) && height >= 0) {
         block = await app.sdb.getBlockByHeight(height)
       }
     }
     if (!block) throw new Error('Block not found')
-    if (!!req.query.transactions) {
+    if (req.query.transactions) {
       const transactions = await app.sdb.findAll('Transaction', {
         condition: {
           height: block.height,

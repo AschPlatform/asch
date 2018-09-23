@@ -1,5 +1,4 @@
 const debug = require('debug')('BASIC')
-const setup = require('../setup')
 const config = require('../../smoke/config')
 const lib = require('../../lib')
 
@@ -22,6 +21,8 @@ async function initDelegates() {
     }
   }
 }
+
+jest.setTimeout(1000000)
 
 describe('proposal test', () => {
   test('Prepare data for proposal test', async () => {
@@ -108,7 +109,7 @@ describe('proposal test', () => {
         10000,
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -141,7 +142,7 @@ describe('proposal test', () => {
       fee: 10000000,
       args: ['1234567809'],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -172,7 +173,7 @@ describe('proposal test', () => {
       fee: 0,
       args: [proposalId],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -228,7 +229,7 @@ describe('proposal test', () => {
         'Validator description of bitcoin gateway',
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -300,7 +301,7 @@ describe('proposal test', () => {
       fee: 10000000000,
       args: ['bitcoin'],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -341,7 +342,7 @@ describe('proposal test', () => {
         'ABCDEFGH'.repeat(8),
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -397,7 +398,7 @@ describe('proposal test', () => {
         '100',
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -416,7 +417,7 @@ describe('proposal test', () => {
         'ABCDEFGH'.repeat(8),
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -434,7 +435,7 @@ describe('proposal test', () => {
         'ABCDEFGH'.repeat(8),
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })
@@ -452,7 +453,7 @@ describe('proposal test', () => {
         '',
       ],
     }
-    const error = await setup.failTransaction(trs)
+    const error = await lib.failTransaction(trs)
     debug(`--->Actual error is '${error}', expected error is '${expectedError}'`)
     expect(error).toMatch(new RegExp(expectedError))
   })

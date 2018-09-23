@@ -1,3 +1,5 @@
+/* eslint import/no-extraneous-dependencies: 0 */
+
 const shell = require('shelljs')
 const moment = require('moment')
 const path = require('path')
