@@ -129,7 +129,7 @@ function rebuild() {
     fi
   done
 
-  __chosenode
+  __choosenode
 
   echo "Downloading blockchain snapshot $Name..."
   /bin/rm $Name
@@ -203,7 +203,7 @@ function upgrade() {
   done
   # echo "status",${status[*]}
 
-  __chosenode
+  __choosenode
 
   mkdir -p tmp
   wget "$ip/$Name" -O tmp/$Name
