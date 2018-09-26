@@ -121,4 +121,17 @@ module.exports = (router) => {
     }
     return { count, withdrawals }
   })
+
+  router.get('/threshold', async (req) => {
+    const gatewayName = req.params.gateway
+    const memberAddr = req.params.address
+    // return value is { ratio, needSupply }
+    return app.util.gateway.getThreshold(gatewayName, memberAddr)
+  })
+
+  router.get('/maximumBailWithdrawl', async (req) => {
+    const gatewayName = req.params.gateway
+    const memberAddr = req.params.address
+    return app.util.gateway.getMaximumBailWithdrawl(gatewayName, memberAddr)
+  })
 }

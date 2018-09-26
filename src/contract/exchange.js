@@ -13,12 +13,12 @@ module.exports = {
       app.sdb.increase('Account', { xas: result.targetAmount }, { address: this.sender.address })
     }
     // Record exchange transactions
-    const exchangePair = `${sourceCurrency}/${targetCurrency}`
     app.sdb.create('BancorExchange', {
       address: this.sender.address,
       timestamp: app.util.slots.getTime(),
       type: 'Buy',
-      pair: exchangePair,
+      source: sourceCurrency,
+      target: targetCurrency,
       ratio: result.targetAmount / result.sourceAmount,
       buyed: result.targetAmount,
       used: result.sourceAmount,
@@ -39,12 +39,12 @@ module.exports = {
       app.sdb.increase('Account', { xas: result.targetAmount }, { address: this.sender.address })
     }
     // Record exchange transactions
-    const exchangePair = `${sourceCurrency}/${targetCurrency}`
     app.sdb.create('BancorExchange', {
       address: this.sender.address,
       timestamp: app.util.slots.getTime(),
       type: 'Sell',
-      pair: exchangePair,
+      source: sourceCurrency,
+      target: targetCurrency,
       ratio: result.targetAmount / result.sourceAmount,
       buyed: result.targetAmount,
       used: result.sourceAmount,

@@ -5,6 +5,7 @@ module.exports = {
     { name: 'symbol', type: 'String', length: 10, composite_key: true },
     { name: 'desc', type: 'Text' },
     { name: 'precision', type: 'Number' },
-    { name: 'revoked', type: 'Number' }
+    { name: 'revoked', type: 'Number' },
+    { name: 'quantity', type: 'BigInt' },
   ]
 }
