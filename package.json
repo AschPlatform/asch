@@ -8,7 +8,7 @@
   },
   "author": "Qingfeng Shan <sqf1225@foxmail.com>",
   "dependencies": {
-    "asch-core": "https://github.com/AschPlatform/asch-core/tarball/v1.4.4",
+    "asch-core": "https://github.com/AschPlatform/asch-core/tarball/v1.4.5",
     "commander": "=2.6.0",
     "daemon": "=1.1.0",
     "ip": "=1.1.3",
