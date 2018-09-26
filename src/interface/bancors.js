@@ -1,11 +1,18 @@
 async function getBancors(req) {
   const offset = req.query.offset ? Number(req.query.offset) : 0
   const limit = req.query.limit ? Number(req.query.limit) : 20
-  const bancors = await app.sdb.findAll('Bancor', { limit, offset })
+  let sortBancor = {}
+  if (req.query.orderBy) {
+    const orderBy = req.query.orderBy.split(':')
+    sortBancor[orderBy[0]] = orderBy[1] === 'desc' ? -1 : 1
+  } else {
+    sortBancor = { timestamp: -1 }
+  }
+  const bancors = await app.sdb.findAll('Bancor', { limit, offset, sortBancor })
   // Latest bid price
-  bancors.forEach((element, index, array) => {
+  await bancors.forEach(async (element, index, array) => {
     const sort = { timestamp: -1 }
-    const record = app.sdb.findOne('BancorExchange', { condition: { address: element.owner }, sort })
+    const record = await app.sdb.findOne('BancorExchange', { condition: { address: element.owner }, sort })
     if (record) {
       array[index].latestBid = record.ratio
     } else {
@@ -27,6 +34,7 @@ async function getTransactionsByBancor(req) {
   }
   const condition = {
     address: req.params.address,
+    owner: req.params.owner,
     source: req.params.source,
     target: req.params.target,
   }
@@ -36,7 +44,27 @@ async function getTransactionsByBancor(req) {
   return transactions
 }
 
+async function getTransactionsByUser(req) {
+  const offset = req.query.offset ? Number(req.query.offset) : 0
+  const limit = req.query.limit ? Number(req.query.limit) : 20
+  let sort = {}
+  if (req.query.orderBy) {
+    const orderBy = req.query.orderBy.split(':')
+    sort[orderBy[0]] = orderBy[1] === 'desc' ? -1 : 1
+  } else {
+    sort = { timestamp: -1 }
+  }
+  const condition = {
+    address: req.params.address,
+  }
+  const transactions = await app.sdb.findAll('BancorExchange', {
+    condition, limit, offset, sort,
+  })
+  return transactions
+}
+
 module.exports = (router) => {
   router.get('/', getBancors)
-  router.get('/transactions/:address/:source/:target', getTransactionsByBancor)
+  router.get('/transactions/:address/:owner/:source/:target', getTransactionsByBancor)
+  router.get('/transactions/:address', getTransactionsByUser)
 }
