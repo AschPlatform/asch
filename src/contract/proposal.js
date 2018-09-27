@@ -122,7 +122,7 @@ async function doBancorInit(params) {
     stockCw: params.stockCw,
     moneyCw: params.moneyCw,
     name: params.name,
-    createTime: this.trs.timestamp,
+    timestamp: this.trs.timestamp,
   })
   if (params.money === 'XAS') {
     app.balances.decrease(address, params.money, params.stockBalance)

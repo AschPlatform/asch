@@ -123,7 +123,7 @@ module.exports = (router) => {
   })
 
   router.get('/threshold', async (req) => {
-    const gatewayName = req.params.gateway
+    const gatewayName = req.params.name
     const memberAddr = req.params.address
     // return value is { ratio, needSupply }
     const result = await app.util.gateway.getThreshold(gatewayName, memberAddr)
@@ -131,20 +131,20 @@ module.exports = (router) => {
   })
 
   router.get('/maximumBailWithdrawl', async (req) => {
-    const gatewayName = req.params.gateway
+    const gatewayName = req.params.name
     const memberAddr = req.params.address
     const result = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, memberAddr)
     return result
   })
 
   router.get('/allmembers', async (req) => {
-    const gatewayName = req.params.gateway
+    const gatewayName = req.params.name
     const members = await app.util.gateway.getAllGatewayMember(gatewayName)
     return members
   })
 
   router.get('/bailHosting', async (req) => {
-    const gatewayName = req.params.gateway
+    const gatewayName = req.params.name
     const bail = await app.util.gateway.getBailTotalAmount(gatewayName)
     const gwCurrency = await app.sdb.findOne('GatewayCurrency', { condition: { gateway: gatewayName } })
     const hosting = await app.util.gateway.getAmountByCurrency(gwCurrency.symbol)
@@ -153,7 +153,7 @@ module.exports = (router) => {
 
   router.get('/realClaim', async (req) => {
     let realClaim = 0
-    const gatewayName = req.params.gateway
+    const gatewayName = req.params.name
     const address = req.params.address
     const gateway = await app.sdb.load('Gateway', gatewayName)
     if (!gateway) return 'Gateway not found'
@@ -175,7 +175,7 @@ module.exports = (router) => {
   })
 
   router.get('/bailWithdrawl', async (req) => {
-    const gatewayName = req.params.gateway
+    const gatewayName = req.params.name
     const address = req.params.address
     const withdrawl = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, address)
     const threshold = await app.util.gateway.getThreshold(gatewayName, address)

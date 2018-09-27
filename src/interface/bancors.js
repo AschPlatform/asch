@@ -63,8 +63,38 @@ async function getTransactionsByUser(req) {
   return transactions
 }
 
+async function getCurrencies(req) {
+  const offset = req.query.offset ? Number(req.query.offset) : 0
+  const limit = req.query.limit ? Number(req.query.limit) : 20
+  const result = []
+  result.push({ assetName: 'XAS', precision: 8 })
+  assets = await app.sdb.findAll('Asset', { limit, offset })
+  assets.forEach((element) => {
+    result.push(
+      {
+        assetName: element.name,
+        precision: element.precision,
+        maxSupply: element.maximum,
+      },
+    )
+  })
+
+  gwCurrencies = await app.sdb.findAll('GatewayCurrency', { limit, offset })
+  gwCurrencies.forEach((element) => {
+    result.push(
+      {
+        assetName: element.symbol,
+        precision: element.precision,
+        maxSupply: element.quantity,
+      },
+    )
+  })
+  return result
+}
+
 module.exports = (router) => {
   router.get('/', getBancors)
   router.get('/transactions/:address/:owner/:source/:target', getTransactionsByBancor)
   router.get('/transactions/:address', getTransactionsByUser)
+  router.get('/currencies', getCurrencies)
 }

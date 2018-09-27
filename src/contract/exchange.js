@@ -14,6 +14,7 @@ module.exports = {
     }
     // Record exchange transactions
     app.sdb.create('BancorExchange', {
+      id: this.trs.id,
       address: this.sender.address,
       timestamp: app.util.slots.getTime(),
       type: 'Buy',
@@ -41,6 +42,7 @@ module.exports = {
     }
     // Record exchange transactions
     app.sdb.create('BancorExchange', {
+      id: this.trs.id,
       address: this.sender.address,
       timestamp: app.util.slots.getTime(),
       type: 'Sell',
