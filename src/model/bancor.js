@@ -10,7 +10,7 @@ module.exports = {
     { name: 'stockCw', type: 'Number', not_null: true },
     { name: 'moneyCw', type: 'Number', not_null: true },
     { name: 'relay', type: 'Number', not_null: true, default: 1 },
-    { name: 'name', type: 'String'},
+    { name: 'name', type: 'String', length: 30 },
     { name: 'timestamp', type: 'Number', default: 0 },
     { name: 'fee', type: 'Number', default: 0 },
     { name: 'status', type: 'Number', default: 0 },

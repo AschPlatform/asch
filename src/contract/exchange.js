@@ -2,6 +2,7 @@ module.exports = {
   async exchangeByTarget(sourceCurrency, targetCurrency, targetAmount, bancorInfo) {
     app.validate('amount', String(targetAmount))
     const bancor = await app.util.bancor.Bancor.create(bancorInfo.money, bancorInfo.stock, bancorInfo.owner)
+    if (!bancor) return 'Bancor is not ready'
     const result = await bancor.exchangeByTarget(sourceCurrency, targetCurrency, targetAmount, true)
     // decrease source, increase target
     if (sourceCurrency === 'XAS') {
@@ -30,6 +31,7 @@ module.exports = {
   async exchangeBySource(sourceCurrency, targetCurrency, sourceAmount, bancorInfo) {
     app.validate('amount', String(sourceAmount))
     const bancor = await app.util.bancor.Bancor.create(bancorInfo.money, bancorInfo.stock, bancorInfo.owner)
+    if (!bancor) return 'Bancor is not ready'
     const result = await bancor.exchangeBySource(sourceCurrency, targetCurrency, sourceAmount, true)
     // decrease source, increase target
     if (sourceCurrency === 'XAS') {
@@ -57,6 +59,7 @@ module.exports = {
 
   async burnXAS() {
     const bancor = await app.util.bancor.Bancor.create('BCH', 'XAS')
+    if (!bancor) return 'Bancor is not ready'
     const balance = await app.balances.get('ARepurchaseAddr1234567890123456789', 'BCH')
     const result = await bancor.exchangeBySource('BCH', 'XAS', balance, true)
     app.balances.decrease('ARepurchaseAddr1234567890123456789', 'BCH', result.sourceAmount)
