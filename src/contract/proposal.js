@@ -39,7 +39,7 @@ async function doGatewayInit(params) {
     // TODO: ....check m is address
     if (!app.util.address.isNormalAddress(m)) throw new Error(`${m} is not valid address`)
     const addr = app.util.address.generateLockedAddress(m)
-    const account = app.sdb.findOne('Account', { condition: { address: addr } })
+    const account = await app.sdb.findOne('Account', { condition: { address: addr } })
     if (!account) throw new Error(`No bail was found for gateway member ${m}`)
     if (account && account.xas < app.util.constants.initialDeposit) {
       throw new Error(`Bail is not enough for gateway member ${m}`)
@@ -56,6 +56,13 @@ async function doGatewayUpdateMember(params, context) {
 
   if (context.block.height - gateway.lastUpdateHeight < gateway.updateInterval) {
     throw new Error('Time not arrived')
+  }
+
+  const addr = app.util.address.generateLockedAddress(params.to)
+  const account = await app.sdb.findOne('Account', { condition: { address: addr } })
+  if (!account) throw new Error(`No bail was found for new gateway member ${m}`)
+  if (account && account.xas < app.util.constants.initialDeposit) {
+    throw new Error(`New member's bail is not enough for gateway member ${m}`)
   }
 
   app.sdb.increase('Gateway', { version: 1 }, { name: params.gateway })
@@ -169,7 +176,7 @@ async function validateGatewayInit(content/* , context */) {
     if (validator.gateway !== gateway.name) throw new Error('Invalid validator')
     if (validator.elected) throw new Error('Validator already elected')
     const addr = app.util.address.generateLockedAddress(m)
-    const account = app.sdb.findOne('Account', { condition: { address: addr } })
+    const account = await app.sdb.findOne('Account', { condition: { address: addr } })
     if (!account) throw new Error(`No bail was found for gateway member ${m}`)
     if (account && account.xas < app.util.constants.initialDeposit) {
       throw new Error(`Bail is not enough for gateway member ${m}`)
