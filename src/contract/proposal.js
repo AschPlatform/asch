@@ -98,7 +98,7 @@ async function doGatewayClaim(params) {
   app.sdb.update('Gateway', { revoked: 2 }, { name: params.gateway })
 }
 
-async function doBancorInit(params) {
+async function doBancorInit(params, context) {
   const address = params.owner
   app.sdb.lock(`bancor@${address}`)
   const account = await app.sdb.findOne('Account', { condition: { address } })
@@ -122,7 +122,7 @@ async function doBancorInit(params) {
     stockCw: params.stockCw,
     moneyCw: params.moneyCw,
     name: params.name,
-    timestamp: this.trs.timestamp,
+    timestamp: context.trs.timestamp,
   })
   if (params.money === 'XAS') {
     app.balances.decrease(address, params.money, params.stockBalance)
@@ -214,7 +214,7 @@ async function validateGatewayClaim(content/* , context */) {
 }
 
 async function validateBancorContent(content/* , context */) {
-  const address = content.address
+  const address = content.owner
   if (content.money === content.stock) throw new Error('Money and stock cannot be same')
   const bancor = await app.sdb.findOne('Bancor', { condition: { owner: address, stock: content.stock, money: content.money } })
   if (bancor) throw new Error('Bancor exists')
