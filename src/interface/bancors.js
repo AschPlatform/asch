@@ -10,17 +10,17 @@ async function getBancors(req) {
   }
   const bancors = await app.sdb.findAll('Bancor', { limit, offset, sortBancor })
   // Latest bid price
-  await bancors.forEach(async (element, index, array) => {
+  await Promise.all(bancors.map(async (bancor) => {
     const sort = { timestamp: -1 }
     const condition1 = {
-      owner: element.owner,
-      source: element.money,
-      target: element.stock,
+      owner: bancor.owner,
+      source: bancor.money,
+      target: bancor.stock,
     }
     const condition2 = {
-      owner: element.owner,
-      source: element.stock,
-      target: element.money,
+      owner: bancor.owner,
+      source: bancor.stock,
+      target: bancor.money,
     }
     const record1 = await app.sdb.findOne('BancorExchange', { condition1, sort })
     const record2 = await app.sdb.findOne('BancorExchange', { condition2, sort })
@@ -31,11 +31,38 @@ async function getBancors(req) {
       record = record2
     }
     if (record) {
-      array[index].latestBid = record.ratio
+      bancor.latestBid = record.ratio
     } else {
-      array[index].latestBid = 0
+      bancor.latestBid = 0
     }
-  })
+  }))
+
+  // await bancors.forEach(async (element, index, array) => {
+  //   const sort = { timestamp: -1 }
+  //   const condition1 = {
+  //     owner: element.owner,
+  //     source: element.money,
+  //     target: element.stock,
+  //   }
+  //   const condition2 = {
+  //     owner: element.owner,
+  //     source: element.stock,
+  //     target: element.money,
+  //   }
+  //   const record1 = await app.sdb.findOne('BancorExchange', { condition1, sort })
+  //   const record2 = await app.sdb.findOne('BancorExchange', { condition2, sort })
+  //   let record
+  //   if (record1.timestamp > record2.timestamp) {
+  //     record = record1
+  //   } else {
+  //     record = record2
+  //   }
+  //   if (record) {
+  //     array[index].latestBid = record.ratio
+  //   } else {
+  //     array[index].latestBid = 0
+  //   }
+  // })
   return { bancors }
 }
 
