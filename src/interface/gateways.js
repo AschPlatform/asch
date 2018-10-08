@@ -63,7 +63,7 @@ module.exports = (router) => {
   router.get('/deposits/:address/:currency', async (req) => {
     const offset = req.query.offset ? Number(req.query.offset) : 0
     const limit = req.query.limit ? Number(req.query.limit) : 20
-    const gc = await app.sdb.findOne('GatewayCurrency', { condition: { symbol: req.params.currency } })
+    const gc = await app.sdb.findAll('GatewayCurrency', { condition: { symbol: req.params.currency }, limit: 1 })
     if (!gc) return 'Gateway currency not found'
     const ga = await app.sdb.findOne('GatewayAccount', { condition: { gateway: gc.gateway, address: req.params.address } })
     if (!ga) return 'Gateway account not found'
@@ -95,7 +95,7 @@ module.exports = (router) => {
   router.get('/withdrawals/:address/:currency', async (req) => {
     const offset = req.query.offset ? Number(req.query.offset) : 0
     const limit = req.query.limit ? Number(req.query.limit) : 20
-    const gc = await app.sdb.findOne('GatewayCurrency', { condition: { symbol: req.params.currency } })
+    const gc = await app.sdb.findAll('GatewayCurrency', { condition: { symbol: req.params.currency }, limit: 1 })
     if (!gc) return 'Gateway currency not found'
     const condition = {
       currency: req.params.currency,
@@ -146,7 +146,8 @@ module.exports = (router) => {
   router.get('/bailHosting', async (req) => {
     const gatewayName = req.params.name
     const bail = await app.util.gateway.getBailTotalAmount(gatewayName)
-    const gwCurrency = await app.sdb.findOne('GatewayCurrency', { condition: { gateway: gatewayName } })
+    const limit = 1
+    const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
     const hosting = await app.util.gateway.getAmountByCurrency(gwCurrency.symbol)
     return { bail, hosting }
   })
@@ -154,12 +155,13 @@ module.exports = (router) => {
   router.get('/realClaim', async (req) => {
     let realClaim = 0
     let lockedBail = 0
+    const limit = 1
     const gatewayName = req.params.name
     const address = req.params.address
     const gateway = await app.sdb.load('Gateway', gatewayName)
     if (!gateway) return 'Gateway not found'
     if (gateway.revoked === 1) return 'No claim proposal was activated'
-    const gwCurrency = await app.sdb.findOne('GatewayCurrency', { condition: { gateway: gatewayName } })
+    const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
     const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
     const userAmount = app.balances.get(address, gwCurrency.symbol)
     const totalAmount = gwCurrency.quantity

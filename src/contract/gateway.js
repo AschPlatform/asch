@@ -284,10 +284,11 @@ module.exports = {
 
   async claim(gatewayName) {
     let realClaim = 0
+    const limit = 1
     const gateway = await app.sdb.load('Gateway', gatewayName)
     if (!gateway) return 'Gateway not found'
     if (gateway.revoked === 1) return 'No claim proposal was activated'
-    const gwCurrency = await app.sdb.findOne('GatewayCurrency', { condition: { gateway: gatewayName } })
+    const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
     if (gateway.revoked === 2) {
       const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
       const userAmount = app.balances.get(this.sender.address, gwCurrency.symbol)
