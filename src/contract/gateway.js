@@ -58,7 +58,7 @@ module.exports = {
     if (!gateway) return 'Invalid gateway name'
     if (!currency) return 'Invalid currency'
     const threshold = await app.util.gateway.getThreshold(gatewayName, this.sender.address)
-    if (threshold.ratio < app.util.constants.frozenCriteria) return `Bail is not enough, please withdrawl ${currency} asap`
+    if (threshold.ratio > 0 && threshold.ratio < app.util.constants.frozenCriteria) return `Bail is not enough, please withdrawl ${currency} asap`
     app.validate('amount', amount)
 
     if (!await app.sdb.exists('GatewayCurrency', { symbol: currency })) return 'Currency not supported'

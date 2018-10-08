@@ -149,7 +149,15 @@ module.exports = (router) => {
     const limit = 1
     const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
     const hosting = await app.util.gateway.getAmountByCurrency(gatewayName, gwCurrency[0].symbol)
-    return { bail, hosting }
+    const totalBail = await app.util.gateway.getAllBailAmount(gatewayName)
+    const threshold = await app.util.gateway.getThreshold(gatewayName)
+    const ratio = threshold.ratio
+    return {
+      ratio,
+      totalBail,
+      bail,
+      hosting,
+    }
   })
 
   router.get('/realClaim', async (req) => {
