@@ -291,8 +291,8 @@ module.exports = {
     const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
     if (gateway.revoked === 2) {
       const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
-      const userAmount = app.balances.get(this.sender.address, gwCurrency.symbol)
-      const ratio = userAmount / gwCurrency.quantity
+      const userAmount = app.balances.get(this.sender.address, gwCurrency[0].symbol)
+      const ratio = userAmount / gwCurrency[0].quantity
       for (let i = 0; i < members.length; i++) {
         const lockedAddr = app.util.address.generateLockedAddress(members[i].address)
         const memberLockedAccount = await app.sdb.load('Account', lockedAddr)
@@ -302,7 +302,7 @@ module.exports = {
         app.sdb.increase('Account', { xas: needClaim }, { address: this.sender.address })
         realClaim += needClaim
       }
-      app.balances.transfer(gwCurrency.symbol, userAmount, this.sender.address, 'AStoreClaimedAddr12345678901234567')
+      app.balances.transfer(gwCurrency[0].symbol, userAmount, this.sender.address, 'AStoreClaimedAddr12345678901234567')
     }
     return realClaim
   },

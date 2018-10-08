@@ -58,7 +58,8 @@ module.exports = (router) => {
     if (currency.indexOf('.') !== -1) {
       balance.asset = await app.sdb.findOne('Asset', { condition: { name: balance.currency } })
     } else {
-      balance.asset = await app.sdb.findAll('GatewayCurrency', { condition: { symbol: balance.currency }, limit })
+      const result = await app.sdb.findAll('GatewayCurrency', { condition: { symbol: balance.currency }, limit })
+      balance.asset = result[0]
     }
 
     return { balance }
