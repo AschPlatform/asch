@@ -276,6 +276,8 @@ module.exports = {
       if (amount > (lockAccount.xas - app.util.constants.initialDeposit)) return 'Withdrawl amount exceeds balance'
       app.sdb.increase('Account', { xas: amount }, { address: originalAccount.address })
       app.sdb.increase('Account', { xas: -amount }, { address: addr })
+    } else {
+      return 'Withdrawl amount exceeds balance'
     }
     return null
   },
