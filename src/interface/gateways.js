@@ -153,34 +153,48 @@ module.exports = (router) => {
 
   router.get('/realClaim', async (req) => {
     let realClaim = 0
+    let lockedBail = 0
     const gatewayName = req.params.name
     const address = req.params.address
     const gateway = await app.sdb.load('Gateway', gatewayName)
     if (!gateway) return 'Gateway not found'
     if (gateway.revoked === 1) return 'No claim proposal was activated'
     const gwCurrency = await app.sdb.findOne('GatewayCurrency', { condition: { gateway: gatewayName } })
+    const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
+    const userAmount = app.balances.get(address, gwCurrency.symbol)
+    const totalAmount = gwCurrency.quantity
+    const ratio = userAmount / totalAmount
     if (gateway.revoked === 2) {
-      const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
-      const userAmount = app.balances.get(address, gwCurrency.symbol)
-      const ratio = userAmount / gwCurrency.quantity
       for (let i = 0; i < members.length; i++) {
         const lockedAddr = app.util.address.generateLockedAddress(members[i].address)
         const memberLockedAccount = await app.sdb.load('Account', lockedAddr)
         const needClaim = Math.floor(ratio * memberLockedAccount.xas)
         if (needClaim === 0) continue
         realClaim += needClaim
+        lockedBail += memberLockedAccount.xas
       }
     }
-    return realClaim
+    return {
+      realClaim,
+      lockedBail,
+      userAmount,
+      totalAmount,
+    }
   })
 
-  router.get('/bailWithdrawl', async (req) => {
+  router.get('/bailStatus', async (req) => {
     const gatewayName = req.params.name
     const address = req.params.address
     const withdrawl = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, address)
     const threshold = await app.util.gateway.getThreshold(gatewayName, address)
     const ratio = threshold.ratio
+    const currentBail = threshold.currentBail
     const needSupply = threshold.needSupply
-    return { ratio, needSupply, withdrawl }
+    return {
+      ratio,
+      currentBail,
+      needSupply,
+      withdrawl,
+    }
   })
 }
