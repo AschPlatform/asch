@@ -1,7 +1,8 @@
 module.exports = {
   async exchangeByTarget(sourceCurrency, targetCurrency, targetAmount, bancorInfo) {
     app.validate('amount', String(targetAmount))
-    const bancor = await app.util.bancor.create(bancorInfo.money, bancorInfo.stock, bancorInfo.owner)
+    const bancor = await app.util.bancor
+      .create(bancorInfo.money, bancorInfo.stock, bancorInfo.owner)
     if (!bancor) return 'Bancor is not ready'
     const result = await bancor.exchangeByTarget(sourceCurrency, targetCurrency, targetAmount, true)
     // decrease source, increase target
@@ -31,7 +32,8 @@ module.exports = {
 
   async exchangeBySource(sourceCurrency, targetCurrency, sourceAmount, bancorInfo) {
     app.validate('amount', String(sourceAmount))
-    const bancor = await app.util.bancor.create(bancorInfo.money, bancorInfo.stock, bancorInfo.owner)
+    const bancor = await app.util.bancor
+      .create(bancorInfo.money, bancorInfo.stock, bancorInfo.owner)
     if (!bancor) return 'Bancor is not ready'
     const result = await bancor.exchangeBySource(sourceCurrency, targetCurrency, sourceAmount, true)
     // decrease source, increase target

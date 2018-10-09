@@ -39,8 +39,6 @@ module.exports = {
     const senderId = this.sender.address
     const requestTrs = await app.sdb.findOne('Transaction', { condition: { id: targetId } })
     if (!requestTrs) return 'Request transaction not found'
-
-    // if (requestTrs.mode !== app.TransactionMode.REQUEST) return 'Invalid transaction mode'
     if (!app.util.transactionMode.isRequestMode(requestTrs.mode)) return 'Invalid transaction mode'
 
     const requestTrsState = await app.sdb.load('TransactionStatu', { tid: targetId })

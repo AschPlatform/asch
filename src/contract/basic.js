@@ -39,8 +39,6 @@ function isUniq(arr) {
 module.exports = {
   async transfer(amount, recipient) {
     if (!recipient) return 'Invalid recipient'
-    // Verify amount should be positive integer
-    // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', String(amount))
 
     amount = Number(amount)
@@ -113,7 +111,6 @@ module.exports = {
 
   async lock(height, amount) {
     if (!Number.isInteger(height) || height <= 0) return 'Height should be positive integer'
-    // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
 
     height = Number(height)
     amount = Number(amount)
