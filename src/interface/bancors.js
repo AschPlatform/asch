@@ -37,32 +37,6 @@ async function getBancors(req) {
     }
   }))
 
-  // await bancors.forEach(async (element, index, array) => {
-  //   const sort = { timestamp: -1 }
-  //   const condition1 = {
-  //     owner: element.owner,
-  //     source: element.money,
-  //     target: element.stock,
-  //   }
-  //   const condition2 = {
-  //     owner: element.owner,
-  //     source: element.stock,
-  //     target: element.money,
-  //   }
-  //   const record1 = await app.sdb.findOne('BancorExchange', { condition1, sort })
-  //   const record2 = await app.sdb.findOne('BancorExchange', { condition2, sort })
-  //   let record
-  //   if (record1.timestamp > record2.timestamp) {
-  //     record = record1
-  //   } else {
-  //     record = record2
-  //   }
-  //   if (record) {
-  //     array[index].latestBid = record.ratio
-  //   } else {
-  //     array[index].latestBid = 0
-  //   }
-  // })
   return { bancors }
 }
 
