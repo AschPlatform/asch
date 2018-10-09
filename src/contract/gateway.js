@@ -57,7 +57,7 @@ module.exports = {
   async deposit(gateway, address, currency, amount, oid) {
     if (!gateway) return 'Invalid gateway name'
     if (!currency) return 'Invalid currency'
-    const threshold = await app.util.gateway.getThreshold(gatewayName, this.sender.address)
+    const threshold = await app.util.gateway.getThreshold(gateway, this.sender.address)
     if (threshold.ratio > 0 && threshold.ratio < app.util.constants.frozenCriteria) return `Bail is not enough, please withdrawl ${currency} asap`
     app.validate('amount', amount)
 
