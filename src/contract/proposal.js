@@ -111,12 +111,12 @@ async function doBancorInit(params, context) {
   if (params.stock === 'XAS') {
     const balance = await app.balances.get(address, params.money)
     if (account.xas < params.stockBalance) throw new Error('Stock balance is not enough')
-    if (balance < params.moneyBalance) throw new Error('Money balance is not enough')
+    if (balance.lt(params.moneyBalance)) throw new Error('Money balance is not enough')
   }
   if (params.money === 'XAS') {
     const balance = await app.balances.get(address, params.stock)
     if (account.xas < params.moneyBalance) throw new Error('Money balance is not enough')
-    if (balance < params.stockBalance) throw new Error('Stock balance is not enough')
+    if (balance.lt(params.stockBalance)) throw new Error('Stock balance is not enough')
   }
   app.sdb.create('Bancor', {
     owner: address,
@@ -228,12 +228,12 @@ async function validateBancorContent(content/* , context */) {
   if (content.stock === 'XAS') {
     const balance = app.balances.get(address, content.money)
     if (account.xas < content.stockBalance) throw new Error('Stock balance is not enough')
-    if (balance < content.moneyBalance) throw new Error('Money balance is not enough')
+    if (balance.lt(content.moneyBalance)) throw new Error('Money balance is not enough')
   }
   if (content.money === 'XAS') {
     const balance = app.balances.get(address, content.stock)
     if (account.xas < content.moneyBalance) throw new Error('Money balance is not enough')
-    if (balance < content.stockBalance) throw new Error('Stock balance is not enough')
+    if (balance.lt(content.stockBalance)) throw new Error('Stock balance is not enough')
   }
 }
 

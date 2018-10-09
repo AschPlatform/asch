@@ -65,7 +65,7 @@ module.exports = {
     const bancor = await app.util.bancor.create('BCH', 'XAS')
     if (!bancor) return 'Bancor is not ready'
     const balance = await app.balances.get('ARepurchaseAddr1234567890123456789', 'BCH')
-    const result = await bancor.exchangeBySource('BCH', 'XAS', balance, true)
+    const result = await bancor.exchangeBySource('BCH', 'XAS', app.util.bignumber(balance).toNumber(), true)
     app.balances.decrease('ARepurchaseAddr1234567890123456789', 'BCH', result.sourceAmount)
     burningPoolAccount = await app.sdb.load('Account', 'ABuringPoolAddr1234567890123456789')
     if (burningPoolAccount) {

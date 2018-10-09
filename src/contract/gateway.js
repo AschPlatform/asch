@@ -289,7 +289,8 @@ module.exports = {
     const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
     if (gateway.revoked === 2) {
       const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
-      const userAmount = app.balances.get(this.sender.address, gwCurrency[0].symbol)
+      const userAmount = app.util
+        .bignumber(app.balances.get(this.sender.address, gwCurrency[0].symbol)).toNumber()
       const ratio = userAmount / gwCurrency[0].quantity
       for (let i = 0; i < members.length; i++) {
         const lockedAddr = app.util.address.generateLockedAddress(members[i].address)

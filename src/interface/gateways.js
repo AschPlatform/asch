@@ -171,7 +171,8 @@ module.exports = (router) => {
     if (gateway.revoked === 1) return 'No claim proposal was activated'
     const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
     const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
-    const userAmount = app.balances.get(address, gwCurrency[0].symbol)
+    const userAmount = app.util
+      .bignumber(app.balances.get(address, gwCurrency[0].symbol)).toNumber()
     const totalAmount = gwCurrency[0].quantity
     const ratio = userAmount / totalAmount
     if (gateway.revoked === 2) {
