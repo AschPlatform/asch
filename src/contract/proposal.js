@@ -33,10 +33,9 @@ async function doGatewayRegister(params, context) {
   })
 }
 
-async function doGatewayInit(params) {
+async function doGatewayInit(params, context) {
   app.sdb.lock(`gateway@${params.gateway}`)
   for (const m of params.members) {
-    // TODO: ....check m is address
     if (!app.util.address.isNormalAddress(m)) throw new Error(`${m} is not valid address`)
     const addr = app.util.address.generateLockedAddress(m)
     const account = await app.sdb.findOne('Account', { condition: { address: addr } })
@@ -44,7 +43,7 @@ async function doGatewayInit(params) {
     if (account && account.xas < app.util.constants.initialDeposit) {
       throw new Error(`Bail is not enough for gateway member ${m}`)
     }
-    app.sdb.update('GatewayMember', { elected: 1 }, { address: m })
+    app.sdb.update('GatewayMember', { elected: 1, timestamp: context.trs.timestamp }, { address: m })
   }
   app.sdb.update('Gateway', { activated: 1 }, { name: params.gateway })
 }
@@ -66,8 +65,8 @@ async function doGatewayUpdateMember(params, context) {
   }
 
   app.sdb.increase('Gateway', { version: 1 }, { name: params.gateway })
-  app.sdb.update('GatewayMember', { elected: 0 }, { address: params.from })
-  app.sdb.update('GatewayMember', { elected: 1 }, { address: params.to })
+  app.sdb.update('GatewayMember', { elected: 0, timestamp: context.trs.timestamp }, { address: params.from })
+  app.sdb.update('GatewayMember', { elected: 1, timestamp: context.trs.timestamp }, { address: params.to })
 }
 
 async function doGatewayRevoke(params) {
