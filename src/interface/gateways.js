@@ -144,14 +144,18 @@ module.exports = (router) => {
   })
 
   router.get('/bailHosting', async (req) => {
+    let ratio = 0
+    let totalBail = 0
+    let bail = 0
+    let hosting = 0
     const gatewayName = req.query.name
-    const bail = await app.util.gateway.getBailTotalAmount(gatewayName)
+    bail = await app.util.gateway.getBailTotalAmount(gatewayName)
     const limit = 1
     const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
-    const hosting = await app.util.gateway.getAmountByCurrency(gatewayName, gwCurrency[0].symbol)
-    const totalBail = await app.util.gateway.getAllBailAmount(gatewayName)
+    hosting = await app.util.gateway.getAmountByCurrency(gatewayName, gwCurrency[0].symbol)
+    totalBail = await app.util.gateway.getAllBailAmount(gatewayName)
     const threshold = await app.util.gateway.getThreshold(gatewayName)
-    const ratio = threshold.ratio
+    ratio = threshold.ratio
     return {
       ratio,
       totalBail,
@@ -163,6 +167,8 @@ module.exports = (router) => {
   router.get('/realClaim', async (req) => {
     let realClaim = 0
     let lockedBail = 0
+    let userAmount = 0
+    let totalAmount = 0
     const limit = 1
     const gatewayName = req.query.name
     const address = req.query.address
@@ -171,9 +177,9 @@ module.exports = (router) => {
     if (gateway.revoked === 1) return 'No claim proposal was activated'
     const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
     const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
-    const userAmount = app.util
+    userAmount = app.util
       .bignumber(app.balances.get(address, gwCurrency[0].symbol)).toNumber()
-    const totalAmount = gwCurrency[0].quantity
+    totalAmount = gwCurrency[0].quantity
     const ratio = userAmount / totalAmount
     if (gateway.revoked === 2) {
       for (let i = 0; i < members.length; i++) {
@@ -194,13 +200,17 @@ module.exports = (router) => {
   })
 
   router.get('/bailStatus', async (req) => {
+    let ratio = 0
+    let currentBail = 0
+    let needSupply = 0
+    let withdrawl = 0
     const gatewayName = req.query.name
     const address = req.query.address
-    const withdrawl = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, address)
+    withdrawl = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, address)
     const threshold = await app.util.gateway.getThreshold(gatewayName, address)
-    const ratio = threshold.ratio
-    const currentBail = threshold.currentBail
-    const needSupply = threshold.needSupply
+    ratio = threshold.ratio
+    currentBail = threshold.currentBail
+    needSupply = threshold.needSupply
     return {
       ratio,
       currentBail,
