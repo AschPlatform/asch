@@ -123,28 +123,28 @@ module.exports = (router) => {
   })
 
   router.get('/threshold', async (req) => {
-    const gatewayName = req.params.name
-    const memberAddr = req.params.address
+    const gatewayName = req.query.name
+    const memberAddr = req.query.address
     // return value is { ratio, needSupply }
     const result = await app.util.gateway.getThreshold(gatewayName, memberAddr)
     return result
   })
 
   router.get('/maximumBailWithdrawl', async (req) => {
-    const gatewayName = req.params.name
-    const memberAddr = req.params.address
+    const gatewayName = req.query.name
+    const memberAddr = req.query.address
     const result = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, memberAddr)
     return result
   })
 
   router.get('/allmembers', async (req) => {
-    const gatewayName = req.params.name
+    const gatewayName = req.query.name
     const members = await app.util.gateway.getAllGatewayMember(gatewayName)
     return members
   })
 
   router.get('/bailHosting', async (req) => {
-    const gatewayName = req.params.name
+    const gatewayName = req.query.name
     const bail = await app.util.gateway.getBailTotalAmount(gatewayName)
     const limit = 1
     const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
@@ -164,8 +164,8 @@ module.exports = (router) => {
     let realClaim = 0
     let lockedBail = 0
     const limit = 1
-    const gatewayName = req.params.name
-    const address = req.params.address
+    const gatewayName = req.query.name
+    const address = req.query.address
     const gateway = await app.sdb.load('Gateway', gatewayName)
     if (!gateway) return 'Gateway not found'
     if (gateway.revoked === 1) return 'No claim proposal was activated'
@@ -193,8 +193,8 @@ module.exports = (router) => {
   })
 
   router.get('/bailStatus', async (req) => {
-    const gatewayName = req.params.name
-    const address = req.params.address
+    const gatewayName = req.query.name
+    const address = req.query.address
     const withdrawl = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, address)
     const threshold = await app.util.gateway.getThreshold(gatewayName, address)
     const ratio = threshold.ratio
