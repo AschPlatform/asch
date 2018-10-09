@@ -169,6 +169,8 @@ module.exports = (router) => {
     let lockedBail = 0
     let userAmount = 0
     let totalAmount = 0
+    let symbol = ''
+    let precision = 0
     const limit = 1
     const gatewayName = req.query.name
     const address = req.query.address
@@ -191,11 +193,15 @@ module.exports = (router) => {
         lockedBail += memberLockedAccount.xas
       }
     }
+    symbol = gwCurrency[0].symbol
+    precision = gwCurrency[0].precision
     return {
       realClaim,
       lockedBail,
       userAmount,
       totalAmount,
+      symbol,
+      precision,
     }
   })
 
