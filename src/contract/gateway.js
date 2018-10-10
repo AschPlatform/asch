@@ -282,7 +282,6 @@ module.exports = {
 
   async claim(gatewayName) {
     const storeClaimedAddr = 'AStoreClaimedAddr12345678901234567'
-    let realClaim = 0
     const limit = 1
     const gateway = await app.sdb.load('Gateway', gatewayName)
     if (!gateway) return 'Gateway not found'
@@ -300,12 +299,11 @@ module.exports = {
         if (needClaim === 0) continue
         app.sdb.increase('Account', { xas: -needClaim }, { address: lockedAddr })
         app.sdb.increase('Account', { xas: needClaim }, { address: this.sender.address })
-        realClaim += needClaim
       }
       app.balances.transfer(gwCurrency[0].symbol, userAmount, this.sender.address, storeClaimedAddr)
     } else {
       return 'Gateway was not revoked'
     }
-    return realClaim
+    return null
   },
 }
