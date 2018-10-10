@@ -86,7 +86,7 @@ async function doGatewayClaim(params) {
   const evilMembers = params.evilMembers
   const goodMembers = members.filter((m) => {
     for (let i = 0; i < evilMembers.length; i++) {
-      if (evilMembers[i].address === m.address) {
+      if (evilMembers[i] === m.address) {
         return false
       }
     }
