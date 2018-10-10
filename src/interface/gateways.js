@@ -148,6 +148,8 @@ module.exports = (router) => {
     let totalBail = 0
     let bail = 0
     let hosting = 0
+    let symbol = ''
+    let precision = 0
     const gatewayName = req.query.name
     bail = await app.util.gateway.getBailTotalAmount(gatewayName)
     const limit = 1
@@ -156,11 +158,15 @@ module.exports = (router) => {
     totalBail = await app.util.gateway.getAllBailAmount(gatewayName)
     const threshold = await app.util.gateway.getThreshold(gatewayName)
     ratio = threshold.ratio
+    symbol = gwCurrency[0].symbol
+    precision = gwCurrency[0].precision
     return {
       ratio,
       totalBail,
       bail,
       hosting,
+      symbol,
+      precision,
     }
   })
 

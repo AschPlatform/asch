@@ -62,17 +62,19 @@ module.exports = {
   },
 
   async burnXAS() {
+    const repurchaseAddr = 'ARepurchaseAddr1234567890123456789'
+    const buringPoolAddr = 'ABuringPoolAddr1234567890123456789'
     const bancor = await app.util.bancor.create('BCH', 'XAS')
     if (!bancor) return 'Bancor is not ready'
-    const balance = await app.balances.get('ARepurchaseAddr1234567890123456789', 'BCH')
+    const balance = await app.balances.get(repurchaseAddr, 'BCH')
     const result = await bancor.exchangeBySource('BCH', 'XAS', app.util.bignumber(balance).toNumber(), true)
-    app.balances.decrease('ARepurchaseAddr1234567890123456789', 'BCH', result.sourceAmount)
-    burningPoolAccount = await app.sdb.load('Account', 'ABuringPoolAddr1234567890123456789')
+    app.balances.decrease(repurchaseAddr, 'BCH', result.sourceAmount)
+    burningPoolAccount = await app.sdb.load('Account', buringPoolAddr)
     if (burningPoolAccount) {
       app.sdb.increase('Account', { xas: result.targetAmount }, { address: burningPoolAccount.address })
     } else {
       burningPoolAccount = app.sdb.create('Account', {
-        address: 'ABuringPoolAddr1234567890123456789',
+        address: buringPoolAddr,
         xas: result.targetAmount,
         name: null,
       })
