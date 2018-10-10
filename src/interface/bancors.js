@@ -22,13 +22,13 @@ async function getBancors(req) {
       source: bancor.stock,
       target: bancor.money,
     }
-    const record1 = await app.sdb.findOne('BancorExchange', { condition1, sort })
-    const record2 = await app.sdb.findOne('BancorExchange', { condition2, sort })
+    const record1 = await app.sdb.findAll('BancorExchange', { condition1, sort, limit: 1 })
+    const record2 = await app.sdb.findAll('BancorExchange', { condition2, sort, limit: 1 })
     let record
-    if (record1.timestamp > record2.timestamp) {
-      record = record1
+    if (record1[0].timestamp > record2[0].timestamp) {
+      record = record1[0]
     } else {
-      record = record2
+      record = record2[0]
     }
     if (record) {
       bancor.latestBid = record.ratio
