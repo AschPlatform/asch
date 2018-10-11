@@ -25,9 +25,15 @@ async function getBancors(req) {
     const record1 = await app.sdb.findAll('BancorExchange', { condition1, sort, limit: 1 })
     const record2 = await app.sdb.findAll('BancorExchange', { condition2, sort, limit: 1 })
     let record
-    if (record1[0].timestamp > record2[0].timestamp) {
+    if (record1.length > 0 && record2.length > 0) {
+      if (record1[0].timestamp > record2[0].timestamp) {
+        record = record1[0]
+      } else {
+        record = record2[0]
+      }
+    } else if (record1.length > 0) {
       record = record1[0]
-    } else {
+    } else if (record2.length > 0) {
       record = record2[0]
     }
     if (record) {
