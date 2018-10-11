@@ -28,14 +28,15 @@ module.exports = {
       app.sdb.increase('Account', { xas: exchangeFee }, { address: app.councilAddress })
       app.sdb.increase('Account', { xas: realTargetAmount }, { address: this.sender.address })
     }
-    let sourcePrecision
-    let targetPrecision
-    if (sourceCurrency === bancor.stock) {
-      sourcePrecision = bancor.stockPrecision
-      targetPrecision = bancor.moneyPrecision
+    let sourcePrecision = 0
+    let targetPrecision = 0
+    const bancorObj = bancor.getBancorInfo()
+    if (sourceCurrency === bancorObj.stock) {
+      sourcePrecision = bancorObj.stockPrecision
+      targetPrecision = bancorObj.moneyPrecision
     } else {
-      sourcePrecision = bancor.moneyPrecision
-      targetPrecision = bancor.stockPrecision
+      sourcePrecision = bancorObj.moneyPrecision
+      targetPrecision = bancorObj.stockPrecision
     }
     // Record exchange transactions
     app.sdb.create('BancorExchange', {
@@ -83,14 +84,15 @@ module.exports = {
       app.sdb.increase('Account', { xas: exchangeFee }, { address: app.councilAddress })
       app.sdb.increase('Account', { xas: realTargetAmount }, { address: this.sender.address })
     }
-    let sourcePrecision
-    let targetPrecision
-    if (sourceCurrency === bancor.stock) {
-      sourcePrecision = bancor.stockPrecision
-      targetPrecision = bancor.moneyPrecision
+    let sourcePrecision = 0
+    let targetPrecision = 0
+    const bancorObj = bancor.getBancorInfo()
+    if (sourceCurrency === bancorObj.stock) {
+      sourcePrecision = bancorObj.stockPrecision
+      targetPrecision = bancorObj.moneyPrecision
     } else {
-      sourcePrecision = bancor.moneyPrecision
-      targetPrecision = bancor.stockPrecision
+      sourcePrecision = bancorObj.moneyPrecision
+      targetPrecision = bancorObj.stockPrecision
     }
     // Record exchange transactions
     app.sdb.create('BancorExchange', {
