@@ -28,6 +28,15 @@ module.exports = {
       app.sdb.increase('Account', { xas: exchangeFee }, { address: app.councilAddress })
       app.sdb.increase('Account', { xas: realTargetAmount }, { address: this.sender.address })
     }
+    let sourcePrecision
+    let targetPrecision
+    if (sourceCurrency === bancor.stock) {
+      sourcePrecision = bancor.stokPrecision
+      targetPrecision = bancor.moneyPrecision
+    } else {
+      sourcePrecision = bancor.moneyPrecision
+      targetPrecision = bancor.stokPrecision
+    }
     // Record exchange transactions
     app.sdb.create('BancorExchange', {
       id: this.trs.id,
@@ -36,7 +45,9 @@ module.exports = {
       type: 'Buy',
       owner: bancorInfo.owner,
       source: sourceCurrency,
+      sourcePrecision,
       target: targetCurrency,
+      targetPrecision,
       ratio: result.targetAmount / result.sourceAmount,
       buyed: result.targetAmount,
       used: result.sourceAmount,
@@ -72,6 +83,15 @@ module.exports = {
       app.sdb.increase('Account', { xas: exchangeFee }, { address: app.councilAddress })
       app.sdb.increase('Account', { xas: realTargetAmount }, { address: this.sender.address })
     }
+    let sourcePrecision
+    let targetPrecision
+    if (sourceCurrency === bancor.stock) {
+      sourcePrecision = bancor.stokPrecision
+      targetPrecision = bancor.moneyPrecision
+    } else {
+      sourcePrecision = bancor.moneyPrecision
+      targetPrecision = bancor.stokPrecision
+    }
     // Record exchange transactions
     app.sdb.create('BancorExchange', {
       id: this.trs.id,
@@ -80,7 +100,9 @@ module.exports = {
       type: 'Sell',
       owner: bancorInfo.owner,
       source: sourceCurrency,
+      sourcePrecision,
       target: targetCurrency,
+      targetPrecision,
       ratio: result.targetAmount / result.sourceAmount,
       buyed: result.targetAmount,
       used: result.sourceAmount,

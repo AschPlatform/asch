@@ -78,7 +78,9 @@ async function getTransactionsByUser(req) {
   const transactions = await app.sdb.findAll('BancorExchange', {
     condition, limit, offset, sort,
   })
-  return transactions
+
+  const count = await app.sdb.count('BancorExchange', condition)
+  return { transactions, count }
 }
 
 async function getCurrencies(req) {
