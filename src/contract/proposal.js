@@ -124,7 +124,7 @@ async function doBancorInit(params, context) {
     money: params.money,
     supply: params.supply,
     stockBalance: params.stockBalance,
-    stokPrecision: params.stokPrecision,
+    stockPrecision: params.stockPrecision,
     moneyBalance: params.moneyBalance,
     moneyPrecision: params.moneyPrecision,
     stockCw: params.stockCw,

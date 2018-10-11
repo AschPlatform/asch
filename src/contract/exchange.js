@@ -31,11 +31,11 @@ module.exports = {
     let sourcePrecision
     let targetPrecision
     if (sourceCurrency === bancor.stock) {
-      sourcePrecision = bancor.stokPrecision
+      sourcePrecision = bancor.stockPrecision
       targetPrecision = bancor.moneyPrecision
     } else {
       sourcePrecision = bancor.moneyPrecision
-      targetPrecision = bancor.stokPrecision
+      targetPrecision = bancor.stockPrecision
     }
     // Record exchange transactions
     app.sdb.create('BancorExchange', {
@@ -86,11 +86,11 @@ module.exports = {
     let sourcePrecision
     let targetPrecision
     if (sourceCurrency === bancor.stock) {
-      sourcePrecision = bancor.stokPrecision
+      sourcePrecision = bancor.stockPrecision
       targetPrecision = bancor.moneyPrecision
     } else {
       sourcePrecision = bancor.moneyPrecision
-      targetPrecision = bancor.stokPrecision
+      targetPrecision = bancor.stockPrecision
     }
     // Record exchange transactions
     app.sdb.create('BancorExchange', {
