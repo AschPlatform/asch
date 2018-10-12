@@ -1,16 +1,16 @@
 module.exports = {
   async exchangeByTarget(sourceCurrency, targetCurrency, targetAmount, bancorInfo) {
     app.validate('amount', String(targetAmount))
+    const senderId = this.sender.address
     const bancor = await app.util.bancor
       .create(bancorInfo.money, bancorInfo.stock, bancorInfo.owner)
     const simulateResult = await bancor.exchangeByTarget(sourceCurrency,
       targetCurrency, targetAmount, false)
     // Check source account has sufficient balance to handle the exchange
     if (sourceCurrency === 'XAS') {
-      const sourceAccount = await app.sdb.load('Account', this.sender.address)
-      if (sourceAccount.xas < simulateResult.sourceAmount) return 'Insufficient balance'
+      if (this.sender.xas < simulateResult.sourceAmount) return 'Insufficient balance'
     } else {
-      const balance = app.balances.get(this.sender.address, sourceCurrency)
+      const balance = app.balances.get(senderId, sourceCurrency)
       if (balance.lt(simulateResult.sourceAmount)) return 'Insufficient balance'
     }
     if (!bancor) return 'Bancor is not ready'
@@ -19,14 +19,14 @@ module.exports = {
     const realTargetAmount = result.targetAmount - exchangeFee
     // decrease source, increase target
     if (sourceCurrency === 'XAS') {
-      app.sdb.increase('Account', { xas: -result.sourceAmount }, { address: this.sender.address })
+      app.sdb.increase('Account', { xas: -result.sourceAmount }, { address: senderId })
       app.balances.increase(app.councilAddress, targetCurrency, exchangeFee)
-      app.balances.increase(this.sender.address, targetCurrency, realTargetAmount)
+      app.balances.increase(senderId, targetCurrency, realTargetAmount)
     }
     if (targetCurrency === 'XAS') {
-      app.balances.decrease(this.sender.address, sourceCurrency, result.sourceAmount)
+      app.balances.decrease(senderId, sourceCurrency, result.sourceAmount)
       app.sdb.increase('Account', { xas: exchangeFee }, { address: app.councilAddress })
-      app.sdb.increase('Account', { xas: realTargetAmount }, { address: this.sender.address })
+      app.sdb.increase('Account', { xas: realTargetAmount }, { address: senderId })
     }
     let sourcePrecision = 0
     let targetPrecision = 0
@@ -41,7 +41,7 @@ module.exports = {
     // Record exchange transactions
     app.sdb.create('BancorExchange', {
       id: this.trs.id,
-      address: this.sender.address,
+      address: senderId,
       timestamp: app.util.slots.getTime(),
       type: 'Buy',
       owner: bancorInfo.owner,
@@ -58,12 +58,12 @@ module.exports = {
 
   async exchangeBySource(sourceCurrency, targetCurrency, sourceAmount, bancorInfo) {
     app.validate('amount', String(sourceAmount))
+    const senderId = this.sender.address
     // Check source account has sufficient balance to handle the exchange
     if (sourceCurrency === 'XAS') {
-      const sourceAccount = await app.sdb.load('Account', this.sender.address)
-      if (sourceAccount.xas < sourceAmount) return 'Insufficient balance'
+      if (this.sender.xas < sourceAmount) return 'Insufficient balance'
     } else {
-      const balance = app.balances.get(this.sender.address, sourceCurrency)
+      const balance = app.balances.get(senderId, sourceCurrency)
       if (balance.lt(sourceAmount)) return 'Insufficient balance'
     }
 
@@ -75,14 +75,14 @@ module.exports = {
     const realTargetAmount = result.targetAmount - exchangeFee
     // decrease source, increase target
     if (sourceCurrency === 'XAS') {
-      app.sdb.increase('Account', { xas: -result.sourceAmount }, { address: this.sender.address })
+      app.sdb.increase('Account', { xas: -result.sourceAmount }, { address: senderId })
       app.balances.increase(app.councilAddress, targetCurrency, exchangeFee)
-      app.balances.increase(this.sender.address, targetCurrency, realTargetAmount)
+      app.balances.increase(senderId, targetCurrency, realTargetAmount)
     }
     if (targetCurrency === 'XAS') {
-      app.balances.decrease(this.sender.address, sourceCurrency, result.sourceAmount)
+      app.balances.decrease(senderId, sourceCurrency, result.sourceAmount)
       app.sdb.increase('Account', { xas: exchangeFee }, { address: app.councilAddress })
-      app.sdb.increase('Account', { xas: realTargetAmount }, { address: this.sender.address })
+      app.sdb.increase('Account', { xas: realTargetAmount }, { address: senderId })
     }
     let sourcePrecision = 0
     let targetPrecision = 0
@@ -97,7 +97,7 @@ module.exports = {
     // Record exchange transactions
     app.sdb.create('BancorExchange', {
       id: this.trs.id,
-      address: this.sender.address,
+      address: senderId,
       timestamp: app.util.slots.getTime(),
       type: 'Sell',
       owner: bancorInfo.owner,
