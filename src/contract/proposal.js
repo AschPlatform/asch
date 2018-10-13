@@ -106,19 +106,22 @@ async function doGatewayClaim(params) {
 
 async function doBancorInit(params, context) {
   const address = params.owner
+  const stockBalance = app.util.bignumber(params.stockBalance)
+  const moneyBalance = app.util.bignumber(params.moneyBalance)
   app.sdb.lock(`bancor@${address}`)
   const account = await app.sdb.findOne('Account', { condition: { address } })
   if (params.stock === 'XAS') {
     const balance = await app.balances.get(address, params.money)
-    if (account.xas < params.stockBalance) throw new Error('Stock balance is not enough')
+    if (stockBalance.gt(account.xas)) throw new Error('Stock balance is not enough')
     if (balance.lt(params.moneyBalance)) throw new Error('Money balance is not enough')
   }
   if (params.money === 'XAS') {
     const balance = await app.balances.get(address, params.stock)
-    if (account.xas < params.moneyBalance) throw new Error('Money balance is not enough')
+    if (moneyBalance.gt(account.xas)) throw new Error('Money balance is not enough')
     if (balance.lt(params.stockBalance)) throw new Error('Stock balance is not enough')
   }
   app.sdb.create('Bancor', {
+    id: Number(app.autoID.increment('bancor_id')),
     owner: address,
     stock: params.stock,
     money: params.money,
@@ -222,6 +225,11 @@ async function validateGatewayClaim(content/* , context */) {
 }
 
 async function validateBancorContent(content/* , context */) {
+  app.validate('amount', content.stockBalance)
+  app.validate('amount', content.moneyBalance)
+  app.validate('amount', content.supply)
+  const stockBalance = app.util.bignumber(content.stockBalance)
+  const moneyBalance = app.util.bignumber(content.moneyBalance)
   const address = content.owner
   if (content.money === content.stock) throw new Error('Money and stock cannot be same')
   const bancor = await app.sdb.findOne('Bancor', { condition: { owner: address, stock: content.stock, money: content.money } })
@@ -229,13 +237,13 @@ async function validateBancorContent(content/* , context */) {
   const account = await app.sdb.findOne('Account', { condition: { address } })
   if (content.stock === 'XAS') {
     const balance = app.balances.get(address, content.money)
-    if (account.xas < content.stockBalance) throw new Error('Stock balance is not enough')
+    if (stockBalance.gt(account.xas)) throw new Error('Stock balance is not enough')
     if (balance.lt(content.moneyBalance)) throw new Error('Money balance is not enough')
   }
   if (content.money === 'XAS') {
     const balance = app.balances.get(address, content.stock)
-    if (account.xas < content.moneyBalance) throw new Error('Money balance is not enough')
-    if (balance.lt(content.stockBalance)) throw new Error('Stock balance is not enough')
+    if (moneyBalance.gt(account.xas)) throw new Error('Money balance is not enough')
+    if (balance.lt(stockBalance)) throw new Error('Stock balance is not enough')
   }
 }
 

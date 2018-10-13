@@ -187,7 +187,7 @@ module.exports = (router) => {
     const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
     userAmount = app.util
       .bignumber(app.balances.get(address, gwCurrency[0].symbol)).toNumber()
-    totalAmount = gwCurrency[0].quantity
+    totalAmount = app.util.bignumber(gwCurrency[0].quantity).toNumber()
     const ratio = userAmount / totalAmount
     if (gateway.revoked === 2) {
       for (let i = 0; i < members.length; i++) {

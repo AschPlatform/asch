@@ -107,7 +107,11 @@ module.exports = {
       if (deposit.confirmations > count / 2 && !deposit.processed) {
         deposit.processed = 1
         app.balances.increase(gatewayAccount.address, currency, amount)
-        app.sdb.increase('GatewayCurrency', { quantity: amount }, { gateway, symbol: currency })
+        const gwCurrency = await app.sdb.load('GatewayCurrency', { gateway, symbol: currency })
+        if (!gwCurrency) return 'No gateway currency found'
+        const quantity = app.util.bignumber(gwCurrency.quantity).plus(amount)
+        app.sdb.update('GatewayCurrency', { quantity }, { gateway, symbol: currency })
+        // app.sdb.increase('GatewayCurrency', { quantity: amount }, { gateway, symbol: currency })
       }
       app.sdb.update('GatewayDeposit', deposit, dipositKey)
     }
@@ -129,7 +133,12 @@ module.exports = {
     if (!app.gateway.isValidAddress(gateway, address)) return 'Invalid withdrawal address'
 
     app.balances.decrease(this.sender.address, currency, amount)
-    app.sdb.increase('GatewayCurrency', { quantity: -amount }, { gateway, symbol: currency })
+
+    const gwCurrency = await app.sdb.load('GatewayCurrency', { gateway, symbol: currency })
+    if (!gwCurrency) return 'No gateway currency found'
+    const quantity = app.util.bignumber(gwCurrency.quantity).minus(amount)
+    app.sdb.update('GatewayCurrency', { quantity }, { gateway, symbol: currency })
+    // app.sdb.increase('GatewayCurrency', { quantity: -amount }, { gateway, symbol: currency })
     const seq = Number(app.autoID.increment('gate_withdrawal_seq'))
 
     app.sdb.create('GatewayWithdrawal', {
@@ -284,7 +293,7 @@ module.exports = {
       const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
       const userAmount = app.util
         .bignumber(app.balances.get(senderId, gwCurrency[0].symbol)).toNumber()
-      const ratio = userAmount / gwCurrency[0].quantity
+      const ratio = userAmount / app.util.bignumber(gwCurrency[0].quantity).toNumber()
       for (let i = 0; i < members.length; i++) {
         const lockedAddr = app.util.address.generateLockedAddress(members[i].address)
         const memberLockedAccount = await app.sdb.load('Account', lockedAddr)
