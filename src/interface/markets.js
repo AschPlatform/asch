@@ -1,4 +1,4 @@
-async function getBancors(req) {
+async function getMarkets(req) {
   const offset = req.query.offset ? Number(req.query.offset) : 0
   const limit = req.query.limit ? Number(req.query.limit) : 20
   let sortBancor = {}
@@ -10,17 +10,49 @@ async function getBancors(req) {
   }
   const bancors = await app.sdb.findAll('Bancor', { limit, offset, sortBancor })
   // Latest bid price
-  await Promise.all(bancors.map(async (bancor) => {
+  // await Promise.all(bancors.map(async (bancor) => {
+  //   const sort = { timestamp: -1 }
+  //   const condition1 = {
+  //     owner: bancor.owner,
+  //     source: bancor.money,
+  //     target: bancor.stock,
+  //   }
+  //   const condition2 = {
+  //     owner: bancor.owner,
+  //     source: bancor.stock,
+  //     target: bancor.money,
+  //   }
+  //   const record1 = await app.sdb.findAll('BancorExchange', { condition1, sort, limit: 1 })
+  //   const record2 = await app.sdb.findAll('BancorExchange', { condition2, sort, limit: 1 })
+  //   let record
+  //   if (record1.length > 0 && record2.length > 0) {
+  //     if (record1[0].timestamp > record2[0].timestamp) {
+  //       record = record1[0]
+  //     } else {
+  //       record = record2[0]
+  //     }
+  //   } else if (record1.length > 0) {
+  //     record = record1[0]
+  //   } else if (record2.length > 0) {
+  //     record = record2[0]
+  //   }
+  //   if (record) {
+  //     bancor.latestBid = record.ratio
+  //   } else {
+  //     bancor.latestBid = 0
+  //   }
+  // }))
+  for (let i = 0; i < bancors.length; i++) {
     const sort = { timestamp: -1 }
     const condition1 = {
-      owner: bancor.owner,
-      source: bancor.money,
-      target: bancor.stock,
+      owner: bancors[i].owner,
+      source: bancors[i].money,
+      target: bancors[i].stock,
     }
     const condition2 = {
-      owner: bancor.owner,
-      source: bancor.stock,
-      target: bancor.money,
+      owner: bancors[i].owner,
+      source: bancors[i].stock,
+      target: bancors[i].money,
     }
     const record1 = await app.sdb.findAll('BancorExchange', { condition1, sort, limit: 1 })
     const record2 = await app.sdb.findAll('BancorExchange', { condition2, sort, limit: 1 })
@@ -37,16 +69,18 @@ async function getBancors(req) {
       record = record2[0]
     }
     if (record) {
-      bancor.latestBid = record.ratio
+      bancors[i].latestBid = record.price
     } else {
-      bancor.latestBid = 0
+      bancors[i].latestBid = 0
     }
-  }))
+  }
 
   return { bancors }
 }
 
-async function getTransactionsByBancor(req) {
+async function getTradesByMarket(req) {
+  const bancors = await app.sdb.findAll('Bancor', { condition: { id: req.params.id }, limit: 1 })
+  if (bancors.length === 0) return null
   const offset = req.query.offset ? Number(req.query.offset) : 0
   const limit = req.query.limit ? Number(req.query.limit) : 20
   let sort = {}
@@ -56,19 +90,30 @@ async function getTransactionsByBancor(req) {
   } else {
     sort = { timestamp: -1 }
   }
-  const condition = {
-    address: req.params.address,
-    owner: req.params.owner,
-    source: req.params.source,
-    target: req.params.target,
+  let condition
+  if (req.query.address) {
+    condition = {
+      address: req.query.address,
+      owner: bancors[0].owner,
+      source: bancors[0].source,
+      target: bancors[0].target,
+    }
+  } else {
+    condition = {
+      owner: bancors[0].owner,
+      source: bancors[0].source,
+      target: bancors[0].target,
+    }
   }
-  const transactions = await app.sdb.findAll('BancorExchange', {
+
+  const trades = await app.sdb.findAll('BancorExchange', {
     condition, limit, offset, sort,
   })
-  return transactions
+  const count = await app.sdb.count('BancorExchange', condition)
+  return { trades, count }
 }
 
-async function getTransactionsByUser(req) {
+async function getTradesByUser(req) {
   const offset = req.query.offset ? Number(req.query.offset) : 0
   const limit = req.query.limit ? Number(req.query.limit) : 20
   let sort = {}
@@ -79,14 +124,14 @@ async function getTransactionsByUser(req) {
     sort = { timestamp: -1 }
   }
   const condition = {
-    address: req.params.address,
+    address: req.query.address,
   }
-  const transactions = await app.sdb.findAll('BancorExchange', {
+  const trades = await app.sdb.findAll('BancorExchange', {
     condition, limit, offset, sort,
   })
 
   const count = await app.sdb.count('BancorExchange', condition)
-  return { transactions, count }
+  return { trades, count }
 }
 
 async function getCurrencies(req) {
@@ -119,8 +164,8 @@ async function getCurrencies(req) {
 }
 
 module.exports = (router) => {
-  router.get('/', getBancors)
-  router.get('/transactions/:address/:owner/:source/:target', getTransactionsByBancor)
-  router.get('/transactions/:address', getTransactionsByUser)
+  router.get('/', getMarkets)
+  router.get('/trades/:id', getTradesByMarket)
+  router.get('/trades', getTradesByUser)
   router.get('/currencies', getCurrencies)
 }
