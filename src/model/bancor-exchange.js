@@ -10,8 +10,8 @@ module.exports = {
     { name: 'sourcePrecision', type: 'Number', not_null: true },
     { name: 'target', type: 'String', length: 20, not_null: true },
     { name: 'targetPrecision', type: 'Number', not_null: true },
-    { name: 'ratio', type: 'Number', not_null: true },
-    { name: 'buyed', type: 'Number', not_null: true },
-    { name: 'used', type: 'Number', not_null: true },
+    { name: 'price', type: 'Number', not_null: true },
+    { name: 'targetAmount', type: 'String', length: 50, not_null: true },
+    { name: 'sourceAmount', type: 'String', length: 50, not_null: true },
   ]
 }

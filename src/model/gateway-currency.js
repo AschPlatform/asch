@@ -6,6 +6,6 @@ module.exports = {
     { name: 'desc', type: 'Text' },
     { name: 'precision', type: 'Number' },
     { name: 'revoked', type: 'Number' },
-    { name: 'quantity', type: 'BigInt', default: 0 },
+    { name: 'quantity', type: 'String', length: 50, default: '0' },
   ]
 }
