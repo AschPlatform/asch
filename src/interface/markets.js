@@ -90,25 +90,41 @@ async function getTradesByMarket(req) {
   } else {
     sort = { timestamp: -1 }
   }
-  let condition
+  let condition1
+  let condition2
   if (req.query.address) {
-    condition = {
+    condition1 = {
       address: req.query.address,
       owner: bancors[0].owner,
-      source: bancors[0].source,
-      target: bancors[0].target,
+      source: bancors[0].stock,
+      target: bancors[0].money,
+    }
+    condition2 = {
+      address: req.query.address,
+      owner: bancors[0].owner,
+      source: bancors[0].money,
+      target: bancors[0].stock,
     }
   } else {
-    condition = {
+    condition1 = {
       owner: bancors[0].owner,
-      source: bancors[0].source,
-      target: bancors[0].target,
+      source: bancors[0].stock,
+      target: bancors[0].money,
+    }
+    condition2 = {
+      owner: bancors[0].owner,
+      source: bancors[0].money,
+      target: bancors[0].stock,
     }
   }
 
-  const trades = await app.sdb.findAll('BancorExchange', {
-    condition, limit, offset, sort,
+  const trades1 = await app.sdb.findAll('BancorExchange', {
+    condition1, limit, offset, sort,
   })
+  const trades2 = await app.sdb.findAll('BancorExchange', {
+    condition2, limit, offset, sort,
+  })
+  const trades = trades1.concat(trades2)
   const count = await app.sdb.count('BancorExchange', condition)
   return { trades, count }
 }
