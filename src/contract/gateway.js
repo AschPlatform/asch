@@ -109,7 +109,7 @@ module.exports = {
         app.balances.increase(gatewayAccount.address, currency, amount)
         const gwCurrency = await app.sdb.load('GatewayCurrency', { gateway, symbol: currency })
         if (!gwCurrency) return 'No gateway currency found'
-        const quantity = app.util.bignumber(gwCurrency.quantity).plus(amount)
+        const quantity = app.util.bignumber(gwCurrency.quantity).plus(amount).toString(10)
         app.sdb.update('GatewayCurrency', { quantity }, { gateway, symbol: currency })
         // app.sdb.increase('GatewayCurrency', { quantity: amount }, { gateway, symbol: currency })
       }
@@ -136,7 +136,7 @@ module.exports = {
 
     const gwCurrency = await app.sdb.load('GatewayCurrency', { gateway, symbol: currency })
     if (!gwCurrency) return 'No gateway currency found'
-    const quantity = app.util.bignumber(gwCurrency.quantity).minus(amount)
+    const quantity = app.util.bignumber(gwCurrency.quantity).minus(amount).toString(10)
     app.sdb.update('GatewayCurrency', { quantity }, { gateway, symbol: currency })
     // app.sdb.increase('GatewayCurrency', { quantity: -amount }, { gateway, symbol: currency })
     const seq = Number(app.autoID.increment('gate_withdrawal_seq'))
