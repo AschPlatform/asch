@@ -1,7 +1,7 @@
 async function doExchange(sourceCurrency, targetCurrency, bancor, result, context) {
   const senderId = context.sender.address
   // const exchangeFee = Math.floor(result.targetAmount * 0.001)
-  const exchangeFee = result.targetAmount.toNumber() * 0.001
+  const exchangeFee = Math.ceil(result.targetAmount.toNumber() * 0.001)
   const realTargetAmount = result.targetAmount.minus(exchangeFee)
   // decrease source, increase target
   if (sourceCurrency === 'XAS') {
