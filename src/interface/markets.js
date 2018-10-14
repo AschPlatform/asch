@@ -125,7 +125,9 @@ async function getTradesByMarket(req) {
     condition2, limit, offset, sort,
   })
   const trades = trades1.concat(trades2)
-  const count = await app.sdb.count('BancorExchange', condition)
+  const count1 = await app.sdb.count('BancorExchange', condition1)
+  const count2 = await app.sdb.count('BancorExchange', condition2)
+  const count = count1 + count2
   return { trades, count }
 }
 
