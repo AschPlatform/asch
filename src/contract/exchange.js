@@ -57,7 +57,7 @@ module.exports = {
       targetCurrency, targetAmount, false)
     // Check source account has sufficient balance to handle the exchange
     if (sourceCurrency === 'XAS') {
-      if (simulateResult.sourceAmount.gt(this.sender.xas)) return 'Insufficient balance'
+      if (simulateResult.sourceAmount.gt(app.util.bignumber(String(this.sender.xas)))) return 'Insufficient balance'
     } else {
       const balance = app.balances.get(senderId, sourceCurrency)
       if (balance.lt(simulateResult.sourceAmount)) return 'Insufficient balance'
@@ -73,7 +73,7 @@ module.exports = {
     const senderId = this.sender.address
     // Check source account has sufficient balance to handle the exchange
     if (sourceCurrency === 'XAS') {
-      if (app.util.bignumber(sourceAmount).gt(this.sender.xas)) return 'Insufficient balance'
+      if (app.util.bignumber(sourceAmount).gt(app.util.bignumber(String(this.sender.xas)))) return 'Insufficient balance'
     } else {
       const balance = app.balances.get(senderId, sourceCurrency)
       if (balance.lt(sourceAmount)) return 'Insufficient balance'
