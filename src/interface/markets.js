@@ -54,8 +54,8 @@ async function getMarkets(req) {
       source: bancors[i].stock,
       target: bancors[i].money,
     }
-    const record1 = await app.sdb.findAll('BancorExchange', { condition1, sort, limit: 1 })
-    const record2 = await app.sdb.findAll('BancorExchange', { condition2, sort, limit: 1 })
+    const record1 = await app.sdb.findAll('BancorExchange', { condition: condition1, sort, limit: 1 })
+    const record2 = await app.sdb.findAll('BancorExchange', { condition: condition2, sort, limit: 1 })
     let record
     if (record1.length > 0 && record2.length > 0) {
       if (record1[0].timestamp > record2[0].timestamp) {
@@ -79,7 +79,7 @@ async function getMarkets(req) {
 }
 
 async function getTradesByMarket(req) {
-  const bancors = await app.sdb.findAll('Bancor', { condition: { id: req.params.id }, limit: 1 })
+  const bancors = await app.sdb.findAll('Bancor', { condition: { id: Number(req.params.id) }, limit: 1 })
   if (bancors.length === 0) return null
   const offset = req.query.offset ? Number(req.query.offset) : 0
   const limit = req.query.limit ? Number(req.query.limit) : 20
@@ -117,14 +117,9 @@ async function getTradesByMarket(req) {
       target: bancors[0].stock,
     }
   }
-
-  const trades1 = await app.sdb.findAll('BancorExchange', {
-    condition1, limit, offset, sort,
+  const trades = await app.sdb.findAll('BancorExchange', {
+    condition: { $or: [condition1, condition2] }, limit, offset, sort,
   })
-  const trades2 = await app.sdb.findAll('BancorExchange', {
-    condition2, limit, offset, sort,
-  })
-  const trades = trades1.concat(trades2)
   const count1 = await app.sdb.count('BancorExchange', condition1)
   const count2 = await app.sdb.count('BancorExchange', condition2)
   const count = count1 + count2
