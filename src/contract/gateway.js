@@ -237,6 +237,8 @@ module.exports = {
   },
 
   async depositBail(gatewayName, amount) {
+    app.validate('amount', String(amount))
+    amount = app.util.bignumber(amount).toNumber()
     const senderId = this.sender.address
     const addr = app.util.address.generateLockedAddress(senderId)
     const lockAccount = app.sdb.createOrLoad('Account', { xas: 0, address: addr, name: null })
@@ -251,6 +253,8 @@ module.exports = {
   },
 
   async withdrawalBail(gatewayName, amount) {
+    app.validate('amount', String(amount))
+    amount = app.util.bignumber(amount).toNumber()
     const senderId = this.sender.address
     const gw = await app.sdb.findOne('Gateway', { condition: { name: gatewayName } })
     if (!gw) return 'Gateway not found'
