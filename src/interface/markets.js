@@ -1,14 +1,14 @@
 async function getMarkets(req) {
   const offset = req.query.offset ? Number(req.query.offset) : 0
   const limit = req.query.limit ? Number(req.query.limit) : 20
-  let sortBancor = {}
+  let sort = {}
   if (req.query.orderBy) {
     const orderBy = req.query.orderBy.split(':')
-    sortBancor[orderBy[0]] = orderBy[1] === 'desc' ? -1 : 1
+    sort[orderBy[0]] = orderBy[1] === 'desc' ? -1 : 1
   } else {
-    sortBancor = { timestamp: -1 }
+    sort = { timestamp: -1 }
   }
-  const bancors = await app.sdb.findAll('Bancor', { limit, offset, sortBancor })
+  const bancors = await app.sdb.findAll('Bancor', { limit, offset, sort })
   // Latest bid price
   // await Promise.all(bancors.map(async (bancor) => {
   //   const sort = { timestamp: -1 }
@@ -43,7 +43,7 @@ async function getMarkets(req) {
   //   }
   // }))
   for (let i = 0; i < bancors.length; i++) {
-    const sort = { timestamp: -1 }
+    sort = { timestamp: -1 }
     const condition1 = {
       owner: bancors[i].owner,
       source: bancors[i].money,

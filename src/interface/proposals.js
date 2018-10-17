@@ -2,6 +2,13 @@ module.exports = (router) => {
   router.get('/', async (req) => {
     const offset = req.query.offset ? Number(req.query.offset) : 0
     const limit = req.query.limit ? Number(req.query.limit) : 20
+    let sort = {}
+    if (req.query.orderBy) {
+      const orderBy = req.query.orderBy.split(':')
+      sort[orderBy[0]] = orderBy[1] === 'desc' ? -1 : 1
+    } else {
+      sort = { timestamp: -1 }
+    }
     let condition
     if (req.query.type === 'expired') {
       condition = {
@@ -29,7 +36,12 @@ module.exports = (router) => {
     const count = await app.sdb.count('Proposal', condition)
     let proposals = []
     if (count > 0) {
-      proposals = await app.sdb.findAll('Proposal', { condition, limit, offset })
+      proposals = await app.sdb.findAll('Proposal', {
+        condition,
+        limit,
+        offset,
+        sort,
+      })
     }
     return { count, proposals }
   })
