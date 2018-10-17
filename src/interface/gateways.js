@@ -63,9 +63,9 @@ module.exports = (router) => {
   router.get('/deposits/:address/:currency', async (req) => {
     const offset = req.query.offset ? Number(req.query.offset) : 0
     const limit = req.query.limit ? Number(req.query.limit) : 20
-    const gc = await app.sdb.findOne('GatewayCurrency', { condition: { symbol: req.params.currency } })
+    const gc = await app.sdb.findAll('GatewayCurrency', { condition: { symbol: req.params.currency }, limit: 1 })
     if (!gc) return 'Gateway currency not found'
-    const ga = await app.sdb.findOne('GatewayAccount', { condition: { gateway: gc.gateway, address: req.params.address } })
+    const ga = await app.sdb.findOne('GatewayAccount', { condition: { gateway: gc[0].gateway, address: req.params.address } })
     if (!ga) return 'Gateway account not found'
     const condition = {
       currency: req.params.currency,
@@ -95,7 +95,7 @@ module.exports = (router) => {
   router.get('/withdrawals/:address/:currency', async (req) => {
     const offset = req.query.offset ? Number(req.query.offset) : 0
     const limit = req.query.limit ? Number(req.query.limit) : 20
-    const gc = await app.sdb.findOne('GatewayCurrency', { condition: { symbol: req.params.currency } })
+    const gc = await app.sdb.findAll('GatewayCurrency', { condition: { symbol: req.params.currency }, limit: 1 })
     if (!gc) return 'Gateway currency not found'
     const condition = {
       currency: req.params.currency,
@@ -120,5 +120,114 @@ module.exports = (router) => {
       }
     }
     return { count, withdrawals }
+  })
+
+  router.get('/threshold', async (req) => {
+    const gatewayName = req.query.name
+    const memberAddr = req.query.address
+    // return value is { ratio, needSupply }
+    const result = await app.util.gateway.getThreshold(gatewayName, memberAddr)
+    return result
+  })
+
+  router.get('/maximumBailWithdrawl', async (req) => {
+    const gatewayName = req.query.name
+    const memberAddr = req.query.address
+    const result = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, memberAddr)
+    return result
+  })
+
+  router.get('/allmembers', async (req) => {
+    const gatewayName = req.query.name
+    const members = await app.util.gateway.getAllGatewayMember(gatewayName)
+    return members
+  })
+
+  router.get('/bailHosting', async (req) => {
+    let ratio = 0
+    let totalBail = 0
+    let bail = 0
+    let hosting = 0
+    let symbol = ''
+    let precision = 0
+    const gatewayName = req.query.name
+    bail = await app.util.gateway.getBailTotalAmount(gatewayName)
+    const limit = 1
+    const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
+    hosting = await app.util.gateway.getAmountByCurrency(gatewayName, gwCurrency[0].symbol)
+    totalBail = await app.util.gateway.getAllBailAmount(gatewayName)
+    const threshold = await app.util.gateway.getThreshold(gatewayName)
+    ratio = threshold.ratio
+    symbol = gwCurrency[0].symbol
+    precision = gwCurrency[0].precision
+    return {
+      ratio,
+      totalBail,
+      bail,
+      hosting,
+      symbol,
+      precision,
+    }
+  })
+
+  router.get('/realClaim', async (req) => {
+    let realClaim = 0
+    let lockedBail = 0
+    let userAmount = 0
+    let totalAmount = 0
+    let symbol = ''
+    let precision = 0
+    const limit = 1
+    const gatewayName = req.query.name
+    const address = req.query.address
+    const gateway = await app.sdb.load('Gateway', gatewayName)
+    if (!gateway) return 'Gateway not found'
+    if (gateway.revoked === 1) return 'No claim proposal was activated'
+    const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
+    const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
+    userAmount = app.util
+      .bignumber(app.balances.get(address, gwCurrency[0].symbol)).toNumber()
+    totalAmount = app.util.bignumber(gwCurrency[0].quantity).toNumber()
+    const ratio = userAmount / totalAmount
+    if (gateway.revoked === 2) {
+      for (let i = 0; i < members.length; i++) {
+        const lockedAddr = app.util.address.generateLockedAddress(members[i].address)
+        const memberLockedAccount = await app.sdb.load('Account', lockedAddr)
+        const needClaim = Math.floor(ratio * memberLockedAccount.xas)
+        if (needClaim === 0) continue
+        realClaim += needClaim
+        lockedBail += memberLockedAccount.xas
+      }
+    }
+    symbol = gwCurrency[0].symbol
+    precision = gwCurrency[0].precision
+    return {
+      realClaim,
+      lockedBail,
+      userAmount,
+      totalAmount,
+      symbol,
+      precision,
+    }
+  })
+
+  router.get('/bailStatus', async (req) => {
+    let ratio = 0
+    let currentBail = 0
+    let needSupply = 0
+    let withdrawl = 0
+    const gatewayName = req.query.name
+    const address = req.query.address
+    withdrawl = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, address)
+    const threshold = await app.util.gateway.getThreshold(gatewayName, address)
+    ratio = threshold.ratio
+    currentBail = threshold.currentBail
+    needSupply = threshold.needSupply
+    return {
+      ratio,
+      currentBail,
+      needSupply,
+      withdrawl,
+    }
   })
 }

@@ -90,7 +90,6 @@ module.exports = {
     if (!recipient) return 'Invalid recipient'
     if (!chainName) return 'Invalid chain name'
     if (!currency) return 'Invalid currency'
-    // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', String(amount))
 
     const chain = await app.sdb.findOne('Chain', { condition: { name: chainName } })

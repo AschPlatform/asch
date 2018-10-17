@@ -6,5 +6,6 @@ module.exports = {
     { name: 'desc', type: 'Text' },
     { name: 'outPublicKey', type: 'Text' },
     { name: 'elected', type: 'Number', default: 0, index: true },
+    { name: 'timestamp', type: 'Number' },
   ]
 }

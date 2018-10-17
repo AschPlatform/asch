@@ -24,7 +24,6 @@ module.exports = {
   async registerAsset(symbol, desc, maximum, precision) {
     if (!/^[A-Z]{3,6}$/.test(symbol)) return 'Invalid symbol'
     if (desc.length > 4096) return 'Invalid asset description'
-    // if (!Number.isInteger(maximum) || maximum <= 0) return 'Maximum should be positive integer'
     if (!Number.isInteger(precision) || precision <= 0) return 'Precision should be positive integer'
     if (precision > 16 || precision < 0) return 'Invalid asset precision'
     app.validate('amount', maximum)
@@ -53,7 +52,6 @@ module.exports = {
 
   async issue(name, amount) {
     if (!/^[A-Za-z]{1,16}.[A-Z]{3,6}$/.test(name)) return 'Invalid currency'
-    // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', amount)
     app.sdb.lock(`uia.issue@${name}`)
 
@@ -74,8 +72,6 @@ module.exports = {
   async transfer(currency, amount, recipient) {
     if (currency.length > 30) return 'Invalid currency'
     if (!recipient || recipient.length > 50) return 'Invalid recipient'
-    // if (!/^[A-Za-z]{1,16}.[A-Z]{3,6}$/.test(currency)) return 'Invalid currency'
-    // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', String(amount))
     const senderId = this.sender.address
     const balance = app.balances.get(senderId, currency)
@@ -83,8 +79,8 @@ module.exports = {
 
     let recipientAddress
     let recipientName = ''
-    if (recipient && (app.util.address.isNormalAddress(recipient) ||
-                      app.util.address.isGroupAddress(recipient))) {
+    if (recipient && (app.util.address.isNormalAddress(recipient)
+                      || app.util.address.isGroupAddress(recipient))) {
       recipientAddress = recipient
     } else {
       recipientName = recipient
