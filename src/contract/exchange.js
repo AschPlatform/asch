@@ -1,17 +1,16 @@
 async function doExchange(sourceCurrency, targetCurrency, bancor, result, context) {
   const senderId = context.sender.address
-  // const exchangeFee = Math.floor(result.targetAmount * 0.001)
-  const exchangeFee = Math.ceil(result.targetAmount.toNumber() * 0.001)
+  const exchangeFee = result.targetAmount.times(0.001).round()
   const realTargetAmount = result.targetAmount.minus(exchangeFee)
   // decrease source, increase target
   if (sourceCurrency === 'XAS') {
-    app.sdb.increase('Account', { xas: -result.sourceAmount }, { address: senderId })
+    app.sdb.increase('Account', { xas: -result.sourceAmount.toNumber() }, { address: senderId })
     app.balances.increase(app.councilAddress, targetCurrency, exchangeFee)
-    app.balances.increase(senderId, targetCurrency, realTargetAmount.toNumber())
+    app.balances.increase(senderId, targetCurrency, realTargetAmount)
   }
   if (targetCurrency === 'XAS') {
     app.balances.decrease(senderId, sourceCurrency, result.sourceAmount)
-    app.sdb.increase('Account', { xas: exchangeFee }, { address: app.councilAddress })
+    app.sdb.increase('Account', { xas: exchangeFee.toNumber() }, { address: app.councilAddress })
     app.sdb.increase('Account', { xas: realTargetAmount.toNumber() }, { address: senderId })
   }
   let sourcePrecision = 0
@@ -21,12 +20,12 @@ async function doExchange(sourceCurrency, targetCurrency, bancor, result, contex
   const bancorObj = bancor.getBancorInfo()
   if (sourceCurrency === bancorObj.money) {
     type = 'BUY'
-    price = result.targetAmount.toNumber() / result.sourceAmount.toNumber()
+    price = result.targetAmount.div(result.sourceAmount).round(2)
     sourcePrecision = bancorObj.moneyPrecision
     targetPrecision = bancorObj.stockPrecision
   } else {
     type = 'SELL'
-    price = result.sourceAmount.toNumber() / result.targetAmount.toNumber()
+    price = result.sourceAmount.div(result.targetAmount).round(2)
     sourcePrecision = bancorObj.stockPrecision
     targetPrecision = bancorObj.moneyPrecision
   }
@@ -57,7 +56,7 @@ module.exports = {
       targetCurrency, targetAmount, false)
     // Check source account has sufficient balance to handle the exchange
     if (sourceCurrency === 'XAS') {
-      if (simulateResult.sourceAmount.gt(app.util.bignumber(String(this.sender.xas)))) return 'Insufficient balance'
+      if (simulateResult.sourceAmount.gt(this.sender.xas)) return 'Insufficient balance'
     } else {
       const balance = app.balances.get(senderId, sourceCurrency)
       if (balance.lt(simulateResult.sourceAmount)) return 'Insufficient balance'
@@ -73,7 +72,7 @@ module.exports = {
     const senderId = this.sender.address
     // Check source account has sufficient balance to handle the exchange
     if (sourceCurrency === 'XAS') {
-      if (app.util.bignumber(sourceAmount).gt(app.util.bignumber(String(this.sender.xas)))) return 'Insufficient balance'
+      if (app.util.bignumber(sourceAmount).gt(this.sender.xas)) return 'Insufficient balance'
     } else {
       const balance = app.balances.get(senderId, sourceCurrency)
       if (balance.lt(sourceAmount)) return 'Insufficient balance'
@@ -92,7 +91,7 @@ module.exports = {
     if (!bancor) return 'Bancor is not ready'
     const balance = await app.balances.get(app.repurchaseAddr, 'BCH')
     const result = await bancor.exchangeBySource('BCH', 'XAS', balance, true)
-    app.balances.decrease(app.repurchaseAddr, 'BCH', result.sourceAmount.toNumber())
+    app.balances.decrease(app.repurchaseAddr, 'BCH', result.sourceAmount)
     if (app.buringPoolAddr) {
       app.sdb.createOrLoad('Account', { xas: 0, address: app.buringPoolAddr, name: null })
       app.sdb.increase('Account', { xas: result.targetAmount.toNumber() }, { address: app.buringPoolAddr })

@@ -186,16 +186,16 @@ module.exports = (router) => {
     const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
     const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
     userAmount = app.util
-      .bignumber(app.balances.get(address, gwCurrency[0].symbol)).toNumber()
-    totalAmount = app.util.bignumber(gwCurrency[0].quantity).toNumber()
-    const ratio = userAmount / totalAmount
+      .bignumber(app.balances.get(address, gwCurrency[0].symbol))
+    totalAmount = app.util.bignumber(gwCurrency[0].quantity)
+    const ratio = userAmount.div(totalAmount)
     if (gateway.revoked === 2) {
       for (let i = 0; i < members.length; i++) {
         const lockedAddr = app.util.address.generateLockedAddress(members[i].address)
         const memberLockedAccount = await app.sdb.load('Account', lockedAddr)
-        const needClaim = Math.floor(ratio * memberLockedAccount.xas)
-        if (needClaim === 0) continue
-        realClaim += needClaim
+        const needClaim = ratio.times(memberLockedAccount.xas).round()
+        if (needClaim.eq(0)) continue
+        realClaim += needClaim.toNumbr()
         lockedBail += memberLockedAccount.xas
       }
     }
