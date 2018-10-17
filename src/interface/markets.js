@@ -154,24 +154,20 @@ async function getCurrencies(req) {
   result.push({ assetName: 'XAS', precision: 8 })
   assets = await app.sdb.findAll('Asset', { limit, offset })
   assets.forEach((element) => {
-    result.push(
-      {
-        assetName: element.name,
-        precision: element.precision,
-        maxSupply: element.maximum,
-      },
-    )
+    result.push({
+      assetName: element.name,
+      precision: element.precision,
+      maxSupply: element.maximum,
+    })
   })
 
   gwCurrencies = await app.sdb.findAll('GatewayCurrency', { limit, offset })
   gwCurrencies.forEach((element) => {
-    result.push(
-      {
-        assetName: element.symbol,
-        precision: element.precision,
-        maxSupply: element.quantity,
-      },
-    )
+    result.push({
+      assetName: element.symbol,
+      precision: element.precision,
+      maxSupply: element.quantity,
+    })
   })
   return result
 }

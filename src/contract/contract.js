@@ -59,7 +59,7 @@ async function transfer(currency, transferAmount, senderId, recipientId, trans, 
     const balance = app.balances.get(senderId, currency)
     require(balance !== undefined && balance.gte(bigAmount), 'Insuffient balance')
 
-    app.balances.transfer(currency, bigAmount, senderId, recipientId)
+    app.balances.transfer(currency, bigAmount.toString(), senderId, recipientId)
     createContractTransfer(senderId, recipientId, currency, bigAmount.toString(), trans, height)
     return
   }
@@ -104,8 +104,7 @@ async function handleContractResult(senderId, contractId, contractAddr, callResu
 
   if (callResult.transfers && callResult.transfers.length > 0) {
     for (const t of callResult.transfers) {
-      const bigAmount = app.util.bignumber(t.amount)
-      await transfer(t.currency, bigAmount, contractAddr, t.recipientId, trans, height)
+      await transfer(t.currency, t.amount, contractAddr, t.recipientId, trans, height)
     }
   }
 }
@@ -211,7 +210,7 @@ module.exports = {
     await ensureBCHEnough(this.sender.address, miniAmount, isBCH)
 
     await transfer(
-      currency, bigAmount, this.sender.address, contractInfo.address,
+      currency, bigAmount.toString(), this.sender.address, contractInfo.address,
       this.trs, this.block.height,
     )
 
