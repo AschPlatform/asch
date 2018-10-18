@@ -301,7 +301,7 @@ module.exports = {
       for (let i = 0; i < members.length; i++) {
         const lockedAddr = app.util.address.generateLockedAddress(members[i].address)
         const memberLockedAccount = await app.sdb.load('Account', lockedAddr)
-        const needClaim = ratio.times(memberLockedAccount.xas).round().toNumer()
+        const needClaim = ratio.times(memberLockedAccount.xas).toNumber()
         if (needClaim === 0) continue
         app.sdb.increase('Account', { xas: -needClaim }, { address: lockedAddr })
         app.sdb.increase('Account', { xas: needClaim }, { address: senderId })
