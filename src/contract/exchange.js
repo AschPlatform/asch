@@ -53,8 +53,10 @@ module.exports = {
     const senderId = this.sender.address
     const bancor = await app.util.bancor
       .create(bancorInfo.money, bancorInfo.stock, bancorInfo.owner)
-    const simulateResult = await bancor.exchangeByTarget(sourceCurrency,
-      targetCurrency, targetAmount, false)
+    const simulateResult = await bancor.exchangeByTarget(
+      sourceCurrency,
+      targetCurrency, targetAmount, false,
+    )
     // Check source account has sufficient balance to handle the exchange
     if (sourceCurrency === 'XAS') {
       if (simulateResult.sourceAmount.gt(app.util.bignumber(String(this.sender.xas)))) return 'Insufficient balance'

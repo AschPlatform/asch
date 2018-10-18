@@ -306,8 +306,10 @@ module.exports = {
         app.sdb.increase('Account', { xas: -needClaim }, { address: lockedAddr })
         app.sdb.increase('Account', { xas: needClaim }, { address: senderId })
       }
-      app.balances.transfer(gwCurrency[0].symbol, userAmount,
-        senderId, app.storeClaimedAddr)
+      app.balances.transfer(
+        gwCurrency[0].symbol, userAmount,
+        senderId, app.storeClaimedAddr,
+      )
     } else {
       return 'Gateway was not revoked'
     }

@@ -10,9 +10,9 @@ const os = require('os')
 const buildTime = moment().format('HH:mm:ss DD/MM/YYYY')
 
 const serverUrls = {
-  'localnet': 'http://localhost:4096',
-  'mainnet': 'http://mainnet.asch.cn',
-  'testnet': 'http://testnet.asch.io'
+  localnet: 'http://localhost:4096',
+  mainnet: 'http://mainnet.asch.cn',
+  testnet: 'http://testnet.asch.io',
 }
 
 function build(osVersion, netVersion) {
@@ -44,8 +44,7 @@ function build(osVersion, netVersion) {
   if (osVersion === 'darwin') {
     // macOS using *bsd sed which doesn't support --version option
     // and user may install gnu-sed to replace it.
-    if (shell.exec(`sed --version`, { silent: true }).code != 0)
-      sedi = 'sed -i \'\''
+    if (shell.exec('sed --version', { silent: true }).code !== 0) { sedi = 'sed -i \'\'' }
   }
 
   shell.cp('-r', 'app.js', 'src', fullPath)
@@ -58,7 +57,7 @@ function build(osVersion, netVersion) {
   let frontendRepo = 'https://github.com/AschPlatform/asch-frontend-2.git'
   if (process.env.ASCH_FRONTEND_REPO != null) {
     frontendRepo = process.env.ASCH_FRONTEND_REPO
-    console.log("Using Frontend Repo:", frontendRepo)
+    console.log('Using Frontend Repo:', frontendRepo)
   } else {
     console.log('PS, you may use env ASCH_FRONTEND_REPO to use a faster repo ...')
   }
@@ -74,8 +73,7 @@ function build(osVersion, netVersion) {
   // prepare frontend source code
   const magic = shell.exec('grep magic config.json | awk \'{print $2}\' | sed -e \'s/[",]//g\'', { silent: true }).stdout.trim()
   let branch = shell.exec('git branch | grep \\* | cut -d \' \' -f2', { silent: true }).stdout.trim()
-  if (branch !== 'master' && branch !== 'develop' )
-    branch = 'develop'
+  if (branch !== 'master' && branch !== 'develop') { branch = 'develop' }
   // It is quite possible that last build stop before cleanup frontend files
   if (shell.test('-e', `${fullPath}/tmp/asch-frontend-2`)) {
     shell.rm('-rf', `${fullPath}/tmp/asch-frontend-2`, { silent: true })
