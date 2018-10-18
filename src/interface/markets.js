@@ -187,5 +187,5 @@ module.exports = (router) => {
   router.get('/trades/:id', getTradesByMarket)
   router.get('/trades', getTradesByUser)
   router.get('/currencies', getCurrencies)
-  router.get('/amount', getXASAmount)
+  router.get('/fee', getXASAmount)
 }
