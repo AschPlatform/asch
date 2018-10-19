@@ -223,6 +223,11 @@ async function validateGatewayClaim(content/* , context */) {
   if (!gateway) throw new Error('Gateway not found')
   if (!gateway.revoked) throw new Error('Gateway is not revoked')
   if (gateway.revoked === 2) throw new Error('Gateway is already claimed')
+  const members = await app.util.gateway.getAllGatewayMember(content.gateway)
+  const evilMembers = content.evilMembers
+  if (evilMembers.length < (Math.floor(members.length + 1))) {
+    throw new Error(`Evil member should be greater than ${Math.floor(members.length + 1)}`)
+  }
 }
 
 async function validateBancorContent(content/* , context */) {
