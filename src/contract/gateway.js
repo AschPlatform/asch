@@ -273,15 +273,17 @@ module.exports = {
     if (gw.revoked === 1 && m.elected === 1) return 'Gateway is revoked, withdrawal can be processed by claim proposal'
     if (gw.revoked === 2 && m.elected === 1) return 'Gateway is in claim status, withdrawl bail is not permitted'
     const threshold = await app.util.gateway.getThreshold(gatewayName, senderId)
-    if (m.elected === 1 && threshold.ratio > app.util.constants.supplyCriteria) {
-      const canBeWithdrawl = await app.util.gateway
-        .getMaximumBailWithdrawl(gatewayName, senderId)
+    if (m.elected === 1) {
+      let canBeWithdrawl = 0
+      if (threshold.ratio > app.util.constants.supplyCriteria) {
+        canBeWithdrawl = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, senderId)
+      } else if (threshold.ratio === 0) {
+        canBeWithdrawl = lockAccount.xas - app.util.constants.initialDeposit
+      }
       if (amount.gt(canBeWithdrawl)) return 'Withdrawl amount exceeds balance'
       if (amount.gt(lockAccount.xas - app.util.constants.initialDeposit)) return 'Withdrawl amount exceeds balance'
       app.sdb.increase('Account', { xas: amount.toNumber() }, { address: senderId })
       app.sdb.increase('Account', { xas: -amount.toNumber() }, { address: addr })
-    } else {
-      return 'Withdrawl amount exceeds balance'
     }
     return null
   },
