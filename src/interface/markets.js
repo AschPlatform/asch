@@ -176,9 +176,9 @@ async function getCurrencies(req) {
   return result
 }
 
-async function getXASAmount(req) {
+async function getBCHAmount(req) {
   const bancor = await app.util.bancor.create('BCH', 'XAS')
-  const result = await bancor.exchangeBySource('BCH', 'XAS', req.query.amount, false)
+  const result = await bancor.exchangeBySource('XAS', 'BCH', req.query.amount, false)
   return result.targetAmount.toString()
 }
 
@@ -187,5 +187,5 @@ module.exports = (router) => {
   router.get('/trades/:id', getTradesByMarket)
   router.get('/trades', getTradesByUser)
   router.get('/currencies', getCurrencies)
-  router.get('/fee', getXASAmount)
+  router.get('/fee', getBCHAmount)
 }
