@@ -225,8 +225,8 @@ async function validateGatewayClaim(content/* , context */) {
   if (gateway.revoked === 2) throw new Error('Gateway is already claimed')
   const members = await app.util.gateway.getAllGatewayMember(content.gateway)
   const evilMembers = content.evilMembers
-  if (evilMembers.length < (Math.floor(members.length + 1))) {
-    throw new Error(`Evil member should be greater than ${Math.floor(members.length + 1)}`)
+  if (evilMembers.length < (Math.floor(members.length / 2) + 1)) {
+    throw new Error(`Evil member count should be greater than ${Math.floor(members.length / 2) + 1}`)
   }
 }
 
