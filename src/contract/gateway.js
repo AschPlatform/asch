@@ -138,7 +138,6 @@ module.exports = {
     if (!gwCurrency) return 'No gateway currency found'
     const quantity = app.util.bignumber(gwCurrency.quantity).minus(amount).toString(10)
     app.sdb.update('GatewayCurrency', { quantity }, { gateway, symbol: currency })
-    // app.sdb.increase('GatewayCurrency', { quantity: -amount }, { gateway, symbol: currency })
     const seq = Number(app.autoID.increment('gate_withdrawal_seq'))
 
     app.sdb.create('GatewayWithdrawal', {
@@ -238,14 +237,14 @@ module.exports = {
 
   async depositBail(gatewayName, amount) {
     app.validate('amount', String(amount))
-    amount = app.util.bignumber(amount)
+    amount = app.util.bignumber(String(amount))
     const senderId = this.sender.address
     const addr = app.util.address.generateLockedAddress(senderId)
     const lockAccount = app.sdb.createOrLoad('Account', { xas: 0, address: addr, name: null })
     if (amount.plus(lockAccount.entity.xas).lt(app.util.constants.initialDeposit)) return `Deposit amount should be greater than ${app.util.constants.initialDeposit - lockAccount.entity.xas}`
     const m = await app.util.gateway.getGatewayMember(gatewayName, senderId)
     if (!m) return 'Please register as a gateway member before deposit bail'
-    if (amount.gt(this.sender.xas)) return 'Insufficient balance'
+    if (amount.gt(String(this.sender.xas))) return 'Insufficient balance'
     const threshold = await app.util.gateway.getThreshold(gatewayName, senderId)
     if (amount.lt(threshold.needSupply)) return `Deposit amount should be greater than ${threshold.needSupply}`
 
@@ -256,7 +255,7 @@ module.exports = {
 
   async withdrawalBail(gatewayName, amount) {
     app.validate('amount', String(amount))
-    amount = app.util.bignumber(amount)
+    amount = app.util.bignumber(String(amount))
     const senderId = this.sender.address
     const gw = await app.sdb.findOne('Gateway', { condition: { name: gatewayName } })
     if (!gw) return 'Gateway not found'
@@ -265,7 +264,7 @@ module.exports = {
     const addr = app.util.address.generateLockedAddress(senderId)
     const lockAccount = await app.sdb.load('Account', addr)
     if (!lockAccount) return 'No bail was found'
-    if (m.elected === 0 && amount.gt(lockAccount.xas)) return 'Withdrawl amount exceeds balance'
+    if (m.elected === 0 && amount.gt(String(lockAccount.xas))) return 'Withdrawl amount exceeds balance'
     if (m.elected === 0) {
       app.sdb.increase('Account', { xas: amount.toNumber() }, { address: senderId })
       app.sdb.increase('Account', { xas: -amount.toNumber() }, { address: addr })
@@ -277,7 +276,6 @@ module.exports = {
     const threshold = await app.util.gateway.getThreshold(gatewayName, senderId)
     if (m.elected === 1) {
       let canBeWithdrawl = 0
-      // if (threshold.ratio > app.util.constants.supplyCriteria) {
       if (threshold.ratio > 0) {
         canBeWithdrawl = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, senderId)
       } else if (threshold.ratio === 0) {

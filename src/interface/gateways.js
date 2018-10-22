@@ -125,7 +125,6 @@ module.exports = (router) => {
   router.get('/threshold', async (req) => {
     const gatewayName = req.query.name
     const memberAddr = req.query.address
-    // return value is { ratio, needSupply }
     const result = await app.util.gateway.getThreshold(gatewayName, memberAddr)
     return result
   })

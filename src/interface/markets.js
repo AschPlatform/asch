@@ -8,40 +8,7 @@ async function getMarkets(req) {
   } else {
     sort = { timestamp: -1 }
   }
-  const bancors = await app.sdb.findAll('Bancor', { limit, offset, sort })
-  // Latest bid price
-  // await Promise.all(bancors.map(async (bancor) => {
-  //   const sort = { timestamp: -1 }
-  //   const condition1 = {
-  //     owner: bancor.owner,
-  //     source: bancor.money,
-  //     target: bancor.stock,
-  //   }
-  //   const condition2 = {
-  //     owner: bancor.owner,
-  //     source: bancor.stock,
-  //     target: bancor.money,
-  //   }
-  //   const record1 = await app.sdb.findAll('BancorExchange', { condition1, sort, limit: 1 })
-  //   const record2 = await app.sdb.findAll('BancorExchange', { condition2, sort, limit: 1 })
-  //   let record
-  //   if (record1.length > 0 && record2.length > 0) {
-  //     if (record1[0].timestamp > record2[0].timestamp) {
-  //       record = record1[0]
-  //     } else {
-  //       record = record2[0]
-  //     }
-  //   } else if (record1.length > 0) {
-  //     record = record1[0]
-  //   } else if (record2.length > 0) {
-  //     record = record2[0]
-  //   }
-  //   if (record) {
-  //     bancor.latestBid = record.ratio
-  //   } else {
-  //     bancor.latestBid = 0
-  //   }
-  // }))
+  let bancors = await app.sdb.findAll('Bancor', { limit, offset, sort })
   for (let i = 0; i < bancors.length; i++) {
     sort = { timestamp: -1 }
     const condition1 = {
@@ -74,7 +41,16 @@ async function getMarkets(req) {
       bancors[i].latestBid = 0
     }
   }
-
+  const currency = req.query.currency
+  if (currency) {
+    bancors = bancors.filter((bancor) => {
+      if (bancor.money === currency) {
+        return true
+      }
+      return false
+    })
+    return { bancors }
+  }
   return { bancors }
 }
 

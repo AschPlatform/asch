@@ -60,7 +60,8 @@ async function doGatewayUpdateMember(params, context) {
   const addr = app.util.address.generateLockedAddress(params.to)
   const account = await app.sdb.findOne('Account', { condition: { address: addr } })
   if (!account) throw new Error(`No bail was found for new gateway member ${m}`)
-  if (account && account.xas < app.util.constants.initialDeposit) {
+  if (account && account.xas < app.util.constants.initialDeposit
+    && app.util.gateway.getNeedsBail(params.gateway).gt(String(account.xas))) {
     throw new Error(`New member's bail is not enough for gateway member ${m}`)
   }
 
@@ -115,13 +116,13 @@ async function doBancorInit(params, context) {
   const account = await app.sdb.findOne('Account', { condition: { address } })
   if (params.stock === 'XAS') {
     const balance = await app.balances.get(address, params.money)
-    if (stockBalance.gt(account.xas)) throw new Error('Stock balance is not enough')
-    if (balance.lt(params.moneyBalance)) throw new Error('Money balance is not enough')
+    if (stockBalance.gt(String(account.xas))) throw new Error('Stock balance is not enough')
+    if (balance.lt(moneyBalance)) throw new Error('Money balance is not enough')
   }
   if (params.money === 'XAS') {
     const balance = await app.balances.get(address, params.stock)
-    if (moneyBalance.gt(account.xas)) throw new Error('Money balance is not enough')
-    if (balance.lt(params.stockBalance)) throw new Error('Stock balance is not enough')
+    if (moneyBalance.gt(String(account.xas))) throw new Error('Money balance is not enough')
+    if (balance.lt(stockBalance)) throw new Error('Stock balance is not enough')
   }
   app.sdb.create('Bancor', {
     id: Number(app.autoID.increment('bancor_id')),
@@ -246,12 +247,12 @@ async function validateBancorContent(content/* , context */) {
   const account = await app.sdb.findOne('Account', { condition: { address } })
   if (content.stock === 'XAS') {
     const balance = app.balances.get(address, content.money)
-    if (stockBalance.gt(account.xas)) throw new Error('Stock balance is not enough')
+    if (stockBalance.gt(String(account.xas))) throw new Error('Stock balance is not enough')
     if (balance.lt(content.moneyBalance)) throw new Error('Money balance is not enough')
   }
   if (content.money === 'XAS') {
     const balance = app.balances.get(address, content.stock)
-    if (moneyBalance.gt(account.xas)) throw new Error('Money balance is not enough')
+    if (moneyBalance.gt(String(account.xas))) throw new Error('Money balance is not enough')
     if (balance.lt(stockBalance)) throw new Error('Stock balance is not enough')
   }
 }
