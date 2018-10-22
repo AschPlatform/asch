@@ -123,6 +123,9 @@ module.exports = {
     if (!currency) return 'Invalid currency'
     app.validate('amount', fee)
     app.validate('amount', amount)
+    const gw = await app.sdb.findOne('Gateway', { condition: { name: gateway } })
+    if (!gw) return 'Gateway not found'
+    if (gw.revoked) return 'Gateway already revoked'
 
     const balance = app.balances.get(this.sender.address, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
