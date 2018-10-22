@@ -93,12 +93,15 @@ async function doGatewayClaim(params) {
     return true
   })
 
-  await goodMembers.forEach(async (element) => {
-    const member = await app.util.gateway.getGatewayMember(params.gateway, element.address)
+  for (let i = 0; i < goodMembers.length; i++) {
+    const member = await app.util.gateway.getGatewayMember(params.gateway, goodMembers[i].address)
     const addr = app.util.address.generateLockedAddress(member.address)
-    app.sdb.increase('Account', { xas: member.bail }, { address: member.address })
-    app.sdb.increase('Account', { xas: -member.bail }, { address: addr })
-  })
+    const exists = await app.sdb.load('Account', { address: addr })
+    if (exists) {
+      app.sdb.increase('Account', { xas: member.bail }, { address: member.address })
+      app.sdb.increase('Account', { xas: -member.bail }, { address: addr })
+    }
+  }
 
   gateway.revoked = 2
   app.sdb.update('Gateway', { revoked: 2 }, { name: params.gateway })
@@ -223,7 +226,7 @@ async function validateGatewayClaim(content/* , context */) {
   if (!gateway) throw new Error('Gateway not found')
   if (!gateway.revoked) throw new Error('Gateway is not revoked')
   if (gateway.revoked === 2) throw new Error('Gateway is already claimed')
-  const members = await app.util.gateway.getAllGatewayMember(content.gateway)
+  const members = await app.util.gateway.getElectedGatewayMember(content.gateway)
   const evilMembers = content.evilMembers
   if (evilMembers.length < (Math.floor(members.length / 2) + 1)) {
     throw new Error(`Evil member count should be greater than ${Math.floor(members.length / 2) + 1}`)

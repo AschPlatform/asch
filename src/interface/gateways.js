@@ -201,6 +201,8 @@ module.exports = (router) => {
     }
     symbol = gwCurrency[0].symbol
     precision = gwCurrency[0].precision
+    userAmount = userAmount.toString()
+    totalAmount = totalAmount.toString()
     return {
       realClaim,
       lockedBail,

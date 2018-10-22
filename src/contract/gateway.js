@@ -246,6 +246,8 @@ module.exports = {
     const m = await app.util.gateway.getGatewayMember(gatewayName, senderId)
     if (!m) return 'Please register as a gateway member before deposit bail'
     if (amount.gt(this.sender.xas)) return 'Insufficient balance'
+    const threshold = await app.util.gateway.getThreshold(gatewayName, senderId)
+    if (amount.lt(threshold.needSupply)) return `Deposit amount should be greater than ${threshold.needSupply}`
 
     app.sdb.increase('Account', { xas: -amount.toNumber() }, { address: senderId })
     app.sdb.increase('Account', { xas: amount.toNumber() }, { address: addr })
@@ -275,7 +277,8 @@ module.exports = {
     const threshold = await app.util.gateway.getThreshold(gatewayName, senderId)
     if (m.elected === 1) {
       let canBeWithdrawl = 0
-      if (threshold.ratio > app.util.constants.supplyCriteria) {
+      // if (threshold.ratio > app.util.constants.supplyCriteria) {
+      if (threshold.ratio > 0) {
         canBeWithdrawl = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, senderId)
       } else if (threshold.ratio === 0) {
         canBeWithdrawl = lockAccount.xas - app.util.constants.initialDeposit
@@ -308,7 +311,7 @@ module.exports = {
         app.sdb.increase('Account', { xas: -needClaim }, { address: lockedAddr })
         app.sdb.increase('Account', { xas: needClaim }, { address: senderId })
       }
-      app.balances.transfer(gwCurrency[0].symbol, userAmount,
+      app.balances.transfer(gwCurrency[0].symbol, userAmount.toString(),
         senderId, app.storeClaimedAddr)
     } else {
       return 'Gateway was not revoked'
