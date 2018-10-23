@@ -234,6 +234,9 @@ async function validateGatewayClaim(content/* , context */) {
   for (let i = 0; i < evilMembers.length; i++) {
     const m = await app.sdb.findOne('GatewayMember', { condition: { address: evilMembers[i], gateway: content.gateway } })
     if (!m) {
+      throw new Error('Evil member is not gateway member')
+    }
+    if (m.elected === 0) {
       throw new Error('Evil member should be elected gateway member')
     }
   }
