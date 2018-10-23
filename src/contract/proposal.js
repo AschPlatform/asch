@@ -77,6 +77,7 @@ async function doGatewayRevoke(params) {
 
   gateway.revoked = 1
   app.sdb.update('Gateway', { revoked: 1 }, { name: params.gateway })
+  app.sdb.update('GatewayCurrency', { revoked: 1 }, { gateway: params.gateway })
 }
 
 async function doGatewayClaim(params) {
@@ -106,6 +107,7 @@ async function doGatewayClaim(params) {
 
   gateway.revoked = 2
   app.sdb.update('Gateway', { revoked: 2 }, { name: params.gateway })
+  app.sdb.update('GatewayCurrency', { revoked: 2 }, { gateway: params.gateway })
 }
 
 async function doBancorInit(params, context) {
@@ -229,6 +231,12 @@ async function validateGatewayClaim(content/* , context */) {
   if (gateway.revoked === 2) throw new Error('Gateway is already claimed')
   const members = await app.util.gateway.getElectedGatewayMember(content.gateway)
   const evilMembers = content.evilMembers
+  for (let i = 0; i < evilMembers.length; i++) {
+    const m = await app.sdb.findOne('GatewayMember', { condition: { address: evilMembers[i], gateway: content.gateway } })
+    if (!m) {
+      throw new Error('Evil member should be elected gateway member')
+    }
+  }
   if (evilMembers.length < (Math.floor(members.length / 2) + 1)) {
     throw new Error(`Evil member count should be greater than ${Math.floor(members.length / 2) + 1}`)
   }
