@@ -10,36 +10,41 @@ async function getMarkets(req) {
   }
   let bancors = await app.sdb.findAll('Bancor', { limit, offset, sort })
   for (let i = 0; i < bancors.length; i++) {
-    sort = { timestamp: -1 }
-    const condition1 = {
-      owner: bancors[i].owner,
-      source: bancors[i].money,
-      target: bancors[i].stock,
-    }
-    const condition2 = {
-      owner: bancors[i].owner,
-      source: bancors[i].stock,
-      target: bancors[i].money,
-    }
-    const record1 = await app.sdb.findAll('BancorExchange', { condition: condition1, sort, limit: 1 })
-    const record2 = await app.sdb.findAll('BancorExchange', { condition: condition2, sort, limit: 1 })
-    let record
-    if (record1.length > 0 && record2.length > 0) {
-      if (record1[0].timestamp > record2[0].timestamp) {
-        record = record1[0]
-      } else {
-        record = record2[0]
-      }
-    } else if (record1.length > 0) {
-      record = record1[0]
-    } else if (record2.length > 0) {
-      record = record2[0]
-    }
-    if (record) {
-      bancors[i].latestBid = record.price
-    } else {
-      bancors[i].latestBid = 0
-    }
+    const bancor = await app.util.bancor
+      .create(bancors[i].money, bancors[i].stock, bancors[i].owner)
+    const result = await bancor.exchangeBySource(bancors[i].money, bancors[i].stock, 1, false)
+    bancors[i].latestBid = result.targetAmount.toString()
+
+    // sort = { timestamp: -1 }
+    // const condition1 = {
+    //   owner: bancors[i].owner,
+    //   source: bancors[i].money,
+    //   target: bancors[i].stock,
+    // }
+    // const condition2 = {
+    //   owner: bancors[i].owner,
+    //   source: bancors[i].stock,
+    //   target: bancors[i].money,
+    // }
+    // const record1 = await app.sdb.findAll('BancorExchange', { condition: condition1, sort, limit: 1 })
+    // const record2 = await app.sdb.findAll('BancorExchange', { condition: condition2, sort, limit: 1 })
+    // let record
+    // if (record1.length > 0 && record2.length > 0) {
+    //   if (record1[0].timestamp > record2[0].timestamp) {
+    //     record = record1[0]
+    //   } else {
+    //     record = record2[0]
+    //   }
+    // } else if (record1.length > 0) {
+    //   record = record1[0]
+    // } else if (record2.length > 0) {
+    //   record = record2[0]
+    // }
+    // if (record) {
+    //   bancors[i].latestBid = record.price
+    // } else {
+    //   bancors[i].latestBid = 0
+    // }
   }
   const currency = req.query.currency
   if (currency) {
