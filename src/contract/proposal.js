@@ -59,10 +59,11 @@ async function doGatewayUpdateMember(params, context) {
 
   const addr = app.util.address.generateLockedAddress(params.to)
   const account = await app.sdb.findOne('Account', { condition: { address: addr } })
-  if (!account) throw new Error(`No bail was found for new gateway member ${m}`)
-  if (account && account.xas < app.util.constants.initialDeposit
-    && app.util.gateway.getNeedsBail(params.gateway).gt(String(account.xas))) {
-    throw new Error(`New member's bail is not enough for gateway member ${m}`)
+  if (!account) throw new Error(`No bail was found for new gateway member ${params.to}`)
+  const needsBail = await app.util.gateway.getNeedsBail(params.gateway)
+  if (account.xas < app.util.constants.initialDeposit
+    || needsBail.gt(String(account.xas))) {
+    throw new Error(`New member's bail is not enough for gateway member ${params.to}`)
   }
 
   app.sdb.increase('Gateway', { version: 1 }, { name: params.gateway })
@@ -77,7 +78,12 @@ async function doGatewayRevoke(params) {
 
   gateway.revoked = 1
   app.sdb.update('Gateway', { revoked: 1 }, { name: params.gateway })
-  app.sdb.update('GatewayCurrency', { revoked: 1 }, { gateway: params.gateway })
+  const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: params.gateway } })
+  if (gwCurrency.length > 0) {
+    for (let i = 0; i < gwCurrency.length; i++) {
+      app.sdb.update('GatewayCurrency', { revoked: 1 }, { gateway: params.gateway, symbol: gwCurrency[i].symbol })
+    }
+  }
 }
 
 async function doGatewayClaim(params) {
@@ -107,7 +113,12 @@ async function doGatewayClaim(params) {
 
   gateway.revoked = 2
   app.sdb.update('Gateway', { revoked: 2 }, { name: params.gateway })
-  app.sdb.update('GatewayCurrency', { revoked: 2 }, { gateway: params.gateway })
+  const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: params.gateway } })
+  if (gwCurrency.length > 0) {
+    for (let i = 0; i < gwCurrency.length; i++) {
+      app.sdb.update('GatewayCurrency', { revoked: 2 }, { gateway: params.gateway, symbol: gwCurrency[i].symbol })
+    }
+  }
 }
 
 async function doBancorInit(params, context) {
@@ -215,6 +226,15 @@ async function validateGatewayUpdateMember(content/* , context */) {
   })
   if (!toValidator || toValidator.elected || toValidator.gateway !== gateway.name) {
     throw new Error('Invalid to validator')
+  }
+
+  const addr = app.util.address.generateLockedAddress(content.to)
+  const account = await app.sdb.findOne('Account', { condition: { address: addr } })
+  if (!account) throw new Error(`No bail was found for new gateway member ${content.to}`)
+  const needsBail = await app.util.gateway.getNeedsBail(content.gateway)
+  if (account.xas < app.util.constants.initialDeposit
+    || needsBail.gt(String(account.xas))) {
+    throw new Error(`New member's bail is not enough for gateway member ${content.to}`)
   }
 }
 
