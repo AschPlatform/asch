@@ -304,10 +304,13 @@ module.exports = {
       const userAmount = app.util
         .bignumber(app.balances.get(senderId, gwCurrency[0].symbol))
       const ratio = userAmount.div(app.util.bignumber(gwCurrency[0].quantity))
+      const totalClaim = ratio.times(gwCurrency[0].claimAmount)
+      const allBailAmount = await app.util.gateway.getAllBailAmount(gatewayName)
+      const claimRatio = totalClaim.div(allBailAmount)
       for (let i = 0; i < members.length; i++) {
         const lockedAddr = app.util.address.generateLockedAddress(members[i].address)
         const memberLockedAccount = await app.sdb.load('Account', lockedAddr)
-        const needClaim = ratio.times(memberLockedAccount.xas).toNumber()
+        const needClaim = claimRatio.times(memberLockedAccount.xas).toNumber()
         if (needClaim === 0) continue
         app.sdb.increase('Account', { xas: -needClaim }, { address: lockedAddr })
         app.sdb.increase('Account', { xas: needClaim }, { address: senderId })

@@ -110,13 +110,18 @@ async function doGatewayClaim(params) {
       app.sdb.increase('Account', { xas: -member.bail }, { address: addr })
     }
   }
+  let claimAmount = app.util.bignumber(0)
+  for (let i = 0; i < evilMembers.length; i++) {
+    const member = await app.util.gateway.getGatewayMember(params.gateway, evilMembers[i])
+    claimAmount = claimAmount.plus(member.bail)
+  }
 
   gateway.revoked = 2
   app.sdb.update('Gateway', { revoked: 2 }, { name: params.gateway })
   const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: params.gateway } })
   if (gwCurrency.length > 0) {
     for (let i = 0; i < gwCurrency.length; i++) {
-      app.sdb.update('GatewayCurrency', { revoked: 2 }, { gateway: params.gateway, symbol: gwCurrency[i].symbol })
+      app.sdb.update('GatewayCurrency', { revoked: 2, claimAmount: claimAmount.toString() }, { gateway: params.gateway, symbol: gwCurrency[i].symbol })
     }
   }
 }

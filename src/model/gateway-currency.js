@@ -7,5 +7,6 @@ module.exports = {
     { name: 'precision', type: 'Number' },
     { name: 'revoked', type: 'Number' },
     { name: 'quantity', type: 'String', length: 50, default: '0' },
+    { name: 'claimAmount', type: 'String', length: 50, default: '0' },
   ]
 }
