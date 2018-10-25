@@ -55,6 +55,7 @@ module.exports = {
     if (!bancorSimulate) return 'Bancor is not ready'
     const simulateResult = await bancorSimulate.exchangeByTarget(sourceCurrency,
       targetCurrency, targetAmount, false)
+
     // Check source account has sufficient balance to handle the exchange
     if (sourceCurrency === 'XAS') {
       if (simulateResult.sourceAmount.gt(String(this.sender.xas))) return 'Insufficient balance'
