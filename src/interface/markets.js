@@ -159,6 +159,7 @@ async function getCurrencies(req) {
 
 async function getBCHAmount(req) {
   const bancor = await app.util.bancor.create('BCH', 'XAS')
+  if (!bancor) return 'Bancor is not ready'
   const result = await bancor.exchangeBySource('XAS', 'BCH', req.query.amount, false)
   return result.targetAmount.toString()
 }
