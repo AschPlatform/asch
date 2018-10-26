@@ -208,7 +208,7 @@ module.exports = (router) => {
     totalAmount = totalAmount.toString()
     return {
       realClaim,
-      lockedBail: totalClaim.toString(),
+      lockedBail: gwCurrency[0].claimAmount,
       userAmount,
       totalAmount,
       symbol,
