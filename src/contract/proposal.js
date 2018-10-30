@@ -158,7 +158,7 @@ async function doBancorInit(params, context) {
     timestamp: context.trs.timestamp,
   })
   if (params.money === 'XAS') {
-    app.balances.decrease(address, params.money, params.stockBalance)
+    app.balances.decrease(address, params.stock, params.stockBalance)
     app.sdb.increase('Account', { xas: -params.moneyBalance }, { address })
   }
   if (params.stock === 'XAS') {
