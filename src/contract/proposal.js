@@ -196,7 +196,7 @@ async function validateGatewayInit(content/* , context */) {
   if (!gateway) throw new Error('Gateway not found')
 
   if (content.members.length < gateway.minimumMembers) throw new Error('Invalid gateway member number')
-  if (content.members.length % 2 === 0) throw new Error('Gateway member number sould be even number')
+  if (content.members.length % 2 === 0) throw new Error('Number of gateway members sould be odd')
   for (const m of content.members) {
     const validator = await app.sdb.findOne('GatewayMember', { condition: { address: m } })
     if (!validator) throw new Error('Unknow gateway validator address')
