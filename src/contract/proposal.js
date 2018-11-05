@@ -66,7 +66,7 @@ async function doGatewayUpdateMember(params, context) {
     throw new Error(`New member's bail is not enough for gateway member ${params.to}`)
   }
 
-  app.sdb.increase('Gateway', { version: 1 }, { name: params.gateway })
+  app.sdb.increase('Gateway', { version: 1, lastUpdateHeight: context.block.height }, { name: params.gateway })
   app.sdb.update('GatewayMember', { elected: 0, timestamp: context.trs.timestamp }, { address: params.from })
   app.sdb.update('GatewayMember', { elected: 1, timestamp: context.trs.timestamp }, { address: params.to })
 }
