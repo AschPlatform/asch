@@ -104,7 +104,7 @@ async function handleContractResult(senderId, contractId, contractAddr, callResu
 
   if (callResult.transfers && callResult.transfers.length > 0) {
     for (const t of callResult.transfers) {
-      await transfer(t.currency, t.amount, contractAddr, t.recipientId, trans, height)
+      await transfer(t.currency, t.amount, contractAddr, t.recipientAddress, trans, height)
     }
   }
 }
@@ -174,7 +174,7 @@ module.exports = {
     require(method !== undefined && method !== null, 'method name can not be null or undefined')
     require(Array.isArray(args), 'Invalid contract args, should be array')
 
-    const contractInfo = await app.sdb.get(CONTRACT_MODEL, { name })
+    const contractInfo = await app.sdb.load(CONTRACT_MODEL, { name })
     require(contractInfo !== undefined, `Contract '${name}' not found`)
     await ensureBCHEnough(this.sender.address, gasLimit, true)
 
@@ -199,8 +199,8 @@ module.exports = {
     const bigAmount = app.util.bignumber(amount)
     require(bigAmount.gt(0), 'Invalid amount, should be greater than 0 ')
 
-    const condition = app.util.address.isContractAddress(nameOrAddress) ?
-      { address: nameOrAddress } : { name: nameOrAddress }
+    const condition = app.util.address.isContractAddress(nameOrAddress)
+      ? { address: nameOrAddress } : { name: nameOrAddress }
 
     const contractInfo = await app.sdb.load(CONTRACT_MODEL, condition)
     require(contractInfo !== undefined, `Contract name/address '${nameOrAddress}' not found`)
@@ -225,4 +225,3 @@ module.exports = {
     )
   },
 }
-

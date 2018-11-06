@@ -59,12 +59,14 @@ async function doGatewayUpdateMember(params, context) {
 
   const addr = app.util.address.generateLockedAddress(params.to)
   const account = await app.sdb.findOne('Account', { condition: { address: addr } })
-  if (!account) throw new Error(`No bail was found for new gateway member ${m}`)
-  if (account && account.xas < app.util.constants.initialDeposit) {
-    throw new Error(`New member's bail is not enough for gateway member ${m}`)
+  if (!account) throw new Error(`No bail was found for new gateway member ${params.to}`)
+  const needsBail = await app.util.gateway.getNeedsBail(params.gateway)
+  if (account.xas < app.util.constants.initialDeposit
+    || needsBail.gt(String(account.xas))) {
+    throw new Error(`New member's bail is not enough for gateway member ${params.to}`)
   }
 
-  app.sdb.increase('Gateway', { version: 1 }, { name: params.gateway })
+  app.sdb.increase('Gateway', { version: 1, lastUpdateHeight: context.block.height }, { name: params.gateway })
   app.sdb.update('GatewayMember', { elected: 0, timestamp: context.trs.timestamp }, { address: params.from })
   app.sdb.update('GatewayMember', { elected: 1, timestamp: context.trs.timestamp }, { address: params.to })
 }
@@ -76,6 +78,12 @@ async function doGatewayRevoke(params) {
 
   gateway.revoked = 1
   app.sdb.update('Gateway', { revoked: 1 }, { name: params.gateway })
+  const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: params.gateway } })
+  if (gwCurrency.length > 0) {
+    for (let i = 0; i < gwCurrency.length; i++) {
+      app.sdb.update('GatewayCurrency', { revoked: 1 }, { gateway: params.gateway, symbol: gwCurrency[i].symbol })
+    }
+  }
 }
 
 async function doGatewayClaim(params) {
@@ -93,15 +101,29 @@ async function doGatewayClaim(params) {
     return true
   })
 
-  await goodMembers.forEach(async (element) => {
-    const member = await app.util.gateway.getGatewayMember(params.gateway, element.address)
+  for (let i = 0; i < goodMembers.length; i++) {
+    const member = await app.util.gateway.getGatewayMember(params.gateway, goodMembers[i].address)
     const addr = app.util.address.generateLockedAddress(member.address)
-    app.sdb.increase('Account', { xas: member.bail }, { address: member.address })
-    app.sdb.increase('Account', { xas: -member.bail }, { address: addr })
-  })
+    const exists = await app.sdb.load('Account', { address: addr })
+    if (exists) {
+      app.sdb.increase('Account', { xas: member.bail }, { address: member.address })
+      app.sdb.increase('Account', { xas: -member.bail }, { address: addr })
+    }
+  }
+  let claimAmount = app.util.bignumber(0)
+  for (let i = 0; i < evilMembers.length; i++) {
+    const member = await app.util.gateway.getGatewayMember(params.gateway, evilMembers[i])
+    claimAmount = claimAmount.plus(member.bail)
+  }
 
   gateway.revoked = 2
   app.sdb.update('Gateway', { revoked: 2 }, { name: params.gateway })
+  const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: params.gateway } })
+  if (gwCurrency.length > 0) {
+    for (let i = 0; i < gwCurrency.length; i++) {
+      app.sdb.update('GatewayCurrency', { revoked: 2, claimAmount: claimAmount.toString() }, { gateway: params.gateway, symbol: gwCurrency[i].symbol })
+    }
+  }
 }
 
 async function doBancorInit(params, context) {
@@ -112,13 +134,13 @@ async function doBancorInit(params, context) {
   const account = await app.sdb.findOne('Account', { condition: { address } })
   if (params.stock === 'XAS') {
     const balance = await app.balances.get(address, params.money)
-    if (stockBalance.gt(account.xas)) throw new Error('Stock balance is not enough')
-    if (balance.lt(params.moneyBalance)) throw new Error('Money balance is not enough')
+    if (stockBalance.gt(String(account.xas))) throw new Error('Stock balance is not enough')
+    if (balance.lt(moneyBalance)) throw new Error('Money balance is not enough')
   }
   if (params.money === 'XAS') {
     const balance = await app.balances.get(address, params.stock)
-    if (moneyBalance.gt(account.xas)) throw new Error('Money balance is not enough')
-    if (balance.lt(params.stockBalance)) throw new Error('Stock balance is not enough')
+    if (moneyBalance.gt(String(account.xas))) throw new Error('Money balance is not enough')
+    if (balance.lt(stockBalance)) throw new Error('Stock balance is not enough')
   }
   app.sdb.create('Bancor', {
     id: Number(app.autoID.increment('bancor_id')),
@@ -136,7 +158,7 @@ async function doBancorInit(params, context) {
     timestamp: context.trs.timestamp,
   })
   if (params.money === 'XAS') {
-    app.balances.decrease(address, params.money, params.stockBalance)
+    app.balances.decrease(address, params.stock, params.stockBalance)
     app.sdb.increase('Account', { xas: -params.moneyBalance }, { address })
   }
   if (params.stock === 'XAS') {
@@ -174,7 +196,7 @@ async function validateGatewayInit(content/* , context */) {
   if (!gateway) throw new Error('Gateway not found')
 
   if (content.members.length < gateway.minimumMembers) throw new Error('Invalid gateway member number')
-  if (content.members.length % 2 === 0) throw new Error('Gateway member number sould be even number')
+  if (content.members.length % 2 === 0) throw new Error('Number of gateway members sould be odd')
   for (const m of content.members) {
     const validator = await app.sdb.findOne('GatewayMember', { condition: { address: m } })
     if (!validator) throw new Error('Unknow gateway validator address')
@@ -210,6 +232,15 @@ async function validateGatewayUpdateMember(content/* , context */) {
   if (!toValidator || toValidator.elected || toValidator.gateway !== gateway.name) {
     throw new Error('Invalid to validator')
   }
+
+  const addr = app.util.address.generateLockedAddress(content.to)
+  const account = await app.sdb.findOne('Account', { condition: { address: addr } })
+  if (!account) throw new Error(`No bail was found for new gateway member ${content.to}`)
+  const needsBail = await app.util.gateway.getNeedsBail(content.gateway)
+  if (account.xas < app.util.constants.initialDeposit
+    || needsBail.gt(String(account.xas))) {
+    throw new Error(`New member's bail is not enough for gateway member ${content.to}`)
+  }
 }
 
 async function validateGatewayContent(content/* , context */) {
@@ -223,6 +254,20 @@ async function validateGatewayClaim(content/* , context */) {
   if (!gateway) throw new Error('Gateway not found')
   if (!gateway.revoked) throw new Error('Gateway is not revoked')
   if (gateway.revoked === 2) throw new Error('Gateway is already claimed')
+  const members = await app.util.gateway.getElectedGatewayMember(content.gateway)
+  const evilMembers = content.evilMembers
+  for (let i = 0; i < evilMembers.length; i++) {
+    const m = await app.sdb.findOne('GatewayMember', { condition: { address: evilMembers[i], gateway: content.gateway } })
+    if (!m) {
+      throw new Error('Evil member is not gateway member')
+    }
+    if (m.elected === 0) {
+      throw new Error('Evil member should be elected gateway member')
+    }
+  }
+  if (evilMembers.length < (Math.floor(members.length / 2) + 1)) {
+    throw new Error(`Evil member count should be greater than ${Math.floor(members.length / 2) + 1}`)
+  }
 }
 
 async function validateBancorContent(content/* , context */) {
@@ -238,12 +283,12 @@ async function validateBancorContent(content/* , context */) {
   const account = await app.sdb.findOne('Account', { condition: { address } })
   if (content.stock === 'XAS') {
     const balance = app.balances.get(address, content.money)
-    if (stockBalance.gt(account.xas)) throw new Error('Stock balance is not enough')
+    if (stockBalance.gt(String(account.xas))) throw new Error('Stock balance is not enough')
     if (balance.lt(content.moneyBalance)) throw new Error('Money balance is not enough')
   }
   if (content.money === 'XAS') {
     const balance = app.balances.get(address, content.stock)
-    if (moneyBalance.gt(account.xas)) throw new Error('Money balance is not enough')
+    if (moneyBalance.gt(String(account.xas))) throw new Error('Money balance is not enough')
     if (balance.lt(stockBalance)) throw new Error('Stock balance is not enough')
   }
 }

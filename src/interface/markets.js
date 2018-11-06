@@ -8,73 +8,54 @@ async function getMarkets(req) {
   } else {
     sort = { timestamp: -1 }
   }
-  const bancors = await app.sdb.findAll('Bancor', { limit, offset, sort })
-  // Latest bid price
-  // await Promise.all(bancors.map(async (bancor) => {
-  //   const sort = { timestamp: -1 }
-  //   const condition1 = {
-  //     owner: bancor.owner,
-  //     source: bancor.money,
-  //     target: bancor.stock,
-  //   }
-  //   const condition2 = {
-  //     owner: bancor.owner,
-  //     source: bancor.stock,
-  //     target: bancor.money,
-  //   }
-  //   const record1 = await app.sdb.findAll('BancorExchange', { condition1, sort, limit: 1 })
-  //   const record2 = await app.sdb.findAll('BancorExchange', { condition2, sort, limit: 1 })
-  //   let record
-  //   if (record1.length > 0 && record2.length > 0) {
-  //     if (record1[0].timestamp > record2[0].timestamp) {
-  //       record = record1[0]
-  //     } else {
-  //       record = record2[0]
-  //     }
-  //   } else if (record1.length > 0) {
-  //     record = record1[0]
-  //   } else if (record2.length > 0) {
-  //     record = record2[0]
-  //   }
-  //   if (record) {
-  //     bancor.latestBid = record.ratio
-  //   } else {
-  //     bancor.latestBid = 0
-  //   }
-  // }))
+  let bancors = await app.sdb.findAll('Bancor', { limit, offset, sort })
   for (let i = 0; i < bancors.length; i++) {
-    sort = { timestamp: -1 }
-    const condition1 = {
-      owner: bancors[i].owner,
-      source: bancors[i].money,
-      target: bancors[i].stock,
-    }
-    const condition2 = {
-      owner: bancors[i].owner,
-      source: bancors[i].stock,
-      target: bancors[i].money,
-    }
-    const record1 = await app.sdb.findAll('BancorExchange', { condition: condition1, sort, limit: 1 })
-    const record2 = await app.sdb.findAll('BancorExchange', { condition: condition2, sort, limit: 1 })
-    let record
-    if (record1.length > 0 && record2.length > 0) {
-      if (record1[0].timestamp > record2[0].timestamp) {
-        record = record1[0]
-      } else {
-        record = record2[0]
-      }
-    } else if (record1.length > 0) {
-      record = record1[0]
-    } else if (record2.length > 0) {
-      record = record2[0]
-    }
-    if (record) {
-      bancors[i].latestBid = record.price
-    } else {
-      bancors[i].latestBid = 0
-    }
-  }
+    const bancor = await app.util.bancor
+      .create(bancors[i].money, bancors[i].stock, bancors[i].owner)
+    const result = await bancor.exchangeBySource(bancors[i].money, bancors[i].stock, 1, false)
+    bancors[i].latestBid = result.targetAmount.toString()
 
+    // sort = { timestamp: -1 }
+    // const condition1 = {
+    //   owner: bancors[i].owner,
+    //   source: bancors[i].money,
+    //   target: bancors[i].stock,
+    // }
+    // const condition2 = {
+    //   owner: bancors[i].owner,
+    //   source: bancors[i].stock,
+    //   target: bancors[i].money,
+    // }
+    // const record1 = await app.sdb.findAll('BancorExchange', { condition: condition1, sort, limit: 1 })
+    // const record2 = await app.sdb.findAll('BancorExchange', { condition: condition2, sort, limit: 1 })
+    // let record
+    // if (record1.length > 0 && record2.length > 0) {
+    //   if (record1[0].timestamp > record2[0].timestamp) {
+    //     record = record1[0]
+    //   } else {
+    //     record = record2[0]
+    //   }
+    // } else if (record1.length > 0) {
+    //   record = record1[0]
+    // } else if (record2.length > 0) {
+    //   record = record2[0]
+    // }
+    // if (record) {
+    //   bancors[i].latestBid = record.price
+    // } else {
+    //   bancors[i].latestBid = 0
+    // }
+  }
+  const currency = req.query.currency
+  if (currency) {
+    bancors = bancors.filter((bancor) => {
+      if (bancor.money === currency) {
+        return true
+      }
+      return false
+    })
+    return { bancors }
+  }
   return { bancors }
 }
 
@@ -172,9 +153,17 @@ async function getCurrencies(req) {
   return result
 }
 
+async function getBCHAmount(req) {
+  const bancor = await app.util.bancor.create('BCH', 'XAS')
+  if (!bancor) return 'Bancor is not ready'
+  const result = await bancor.exchangeBySource('XAS', 'BCH', req.query.amount, false)
+  return result.targetAmount.toString()
+}
+
 module.exports = (router) => {
   router.get('/', getMarkets)
   router.get('/trades/:id', getTradesByMarket)
   router.get('/trades', getTradesByUser)
   router.get('/currencies', getCurrencies)
+  router.get('/fee', getBCHAmount)
 }

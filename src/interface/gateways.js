@@ -125,7 +125,6 @@ module.exports = (router) => {
   router.get('/threshold', async (req) => {
     const gatewayName = req.query.name
     const memberAddr = req.query.address
-    // return value is { ratio, needSupply }
     const result = await app.util.gateway.getThreshold(gatewayName, memberAddr)
     return result
   })
@@ -172,7 +171,8 @@ module.exports = (router) => {
 
   router.get('/realClaim', async (req) => {
     let realClaim = 0
-    let lockedBail = 0
+    // let lockedBail = 0
+    let totalClaim = app.util.bignumber(0)
     let userAmount = 0
     let totalAmount = 0
     let symbol = ''
@@ -186,24 +186,29 @@ module.exports = (router) => {
     const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
     const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
     userAmount = app.util
-      .bignumber(app.balances.get(address, gwCurrency[0].symbol)).toNumber()
-    totalAmount = app.util.bignumber(gwCurrency[0].quantity).toNumber()
-    const ratio = userAmount / totalAmount
+      .bignumber(app.balances.get(address, gwCurrency[0].symbol))
+    totalAmount = app.util.bignumber(gwCurrency[0].quantity)
     if (gateway.revoked === 2) {
+      const ratio = userAmount.div(totalAmount)
+      totalClaim = ratio.times(gwCurrency[0].claimAmount)
+      const allBailAmount = await app.util.gateway.getAllBailAmount(gatewayName)
+      const claimRatio = totalClaim.div(allBailAmount)
       for (let i = 0; i < members.length; i++) {
         const lockedAddr = app.util.address.generateLockedAddress(members[i].address)
         const memberLockedAccount = await app.sdb.load('Account', lockedAddr)
-        const needClaim = Math.floor(ratio * memberLockedAccount.xas)
-        if (needClaim === 0) continue
-        realClaim += needClaim
-        lockedBail += memberLockedAccount.xas
+        const needClaim = claimRatio.times(memberLockedAccount.xas).round()
+        if (needClaim.eq(0)) continue
+        realClaim += needClaim.toNumber()
+        // lockedBail += memberLockedAccount.xas
       }
     }
     symbol = gwCurrency[0].symbol
     precision = gwCurrency[0].precision
+    userAmount = userAmount.toString()
+    totalAmount = totalAmount.toString()
     return {
       realClaim,
-      lockedBail,
+      lockedBail: gwCurrency[0].claimAmount,
       userAmount,
       totalAmount,
       symbol,
