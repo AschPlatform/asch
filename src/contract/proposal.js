@@ -52,6 +52,7 @@ async function doGatewayUpdateMember(params, context) {
   app.sdb.lock(`gateway@${params.gateway}`)
   const gateway = await app.sdb.load('Gateway', params.gateway)
   if (!gateway) throw new Error('Gateway not found')
+  if (gateway.revoked !== 0) throw new Error('Gateway should not be revoked')
 
   if (context.block.height - gateway.lastUpdateHeight < gateway.updateInterval) {
     throw new Error('Time not arrived')
@@ -216,6 +217,7 @@ async function validateGatewayInit(content/* , context */) {
 async function validateGatewayUpdateMember(content/* , context */) {
   const gateway = await app.sdb.findOne('Gateway', { condition: { name: content.gateway } })
   if (!gateway) throw new Error('Gateway not found')
+  if (gateway.revoked !== 0) throw new Error('Gateway should not be revoked')
 
   const fromValidator = await app.sdb.findOne('GatewayMember', {
     condition: {
