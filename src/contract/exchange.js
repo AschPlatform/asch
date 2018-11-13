@@ -7,11 +7,14 @@ async function doExchange(sourceCurrency, targetCurrency, bancor, result, contex
     app.sdb.increase('Account', { xas: -result.sourceAmount.toNumber() }, { address: senderId })
     app.balances.increase(app.councilAddress, targetCurrency, exchangeFee.toString())
     app.balances.increase(senderId, targetCurrency, realTargetAmount.toString())
-  }
-  if (targetCurrency === 'XAS') {
+  } else if (targetCurrency === 'XAS') {
     app.balances.decrease(senderId, sourceCurrency, result.sourceAmount.toString())
     app.sdb.increase('Account', { xas: exchangeFee.toNumber() }, { address: app.councilAddress })
     app.sdb.increase('Account', { xas: realTargetAmount.toNumber() }, { address: senderId })
+  } else {
+    app.balances.decrease(senderId, sourceCurrency, result.sourceAmount.toString())
+    app.balances.increase(app.councilAddress, targetCurrency, exchangeFee.toString())
+    app.balances.increase(senderId, targetCurrency, realTargetAmount.toString())
   }
   let sourcePrecision = 0
   let targetPrecision = 0

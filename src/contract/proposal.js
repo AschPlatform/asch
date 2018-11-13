@@ -155,6 +155,7 @@ async function doBancorInit(params, context) {
     moneyPrecision: params.moneyPrecision,
     stockCw: params.stockCw,
     moneyCw: params.moneyCw,
+    relay: params.relay,
     name: params.name,
     timestamp: context.trs.timestamp,
   })
@@ -274,7 +275,11 @@ async function validateGatewayClaim(content/* , context */) {
 async function validateBancorContent(content/* , context */) {
   app.validate('amount', content.stockBalance)
   app.validate('amount', content.moneyBalance)
-  app.validate('amount', content.supply)
+  if (content.relay !== 0) {
+    app.validate('amount', content.supply)
+    if (content.stockCw !== 1) throw new Error('Stock cw should be 1')
+    if (content.moneyCw !== 1) throw new Error('Money cw should be 1')
+  }
   const stockBalance = app.util.bignumber(content.stockBalance)
   const moneyBalance = app.util.bignumber(content.moneyBalance)
   const address = content.owner
