@@ -23,14 +23,20 @@ async function doExchange(sourceCurrency, targetCurrency, bancor, result, contex
   const bancorObj = bancor.getBancorInfo()
   if (sourceCurrency === bancorObj.money) {
     type = 'BUY'
-    price = Number(result.targetAmount.div(result.sourceAmount).toFixed(6).toString())
     sourcePrecision = bancorObj.moneyPrecision
     targetPrecision = bancorObj.stockPrecision
+    app.logger.debug(`====> exchange: BUY, price = ${result.targetAmount.toString()} / 10 ^ ${targetPrecision} / (${result.sourceAmount.toString()} / 10 ^ ${sourcePrecision})`)
+    price = Number(result.targetAmount.div(10 ** Number(targetPrecision))
+      .div(result.sourceAmount.div(10 ** Number(sourcePrecision)))
+      .toFixed(sourcePrecision).toString())
   } else {
     type = 'SELL'
-    price = Number(result.sourceAmount.div(result.targetAmount).toFixed(6).toString())
     sourcePrecision = bancorObj.stockPrecision
     targetPrecision = bancorObj.moneyPrecision
+    app.logger.debug(`====> exchange: SELL, price = ${result.sourceAmount.toString()} / 10 ^ ${sourcePrecision} / (${result.targetAmount.toString()} / 10 ^ ${targetPrecision})`)
+    price = Number(result.sourceAmount.div(10 ** Number(sourcePrecision))
+      .div(result.targetAmount.div(10 ** Number(targetPrecision)))
+      .toFixed(targetPrecision).toString())
   }
   // Record exchange transactions
   app.sdb.create('BancorExchange', {
