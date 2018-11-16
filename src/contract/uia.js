@@ -89,6 +89,7 @@ module.exports = {
       recipientAddress = recipientAccount.address
     }
 
+    if (senderId === recipientAddress) return 'Sender and recipient is identical'
     app.balances.transfer(currency, amount, senderId, recipientAddress)
     app.sdb.create('Transfer', {
       tid: this.trs.id,

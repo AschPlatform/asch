@@ -52,6 +52,7 @@ module.exports = {
                     || app.util.address.isGroupAddress(recipient))) {
       recipientAccount = await app.sdb.load('Account', recipient)
       if (recipientAccount) {
+        if (recipientAccount.address === senderId) return 'Sender and recipient is identical'
         app.sdb.increase('Account', { xas: amount }, { address: recipientAccount.address })
       } else {
         recipientAccount = app.sdb.create('Account', {
@@ -63,6 +64,7 @@ module.exports = {
     } else {
       recipientAccount = await app.sdb.load('Account', { name: recipient })
       if (!recipientAccount) return 'Recipient name not exist'
+      if (recipientAccount.address === senderId) return 'Sender and recipient is identical'
       app.sdb.increase('Account', { xas: amount }, { address: recipientAccount.address })
     }
     app.sdb.increase('Account', { xas: -amount }, { address: sender.address })
