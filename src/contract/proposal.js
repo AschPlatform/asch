@@ -35,6 +35,9 @@ async function doGatewayRegister(params, context) {
 
 async function doGatewayInit(params, context) {
   app.sdb.lock(`gateway@${params.gateway}`)
+  const gateway = await app.sdb.findOne('Gateway', { condition: { name: content.gateway } })
+  if (!gateway) throw new Error('Gateway not found')
+  if (gw.revoked) throw new Error('Gateway already revoked')
   for (const m of params.members) {
     if (!app.util.address.isNormalAddress(m)) throw new Error(`${m} is not valid address`)
     const addr = app.util.address.generateLockedAddress(m)
@@ -138,11 +141,15 @@ async function doBancorInit(params, context) {
     const balance = await app.balances.get(address, params.money)
     if (stockBalance.gt(String(account.xas))) throw new Error('Stock balance is not enough')
     if (balance.lt(moneyBalance)) throw new Error('Money balance is not enough')
-  }
-  if (params.money === 'XAS') {
+  } else if (params.money === 'XAS') {
     const balance = await app.balances.get(address, params.stock)
     if (moneyBalance.gt(String(account.xas))) throw new Error('Money balance is not enough')
     if (balance.lt(stockBalance)) throw new Error('Stock balance is not enough')
+  } else {
+    const sBalance = await app.balances.get(address, params.stock)
+    const mBalance = await app.balances.get(address, params.money)
+    if (mBalance.lt(moneyBalance)) throw new Error('Money balance is not enough')
+    if (sBalance.lt(stockBalance)) throw new Error('Stock balance is not enough')
   }
   app.sdb.create('Bancor', {
     id: Number(app.autoID.increment('bancor_id')),
@@ -163,10 +170,12 @@ async function doBancorInit(params, context) {
   if (params.money === 'XAS') {
     app.balances.decrease(address, params.stock, params.stockBalance)
     app.sdb.increase('Account', { xas: -params.moneyBalance }, { address })
-  }
-  if (params.stock === 'XAS') {
+  } else if (params.stock === 'XAS') {
     app.balances.decrease(address, params.money, params.moneyBalance)
     app.sdb.increase('Account', { xas: -params.stockBalance }, { address })
+  } else {
+    app.balances.decrease(address, params.stock, params.stockBalance)
+    app.balances.decrease(address, params.money, params.moneyBalance)
   }
 }
 
@@ -197,6 +206,7 @@ async function validateGatewayRegister(content/* , context */) {
 async function validateGatewayInit(content/* , context */) {
   const gateway = await app.sdb.findOne('Gateway', { condition: { name: content.gateway } })
   if (!gateway) throw new Error('Gateway not found')
+  if (gw.revoked) throw new Error('Gateway already revoked')
 
   if (content.members.length < gateway.minimumMembers) throw new Error('Invalid gateway member number')
   if (content.members.length % 2 === 0) throw new Error('Number of gateway members sould be odd')
@@ -290,14 +300,18 @@ async function validateBancorContent(content/* , context */) {
   if (bancor) throw new Error('Bancor exists')
   const account = await app.sdb.findOne('Account', { condition: { address } })
   if (content.stock === 'XAS') {
-    const balance = app.balances.get(address, content.money)
+    const balance = await app.balances.get(address, content.money)
     if (stockBalance.gt(String(account.xas))) throw new Error('Stock balance is not enough')
     if (balance.lt(content.moneyBalance)) throw new Error('Money balance is not enough')
-  }
-  if (content.money === 'XAS') {
-    const balance = app.balances.get(address, content.stock)
+  } else if (content.money === 'XAS') {
+    const balance = await app.balances.get(address, content.stock)
     if (moneyBalance.gt(String(account.xas))) throw new Error('Money balance is not enough')
     if (balance.lt(stockBalance)) throw new Error('Stock balance is not enough')
+  } else {
+    const sBalance = await app.balances.get(address, content.stock)
+    const mBalance = await app.balances.get(address, content.money)
+    if (mBalance.lt(moneyBalance)) throw new Error('Money balance is not enough')
+    if (sBalance.lt(stockBalance)) throw new Error('Stock balance is not enough')
   }
 }
 
