@@ -12,9 +12,11 @@ async function getMarkets(req) {
   for (let i = 0; i < bancors.length; i++) {
     const bancor = await app.util.bancor
       .create(bancors[i].money, bancors[i].stock, bancors[i].owner)
-    const result = await bancor.exchangeBySource(bancors[i].money, bancors[i].stock, 1000, false)
+    const sourceAmount = app.util.bignumber(bancors[i].moneyBalance).div(1000)
+    const result = await bancor.exchangeBySource(bancors[i].money,
+      bancors[i].stock, sourceAmount.toString(), false)
     bancors[i].latestBid = result.targetAmount.div(10 ** Number(bancors[i].stockPrecision))
-      .div(1000).times(10 ** Number(bancors[i].moneyPrecision)).toString()
+      .div(sourceAmount).times(10 ** Number(bancors[i].moneyPrecision)).toString()
   }
   const currency = req.query.currency
   if (currency) {
