@@ -42,6 +42,9 @@ module.exports = {
     const exists = await app.sdb.exists('GatewayMember', { address: senderId })
     if (exists) return 'Account already is a gateway member'
 
+    const gw = await app.sdb.findOne('Gateway', { condition: { name: gateway } })
+    if (!gw.activated) return 'Gateway not activated, cannot register member'
+    if (gw.revoked) return 'Gateway already revoked, cannot register member'
     sender.role = app.AccountRole.GATEWAY_VALIDATOR
     app.sdb.update('Account', { role: app.AccountRole.GATEWAY_VALIDATOR }, { address: this.sender.address })
     app.sdb.create('GatewayMember', {
