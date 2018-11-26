@@ -35,9 +35,9 @@ async function doGatewayRegister(params, context) {
 
 async function doGatewayInit(params, context) {
   app.sdb.lock(`gateway@${params.gateway}`)
-  const gateway = await app.sdb.findOne('Gateway', { condition: { name: content.gateway } })
+  const gateway = await app.sdb.findOne('Gateway', { condition: { name: params.gateway } })
   if (!gateway) throw new Error('Gateway not found')
-  if (gw.revoked) throw new Error('Gateway already revoked')
+  if (gateway.revoked) throw new Error('Gateway already revoked')
   for (const m of params.members) {
     if (!app.util.address.isNormalAddress(m)) throw new Error(`${m} is not valid address`)
     const addr = app.util.address.generateLockedAddress(m)
@@ -206,7 +206,7 @@ async function validateGatewayRegister(content/* , context */) {
 async function validateGatewayInit(content/* , context */) {
   const gateway = await app.sdb.findOne('Gateway', { condition: { name: content.gateway } })
   if (!gateway) throw new Error('Gateway not found')
-  if (gw.revoked) throw new Error('Gateway already revoked')
+  if (gateway.revoked) throw new Error('Gateway already revoked')
 
   if (content.members.length < gateway.minimumMembers) throw new Error('Invalid gateway member number')
   if (content.members.length % 2 === 0) throw new Error('Number of gateway members sould be odd')
