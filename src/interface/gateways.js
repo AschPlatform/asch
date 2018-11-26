@@ -49,7 +49,7 @@ module.exports = (router) => {
     }
     const account = await app.sdb.findOne('GatewayAccount', { condition })
     const gw = await app.sdb.findOne('Gateway', { condition: { name: req.params.name } })
-    if (account.version !== gw.version) throw new Error('Account version is not consistent with gateway version')
+    if (account.version !== gw.version) return 'Account version is not consistent with gateway version'
     if (!account) return 'Gateway account not found'
     return { account }
   })
