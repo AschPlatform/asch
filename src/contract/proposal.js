@@ -5,6 +5,7 @@ const VALID_TOPICS = [
   'gateway_revoke',
   'gateway_claim',
   'bancor_init',
+  'pledge_update_limit',
 ]
 
 async function doGatewayRegister(params, context) {
@@ -179,6 +180,14 @@ async function doBancorInit(params, context) {
   }
 }
 
+async function doPledgeUpdateLimit(params) {
+  const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
+  const totalPledge = totalPledges[0]
+  totalPledge.totalNetLimit = params.netLimit
+  totalPledge.totalEnergyLimit = params.energyLimit
+  app.sdb.update('AccountTotalPledge', totalPledge, { tid: totalPledge.tid })
+}
+
 async function validateGatewayRegister(content/* , context */) {
   if (!content.name || !/^[A-Za-z0-9]{3,16}$/.test(content.name)) {
     throw new Error('Invalid gateway name')
@@ -315,6 +324,15 @@ async function validateBancorContent(content/* , context */) {
   }
 }
 
+async function validatePledgeContent(content/* , context */) {
+  app.validate('amount', String(content.netLimit))
+  app.validate('amount', String(content.energyLimit))
+  const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
+  if (totalPledges.length === 0) throw new Error('Total pledge is not set')
+  if (content.netLimit <= 0) throw new Error('Net limit should be positive number')
+  if (content.energyLimit <= 0) throw new Error('Energy limit should be positive number')
+}
+
 module.exports = {
   async propose(title, desc, topic, content, endHeight) {
     if (!/^[A-Za-z0-9_\-+!@$% ]{10,100}$/.test(title)) return 'Invalid proposal title'
@@ -335,6 +353,8 @@ module.exports = {
       await validateGatewayClaim(content, this)
     } else if (topic === 'bancor_init') {
       await validateBancorContent(content, this)
+    } else if (topic === 'pledge_update_limit') {
+      await validatePledgeContent(content, this)
     }
 
     app.sdb.create('Proposal', {
@@ -399,6 +419,8 @@ module.exports = {
       await doGatewayClaim(content, this)
     } else if (topic === 'bancor_init') {
       await doBancorInit(content, this)
+    } else if (topic === 'pledge_update_limit') {
+      await doPledgeUpdateLimit(content, this)
     } else {
       unknownTopic = true
     }
