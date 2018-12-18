@@ -1,5 +1,5 @@
 async function getPledges(req) {
-  const userPledge = await app.util.pledges.getNetEnergyLimit(req.qurey.address)
+  const userPledge = await app.util.pledges.getNetEnergyLimit(req.query.address)
   return userPledge
 }
 

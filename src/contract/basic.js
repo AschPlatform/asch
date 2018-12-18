@@ -434,17 +434,20 @@ module.exports = {
   },
 
   async pledge(bpAmount, energyAmount) {
+    if (bpAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
     const sender = this.sender
     const totalAmount = bpAmount + energyAmount
     if (sender.xas < totalAmount) return 'Insufficient balance in Accounts'
     sender.xas -= totalAmount
     app.sdb.update('Account', sender, { address: sender.address })
-    const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address })
+    const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address }).entity
     const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
     let totalPledge
     if (totalPledges.length === 0) {
       app.sdb.create('AccountTotalPledge', {
         tid: this.trs.id,
+        totalNetLimit: app.util.constants.initialTotalNetLimit,
+        totalEnergyLimit: app.util.constants.initialTotalEnergyLimit,
       })
       totalPledge = await app.sdb.load('AccountTotalPledge', this.trs.id)
     } else {
@@ -467,23 +470,25 @@ module.exports = {
   },
 
   async unpledge(bpAmount, energyAmount) {
+    if (bpAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
     const sender = this.sender
     const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address })
     if (!pledgeAccount) return `No pledege for account ${sender.address}`
     const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
     if (totalPledges.length === 0) return 'Total pledge is not set'
-    if (pledgeAccount.pledgeAmountForBP < bpAmount || pledgeAccount.pledgeAmountForEnergy < energyAmount) return 'Insufficient balance in AccountPledges'
     if (totalPledges[0].totalPledgeForBP < bpAmount || totalPledges[0].totalPledgeForEnergy < energyAmount) return 'Insufficient balance in AccountTotalPledges'
-    if (pledgeAccount.bpLockHeight > (this.block.height - app.util.constants.blocksPerDay)) return 'Pledge duration should be greater than 1 day'
-    if (pledgeAccount.energyLockHeight > (this.block.height - app.util.constants.blocksPerDay)) return 'Pledge duration should be greater than 1 day'
     const totalAmount = bpAmount + energyAmount
     sender.xas += totalAmount
     app.sdb.update('Account', sender, { address: sender.address })
     if (bpAmount > 0) {
+      if (pledgeAccount.bpLockHeight > (this.block.height - app.util.constants.pledageDays * app.util.constants.blocksPerDay)) return 'Pledge duration should be greater than 3 day'
+      if (pledgeAccount.pledgeAmountForBP < bpAmount) return 'Insufficient balance in AccountPledges'
       pledgeAccount.pledgeAmountForBP -= bpAmount
       totalPledges[0].totalPledgeForBP -= bpAmount
     }
     if (energyAmount > 0) {
+      if (pledgeAccount.energyLockHeight > (this.block.height - app.util.constants.pledageDays * app.util.constants.blocksPerDay)) return 'Pledge duration should be greater than 3 day'
+      if (pledgeAccount.pledgeAmountForEnergy < energyAmount) return 'Insufficient balance in AccountPledges'
       pledgeAccount.pledgeAmountForEnergy -= energyAmount
       totalPledges[0].totalPledgeForEnergy -= energyAmount
     }
