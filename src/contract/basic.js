@@ -434,6 +434,7 @@ module.exports = {
   },
 
   async pledge(bpAmount, energyAmount) {
+    if (!Number.isInteger(bpAmount) || !Number.isInteger(energyAmount)) return 'Amount should be integer'
     if (bpAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
     const sender = this.sender
     const totalAmount = bpAmount + energyAmount
@@ -470,6 +471,7 @@ module.exports = {
   },
 
   async unpledge(bpAmount, energyAmount) {
+    if (!Number.isInteger(bpAmount) || !Number.isInteger(energyAmount)) return 'Amount should be integer'
     if (bpAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
     const sender = this.sender
     const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address })
