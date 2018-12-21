@@ -474,7 +474,7 @@ module.exports = {
     if (!Number.isInteger(bpAmount) || !Number.isInteger(energyAmount)) return 'Amount should be integer'
     if (bpAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
     const sender = this.sender
-    const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address })
+    const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address }).entity
     if (!pledgeAccount) return `No pledege for account ${sender.address}`
     const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
     if (totalPledges.length === 0) return 'Total pledge is not set'

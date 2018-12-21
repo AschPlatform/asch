@@ -245,8 +245,8 @@ module.exports = {
     amount = app.util.bignumber(String(amount))
     const senderId = this.sender.address
     const addr = app.util.address.generateLockedAddress(senderId)
-    const lockAccount = app.sdb.createOrLoad('Account', { xas: 0, address: addr, name: null })
-    if (amount.plus(lockAccount.entity.xas).lt(app.util.constants.initialDeposit)) return `Deposit amount should be greater than ${app.util.constants.initialDeposit - lockAccount.entity.xas}`
+    const lockAccount = app.sdb.createOrLoad('Account', { xas: 0, address: addr, name: null }).entity
+    if (amount.plus(lockAccount.xas).lt(app.util.constants.initialDeposit)) return `Deposit amount should be greater than ${app.util.constants.initialDeposit - lockAccount.xas}`
     const m = await app.util.gateway.getGatewayMember(gatewayName, senderId)
     if (!m) return 'Please register as a gateway member before deposit bail'
     if (amount.gt(String(this.sender.xas))) return 'Insufficient balance'
