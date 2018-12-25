@@ -6,5 +6,6 @@ module.exports = {
     { name: 'totalPledgeForEnergy', type: 'BigInt', default: 0 },
     { name: 'totalNetLimit', type: 'BigInt', default: 0 },
     { name: 'totalEnergyLimit', type: 'BigInt', default: 0 },
+    { name: 'freeNetLimit', type: 'BigInt', default: 0 },
   ]
 }

@@ -442,13 +442,14 @@ module.exports = {
     sender.xas -= totalAmount
     app.sdb.update('Account', sender, { address: sender.address })
     const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address }).entity
-    const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
+    const totalPledges = await app.sdb.loadMany('AccountTotalPledge', { })
     let totalPledge
     if (totalPledges.length === 0) {
       app.sdb.create('AccountTotalPledge', {
         tid: this.trs.id,
         totalNetLimit: app.util.constants.initialTotalNetLimit,
         totalEnergyLimit: app.util.constants.initialTotalEnergyLimit,
+        freeNetLimit: app.util.constants.freeNetLimitPerDay,
       })
       totalPledge = await app.sdb.load('AccountTotalPledge', this.trs.id)
     } else {
@@ -474,9 +475,9 @@ module.exports = {
     if (!Number.isInteger(bpAmount) || !Number.isInteger(energyAmount)) return 'Amount should be integer'
     if (bpAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
     const sender = this.sender
-    const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address }).entity
+    const pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
     if (!pledgeAccount) return `No pledege for account ${sender.address}`
-    const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
+    const totalPledges = await app.sdb.loadMany('AccountTotalPledge', { })
     if (totalPledges.length === 0) return 'Total pledge is not set'
     if (totalPledges[0].totalPledgeForBP < bpAmount || totalPledges[0].totalPledgeForEnergy < energyAmount) return 'Insufficient balance in AccountTotalPledges'
     const totalAmount = bpAmount + energyAmount
