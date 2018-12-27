@@ -441,7 +441,16 @@ module.exports = {
     if (sender.xas < totalAmount) return 'Insufficient balance in Accounts'
     sender.xas -= totalAmount
     app.sdb.update('Account', sender, { address: sender.address })
-    const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address }).entity
+    // const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address }).entity
+    let pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
+    if (!pledgeAccount) {
+      app.sdb.create('AccountPledge', {
+        address: sender.address,
+        heightOffset: this.block.height % app.util.constants.blocksPerDay,
+      })
+      pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
+    }
+
     const totalPledges = await app.sdb.loadMany('AccountTotalPledge', { })
     let totalPledge
     if (totalPledges.length === 0) {

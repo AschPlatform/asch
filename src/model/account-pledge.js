@@ -9,8 +9,12 @@ module.exports = {
     { name: 'pledgeAmountForEnergy', type: 'BigInt', default: 0 },
     { name: 'bpLockHeight', type: 'BigInt', default: 0 },
     { name: 'energyLockHeight', type: 'BigInt', default: 0 },
-    { name: 'lastFreeNetUpdateHeight', type: 'BigInt', default: 0 },
-    { name: 'lastBPUpdateHeight', type: 'BigInt', default: 0 },
-    { name: 'lastEnergyUpdateHeight', type: 'BigInt', default: 0 },
+    // { name: 'lastFreeNetUpdateHeight', type: 'BigInt', default: 0 },
+    // { name: 'lastBPUpdateHeight', type: 'BigInt', default: 0 },
+    // { name: 'lastEnergyUpdateHeight', type: 'BigInt', default: 0 },
+    { name: 'lastFreeNetUpdateDay', type: 'BigInt', default: 0 },
+    { name: 'lastBPUpdateDay', type: 'BigInt', default: 0 },
+    { name: 'lastEnergyUpdateDay', type: 'BigInt', default: 0 },
+    { name: 'heightOffset', type: 'BigInt', default: 0 },
   ]
 }
