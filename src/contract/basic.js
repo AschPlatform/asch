@@ -444,8 +444,12 @@ module.exports = {
     // const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address }).entity
     let pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
     if (!pledgeAccount) {
+      const currentDay = Number.parseInt(this.block.height / app.util.constants.blocksPerDay, 10)
       app.sdb.create('AccountPledge', {
         address: sender.address,
+        lastFreeNetUpdateDay: currentDay,
+        lastBPUpdateDay: currentDay,
+        lastEnergyUpdateDay: currentDay,
         heightOffset: this.block.height % app.util.constants.blocksPerDay,
       })
       pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
