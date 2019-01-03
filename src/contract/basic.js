@@ -433,22 +433,21 @@ module.exports = {
     return null
   },
 
-  async pledge(bpAmount, energyAmount) {
-    if (!Number.isInteger(bpAmount) || !Number.isInteger(energyAmount)) return 'Amount should be integer'
-    if (bpAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
+  async pledge(netAmount, energyAmount) {
+    if (!Number.isInteger(netAmount) || !Number.isInteger(energyAmount)) return 'Amount should be integer'
+    if (netAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
     const sender = this.sender
-    const totalAmount = bpAmount + energyAmount
+    const totalAmount = netAmount + energyAmount
     if (sender.xas < totalAmount) return 'Insufficient balance in Accounts'
     sender.xas -= totalAmount
     app.sdb.update('Account', sender, { address: sender.address })
-    // const pledgeAccount = app.sdb.createOrLoad('AccountPledge', { address: sender.address }).entity
     let pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
     if (!pledgeAccount) {
       const currentDay = Number.parseInt(this.block.height / app.util.constants.blocksPerDay, 10)
       app.sdb.create('AccountPledge', {
         address: sender.address,
         lastFreeNetUpdateDay: currentDay,
-        lastBPUpdateDay: currentDay,
+        lastNetUpdateDay: currentDay,
         lastEnergyUpdateDay: currentDay,
         heightOffset: this.block.height % app.util.constants.blocksPerDay,
       })
@@ -460,18 +459,21 @@ module.exports = {
     if (totalPledges.length === 0) {
       app.sdb.create('AccountTotalPledge', {
         tid: this.trs.id,
-        totalNetLimit: app.util.constants.initialTotalNetLimit,
-        totalEnergyLimit: app.util.constants.initialTotalEnergyLimit,
+        netPerXAS: app.util.constants.netPerXAS,
+        energyPerXAS: app.util.constants.energyPerXAS,
+        netPerPledgedXAS: app.util.constants.netPerPledgedXAS,
+        energyPerPledgedXAS: app.util.constants.energyPerPledgedXAS,
         freeNetLimit: app.util.constants.freeNetLimitPerDay,
+        gasPrice: app.util.constants.energyPerGas,
       })
       totalPledge = await app.sdb.load('AccountTotalPledge', this.trs.id)
     } else {
       totalPledge = totalPledges[0]
     }
-    if (bpAmount > 0) {
-      pledgeAccount.pledgeAmountForBP += bpAmount
-      totalPledge.totalPledgeForBP += bpAmount
-      pledgeAccount.bpLockHeight = this.block.height
+    if (netAmount > 0) {
+      pledgeAccount.pledgeAmountForNet += netAmount
+      totalPledge.totalPledgeForNet += netAmount
+      pledgeAccount.netLockHeight = this.block.height
     }
     if (energyAmount > 0) {
       pledgeAccount.pledgeAmountForEnergy += energyAmount
@@ -484,23 +486,23 @@ module.exports = {
     return null
   },
 
-  async unpledge(bpAmount, energyAmount) {
-    if (!Number.isInteger(bpAmount) || !Number.isInteger(energyAmount)) return 'Amount should be integer'
-    if (bpAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
+  async unpledge(netAmount, energyAmount) {
+    if (!Number.isInteger(netAmount) || !Number.isInteger(energyAmount)) return 'Amount should be integer'
+    if (netAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
     const sender = this.sender
     const pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
     if (!pledgeAccount) return `No pledege for account ${sender.address}`
     const totalPledges = await app.sdb.loadMany('AccountTotalPledge', { })
     if (totalPledges.length === 0) return 'Total pledge is not set'
-    if (totalPledges[0].totalPledgeForBP < bpAmount || totalPledges[0].totalPledgeForEnergy < energyAmount) return 'Insufficient balance in AccountTotalPledges'
-    const totalAmount = bpAmount + energyAmount
+    if (totalPledges[0].totalPledgeForNet < netAmount || totalPledges[0].totalPledgeForEnergy < energyAmount) return 'Insufficient balance in AccountTotalPledges'
+    const totalAmount = netAmount + energyAmount
     sender.xas += totalAmount
     app.sdb.update('Account', sender, { address: sender.address })
-    if (bpAmount > 0) {
-      if (pledgeAccount.bpLockHeight > (this.block.height - app.util.constants.pledageDays * app.util.constants.blocksPerDay)) return 'Pledge duration should be greater than 3 day'
-      if (pledgeAccount.pledgeAmountForBP < bpAmount) return 'Insufficient balance in AccountPledges'
-      pledgeAccount.pledgeAmountForBP -= bpAmount
-      totalPledges[0].totalPledgeForBP -= bpAmount
+    if (netAmount > 0) {
+      if (pledgeAccount.netLockHeight > (this.block.height - app.util.constants.pledageDays * app.util.constants.blocksPerDay)) return 'Pledge duration should be greater than 3 day'
+      if (pledgeAccount.pledgeAmountForNet < netAmount) return 'Insufficient balance in AccountPledges'
+      pledgeAccount.pledgeAmountForNet -= netAmount
+      totalPledges[0].totalPledgeForNet -= netAmount
     }
     if (energyAmount > 0) {
       if (pledgeAccount.energyLockHeight > (this.block.height - app.util.constants.pledageDays * app.util.constants.blocksPerDay)) return 'Pledge duration should be greater than 3 day'
