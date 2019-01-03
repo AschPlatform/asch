@@ -1,6 +1,11 @@
 async function getPledges(req) {
-  const userPledge = await app.util.pledges.getNetEnergyLimit(req.query.address)
-  return userPledge
+  let pledge
+  if (req.query.address) {
+    pledge = await app.util.pledges.getNetEnergyLimit(req.query.address)
+  } else {
+    pledge = await app.util.pledges.getPledgeConfig()
+  }
+  return pledge
 }
 
 module.exports = (router) => {

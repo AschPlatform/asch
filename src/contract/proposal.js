@@ -5,7 +5,10 @@ const VALID_TOPICS = [
   'gateway_revoke',
   'gateway_claim',
   'bancor_init',
-  'pledge_update_limit',
+  'update_net_energy_per_xas',
+  'update_net_energy_per_pledged_xas',
+  'update_gasprice',
+  'update_free_net_limit',
 ]
 
 async function doGatewayRegister(params, context) {
@@ -180,11 +183,33 @@ async function doBancorInit(params, context) {
   }
 }
 
-async function doPledgeUpdateLimit(params) {
+async function doUpdateNetEnergyPerXAS(params) {
   const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
   const totalPledge = totalPledges[0]
-  totalPledge.totalNetLimit = params.netLimit
-  totalPledge.totalEnergyLimit = params.energyLimit
+  totalPledge.netPerXAS = params.netPerXAS
+  totalPledge.energyPerXAS = params.energyPerXAS
+  app.sdb.update('AccountTotalPledge', totalPledge, { tid: totalPledge.tid })
+}
+
+async function doUpdateNetEnergyPerPledgedXAS(params) {
+  const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
+  const totalPledge = totalPledges[0]
+  totalPledge.netPerPledgedXAS = params.netPerPledgedXAS
+  totalPledge.energyPerPledgedXAS = params.energyPerPledgedXAS
+  app.sdb.update('AccountTotalPledge', totalPledge, { tid: totalPledge.tid })
+}
+
+async function doUpdateGasprice(params) {
+  const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
+  const totalPledge = totalPledges[0]
+  totalPledge.gasprice = params.gasprice
+  app.sdb.update('AccountTotalPledge', totalPledge, { tid: totalPledge.tid })
+}
+
+async function doUpdateFreeNetLimit(params) {
+  const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
+  const totalPledge = totalPledges[0]
+  totalPledge.freeNetLimit = params.freeNetLimit
   app.sdb.update('AccountTotalPledge', totalPledge, { tid: totalPledge.tid })
 }
 
@@ -324,13 +349,36 @@ async function validateBancorContent(content/* , context */) {
   }
 }
 
-async function validatePledgeContent(content/* , context */) {
-  app.validate('amount', String(content.netLimit))
-  app.validate('amount', String(content.energyLimit))
+async function validateNetEnergyPerXAS(content/* , context */) {
+  app.validate('amount', String(content.netPerXAS))
+  app.validate('amount', String(content.energyPerXAS))
   const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
   if (totalPledges.length === 0) throw new Error('Total pledge is not set')
-  if (content.netLimit <= 0) throw new Error('Net limit should be positive number')
-  if (content.energyLimit <= 0) throw new Error('Energy limit should be positive number')
+  if (content.netPerXAS < 0) throw new Error('Net per XAS should be positive number')
+  if (content.energyPerXAS < 0) throw new Error('Energy per XAS should be positive number')
+}
+
+async function validateNetEnergyPerPledgedXAS(content/* , context */) {
+  app.validate('amount', String(content.netPerPledgedXAS))
+  app.validate('amount', String(content.energyPerPledgedXAS))
+  const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
+  if (totalPledges.length === 0) throw new Error('Total pledge is not set')
+  if (content.netPerPledgedXAS < 0) throw new Error('Net per pledged XAS should be positive number')
+  if (content.energyPerPledgedXAS < 0) throw new Error('Energy per pledged XAS should be positive number')
+}
+
+async function validateGasprice(content/* , context */) {
+  app.validate('amount', String(content.gasprice))
+  const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
+  if (totalPledges.length === 0) throw new Error('Total pledge is not set')
+  if (content.gasprice < 0) throw new Error('Gas price should be positive number')
+}
+
+async function validateFreeNetLimit(content/* , context */) {
+  app.validate('amount', String(content.freeNetLimit))
+  const totalPledges = await app.sdb.findAll('AccountTotalPledge', { })
+  if (totalPledges.length === 0) throw new Error('Total pledge is not set')
+  if (content.freeNetLimit < 0) throw new Error('Free net limit per day should be positive number')
 }
 
 module.exports = {
@@ -353,8 +401,14 @@ module.exports = {
       await validateGatewayClaim(content, this)
     } else if (topic === 'bancor_init') {
       await validateBancorContent(content, this)
-    } else if (topic === 'pledge_update_limit') {
-      await validatePledgeContent(content, this)
+    } else if (topic === 'update_net_energy_per_xas') {
+      await validateNetEnergyPerXAS(content, this)
+    } else if (topic === 'update_net_energy_per_pledged_xas') {
+      await validateNetEnergyPerPledgedXAS(content, this)
+    } else if (topic === 'update_gasprice') {
+      await validateGasprice(content, this)
+    } else if (topic === 'update_free_net_limit') {
+      await validateFreeNetLimit(content, this)
     }
 
     app.sdb.create('Proposal', {
@@ -419,8 +473,14 @@ module.exports = {
       await doGatewayClaim(content, this)
     } else if (topic === 'bancor_init') {
       await doBancorInit(content, this)
-    } else if (topic === 'pledge_update_limit') {
-      await doPledgeUpdateLimit(content, this)
+    } else if (topic === 'update_net_energy_per_xas') {
+      await doUpdateNetEnergyPerXAS(content, this)
+    } else if (topic === 'update_net_energy_per_pledged_xas') {
+      await doUpdateNetEnergyPerPledgedXAS(content, this)
+    } else if (topic === 'update_gasprice') {
+      await doUpdateGasprice(content, this)
+    } else if (topic === 'update_free_net_limit') {
+      await doUpdateFreeNetLimit(content, this)
     } else {
       unknownTopic = true
     }
