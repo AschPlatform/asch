@@ -2,6 +2,17 @@ function defined(obj) {
   return typeof obj !== 'undefined'
 }
 
+async function handleTransaction(trs) {
+  if (trs.fee < 0) {
+    const gasConsume = await app.sdb.findOne('Gasconsumption', { condition: { tid: trs.id } })
+    trs.gasUsed = gasConsume.gasUsed
+    trs.gasCurrency = gasConsume.money
+  } else {
+    trs.gasUsed = trs.fee
+    trs.gasCurrency = 'XAS'
+  }
+}
+
 module.exports = (router) => {
   router.get('/', async (req) => {
     const offset = req.query.offset ? Number(req.query.offset) : 0
@@ -23,12 +34,16 @@ module.exports = (router) => {
         condition, offset, limit, sort,
       })
     }
+    for (const trs of transactions) {
+      await handleTransaction(trs)
+    }
     return { transactions, count }
   })
 
   router.get('/:id', async (req) => {
     const trs = await app.sdb.findOne('Transaction', { condition: { id: req.params.id } })
     if (!trs) throw new Error('Transaction no found')
+    await handleTransaction(trs)
     return { transaction: trs }
   })
 }

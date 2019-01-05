@@ -39,8 +39,6 @@ function isUniq(arr) {
 module.exports = {
   async transfer(amount, recipient) {
     if (!recipient) return 'Invalid recipient'
-    // Verify amount should be positive integer
-    // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
     app.validate('amount', String(amount))
 
     amount = Number(amount)
@@ -50,10 +48,11 @@ module.exports = {
 
     let recipientAccount
     // Validate recipient is valid address
-    if (recipient && (app.util.address.isNormalAddress(recipient) ||
-                      app.util.address.isGroupAddress(recipient))) {
+    if (recipient && (app.util.address.isNormalAddress(recipient)
+                    || app.util.address.isGroupAddress(recipient))) {
       recipientAccount = await app.sdb.load('Account', recipient)
       if (recipientAccount) {
+        if (recipientAccount.address === senderId) return 'Sender and recipient is identical'
         app.sdb.increase('Account', { xas: amount }, { address: recipientAccount.address })
       } else {
         recipientAccount = app.sdb.create('Account', {
@@ -65,6 +64,7 @@ module.exports = {
     } else {
       recipientAccount = await app.sdb.load('Account', { name: recipient })
       if (!recipientAccount) return 'Recipient name not exist'
+      if (recipientAccount.address === senderId) return 'Sender and recipient is identical'
       app.sdb.increase('Account', { xas: amount }, { address: recipientAccount.address })
     }
     app.sdb.increase('Account', { xas: -amount }, { address: sender.address })
@@ -113,7 +113,6 @@ module.exports = {
 
   async lock(height, amount) {
     if (!Number.isInteger(height) || height <= 0) return 'Height should be positive integer'
-    // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
 
     height = Number(height)
     amount = Number(amount)
@@ -431,6 +430,89 @@ module.exports = {
 
       app.sdb.del('Vote', { address: senderId, delegate: name })
     }
+    return null
+  },
+
+  async pledge(netAmount, energyAmount) {
+    if (!Number.isInteger(netAmount) || !Number.isInteger(energyAmount)) return 'Amount should be integer'
+    if (netAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
+    const sender = this.sender
+    const totalAmount = netAmount + energyAmount
+    if (sender.xas < totalAmount) return 'Insufficient balance in Accounts'
+    sender.xas -= totalAmount
+    app.sdb.update('Account', sender, { address: sender.address })
+    let pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
+    if (!pledgeAccount) {
+      const currentDay = Number.parseInt(this.block.height / app.util.constants.blocksPerDay, 10)
+      app.sdb.create('AccountPledge', {
+        address: sender.address,
+        lastFreeNetUpdateDay: currentDay,
+        lastNetUpdateDay: currentDay,
+        lastEnergyUpdateDay: currentDay,
+        heightOffset: this.block.height % app.util.constants.blocksPerDay,
+      })
+      pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
+    }
+
+    const totalPledges = await app.sdb.loadMany('AccountTotalPledge', { })
+    let totalPledge
+    if (totalPledges.length === 0) {
+      app.sdb.create('AccountTotalPledge', {
+        tid: this.trs.id,
+        netPerXAS: app.util.constants.netPerXAS,
+        energyPerXAS: app.util.constants.energyPerXAS,
+        netPerPledgedXAS: app.util.constants.netPerPledgedXAS,
+        energyPerPledgedXAS: app.util.constants.energyPerPledgedXAS,
+        freeNetLimit: app.util.constants.freeNetLimitPerDay,
+        gasPrice: app.util.constants.energyPerGas,
+      })
+      totalPledge = await app.sdb.load('AccountTotalPledge', this.trs.id)
+    } else {
+      totalPledge = totalPledges[0]
+    }
+    if (netAmount > 0) {
+      pledgeAccount.pledgeAmountForNet += netAmount
+      totalPledge.totalPledgeForNet += netAmount
+      pledgeAccount.netLockHeight = this.block.height
+    }
+    if (energyAmount > 0) {
+      pledgeAccount.pledgeAmountForEnergy += energyAmount
+      totalPledge.totalPledgeForEnergy += energyAmount
+      pledgeAccount.energyLockHeight = this.block.height
+    }
+    app.sdb.update('AccountPledge', pledgeAccount, { address: sender.address })
+    app.sdb.update('AccountTotalPledge', totalPledge, { tid: totalPledge.tid })
+
+    return null
+  },
+
+  async unpledge(netAmount, energyAmount) {
+    if (!Number.isInteger(netAmount) || !Number.isInteger(energyAmount)) return 'Amount should be integer'
+    if (netAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
+    const sender = this.sender
+    const pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
+    if (!pledgeAccount) return `No pledege for account ${sender.address}`
+    const totalPledges = await app.sdb.loadMany('AccountTotalPledge', { })
+    if (totalPledges.length === 0) return 'Total pledge is not set'
+    if (totalPledges[0].totalPledgeForNet < netAmount || totalPledges[0].totalPledgeForEnergy < energyAmount) return 'Insufficient balance in AccountTotalPledges'
+    const totalAmount = netAmount + energyAmount
+    sender.xas += totalAmount
+    app.sdb.update('Account', sender, { address: sender.address })
+    if (netAmount > 0) {
+      if (pledgeAccount.netLockHeight > (this.block.height - app.util.constants.pledageDays * app.util.constants.blocksPerDay)) return 'Pledge duration should be greater than 3 day'
+      if (pledgeAccount.pledgeAmountForNet < netAmount) return 'Insufficient balance in AccountPledges'
+      pledgeAccount.pledgeAmountForNet -= netAmount
+      totalPledges[0].totalPledgeForNet -= netAmount
+    }
+    if (energyAmount > 0) {
+      if (pledgeAccount.energyLockHeight > (this.block.height - app.util.constants.pledageDays * app.util.constants.blocksPerDay)) return 'Pledge duration should be greater than 3 day'
+      if (pledgeAccount.pledgeAmountForEnergy < energyAmount) return 'Insufficient balance in AccountPledges'
+      pledgeAccount.pledgeAmountForEnergy -= energyAmount
+      totalPledges[0].totalPledgeForEnergy -= energyAmount
+    }
+    app.sdb.update('AccountPledge', pledgeAccount, { address: sender.address })
+    app.sdb.update('AccountTotalPledge', totalPledges[0], { tid: totalPledges[0].tid })
+
     return null
   },
 }

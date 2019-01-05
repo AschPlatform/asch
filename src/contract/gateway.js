@@ -42,6 +42,8 @@ module.exports = {
     const exists = await app.sdb.exists('GatewayMember', { address: senderId })
     if (exists) return 'Account already is a gateway member'
 
+    const gw = await app.sdb.findOne('Gateway', { condition: { name: gateway } })
+    if (gw.revoked) return 'Gateway already revoked, cannot register member'
     sender.role = app.AccountRole.GATEWAY_VALIDATOR
     app.sdb.update('Account', { role: app.AccountRole.GATEWAY_VALIDATOR }, { address: this.sender.address })
     app.sdb.create('GatewayMember', {
@@ -57,7 +59,8 @@ module.exports = {
   async deposit(gateway, address, currency, amount, oid) {
     if (!gateway) return 'Invalid gateway name'
     if (!currency) return 'Invalid currency'
-    // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
+    const threshold = await app.util.gateway.getThreshold(gateway, this.sender.address)
+    if (threshold.ratio > 0 && threshold.ratio < app.util.constants.frozenCriteria) return `Bail is not enough, please withdrawl ${currency} asap`
     app.validate('amount', amount)
 
     if (!await app.sdb.exists('GatewayCurrency', { symbol: currency })) return 'Currency not supported'
@@ -106,6 +109,11 @@ module.exports = {
       if (deposit.confirmations > count / 2 && !deposit.processed) {
         deposit.processed = 1
         app.balances.increase(gatewayAccount.address, currency, amount)
+        const gwCurrency = await app.sdb.load('GatewayCurrency', { gateway, symbol: currency })
+        if (!gwCurrency) return 'No gateway currency found'
+        const quantity = app.util.bignumber(gwCurrency.quantity).plus(amount).toString(10)
+        app.sdb.update('GatewayCurrency', { quantity }, { gateway, symbol: currency })
+        // app.sdb.increase('GatewayCurrency', { quantity: amount }, { gateway, symbol: currency })
       }
       app.sdb.update('GatewayDeposit', deposit, dipositKey)
     }
@@ -115,10 +123,11 @@ module.exports = {
   async withdrawal(address, gateway, currency, amount, fee) {
     if (!gateway) return 'Invalid gateway name'
     if (!currency) return 'Invalid currency'
-    // if (!Number.isInteger(amount) || amount <= 0) return 'Amount should be positive integer'
-    // if (!Number.isInteger(fee) || fee <= 0) return 'Fee should be positive integer'
     app.validate('amount', fee)
     app.validate('amount', amount)
+    const gw = await app.sdb.findOne('Gateway', { condition: { name: gateway } })
+    if (!gw) return 'Gateway not found'
+    if (gw.revoked) return 'Gateway already revoked'
 
     const balance = app.balances.get(this.sender.address, currency)
     if (balance.lt(amount)) return 'Insufficient balance'
@@ -129,6 +138,11 @@ module.exports = {
     if (!app.gateway.isValidAddress(gateway, address)) return 'Invalid withdrawal address'
 
     app.balances.decrease(this.sender.address, currency, amount)
+
+    const gwCurrency = await app.sdb.load('GatewayCurrency', { gateway, symbol: currency })
+    if (!gwCurrency) return 'No gateway currency found'
+    const quantity = app.util.bignumber(gwCurrency.quantity).minus(amount).toString(10)
+    app.sdb.update('GatewayCurrency', { quantity }, { gateway, symbol: currency })
     const seq = Number(app.autoID.increment('gate_withdrawal_seq'))
 
     app.sdb.create('GatewayWithdrawal', {
@@ -223,6 +237,91 @@ module.exports = {
     if (!validator || !validator.elected || validator.gateway !== withdrawal.gateway) return 'Permission denied'
     withdrawal.oid = oid
     app.sdb.update('GatewayWithdrawal', { oid }, { tid: wid })
+    return null
+  },
+
+  async depositBail(gatewayName, amount) {
+    app.validate('amount', String(amount))
+    amount = app.util.bignumber(String(amount))
+    const senderId = this.sender.address
+    const addr = app.util.address.generateLockedAddress(senderId)
+    const lockAccount = app.sdb.createOrLoad('Account', { xas: 0, address: addr, name: null }).entity
+    if (amount.plus(lockAccount.xas).lt(app.util.constants.initialDeposit)) return `Deposit amount should be greater than ${app.util.constants.initialDeposit - lockAccount.xas}`
+    const m = await app.util.gateway.getGatewayMember(gatewayName, senderId)
+    if (!m) return 'Please register as a gateway member before deposit bail'
+    if (amount.gt(String(this.sender.xas))) return 'Insufficient balance'
+    const threshold = await app.util.gateway.getThreshold(gatewayName, senderId)
+    if (amount.lt(threshold.needSupply)) return `Deposit amount should be greater than ${threshold.needSupply}`
+
+    app.sdb.increase('Account', { xas: -amount.toNumber() }, { address: senderId })
+    app.sdb.increase('Account', { xas: amount.toNumber() }, { address: addr })
+    return null
+  },
+
+  async withdrawalBail(gatewayName, amount) {
+    app.validate('amount', String(amount))
+    amount = app.util.bignumber(String(amount))
+    const senderId = this.sender.address
+    const gw = await app.sdb.findOne('Gateway', { condition: { name: gatewayName } })
+    if (!gw) return 'Gateway not found'
+    const m = await app.util.gateway.getGatewayMember(gatewayName, senderId)
+    if (!m) return 'Not a gateway member'
+    const addr = app.util.address.generateLockedAddress(senderId)
+    const lockAccount = await app.sdb.load('Account', addr)
+    if (!lockAccount) return 'No bail was found'
+    if (m.elected === 0 && amount.gt(String(lockAccount.xas))) return 'Withdrawl amount exceeds balance'
+    if (m.elected === 0) {
+      app.sdb.increase('Account', { xas: amount.toNumber() }, { address: senderId })
+      app.sdb.increase('Account', { xas: -amount.toNumber() }, { address: addr })
+      return null
+    }
+
+    if (gw.revoked === 1 && m.elected === 1) return 'Gateway is revoked, withdrawal can be processed by claim proposal'
+    if (gw.revoked === 2 && m.elected === 1) return 'Gateway is in claim status, withdrawl bail is not permitted'
+    const threshold = await app.util.gateway.getThreshold(gatewayName, senderId)
+    if (m.elected === 1) {
+      let canBeWithdrawl = 0
+      if (threshold.ratio > 0) {
+        canBeWithdrawl = await app.util.gateway.getMaximumBailWithdrawl(gatewayName, senderId)
+      } else if (threshold.ratio === 0) {
+        canBeWithdrawl = lockAccount.xas - app.util.constants.initialDeposit
+      }
+      if (amount.gt(canBeWithdrawl)) return 'Withdrawl amount exceeds balance'
+      if (amount.gt(lockAccount.xas - app.util.constants.initialDeposit)) return 'Withdrawl amount exceeds balance'
+      app.sdb.increase('Account', { xas: amount.toNumber() }, { address: senderId })
+      app.sdb.increase('Account', { xas: -amount.toNumber() }, { address: addr })
+    }
+    return null
+  },
+
+  async claim(gatewayName) {
+    const limit = 1
+    const gateway = await app.sdb.load('Gateway', gatewayName)
+    const senderId = this.sender.address
+    if (!gateway) return 'Gateway not found'
+    if (gateway.revoked === 1) return 'No claim proposal was activated'
+    const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
+    if (gateway.revoked === 2) {
+      const members = await app.util.gateway.getElectedGatewayMember(gatewayName)
+      const userAmount = app.util
+        .bignumber(app.balances.get(senderId, gwCurrency[0].symbol))
+      const ratio = userAmount.div(app.util.bignumber(gwCurrency[0].quantity))
+      const totalClaim = ratio.times(gwCurrency[0].claimAmount)
+      const allBailAmount = await app.util.gateway.getAllBailAmount(gatewayName)
+      const claimRatio = totalClaim.div(allBailAmount)
+      for (let i = 0; i < members.length; i++) {
+        const lockedAddr = app.util.address.generateLockedAddress(members[i].address)
+        const memberLockedAccount = await app.sdb.load('Account', lockedAddr)
+        const needClaim = claimRatio.times(memberLockedAccount.xas).toNumber()
+        if (needClaim === 0) continue
+        app.sdb.increase('Account', { xas: -needClaim }, { address: lockedAddr })
+        app.sdb.increase('Account', { xas: needClaim }, { address: senderId })
+      }
+      app.balances.transfer(gwCurrency[0].symbol, userAmount.toString(),
+        senderId, app.storeClaimedAddr)
+    } else {
+      return 'Gateway was not revoked'
+    }
     return null
   },
 }

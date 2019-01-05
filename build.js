@@ -83,7 +83,6 @@ function build(osVersion, netVersion) {
       branch = 'develop'
     }
   }
-
   // It is quite possible that last build stop before cleanup frontend files
   if (shell.test('-e', `${fullPath}/tmp/asch-frontend-2`)) {
     shell.rm('-rf', `${fullPath}/tmp/asch-frontend-2`, { silent: true })
