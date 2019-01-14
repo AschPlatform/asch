@@ -3,13 +3,12 @@ function defined(obj) {
 }
 
 async function handleTransaction(trs) {
-  if (trs.fee < 0) {
-    const gasConsume = await app.sdb.findOne('Gasconsumption', { condition: { tid: trs.id } })
-    trs.gasUsed = gasConsume.gasUsed
-    trs.gasCurrency = gasConsume.money
+  const netconsumption = await app.sdb.findOne('Netenergyconsumption', { condition: { tid: trs.id } })
+  if (netconsumption) {
+    trs.feeType = 'NET'
+    trs.netUsed = netconsumption.netUsed
   } else {
-    trs.gasUsed = trs.fee
-    trs.gasCurrency = 'XAS'
+    trs.feeType = 'XAS'
   }
 }
 
