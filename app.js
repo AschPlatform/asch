@@ -91,8 +91,7 @@ function main() {
       1758431015,
       1760474482,
       1760474149,
-      759110497,
-      757134616,
+      759110497
     ]
     for (let i = 0; i < seeds.length; ++i) {
       appConfig.peers.list.push({ ip: ip.fromLong(seeds[i]), port: 81 })
