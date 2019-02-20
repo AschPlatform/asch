@@ -70,6 +70,9 @@ module.exports = {
       if (sender.xas < amount) return 'Insufficient balance'
       sender.xas -= amount
 
+      let exists = await app.sdb.exists('Account', { address: chain.address })
+      if (!exists) { app.sdb.create('Account', { address: chain.address, xas: 0, name: null }) }
+
       const chainAccount = await app.sdb.load('Account', chain.address)
       chainAccount.xas += amount
       app.sdb.update('Account', { xas: sender.xas }, { address: sender.address })
