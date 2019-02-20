@@ -151,6 +151,7 @@ async function handleContractResult(contractId, contractAddr, callResult, trans,
     }
   }
 
+  callResult.transfers = undefined
 }
 
 /**
@@ -206,6 +207,7 @@ module.exports = {
         timestamp: this.trs.timestamp,
       })
     }
+    return registerResult
   },
 
   /**
@@ -236,6 +238,7 @@ module.exports = {
       contractInfo.id, contractInfo.address, callResult, this.trs, 
       this.block.height, checkResult.energy, checkResult.payer
     )
+    return callResult
   },
 
   /**
@@ -285,7 +288,7 @@ module.exports = {
       contractInfo.id, contractInfo.address, payResult, this.trs, 
       this.block.height, checkResult.useEnergy, checkResult.payer
     )
-    
+    return payResult    
   }
 
 }

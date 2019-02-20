@@ -53,13 +53,15 @@ async function handleActionRequest(req) {
 }
 
 function convertBigintMemberToString(obj) {
-  Object.keys(obj).forEach(key=>{
+  Object.keys(obj).forEach( key => {
     const value = obj[key]
     const type = typeof value
-    if (type === 'bigint') 
+    if (type === 'bigint') { 
       obj[key] = String(value)
-    else if (type === 'object')
+    }
+    else if (type === 'object') {
       convertBigintMemberToString(value)
+    }
   })
 }
 
@@ -97,7 +99,7 @@ module.exports = (router) => {
 
   /**
    * Get contract details
-   * @param name  name of contract
+   * @param name  contract name
    * @returns contract detail { contract : { id, name, tid, address, owner, vmVersion,
    * desc, timestamp, metadata } }
    */
@@ -108,37 +110,25 @@ module.exports = (router) => {
     return { success: true, contract: contracts[0] }
   })
 
+
   /**
    * Get state of contract
-   * @param name  name of contract
-   * @param stateName  name of mapping state
-   * @param key  key of mapping state
-   * @returns state value
+   * @param name  contract name
+   * @param statePath  path of state, separated by '.' , eg: 'holding.0' => contract['holding'][0]
+   * @returns state value if primitive, else return count of children states 
    */
-  router.get('/:name/states/:stateName/:key', async (req) => {
-    const { name, stateName, key } = req.params
-    const result = await app.contract.queryState(name, stateName, key)
+  router.get('/:name/states/:statePath', async (req) => {
+    const { name, statePath } = req.params
+    if (!statePath) throw new Error(`Invalid state path '${statePath}'`)
+
+    const result = await app.contract.queryState(name,  String(statePath).split('.') )
     convertBigintMemberToString(result)
     return result
   })
 
   /**
    * Get state of contract
-   * @param name  name of contract
-   * @param stateName  state name
-   * @returns state value
-   */
-  router.get('/:name/states/:stateName', async (req) => {
-    const { name, stateName } = req.params
-    const result = await app.contract.queryState(name, stateName)
-    convertBigintMemberToString(result)
-    return result
-  })
-
-
-  /**
-   * Get state of contract
-   * @param name  name of contract
+   * @param name  contract name
    * @param method  constant method name
    * @param args stringified arguments, eg: ["name", 323]
    * @returns constant method call result
