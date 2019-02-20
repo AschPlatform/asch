@@ -94,6 +94,13 @@ module.exports = (router) => {
           t.amount = t.amount.slice(0, pos)
         }
       }
+      const netconsumption = await app.sdb.findOne('Netenergyconsumption', { condition: { tid: t.tid } })
+      if (netconsumption) {
+        t.feeType = 'NET'
+        t.netUsed = netconsumption.netUsed
+      } else {
+        t.feeType = 'XAS'
+      }
     }
     return { count, transfers }
   })

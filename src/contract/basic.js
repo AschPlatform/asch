@@ -491,7 +491,7 @@ module.exports = {
     if (netAmount < 0 || energyAmount < 0) return 'Amount should be positive number'
     const sender = this.sender
     const pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
-    if (!pledgeAccount) return `No pledege for account ${sender.address}`
+    if (!pledgeAccount) return `No pledge for account ${sender.address}`
     const totalPledges = await app.sdb.loadMany('AccountTotalPledge', { })
     if (totalPledges.length === 0) return 'Total pledge is not set'
     if (totalPledges[0].totalPledgeForNet < netAmount || totalPledges[0].totalPledgeForEnergy < energyAmount) return 'Insufficient balance in AccountTotalPledges'
