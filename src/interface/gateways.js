@@ -130,4 +130,30 @@ module.exports = (router) => {
     return members
   })
 
+  router.get('/bailHosting', async (req) => {
+    // let ratio = 0
+    let totalBail = 0
+    // let bail = 0
+    let hosting = 0
+    let symbol = ''
+    let precision = 0
+    const gatewayName = req.query.name
+    // bail = await app.util.gateway.getBailTotalAmount(gatewayName)
+    const limit = 1
+    const gwCurrency = await app.sdb.findAll('GatewayCurrency', { condition: { gateway: gatewayName }, limit })
+    hosting = await app.util.gateway.getAmountByCurrency(gatewayName, gwCurrency[0].symbol)
+    totalBail = await app.util.gateway.getAllBailAmount(gatewayName)
+    // const threshold = await app.util.gateway.getThreshold(gatewayName)
+    // ratio = threshold.ratio
+    symbol = gwCurrency[0].symbol
+    precision = gwCurrency[0].precision
+    return {
+      // ratio,
+      totalBail,
+      // bail,
+      hosting,
+      symbol,
+      precision,
+    }
+  })
 }
