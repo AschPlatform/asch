@@ -52,7 +52,7 @@ async function checkGasPayment( preferredEnergyAddress, address, gasLimit, useXA
   const senderAccount = await app.sdb.load(ACCOUNT_MODEL, { address })
   if (!senderAccount || !senderAccount.xas ) return { enough: false }
 
-  const xas = gasToXAS(gasLimit)
+  const xas = await gasToXAS(gasLimit)
   const enough = xas <= senderAccount.xas
   return { enough, energy: false, xas, payer: address }  
 }
