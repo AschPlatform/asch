@@ -286,7 +286,7 @@ module.exports = {
     }
     handleContractResult(
       contractInfo.id, contractInfo.address, payResult, this.trs, 
-      this.block.height, checkResult.useEnergy, checkResult.payer
+      this.block.height, checkResult.energy, checkResult.payer
     )
     return payResult    
   }
