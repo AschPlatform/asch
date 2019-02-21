@@ -5,8 +5,16 @@ function defined(obj) {
 async function handleTransaction(trs) {
   const netconsumption = await app.sdb.findOne('Netenergyconsumption', { condition: { tid: trs.id } })
   if (netconsumption) {
-    trs.feeType = 'NET'
-    trs.netUsed = netconsumption.netUsed
+    if (netconsumption.isFeeDeduct === 1) {
+      trs.feeType = 'XAS'
+      trs.fee = netconsumption.fee
+    } else if (netconsumption.netUsed > 0) {
+      trs.feeType = 'NET'
+      trs.netUsed = netconsumption.netUsed
+    } else if (netconsumption.energyUsed > 0) {
+      trs.feeType = 'ENERGY'
+      trs.energyUsed = netconsumption.energyUsed
+    }
   } else {
     trs.feeType = 'XAS'
   }
