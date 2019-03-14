@@ -1,8 +1,9 @@
 const assert = require('assert')
 
 const CONTRACT_MODEL = 'Contract'
-const CONTRACT_BASIC_FIELDS = ['id', 'name', 'tid', 'address', 'ownerId', 'vmVersion', 'consumeOwnerEnergy', 'desc', 'timestamp']
 const CONTRACT_RESULT_MODEL = 'ContractResult'
+const CONTRACT_BASIC_FIELDS = ['id', 'name', 'tid', 'address', 'ownerId', 'vmVersion', 'consumeOwnerEnergy', 'desc', 'timestamp']
+
 
 function parseSort(orderBy) {
   const sort = {}
@@ -21,38 +22,11 @@ function makeCondition(params) {
   return result
 }
 
-/**
-   * Query contract call result
-   * @param tid ?action=getResult&tid='xxxx'
-   * @returns query result { result : { tid, contractId, success, gas, error, stateChangesHash } }
-   */
-async function handleGetResult(req) {
-  const tid = req.query.tid
-  assert(tid !== undefined && tid !== null,`Invalid param 'tid', can not be null or undefined`)
-  const results = await app.sdb.find(CONTRACT_RESULT_MODEL, { tid })
-  if (results.length === 0) {
-    throw new Error(`Result not found (tid = '${tid}')`)
-  }
-  const ret = results[0]
-  return {
-    success: ret.success > 0,
-    gas: ret.gas || 0,
-    error: ret.error || '',
-    stateChangesHash: ret.stateChangesHash || '',
-  }
-}
 
-async function handleActionRequest(req) {
-  const action = req.query.action
-  if (action === 'getResult') {
-    const result = await handleGetResult(req)
-    return result
-  }
-  // other actions ...
-  throw new Error(`Invalid action, ${action}`)
-}
-
+// due to contract sandbox always return json object 
 function convertBigintMemberToString(obj) {
+  if (typeof obj !== 'object' || obj === null) return
+
   Object.keys(obj).forEach( key => {
     const value = obj[key]
     const type = typeof value
@@ -65,6 +39,19 @@ function convertBigintMemberToString(obj) {
   })
 }
 
+async function getContractByName(name, fields = undefined) {
+  assert(!!name, 'Invalid contract name')
+  const contracts = await app.sdb.find(CONTRACT_MODEL, { name }, undefined, undefined, fields)
+  assert(contracts.length > 0, `Contract '${name}' not found`)
+
+  return contracts[0]
+}
+
+function convertResult(result) {
+  convertBigintMemberToString(result)
+  const { gas = 0, error, stateChangesHash, tid, contractId, data } = result
+  return { gas, error, stateChangesHash, tid, data, contractId, success: !!result.success }
+}
 
 module.exports = (router) => {
   /**
@@ -75,13 +62,8 @@ module.exports = (router) => {
    * contracts : [ { id, name, tid, address, ownerId, vmVersion, desc, timestamp } ] }
    */
   router.get('/', async (req) => {
-    if (req.query.action) {
-      const result = await handleActionRequest(req)
-      return result
-    }
-
-    const offset = req.query.offset ? Math.max(0, Number(req.query.offset)) : 0
-    const limit = req.query.limit ? Math.min(100, Number(req.query.limit)) : 20
+    const offset = req.query.offset ? Math.max(0, Number.parseInt(req.query.offset)) : 0
+    const limit = req.query.limit ? Math.min(100, Number.parseInt(req.query.limit)) : 20
     const orderBy = req.query.orderBy ? req.query.orderBy : 'id:ASC'
 
     const sortOrder = parseSort(orderBy)
@@ -104,12 +86,72 @@ module.exports = (router) => {
    * desc, timestamp, metadata } }
    */
   router.get('/:name', async (req) => {
-    const name = req.params.name
-    const contracts = await app.sdb.find(CONTRACT_MODEL, { name })
-    if (!contracts || contracts.length === 0) throw new Error('Not found')
-    return { success: true, contract: contracts[0] }
+    const contract = await getContractByName(req.params.name)
+    return { success: true, contract }
   })
 
+  /**
+   * Get contract metadata
+   * @param name  contract name
+   * @returns contract metadata 
+   */
+  router.get('/:name/metadata', async (req) => {
+    const { metadata } = await getContractByName(req.params.name, ['id', 'metadata'])
+    return { success: true, metadata }
+  })
+
+  /**
+   * Get contract code
+   * @param name  contract name
+   * @returns contract code 
+   */
+  router.get('/:name/code', async (req) => {
+    const { code } = await getContractByName(req.params.name, ['id', 'code'])
+    return { success: true, code }
+  })
+
+
+   /**
+   * Query contract call results, query: limit={limit}&offset={offset}
+   * @param name contract name
+   * @param limit max items count to return, default = 20
+   * @param offset return items offset, default = 0
+   * @returns query result { count, results: [{ tid, contractId, success, gas, error, stateChangesHash }...] }
+   */
+  router.get('/:name/results', async (req) => {
+    const { params, query } = req
+    const { id } = await getContractByName(params.name, ['id', 'name']) 
+    const condition = { contractId: id }
+    const offset = query.offset ? Math.max(0, Number.parseInt(query.offset)) : 0
+    const limit = query.limit ? Math.min(100, Number.parseInt(query.limit)) : 20
+    const order = query.order || 'ASC'
+  
+    const count = await app.sdb.count(CONTRACT_RESULT_MODEL, condition)
+    const range = { limit, offset }
+    const callResults = await app.sdb.find(CONTRACT_RESULT_MODEL, condition, range, { rowid: order })
+    const results = callResults.map(r => convertResult(r))
+  
+    return { success: true, count, results }
+  })
+
+  /**
+   * Query single call reult by transaction id, 
+   * @param name contract name
+   * @param tid transaction id 
+   * @returns query result { result: { tid, contractId, success, gas, error, stateChangesHash } }
+   */
+  router.get('/:name/results/:tid', async (req) => {
+    const { tid, name } = req.params
+    assert(!!tid ,`Invalid transaction id`)
+    const { id } = await getContractByName(name, ['id', 'name'])
+    const condition = { contractId: id, tid }
+
+    const results = await app.sdb.find(CONTRACT_RESULT_MODEL, condition)
+    assert(results.length > 0, `Call result not found (tid = ${tid})`)
+
+    const result = convertResult(results[0])
+    return { success: true, result }
+  })
 
   /**
    * Get state of contract
@@ -121,7 +163,7 @@ module.exports = (router) => {
     const { name, statePath } = req.params
     if (!statePath) throw new Error(`Invalid state path '${statePath}'`)
 
-    const result = await app.contract.queryState(name,  String(statePath).split('.') )
+    const result = await app.contract.queryState(name,  String(statePath).split('.'))
     convertBigintMemberToString(result)
     return result
   })
@@ -130,12 +172,16 @@ module.exports = (router) => {
    * Get state of contract
    * @param name  contract name
    * @param method  constant method name
-   * @param args stringified arguments, eg: ["name", 323]
+   * @param request.body arguments of method
    * @returns constant method call result
    */
-    router.get('/:name/constant/:method/:args', async (req) => {
-      const { name, method, args } = req.params
-      const methodArgs = JSON.parse(args)
+    router.post('/:name/constant/:method', async (req) => {
+      const { name, method } = req.params
+      const methodArgs = req.body || []
+      if (!Array.isArray(methodArgs)) {
+        throw new Error('Arguments should be array')
+      }
+
       const result = await app.contract.getConstant(name, method, ...methodArgs)
       convertBigintMemberToString(result)
       return result
