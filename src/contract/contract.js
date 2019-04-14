@@ -15,8 +15,9 @@ function assert(condition, error) {
   if (!condition) throw Error(error)
 }
 
-function makeContractAddress(transId, ownerAddress) {
-  return app.util.address.generateContractAddress(`${transId}_${ownerAddress}`)
+function createContractAccount(transId, ownerAddress) {
+  const address = app.util.address.generateContractAddress(`${transId}_${ownerAddress}`)
+  app.sdb.create(ACCOUNT_MODEL, { address, xas: 0, name: null } )
 }
 
 function makeContext(senderAddress, transaction, block) {
@@ -103,7 +104,7 @@ async function transfer(currency, transferAmount, senderId, recipientId, trans, 
   const bigAmount = app.util.bignumber(transferAmount)
   if (currency !== XAS_CURRENCY) {
     const balance = app.balances.get(senderId, currency)
-    assert(balance !== undefined && balance.gte(bigAmount), `Insuffient ${currency} to transfer `)
+    assert(balance !== undefined && balance.gte(bigAmount), `Insufficient ${currency} to transfer `)
 
     app.balances.transfer(currency, bigAmount.toString(), senderId, recipientId)
     createContractTransfer(senderId, recipientId, currency, bigAmount.toString(), trans, height)
@@ -112,8 +113,7 @@ async function transfer(currency, transferAmount, senderId, recipientId, trans, 
 
   const amount = Number.parseInt(bigAmount.toString(), 10)
   const senderAccount = await app.sdb.load(ACCOUNT_MODEL, { address: senderId })
-  assert(senderAccount !== undefined, 'Sender account not found')
-  assert(senderAccount.xas >= amount, `Insuffient XAS to tranfer`)
+  assert(!!senderAccount && senderAccount.xas >= amount, `Insufficient XAS to transfer`)
 
   app.sdb.increase(ACCOUNT_MODEL, { xas: -amount }, { address: senderId })
   recipientAccount = await app.sdb.load(ACCOUNT_MODEL, { address: recipientId })
@@ -129,13 +129,26 @@ async function transfer(currency, transferAmount, senderId, recipientId, trans, 
   createContractTransfer(senderId, recipientId, currency, amount, trans, height)
 }
 
+function convertBigintMemberToString(obj) {
+  if (typeof obj !== 'object' || obj === null) return
+
+  Object.keys(obj).forEach( key => {
+    const value = obj[key]
+    const type = typeof value
+    if (type === 'bigint') { 
+      obj[key] = String(value)
+    }
+    else if (type === 'object') {
+      convertBigintMemberToString(value)
+    }
+  })
+}
 
 async function handleContractResult(contractId, contractAddr, callResult, trans, height, useEnergy, payer) {
-
   const { success, error, gas, stateChangesHash } = callResult
   await payGas(gas || 0, useEnergy, payer, trans.id)
 
-  const shortError = error ? String(error).substr(0, 127) : ''
+  const shortError = error ? String(error).substr(0, 120) + '...' : ''
   app.sdb.create(CONTRACT_RESULT_MODEL, {
     tid: trans.id,
     contractId,
@@ -152,6 +165,7 @@ async function handleContractResult(contractId, contractAddr, callResult, trans,
   }
 
   callResult.transfers = undefined
+  convertBigintMemberToString(callResult)
 }
 
 /**
@@ -175,7 +189,7 @@ module.exports = {
     assert(!version || version.length <= 32, 'Invalid version, can not be longer than 32 ')
 
     const checkResult = await checkGasPayment(undefined, this.sender.address, gasLimit, true)
-    assert( checkResult.enough, 'Insuffient energy')
+    assert( checkResult.enough, 'Insufficient energy')
 
     const contract = await app.sdb.load(CONTRACT_MODEL, { name })
     assert(contract === undefined, `Contract '${name}' exists already`)
@@ -186,8 +200,8 @@ module.exports = {
       gasLimit, getTimeout(gasLimit), context, 
       contractId, name, code,
     )
-    const contractAddress = makeContractAddress(this.trs.id, this.sender.address)
-    handleContractResult(
+    const contractAddress = createContractAccount(this.trs.id, this.sender.address)
+    await handleContractResult(
       contractId, contractAddress, registerResult, this.trs, 
       this.block.height, checkResult.energy, checkResult.payer
     )
@@ -213,7 +227,7 @@ module.exports = {
   /**
      * Call method of a registered contract
      * @param {number} gasLimit max gas avalible, 1000000 >= gasLimit >0
-     * @param {boolean} enablePayGasInXAS pay gas in XAS if energy is insuffient  
+     * @param {boolean} enablePayGasInXAS pay gas in XAS if energy is insufficient  
      * @param {string} name contract name
      * @param {string} method method name of contract
      * @param {Array} args method arguments
@@ -229,12 +243,12 @@ module.exports = {
     const preferredEnergyAddress = contractInfo.consumeOwnerEnergy ? contractInfo.ownerId : undefined
 
     const checkResult = await checkGasPayment(preferredEnergyAddress, this.sender.address, gasLimit, enablePayGasInXAS)
-    assert(checkResult.enough, 'Insuffient Energy')
+    assert(checkResult.enough, 'Insufficient Energy')
 
     const context = makeContext(this.sender.address, this.trs, this.block)
     const callResult = await app.contract.callContract(gasLimit, getTimeout(gasLimit), context, name, method, ...args)
 
-    handleContractResult(
+    await handleContractResult(
       contractInfo.id, contractInfo.address, callResult, this.trs, 
       this.block.height, checkResult.energy, checkResult.payer
     )
@@ -244,32 +258,32 @@ module.exports = {
   /**
      * Pay money to contract, behavior dependents on contract code.
      * @param {number} gasLimit max gas avalible, 1000000 >= gasLimit >0
-     * @param {boolean} enablePayGasInXAS pay gas in XAS if energy is insuffient  
-     * @param {string} receiverPath contract name or address + '/' + method eg: 'TestContract/onPay'
-     * @param {string|number} amount pay amout
+     * @param {boolean} enablePayGasInXAS pay gas in XAS if energy is insufficient  
+     * @param {string} nameOrAddress contract name or address 
+     * @param {string} method payable method name, use undefined or null or '' for default payable method
+     * @param {string|number} amount pay amount
      * @param {string} currency currency
      */
-  async pay(gasLimit, enablePayGasInXAS, receiverPath, amount, currency) {
+  async pay(gasLimit, enablePayGasInXAS, nameOrAddress, method, amount, currency) {
     ensureGasLimitValid(gasLimit)
     const bigAmount = app.util.bignumber(amount)
-    assert(receiverPath, 'Invalid reciver of contract, should be {nameOrAddress}/{method}')
+    assert(!!nameOrAddress, 'Invalid contract name or address')
     assert(bigAmount.gt(0), 'Invalid amount, should be greater than 0 ')
 
-    let [nameOrAddress, method] = receiverPath.split('/')
-    const condition = app.util.address.isContractAddress(nameOrAddress)
-      ? { address: nameOrAddress } : { name: nameOrAddress }
-
+    const condition = app.util.address.isContractAddress(nameOrAddress) ? 
+      { address: nameOrAddress } : 
+      { name: nameOrAddress }
     const contractInfo = await app.sdb.load(CONTRACT_MODEL, condition)
     assert(contractInfo !== undefined, `Contract name or address '${nameOrAddress}' not found`)
 
     const preferredEnergyAddress = contractInfo.consumeOwnerEnergy ? contractInfo.ownerId : undefined
     const checkResult = await checkGasPayment(preferredEnergyAddress, this.sender.address, gasLimit, enablePayGasInXAS)
-    assert(checkResult.enough, 'Insuffient Energy')
+    assert(checkResult.enough, 'Insufficient energy')
 
     if (checkResult.payer === this.sender.address && currency === XAS_CURRENCY) {
       const account = await app.sdb.load(ACCOUNT_MODEL, { address: this.sender.address })
       const xasEnought = app.util.bignumber(String(account.xas)).gte(bigAmount.plus(checkResult.xas || 0))
-      assert(xasEnought, 'Insuffient XAS for transfer and gas')
+      assert(xasEnought, 'Insufficient XAS for transfer and gas')
     }
 
     const context = makeContext(this.sender.address, this.trs, this.block)
@@ -277,14 +291,14 @@ module.exports = {
       gasLimit, getTimeout(gasLimit), context, contractInfo.name,
       method, bigAmount.toString(), currency,
     )
-    // TODO: Be careful !!! amount of sender and recipient are WRONG if get amount in contract !!!
+    // Be careful !!! amount of sender and recipient are WRONG if get amount in contract !!!
     if (payResult.success) {
       await transfer(
         currency, bigAmount, this.sender.address, contractInfo.address,
         this.trs, this.block.height,
       )
     }
-    handleContractResult(
+    await handleContractResult(
       contractInfo.id, contractInfo.address, payResult, this.trs, 
       this.block.height, checkResult.energy, checkResult.payer
     )

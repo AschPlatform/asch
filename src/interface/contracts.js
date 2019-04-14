@@ -1,5 +1,5 @@
 const assert = require('assert')
-
+const TRANSACTION_MODEL = 'Transaction'
 const CONTRACT_MODEL = 'Contract'
 const CONTRACT_RESULT_MODEL = 'ContractResult'
 const CONTRACT_BASIC_FIELDS = ['id', 'name', 'tid', 'address', 'ownerId', 'vmVersion', 'consumeOwnerEnergy', 'desc', 'timestamp']
@@ -51,6 +51,19 @@ function convertResult(result) {
   convertBigintMemberToString(result)
   const { gas = 0, error, stateChangesHash, tid, contractId, data } = result
   return { gas, error, stateChangesHash, tid, data, contractId, success: !!result.success }
+}
+
+async function attachTransactions(results) {
+  const condition = results.length === 1 ?
+    { id: results[0].tid } :
+    { id: { $in: results.map(r => r.tid) } }
+
+  const transactions = await app.sdb.find(TRANSACTION_MODEL, condition)
+  const transMap = new Map()
+  transactions.forEach(t=> transMap.set(t.id, t))
+
+  results.forEach(r=> r.transaction = transMap.get(r.tid))
+  return results
 }
 
 module.exports = (router) => {
@@ -116,7 +129,7 @@ module.exports = (router) => {
    * @param name contract name
    * @param limit max items count to return, default = 20
    * @param offset return items offset, default = 0
-   * @returns query result { count, results: [{ tid, contractId, success, gas, error, stateChangesHash }...] }
+   * @returns query result { count, results: [{ tid, contractId, success, gas, error, stateChangesHash, transaction }...] }
    */
   router.get('/:name/results', async (req) => {
     const { params, query } = req
@@ -129,7 +142,7 @@ module.exports = (router) => {
     const count = await app.sdb.count(CONTRACT_RESULT_MODEL, condition)
     const range = { limit, offset }
     const callResults = await app.sdb.find(CONTRACT_RESULT_MODEL, condition, range, { rowid: order })
-    const results = callResults.map(r => convertResult(r))
+    const results = await attachTransactions(callResults.map(r => (convertResult(r))))
   
     return { success: true, count, results }
   })
@@ -138,7 +151,7 @@ module.exports = (router) => {
    * Query single call reult by transaction id, 
    * @param name contract name
    * @param tid transaction id 
-   * @returns query result { result: { tid, contractId, success, gas, error, stateChangesHash } }
+   * @returns query result { result: { tid, contractId, success, gas, error, stateChangesHash, transaction } }
    */
   router.get('/:name/results/:tid', async (req) => {
     const { tid, name } = req.params
@@ -149,8 +162,8 @@ module.exports = (router) => {
     const results = await app.sdb.find(CONTRACT_RESULT_MODEL, condition)
     assert(results.length > 0, `Call result not found (tid = ${tid})`)
 
-    const result = convertResult(results[0])
-    return { success: true, result }
+    const resultsWithTransactions = await attachTransactions(results.map(r => (convertResult(r))))
+    return { success: true, result: resultsWithTransactions[0] }
   })
 
   /**
