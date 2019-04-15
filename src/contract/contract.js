@@ -17,7 +17,7 @@ function assert(condition, error) {
 
 function createContractAccount(transId, ownerAddress) {
   const address = app.util.address.generateContractAddress(`${transId}_${ownerAddress}`)
-  app.sdb.create(ACCOUNT_MODEL, { address, xas: 0, name: null } )
+  app.sdb.create(ACCOUNT_MODEL, { address, xas: 0, name: null })
 }
 
 function makeContext(senderAddress, transaction, block) {
@@ -33,7 +33,7 @@ async function gasToXAS(gas) {
 }
 
 
-async function checkGasPayment( preferredEnergyAddress, address, gasLimit, useXAS) {
+async function checkGasPayment(preferredEnergyAddress, address, gasLimit, useXAS) {
   const blockHeight = modules.blocks.getLastBlock().height + 1
 
   if (preferredEnergyAddress !== undefined) {
@@ -44,21 +44,21 @@ async function checkGasPayment( preferredEnergyAddress, address, gasLimit, useXA
   }
 
   const energyEnough = await pledge.isEnergyCovered(gasLimit, address, blockHeight)
-  if (energyEnough ){
+  if (energyEnough){
     return { enough: true, energy: true , payer: address}
   }
 
   if (!useXAS)  return { enough: false }
 
   const senderAccount = await app.sdb.load(ACCOUNT_MODEL, { address })
-  if (!senderAccount || !senderAccount.xas ) return { enough: false }
+  if (!senderAccount || !senderAccount.xas) return { enough: false }
 
   const xas = await gasToXAS(gasLimit)
   const enough = xas <= senderAccount.xas
   return { enough, energy: false, xas, payer: address }  
 }
 
-async function payGas( gas, useEnergy, payer, tid ) {
+async function payGas(gas, useEnergy, payer, tid) {
   const blockHeight = modules.blocks.getLastBlock().height + 1
   const payAmount = useEnergy ? await gasToEnergy(gas) : await gasToXAS(gas)
 
@@ -89,15 +89,6 @@ function createContractTransfer(senderId, recipientId, currency, amount, trans, 
     amount: String(amount),
     timestamp: trans.timestamp,
   })
-}
-
-function getTimeout(gasLimit) {
-  if ( modules.blocks.isApplyingBlock() ) {
-    return INFINITE_TIMEOUT
-  }
-
-  const timeout = Math.round((gasLimit / MAX_GAS_LIMIT) * MAX_TIMEOUT)
-  return Math.max(MIN_TIMEOUT, Math.min(MAX_TIMEOUT, timeout))
 }
 
 async function transfer(currency, transferAmount, senderId, recipientId, trans, height) {
@@ -132,7 +123,7 @@ async function transfer(currency, transferAmount, senderId, recipientId, trans, 
 function convertBigintMemberToString(obj) {
   if (typeof obj !== 'object' || obj === null) return
 
-  Object.keys(obj).forEach( key => {
+  Object.keys(obj).forEach(key => {
     const value = obj[key]
     const type = typeof value
     if (type === 'bigint') { 
@@ -196,10 +187,7 @@ module.exports = {
 
     const contractId = Number(app.autoID.increment(CONTRACT_ID_SEQUENCE))
     const context = makeContext(this.sender.address, this.trs, this.block)
-    const registerResult = await app.contract.registerContract(
-      gasLimit, getTimeout(gasLimit), context, 
-      contractId, name, code,
-    )
+    const registerResult = await app.contract.registerContract(gasLimit, context, contractId, name, code)
     const contractAddress = createContractAccount(this.trs.id, this.sender.address)
     await handleContractResult(
       contractId, contractAddress, registerResult, this.trs, 
@@ -246,7 +234,7 @@ module.exports = {
     assert(checkResult.enough, 'Insufficient Energy')
 
     const context = makeContext(this.sender.address, this.trs, this.block)
-    const callResult = await app.contract.callContract(gasLimit, getTimeout(gasLimit), context, name, method, ...args)
+    const callResult = await app.contract.callContract(gasLimit, context, name, method, ...args)
 
     await handleContractResult(
       contractInfo.id, contractInfo.address, callResult, this.trs, 
@@ -288,7 +276,7 @@ module.exports = {
 
     const context = makeContext(this.sender.address, this.trs, this.block)
     const payResult = await app.contract.payContract(
-      gasLimit, getTimeout(gasLimit), context, contractInfo.name,
+      gasLimit, context, contractInfo.name,
       method, bigAmount.toString(), currency,
     )
     // Be careful !!! amount of sender and recipient are WRONG if get amount in contract !!!
