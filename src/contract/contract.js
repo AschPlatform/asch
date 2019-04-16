@@ -18,6 +18,7 @@ function assert(condition, error) {
 function createContractAccount(transId, ownerAddress) {
   const address = app.util.address.generateContractAddress(`${transId}_${ownerAddress}`)
   app.sdb.create(ACCOUNT_MODEL, { address, xas: 0, name: null })
+  return address
 }
 
 function makeContext(senderAddress, transaction, block) {
