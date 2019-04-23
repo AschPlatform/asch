@@ -358,24 +358,29 @@ module.exports = {
 
     delegates = delegates.split(',')
     if (!delegates || !delegates.length) return 'Invalid delegates'
-    if (delegates.length > 33) return 'Voting limit exceeded'
-    if (!isUniq(delegates)) return 'Duplicated vote item'
+    // if (delegates.length > 33) return 'Voting limit exceeded'
+    // if (!isUniq(delegates)) return 'Duplicated vote item'
+    if (delegates.length > 1) return 'Voting limit exceeded'
 
     const currentVotes = await app.sdb.findAll('Vote', { condition: { address: senderId } })
-    if (currentVotes) {
-      if (currentVotes.length + delegates.length > 101) {
-        return 'Maximum number of votes exceeded'
-      }
-      const currentVotedDelegates = new Set()
-      for (const v of currentVotes) {
-        currentVotedDelegates.add(v.delegate)
-      }
-      for (const name of delegates) {
-        if (currentVotedDelegates.has(name)) {
-          return `Delegate already voted: ${name}`
-        }
-      }
+    if (currentVotes && currentVotes.length > 1) {
+      return 'Voting limit exceeded'
     }
+    // if (currentVotes) {
+    //   // if (currentVotes.length + delegates.length > 101) {
+    //   if (currentVotes.length + delegates.length > app.util.slots.getDelegates()) {
+    //     return 'Maximum number of votes exceeded'
+    //   }
+    //   const currentVotedDelegates = new Set()
+    //   for (const v of currentVotes) {
+    //     currentVotedDelegates.add(v.delegate)
+    //   }
+    //   for (const name of delegates) {
+    //     if (currentVotedDelegates.has(name)) {
+    //       return `Delegate already voted: ${name}`
+    //     }
+    //   }
+    // }
 
     for (const name of delegates) {
       const exists = await app.sdb.exists('Delegate', { name })
@@ -403,8 +408,9 @@ module.exports = {
 
     delegates = delegates.split(',')
     if (!delegates || !delegates.length) return 'Invalid delegates'
-    if (delegates.length > 33) return 'Voting limit exceeded'
-    if (!isUniq(delegates)) return 'Duplicated vote item'
+    // if (delegates.length > 33) return 'Voting limit exceeded'
+    // if (!isUniq(delegates)) return 'Duplicated vote item'
+    if (delegates.length > 1) return 'Unvoting limit exceeded'
 
     const currentVotes = await app.sdb.findAll('Vote', { condition: { address: senderId } })
     if (currentVotes) {
