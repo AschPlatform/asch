@@ -14,6 +14,7 @@ async function handleTransaction(trs) {
     } else if (netconsumption.energyUsed > 0) {
       trs.feeType = 'ENERGY'
       trs.energyUsed = netconsumption.energyUsed
+      trs.address = netconsumption.address
     }
   } else {
     trs.feeType = 'XAS'
