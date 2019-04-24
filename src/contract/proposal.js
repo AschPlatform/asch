@@ -315,7 +315,7 @@ module.exports = {
         validVoteCount++
       }
     }
-    if (validVoteCount <= ((app.util.slots.getDelegates() * 2) / 3)) return 'Vote not enough'
+    if (validVoteCount <= ((app.util.slots.delegates * 2) / 3)) return 'Vote not enough'
 
     const topic = proposal.topic
     // fixme make content as Json type ??
