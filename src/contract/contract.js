@@ -270,7 +270,7 @@ module.exports = {
      * @param {string|number} amount pay amount
      * @param {string} currency currency
      */
-  async pay(gasLimit, enablePayGasInXAS, nameOrAddress, method, amount, currency) {
+  async pay(gasLimit, enablePayGasInXAS, nameOrAddress, method, amount, currency, ...args) {
     ensureGasLimitValid(gasLimit, this.trs)
     const bigAmount = app.util.bignumber(amount)
     assert(!!nameOrAddress, 'Invalid contract name or address')
@@ -296,7 +296,7 @@ module.exports = {
     const context = await makeContext(senderAddress, this.trs, this.sender)
     const payResult = await app.contract.payContract(
       gasLimit, context, contractInfo.name,
-      method, bigAmount.toString(), currency,
+      method, bigAmount.toString(), currency, ...args
     )
     // Be careful !!! amount of sender and recipient are WRONG if get amount in contract !!!
     if (payResult.success) {
