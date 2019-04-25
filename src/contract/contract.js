@@ -18,8 +18,7 @@ function createContractAccount(transId, ownerAddress) {
   return address
 }
 
-function makeContext(senderAddress, transaction, block, account) {
-  const height = block.height
+async function makeContext(senderAddress, transaction, account) {
   account = account || { address: senderAddress }
   const { address, name, secondPublicKey, role, lockHeight, weight } = account
   const xas = account.xas || 0
@@ -33,7 +32,11 @@ function makeContext(senderAddress, transaction, block, account) {
     isLocked, isAgent, isDelegate,
     role, lockHeight, weight
   }
-  return { senderAddress, transaction, block: { height }, sender  }
+
+  const block = await modules.blocks.getBlockGenerationInfo()
+  const { id, height, delegate, prevBlockId, payloadHash, timestamp } = modules.blocks.getLastBlock()
+  const lastBlock = { id, height, delegate, prevBlockId, payloadHash, timestamp }
+  return { senderAddress, transaction, block, lastBlock, sender  }
 }
 
 async function gasToEnergy(gas) {
@@ -87,8 +90,9 @@ function ensureContractNameValid(name) {
   assert(name.match(/^[a-zA-Z]([-_a-zA-Z0-9]{3,32})+$/), 'Invalid contract name, please use letter, number or underscore ')
 }
 
-function ensureGasLimitValid(gasLimit) {
-  assert(gasLimit > 0 && gasLimit <= MAX_GAS_LIMIT, `gas limit must greater than 0 and less than ${MAX_GAS_LIMIT}`)
+function ensureGasLimitValid(gasLimit, trans) {
+  const basicGas = app.contract.calcTransactionStorageGas(trans)
+  assert(gasLimit > basicGas && gasLimit <= MAX_GAS_LIMIT, `gas limit must greater than ${basicGas} and less than ${MAX_GAS_LIMIT}`)
 }
 
 function createContractTransfer(senderId, recipientId, currency, amount, trans, height) {
@@ -149,10 +153,11 @@ function convertBigintMemberToString(obj) {
 }
 
 async function handleContractResult(contractId, contractAddr, callResult, trans, height, useEnergy, payer) {
-  const { success, error, gas, stateChangesHash } = callResult
+  const { success, error, gas, stateChangesHash, data } = callResult
   await payGas(gas || 0, useEnergy, payer, trans.id)
 
-  const shortError = error ? String(error).substr(0, 120) + '...' : ''
+  const shortError = !error ? '' : 
+    ( error.length <= 120 ? error : (error).substr(0, 120) + '...' )
   app.sdb.create(CONTRACT_RESULT_MODEL, {
     tid: trans.id,
     contractId,
@@ -160,6 +165,7 @@ async function handleContractResult(contractId, contractAddr, callResult, trans,
     error: shortError,
     gas,
     stateChangesHash,
+    data
   })
 
   if (callResult.transfers && callResult.transfers.length > 0) {
@@ -184,7 +190,7 @@ module.exports = {
    * @param {boolean} consumeOwnerEnergy prefer to consume contract owner energy for gas
    */
   async register(gasLimit, name, version, desc, code, consumeOwnerEnergy) {
-    ensureGasLimitValid(gasLimit)
+    ensureGasLimitValid(gasLimit, this.trs)
     ensureContractNameValid(name)
     assert(!desc || desc.length <= 255, 'Invalid description, can not be longer than 255')
     assert(!version || version.length <= 32, 'Invalid version, can not be longer than 32 ')
@@ -197,7 +203,7 @@ module.exports = {
     assert(contract === undefined, `Contract '${name}' exists already`)
 
     const contractId = Number(app.autoID.increment(CONTRACT_ID_SEQUENCE))
-    const context = makeContext(senderAddress, this.trs, this.block, this.sender)
+    const context = await makeContext(senderAddress, this.trs, this.sender)
     const registerResult = await app.contract.registerContract(gasLimit, context, contractId, name, code)
     const contractAddress = createContractAccount(this.trs.id, senderAddress)
     await handleContractResult(
@@ -232,7 +238,7 @@ module.exports = {
      * @param {Array} args method arguments
      */
   async call(gasLimit, enablePayGasInXAS, name, method, args) {
-    ensureGasLimitValid(gasLimit)
+    ensureGasLimitValid(gasLimit, this.trs)
     ensureContractNameValid(name)
     assert(method !== undefined && method !== null, 'method name can not be null or undefined')
     assert(Array.isArray(args), 'Invalid contract args, should be array')
@@ -245,7 +251,7 @@ module.exports = {
     const checkResult = await checkGasPayment(preferredEnergyAddress, senderAddress, gasLimit, enablePayGasInXAS)
     assert(checkResult.enough, 'Insufficient Energy')
 
-    const context = makeContext(senderAddress, this.trs, this.block, this.sender)
+    const context = await makeContext(senderAddress, this.trs, this.sender)
     const callResult = await app.contract.callContract(gasLimit, context, name, method, ...args)
 
     await handleContractResult(
@@ -265,10 +271,10 @@ module.exports = {
      * @param {string} currency currency
      */
   async pay(gasLimit, enablePayGasInXAS, nameOrAddress, method, amount, currency) {
-    ensureGasLimitValid(gasLimit)
+    ensureGasLimitValid(gasLimit, this.trs)
     const bigAmount = app.util.bignumber(amount)
     assert(!!nameOrAddress, 'Invalid contract name or address')
-    assert(bigAmount.gt(0), 'Invalid amount, should be greater than 0 ')
+    assert(bigAmount.gt(0), 'Invalid amount, should be greater than 0')
 
     const condition = app.util.address.isContractAddress(nameOrAddress) ? 
       { address: nameOrAddress } : 
@@ -287,7 +293,7 @@ module.exports = {
       assert(xasEnought, 'Insufficient XAS for transfer and gas')
     }
 
-    const context = makeContext(senderAddress, this.trs, this.block, this.sender)
+    const context = await makeContext(senderAddress, this.trs, this.sender)
     const payResult = await app.contract.payContract(
       gasLimit, context, contractInfo.name,
       method, bigAmount.toString(), currency,

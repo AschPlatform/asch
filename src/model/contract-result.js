@@ -6,7 +6,8 @@ module.exports = {
       { name: 'success', type: 'Number', not_null: true },
       { name: 'error', type: 'String', length: 128 },
       { name: 'gas', type: 'Number' },
-      { name: 'stateChangesHash', type: 'String', length: 64 }
+      { name: 'stateChangesHash', type: 'String', length: 64 },
+      { name: 'data', type: 'Json' }
     ]
   }
   
