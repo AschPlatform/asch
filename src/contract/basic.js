@@ -25,17 +25,6 @@ async function doCancelAgent(sender, agentAccount) {
   }
 }
 
-function isUniq(arr) {
-  const s = new Set()
-  for (const i of arr) {
-    if (s.has(i)) {
-      return false
-    }
-    s.add(i)
-  }
-  return true
-}
-
 module.exports = {
   async transfer(amount, recipient) {
     if (!recipient) return 'Invalid recipient'
@@ -348,52 +337,30 @@ module.exports = {
     return null
   },
 
-  async vote(delegates) {
+  async vote(delegate) {
     const senderId = this.sender.address
     app.sdb.lock(`basic.account@${senderId}`)
 
     const sender = this.sender
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
     if (sender.agent) return 'Account already set agent'
-
-    delegates = delegates.split(',')
-    if (!delegates || !delegates.length) return 'Invalid delegates'
-    if (delegates.length > 33) return 'Voting limit exceeded'
-    if (!isUniq(delegates)) return 'Duplicated vote item'
+    if (!delegate) return 'Invalid delegate'
 
     const currentVotes = await app.sdb.findAll('Vote', { condition: { address: senderId } })
-    if (currentVotes) {
-      if (currentVotes.length + delegates.length > 101) {
-        return 'Maximum number of votes exceeded'
-      }
-      const currentVotedDelegates = new Set()
-      for (const v of currentVotes) {
-        currentVotedDelegates.add(v.delegate)
-      }
-      for (const name of delegates) {
-        if (currentVotedDelegates.has(name)) {
-          return `Delegate already voted: ${name}`
-        }
-      }
+    if (currentVotes && currentVotes.length > 1) {
+      return 'Voting limit exceeded'
     }
 
-    for (const name of delegates) {
-      const exists = await app.sdb.exists('Delegate', { name })
-      if (!exists) return `Voted delegate not exists: ${name}`
-    }
+    const exists = await app.sdb.exists('Delegate', { delegate })
+    if (!exists) return `Voted delegate not exists: ${delegate}`
 
-    for (const name of delegates) {
-      const votes = (sender.weight + sender.agentWeight)
-      app.sdb.increase('Delegate', { votes }, { name })
-      app.sdb.create('Vote', {
-        address: senderId,
-        delegate: name,
-      })
-    }
+    const votes = (sender.weight + sender.agentWeight)
+    app.sdb.increase('Delegate', { votes }, { delegate })
+    app.sdb.create('Vote', { address: senderId, delegate })
     return null
   },
 
-  async unvote(delegates) {
+  async unvote(delegate) {
     const senderId = this.sender.address
     app.sdb.lock(`account@${senderId}`)
 
@@ -401,10 +368,7 @@ module.exports = {
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
     if (sender.agent) return 'Account already set agent'
 
-    delegates = delegates.split(',')
-    if (!delegates || !delegates.length) return 'Invalid delegates'
-    if (delegates.length > 33) return 'Voting limit exceeded'
-    if (!isUniq(delegates)) return 'Duplicated vote item'
+    if (!delegate) return 'Invalid delegate'
 
     const currentVotes = await app.sdb.findAll('Vote', { condition: { address: senderId } })
     if (currentVotes) {
@@ -412,24 +376,17 @@ module.exports = {
       for (const v of currentVotes) {
         currentVotedDelegates.add(v.delegate)
       }
-      for (const name of delegates) {
-        if (!currentVotedDelegates.has(name)) {
-          return `Delegate not voted yet: ${name}`
-        }
+      if (!currentVotedDelegates.has(delegate)) {
+        return `Delegate not voted yet: ${delegate}`
       }
     }
 
-    for (const name of delegates) {
-      const exists = await app.sdb.exists('Delegate', { name })
-      if (!exists) return `Voted delegate not exists: ${name}`
-    }
+    const exists = await app.sdb.exists('Delegate', { delegate })
+    if (!exists) return `Voted delegate not exists: ${delegate}`
 
-    for (const name of delegates) {
-      const votes = -(sender.weight + sender.agentWeight)
-      app.sdb.increase('Delegate', { votes }, { name })
-
-      app.sdb.del('Vote', { address: senderId, delegate: name })
-    }
+    const votes = -(sender.weight + sender.agentWeight)
+    app.sdb.increase('Delegate', { votes }, { delegate })
+    app.sdb.del('Vote', { address: senderId, delegate })
     return null
   },
 
