@@ -38,7 +38,7 @@ module.exports = {
     let recipientAccount
     // Validate recipient is valid address
     if (recipient && (app.util.address.isNormalAddress(recipient)
-                    || app.util.address.isGroupAddress(recipient))) {
+      || app.util.address.isGroupAddress(recipient))) {
       recipientAccount = await app.sdb.load('Account', recipient)
       if (recipientAccount) {
         if (recipientAccount.address === senderId) return 'Sender and recipient is identical'
@@ -351,11 +351,11 @@ module.exports = {
       return 'Voting limit exceeded'
     }
 
-    const exists = await app.sdb.exists('Delegate', { delegate })
+    const exists = await app.sdb.exists('Delegate', { name: delegate })
     if (!exists) return `Voted delegate not exists: ${delegate}`
 
     const votes = (sender.weight + sender.agentWeight)
-    app.sdb.increase('Delegate', { votes }, { delegate })
+    app.sdb.increase('Delegate', { votes }, { name: delegate })
     app.sdb.create('Vote', { address: senderId, delegate })
     return null
   },
@@ -411,7 +411,7 @@ module.exports = {
       pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
     }
 
-    const totalPledges = await app.sdb.loadMany('AccountTotalPledge', { })
+    const totalPledges = await app.sdb.loadMany('AccountTotalPledge', {})
     let totalPledge
     if (totalPledges.length === 0) {
       app.sdb.create('AccountTotalPledge', {
@@ -449,7 +449,7 @@ module.exports = {
     const sender = this.sender
     const pledgeAccount = await app.sdb.load('AccountPledge', sender.address)
     if (!pledgeAccount) return `No pledge for account ${sender.address}`
-    const totalPledges = await app.sdb.loadMany('AccountTotalPledge', { })
+    const totalPledges = await app.sdb.loadMany('AccountTotalPledge', {})
     if (totalPledges.length === 0) return 'Total pledge is not set'
     if (totalPledges[0].totalPledgeForNet < netAmount || totalPledges[0].totalPledgeForEnergy < energyAmount) return 'Insufficient balance in AccountTotalPledges'
     const totalAmount = netAmount + energyAmount
