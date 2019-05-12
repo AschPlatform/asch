@@ -1,3 +1,5 @@
+const promisify = require('util').promisify
+
 async function getMarketInfo(/* req */) {
   const marketInfo = {
     priceUsdt: global.marketInfo.priceUsdt,
@@ -66,8 +68,65 @@ async function getBlocksForgedBy(req) {
   return { count, blocks }
 }
 
+async function getLastForgingBlock(name) {
+  const blocks = await app.sdb.findAll('BlockIndex', {
+    condition: {
+      producerName: name,
+    },
+    offset: 0,
+    limit: 1,
+    sort: {
+      blockHeight: -1
+    },
+  })
+  if (!blocks || blocks.length === 0) {
+    return null
+  }
+  const height = blocks[0].blockHeight
+  const block = await app.sdb.getBlockByHeight(height)
+  return block
+}
+
+async function getDelegateExtraInfo(d) {
+  d.profile = app.sdb.get('DelegateProfile', { name: d.name }) || null
+  d.lastForgingBlock = await getLastForgingBlock(d.name)
+  const lastForgingTime = d.lastForgingBlock ? d.lastForgingBlock.timestamp : 0
+  const currentTime = app.util.slots.getTime()
+  const superNodeCount = app.util.slots.delegates
+  const interval = app.util.slots.interval
+  const twoRoundInterval = superNodeCount * 2 * interval
+  d.online = (currentTime - lastForgingTime <= twoRoundInterval) ? 1 : 0
+
+  delete d.vote
+  delete d.missedblocks
+  delete d.producedblocks
+}
+
+async function getDelegatesWithProfile(req) {
+  const query = req.query
+  const limit = query.limit ? Number(query.limit) : 21
+  const offset = query.offset ? Number(query.offset) : 0
+  const allDelegatesRanked = await promisify(modules.delegates.getDelegates)({})
+  const delegates = allDelegatesRanked.slice(offset, offset + limit)
+  for (const d of delegates) {
+    await getDelegateExtraInfo(d)
+  }
+  return { totalCount: allDelegatesRanked.length, delegates }
+}
+
+async function getDelegateDetail(req) {
+  const name = req.params.name
+  const allDelegatesRanked = await promisify(modules.delegates.getDelegates)({})
+  const delegate = allDelegatesRanked.find(d => d.name === name)
+  if (!delegate) throw new Error('Delegate not found')
+  await getDelegateExtraInfo(delegate)
+  return { delegate }
+}
+
 module.exports = (router) => {
   router.get('/marketInfo', getMarketInfo)
   router.get('/search', search)
   router.get('/blocksForgedBy', getBlocksForgedBy)
+  router.get('/delegatesWithProfile', getDelegatesWithProfile)
+  router.get('/delegateDetail/:name', getDelegateDetail)
 }
