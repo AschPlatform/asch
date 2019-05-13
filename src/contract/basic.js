@@ -347,8 +347,11 @@ module.exports = {
     if (!delegate) return 'Invalid delegate'
 
     const currentVotes = await app.sdb.findAll('Vote', { condition: { address: senderId } })
-    if (currentVotes && currentVotes.length > 1) {
-      return 'Voting limit exceeded'
+    if (currentVotes && currentVotes.length > 0) {
+      const cancelVotes = -1 * (sender.weight + sender.agentWeight)
+      const cancelDelegate = currentVotes[0].delegate
+      app.sdb.increase('Delegate', { votes: cancelVotes }, { name: cancelDelegate })
+      app.sdb.del('Vote', { address: senderId, delegate: cancelDelegate })
     }
 
     const exists = await app.sdb.exists('Delegate', { name: delegate })
@@ -368,24 +371,16 @@ module.exports = {
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
     if (sender.agent) return 'Account already set agent'
 
-    if (!delegate) return 'Invalid delegate'
-
     const currentVotes = await app.sdb.findAll('Vote', { condition: { address: senderId } })
-    if (currentVotes) {
-      const currentVotedDelegates = new Set()
-      for (const v of currentVotes) {
-        currentVotedDelegates.add(v.delegate)
-      }
-      if (!currentVotedDelegates.has(delegate)) {
-        return `Delegate not voted yet: ${delegate}`
-      }
+    if (!currentVotes || !currentVotes.length || currentVotes[0].delegate !== delegate) {
+      return 'The delegate has not been voted by your account'
     }
 
-    const exists = await app.sdb.exists('Delegate', { delegate })
+    const exists = await app.sdb.exists('Delegate', { name: delegate })
     if (!exists) return `Voted delegate not exists: ${delegate}`
 
     const votes = -(sender.weight + sender.agentWeight)
-    app.sdb.increase('Delegate', { votes }, { delegate })
+    app.sdb.increase('Delegate', { votes }, { name: delegate })
     app.sdb.del('Vote', { address: senderId, delegate })
     return null
   },
