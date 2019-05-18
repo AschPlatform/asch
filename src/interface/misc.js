@@ -87,8 +87,13 @@ async function getLastForgingBlock(name) {
   return block
 }
 
+async function getDelegateProfile(name) {
+  const result = await app.contract.getConstant('super-node-profile', 'getProfile', name)
+  return result.success ? result.data : null
+}
+
 async function getDelegateExtraInfo(d) {
-  d.profile = app.sdb.get('DelegateProfile', { name: d.name }) || null
+  d.profile = await getDelegateProfile(d.name)
   d.lastForgingBlock = await getLastForgingBlock(d.name)
   const lastForgingTime = d.lastForgingBlock ? d.lastForgingBlock.timestamp : 0
   const currentTime = app.util.slots.getTime()
