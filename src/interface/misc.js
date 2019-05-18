@@ -123,10 +123,29 @@ async function getDelegateDetail(req) {
   return { delegate }
 }
 
+async function getVotingSummary() {
+  const totalSuperNodes = app.util.slots.delegates
+  const allDelegates = app.sdb.getAll('Delegate')
+  let totalVotes = 0
+  for (const d of allDelegates) {
+    totalVotes += d.votes
+  }
+  const votedAccounts = await app.sdb.count('Vote')
+  return {
+    votingSummary: {
+      totalSuperNodes,
+      totalDelegates: allDelegates.length,
+      totalVotes,
+      votedAccounts,
+    }
+  }
+}
+
 module.exports = (router) => {
   router.get('/marketInfo', getMarketInfo)
   router.get('/search', search)
   router.get('/blocksForgedBy', getBlocksForgedBy)
   router.get('/delegatesWithProfile', getDelegatesWithProfile)
   router.get('/delegateDetail/:name', getDelegateDetail)
+  router.get('/votingSummary', getVotingSummary)
 }
