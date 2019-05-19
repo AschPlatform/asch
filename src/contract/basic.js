@@ -350,6 +350,7 @@ module.exports = {
     if (currentVotes && currentVotes.length > 0) {
       const cancelVotes = -1 * (sender.weight + sender.agentWeight)
       const cancelDelegate = currentVotes[0].delegate
+      if (cancelDelegate === delegate) return 'You have voted this delegate'
       app.sdb.increase('Delegate', { votes: cancelVotes }, { name: cancelDelegate })
       app.sdb.del('Vote', { address: senderId, delegate: cancelDelegate })
     }
