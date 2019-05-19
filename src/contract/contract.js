@@ -18,7 +18,7 @@ function createContractAccount(transId, ownerAddress) {
   return address
 }
 
-async function makeContext(senderAddress, transaction, account) {
+async function makeContext(senderAddress, transaction, account, block) {
   account = account || { address: senderAddress }
   const { address, name, secondPublicKey, role, lockHeight, weight } = account
   const xas = account.xas || 0
@@ -33,7 +33,6 @@ async function makeContext(senderAddress, transaction, account) {
     role, lockHeight, weight
   }
 
-  const block = await modules.blocks.getBlockGenerationInfo()
   const { id, height, delegate, prevBlockId, payloadHash, timestamp } = modules.blocks.getLastBlock()
   const lastBlock = { id, height, delegate, prevBlockId, payloadHash, timestamp }
   return { senderAddress, transaction, block, lastBlock, sender  }
@@ -203,7 +202,7 @@ module.exports = {
     assert(contract === undefined, `Contract '${name}' exists already`)
 
     const contractId = Number(app.autoID.increment(CONTRACT_ID_SEQUENCE))
-    const context = await makeContext(senderAddress, this.trs, this.sender)
+    const context = await makeContext(senderAddress, this.trs, this.sender, this.block)
     const registerResult = await app.contract.registerContract(gasLimit, context, contractId, name, code)
     const contractAddress = createContractAccount(this.trs.id, senderAddress)
     await handleContractResult(
@@ -251,7 +250,7 @@ module.exports = {
     const checkResult = await checkGasPayment(preferredEnergyAddress, senderAddress, gasLimit, enablePayGasInXAS)
     assert(checkResult.enough, 'Insufficient Energy')
 
-    const context = await makeContext(senderAddress, this.trs, this.sender)
+    const context = await makeContext(senderAddress, this.trs, this.sender, this.block)
     const callResult = await app.contract.callContract(gasLimit, context, name, method, ...args)
 
     await handleContractResult(
@@ -293,7 +292,7 @@ module.exports = {
       assert(xasEnought, 'Insufficient XAS for transfer and gas')
     }
 
-    const context = await makeContext(senderAddress, this.trs, this.sender)
+    const context = await makeContext(senderAddress, this.trs, this.sender, this.block)
     const payResult = await app.contract.payContract(
       gasLimit, context, contractInfo.name,
       method, bigAmount.toString(), currency, ...args
