@@ -16,10 +16,8 @@ More infomation please visit
 
 ## System Dependency
 
-- nodejs v6.3+
-- npm 3.10+ (not cnpm)
-- node-gyp v3.6.2+ (suggested)
-- sqlite v3.8.2+
+- nodejs v10.14.1+
+- npm v6.4.1+
 - g++
 - libssl
 
