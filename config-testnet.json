@@ -12,8 +12,16 @@
   },
   "peers": {
     "list": [
-      {"ip": "47.52.198.118", "port": 4097},
-      {"ip": "47.94.230.48", "port": 4097}
+      {
+        "ip": "47.52.198.118",
+        "port": 4097,
+        "id": "PBckSAVNe8AsAWnX4QNcMnwcgdon5e7Vr9"
+      },
+      {
+        "ip": "47.94.230.48",
+        "port": 4097,
+        "id": "P5EniX72zWtPP4vuHzheWzshDzPbwxjL8H"
+      }
     ],
     "blackList": [],
     "options": {
@@ -21,8 +29,7 @@
     }
   },
   "forging": {
-    "secret": [
-    ],
+    "secret": [],
     "access": {
       "whiteList": [
         "127.0.0.1"
