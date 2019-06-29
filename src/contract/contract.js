@@ -183,7 +183,7 @@ module.exports = {
    * Register contract,
    * @param {number} gasLimit max gas avalible, 1000000 >= gasLimit >0
    * @param {string} name 32 >= name.length >= 3 and name must be letter, number or '_'
-   * @param {string} version contract engine version
+   * @param {string} version contract version
    * @param {string} desc desc.length <= 255
    * @param {string} code contract source code
    * @param {boolean} consumeOwnerEnergy prefer to consume contract owner energy for gas
@@ -209,7 +209,7 @@ module.exports = {
       contractId, contractAddress, registerResult, this.trs, 
       this.block.height, checkResult.energy, checkResult.payer
     )
-
+    
     if (registerResult.success) {
       app.sdb.create(CONTRACT_MODEL, {
         id: contractId,
@@ -217,9 +217,11 @@ module.exports = {
         name,
         ownerId: senderAddress,
         address: contractAddress,
-        vmVersion: version,
+        version,
+        vmVersion: app.contract.vmVersion,
         desc,
         code,
+        state: 0,
         consumeOwnerEnergy: consumeOwnerEnergy !== false ? 1 : 0,
         metadata: registerResult.data,
         timestamp: this.trs.timestamp,
