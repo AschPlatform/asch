@@ -11,7 +11,7 @@ const Application = asch.Application
 function main() {
   process.stdin.resume()
 
-  const version = '1.5.0-beta+8'
+  const version = '1.5.0'
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')
