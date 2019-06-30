@@ -11,7 +11,7 @@ const Application = asch.Application
 function main() {
   process.stdin.resume()
 
-  const version = '1.5.0-beta+6'
+  const version = '1.5.0-beta+8'
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')
@@ -81,22 +81,22 @@ function main() {
     }
   }
 
-  if (appConfig.netVersion === 'mainnet') {
-    const seeds = [
-      757137132,
-      1815983436,
-      759980934,
-      759980683,
-      1807690192,
-      1758431015,
-      1760474482,
-      1760474149,
-      759110497
-    ]
-    for (let i = 0; i < seeds.length; ++i) {
-      appConfig.peers.list.push({ ip: ip.fromLong(seeds[i]), port: 81 })
-    }
-  }
+  // if (appConfig.netVersion === 'mainnet') {
+  //   const seeds = [
+  //     757137132,
+  //     1815983436,
+  //     759980934,
+  //     759980683,
+  //     1807690192,
+  //     1758431015,
+  //     1760474482,
+  //     1760474149,
+  //     759110497
+  //   ]
+  //   for (let i = 0; i < seeds.length; ++i) {
+  //     appConfig.peers.list.push({ ip: ip.fromLong(seeds[i]), port: 81 })
+  //   }
+  // }
 
   if (program.log) {
     appConfig.logLevel = program.log
@@ -117,9 +117,10 @@ function main() {
       root: path.join(baseDir, 'logs'),
       maxLogFiles: 10,
       allLogsFileName: 'debug',
+      dateformat: 'yyyy-mm-dd HH:MM:ss.L'
     })
   } else {
-    logger = tracer.colorConsole()
+    logger = tracer.colorConsole({ dateformat: 'yyyy-mm-dd HH:MM:ss.L' })
   }
   tracer.setLevel(appConfig.logLevel)
 
