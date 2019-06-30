@@ -3,7 +3,7 @@ const TRANSACTION_MODEL = 'Transaction'
 const CONTRACT_MODEL = 'Contract'
 const CONTRACT_RESULT_MODEL = 'ContractResult'
 const CONTRACT_BASIC_FIELDS = ['id', 'name', 'tid', 'address', 'ownerId', 'vmVersion', 'consumeOwnerEnergy', 'desc', 'timestamp']
-
+const REGISTER_CONTRACT_TYPE = 600
 
 function parseSort(orderBy) {
   const sort = {}
@@ -39,12 +39,14 @@ function convertBigintMemberToString(obj) {
   })
 }
 
-async function getContractByName(name, fields = undefined) {
+async function getContractByName(name, fields = undefined, throwIfNotFound = true) {
   assert(!!name, 'Invalid contract name')
   const contracts = await app.sdb.find(CONTRACT_MODEL, { name }, undefined, undefined, fields)
-  assert(contracts.length > 0, `Contract '${name}' not found`)
+  if (throwIfNotFound) {
+    assert(contracts.length > 0, `Contract '${name}' not found`)
+  }
 
-  return contracts[0]
+  return contracts.length > 0 ? contracts[0] : undefined
 }
 
 function convertResult(result) {
@@ -156,14 +158,22 @@ module.exports = (router) => {
   router.get('/:name/results/:tid', async (req) => {
     const { tid, name } = req.params
     assert(!!tid ,`Invalid transaction id`)
-    const { id } = await getContractByName(name, ['id', 'name'])
-    const condition = { contractId: id, tid }
+    const contract = await getContractByName(name, ['id', 'name'], false)
+    const condition = { tid }
 
     const results = await app.sdb.find(CONTRACT_RESULT_MODEL, condition)
     assert(results.length > 0, `Call result not found (tid = ${tid})`)
-
     const resultsWithTransactions = await attachTransactions(results.map(r => (convertResult(r))))
-    return { success: true, result: resultsWithTransactions[0] }
+    
+    const result = resultsWithTransactions[0]
+    const transaction = result.transaction
+    if (transaction.type === REGISTER_CONTRACT_TYPE) {
+      assert(name === transaction.args[1], `Invalid contract name ${name}`)
+    } else {
+      assert(contract && contract.id === result.contractId, `Invalid contract name ${name}`)
+    }
+
+    return { success: true, result }
   })
 
   /**

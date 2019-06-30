@@ -6,6 +6,9 @@ const CONTRACT_RESULT_MODEL = 'ContractResult'
 const ACCOUNT_MODEL = 'Account'
 const CONTRACT_TRANSFER_MODEL = 'ContractTransfer'
 const MAX_GAS_LIMIT = 10 ** 7
+const MAX_CODE_SIZE_K = 64
+const MAX_ARGS_SIZE_K = 16
+
 const pledge = app.util.pledges
 
 function assert(condition, error) {
@@ -39,11 +42,19 @@ async function makeContext(senderAddress, transaction, account, block) {
 }
 
 async function gasToEnergy(gas) {
-  return await pledge.getEnergyByGas(gas) 
+  const result = await pledge.getEnergyByGas(gas) 
+  if (result === null) {
+    throw `Cannot calculate energy amount for gas ${gas}`
+  }
+  return result
 }
 
 async function gasToXAS(gas) {
-  return await pledge.getXASByGas(gas) 
+  const result = await pledge.getXASByGas(gas) 
+  if (result === null) {
+    throw `Cannot calculate XAS amount for gas ${gas}`
+  }
+  return result
 }
 
 async function checkGasPayment(preferredEnergyAddress, address, gasLimit, useXAS) {
@@ -155,7 +166,7 @@ async function handleContractResult(contractId, contractAddr, callResult, trans,
   const { success, error, gas, stateChangesHash, data } = callResult
   await payGas(gas || 0, useEnergy, payer, trans.id)
 
-  const shortError = !error ? '' : 
+  const shortError = !error ? null : 
     ( error.length <= 120 ? error : (error).substr(0, 120) + '...' )
   app.sdb.create(CONTRACT_RESULT_MODEL, {
     tid: trans.id,
@@ -193,6 +204,7 @@ module.exports = {
     ensureContractNameValid(name)
     assert(!desc || desc.length <= 255, 'Invalid description, can not be longer than 255')
     assert(!version || version.length <= 32, 'Invalid version, can not be longer than 32 ')
+    assert(code && code.length <= MAX_CODE_SIZE_K * 1024, `Contract code size can not exceed ${MAX_CODE_SIZE_K}K`)
     
     const senderAddress = this.trs.senderId
     const checkResult = await checkGasPayment(undefined, senderAddress, gasLimit, true)
@@ -205,6 +217,10 @@ module.exports = {
     const context = await makeContext(senderAddress, this.trs, this.sender, this.block)
     const registerResult = await app.contract.registerContract(gasLimit, context, contractId, name, code)
     const contractAddress = createContractAccount(this.trs.id, senderAddress)
+    // do not save result data
+    const resultData = registerResult.data
+    registerResult.data = undefined
+    
     await handleContractResult(
       contractId, contractAddress, registerResult, this.trs, 
       this.block.height, checkResult.energy, checkResult.payer
@@ -223,7 +239,7 @@ module.exports = {
         code,
         state: 0,
         consumeOwnerEnergy: consumeOwnerEnergy !== false ? 1 : 0,
-        metadata: registerResult.data,
+        metadata: resultData,
         timestamp: this.trs.timestamp,
       })
     }
@@ -243,6 +259,7 @@ module.exports = {
     ensureContractNameValid(name)
     assert(method !== undefined && method !== null, 'method name can not be null or undefined')
     assert(Array.isArray(args), 'Invalid contract args, should be array')
+    assert(JSON.stringify(args).length <= MAX_ARGS_SIZE_K * 1024, `stringified args length can not exceed ${MAX_ARGS_SIZE_K}K`)
 
     const senderAddress = this.trs.senderId
     const contractInfo = await app.sdb.load(CONTRACT_MODEL, { name })
@@ -276,6 +293,7 @@ module.exports = {
     const bigAmount = app.util.bignumber(amount)
     assert(!!nameOrAddress, 'Invalid contract name or address')
     assert(bigAmount.gt(0), 'Invalid amount, should be greater than 0')
+    assert(JSON.stringify([...args]).length <= MAX_ARGS_SIZE_K * 1024, `stringified args length can not exceed ${MAX_ARGS_SIZE_K}K`)
 
     const condition = app.util.address.isContractAddress(nameOrAddress) ? 
       { address: nameOrAddress } : 
