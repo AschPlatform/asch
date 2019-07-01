@@ -68,21 +68,13 @@ async function getBlocksForgedBy(req) {
   return { count, blocks }
 }
 
-async function getLastForgingBlock(name) {
-  const blocks = await app.sdb.findAll('BlockIndex', {
-    condition: {
-      producerName: name,
-    },
-    offset: 0,
-    limit: 1,
-    sort: {
-      blockHeight: -1
-    },
-  })
-  if (!blocks || blocks.length === 0) {
+async function getLastForgingBlock(blockIndex, name) {
+  if (!blockIndex || blockIndex.length === 0) {
     return null
   }
-  const height = blocks[0].blockHeight
+  const item = blockIndex.find(b => b.producerName === name)
+  if (!item) return null
+  const height = item.blockHeight
   const block = await app.sdb.getBlockByHeight(height)
   return block
 }
@@ -92,9 +84,9 @@ async function getDelegateProfile(name) {
   return result.success ? result.data : null
 }
 
-async function getDelegateExtraInfo(d) {
+async function getDelegateExtraInfo(blockIndex, d) {
   d.profile = await getDelegateProfile(d.name)
-  d.lastForgingBlock = await getLastForgingBlock(d.name)
+  d.lastForgingBlock = await getLastForgingBlock(blockIndex, d.name)
   const lastForgingTime = d.lastForgingBlock ? d.lastForgingBlock.timestamp : 0
   const currentTime = app.util.slots.getTime()
   const superNodeCount = app.util.slots.delegates
@@ -113,8 +105,15 @@ async function getDelegatesWithProfile(req) {
   const offset = query.offset ? Number(query.offset) : 0
   const allDelegatesRanked = await promisify(modules.delegates.getDelegates)({})
   const delegates = allDelegatesRanked.slice(offset, offset + limit)
+  const blockIndex = await app.sdb.findAll('BlockIndex', {
+    offset: 0,
+    limit: 100,
+    sort: {
+      blockHeight: -1
+    },
+  })
   for (const d of delegates) {
-    await getDelegateExtraInfo(d)
+    await getDelegateExtraInfo(blockIndex, d)
   }
   return { totalCount: allDelegatesRanked.length, delegates }
 }
