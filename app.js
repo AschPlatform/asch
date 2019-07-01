@@ -79,7 +79,7 @@ class BlockIndexTask extends Task {
         blockHeight: -1,
       },
     })
-    app.logger.debug('found latest block index', latestHeightIndex)
+    app.logger.info('found latest block index', latestHeightIndex)
     if (latestHeightIndex && latestHeightIndex.length !== 0) {
       this.lastIndexHeight = latestHeightIndex[0].blockHeight + 1
     }
@@ -91,10 +91,10 @@ class BlockIndexTask extends Task {
         app.logger.info('block index building completed')
         break
       }
-      const producerName = await this.getProducerNameByPublicKey(block.delegate)
+      let producerName = await this.getProducerNameByPublicKey(block.delegate)
       if (!producerName) {
         app.logger.error(`block producer name not found: ${block.delegate}`)
-        break
+        producerName = 'nobody'
       }
       this.lastIndexHeight++
       app.sdb.create('BlockIndex', {
@@ -105,6 +105,7 @@ class BlockIndexTask extends Task {
       if (counter === 10000) {
         app.logger.info('10000 block index created')
         counter = 0
+        app.sdb.saveLocalChanges()
       }
     }
     app.sdb.saveLocalChanges()
@@ -306,8 +307,8 @@ function main() {
     const getMarketInfoTask = new AsyncCallbackTask('GetMarketInfo', 10 * 1000, async () => {
       const requestAsync = promisify(request)
       const results = await Promise.all([
-        requestAsync('https://www.okb.com/api/v1/ticker.do?symbol=xas_usdt'),
-        requestAsync('https://www.okb.com/api/v1/ticker.do?symbol=xas_btc'),
+        requestAsync('https://www.okex.com/api/v1/ticker.do?symbol=xas_usdt'),
+        requestAsync('https://www.okex.com/api/v1/ticker.do?symbol=xas_btc'),
       ])
       global.app.logger.debug('get market info results', results)
       if (results.length !== 2 || !results[0].ticker || !results[1].ticker) {
