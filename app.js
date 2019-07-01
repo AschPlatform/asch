@@ -11,7 +11,7 @@ const Application = asch.Application
 function main() {
   process.stdin.resume()
 
-  const version = '1.5.0'
+  const version = '1.5.1'
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')
@@ -81,22 +81,63 @@ function main() {
     }
   }
 
-  // if (appConfig.netVersion === 'mainnet') {
-  //   const seeds = [
-  //     757137132,
-  //     1815983436,
-  //     759980934,
-  //     759980683,
-  //     1807690192,
-  //     1758431015,
-  //     1760474482,
-  //     1760474149,
-  //     759110497
-  //   ]
-  //   for (let i = 0; i < seeds.length; ++i) {
-  //     appConfig.peers.list.push({ ip: ip.fromLong(seeds[i]), port: 81 })
-  //   }
-  // }
+  if (appConfig.netVersion === 'mainnet') {
+    const seeds = [
+      {
+        ip: '47.52.169.154',
+        port: 8193,
+        id: 'PAxFQA98nFUYbUceLpXviadKaCZvHcKC6P'
+      },
+      {
+        ip: '47.244.132.54',
+        port: 8193,
+        id: 'PKRX44RfMbxAu2txUAMPtRCEjEJfDr8FVu'
+      },
+      {
+        ip: '45.32.254.236',
+        port: 81,
+        id: 'PGb927r7CTmrGH1RWMh1Vf15ACDHB2v6mM'
+      },
+      {
+        ip: '108.61.181.76',
+        port: 81,
+        id: 'PECZ4C9oxr4473ZP42nRfgi995QX9v9KnG'
+      },
+      {
+        ip: '104.207.135.39',
+        port: 81,
+        id: 'PHnHEhUPMAgHL5eKyT6TkAKB1arKHUUvEu'
+      },
+      {
+        ip: '45.76.99.134',
+        port: 81,
+        id: 'PDTNRtKNJkncb17gQiVHxdzVw7vwKgmpr7'
+      },
+      {
+        ip: '104.238.181.114',
+        port: 81,
+        id: 'PMD3LUNZH8KVr5ZjXpXu7uCyTX4PaxMM86'
+      },
+      {
+        ip: '107.191.41.208',
+        port: 81,
+        id: 'PtYpACnBydF9ee8U4C3NXpHVKEK4p2Rdn'
+      },
+      {
+        ip: '104.238.180.37',
+        port: 81,
+        id: 'P5KiQADBEz4NiDSEt5o8xnwLjwDXw2qLn7'
+      },
+      {
+        ip: '45.76.98.139',
+        port: 81,
+        id: 'PCbSyzhU7qLbJh2nBrdFB9wHk2rGJsg8WV'
+      }
+    ]
+    for (let i = 0; i < seeds.length; ++i) {
+      appConfig.peers.list.push(seeds[i])
+    }
+  }
 
   if (program.log) {
     appConfig.logLevel = program.log
