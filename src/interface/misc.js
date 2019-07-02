@@ -123,7 +123,14 @@ async function getDelegateDetail(req) {
   const allDelegatesRanked = await promisify(modules.delegates.getDelegates)({})
   const delegate = allDelegatesRanked.find(d => d.name === name)
   if (!delegate) throw new Error('Delegate not found')
-  await getDelegateExtraInfo(delegate)
+  const blockIndex = await app.sdb.findAll('BlockIndex', {
+    offset: 0,
+    limit: 100,
+    sort: {
+      blockHeight: -1
+    },
+  })
+  await getDelegateExtraInfo(blockIndex, delegate)
   return { delegate }
 }
 
