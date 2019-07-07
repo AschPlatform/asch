@@ -366,7 +366,7 @@ module.exports = {
 
   async unvote(delegate) {
     const senderId = this.sender.address
-    app.sdb.lock(`account@${senderId}`)
+    app.sdb.lock(`basic.account@${senderId}`)
 
     const sender = this.sender
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
