@@ -57,8 +57,13 @@ module.exports = {
   },
 
   async initiatePayment(recipient, amount, currency, remarks, expirtedAt) {
-    if (!isCouncilMember(this.sender.address)) return 'Permission denied'
+    if (!app.util.address.isNormalAddress(recipient)) return 'Invalid recipient address'
+    app.validate('amount', amount)
     if (currency !== 'XAS') return 'UIA token not supported'
+    if (typeof remarks !== 'string' || remarks.length > 256) return 'Invalid remarks'
+    if (typeof expiredAt !== 'number') return 'Invalid expired time'
+
+    if (!isCouncilMember(this.sender.address)) return 'Permission denied'
     const session = modules.council.getCouncilInfo().session
     app.sdb.create('CouncilTransaction', {
       tid: this.trs.id,
