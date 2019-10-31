@@ -27,7 +27,7 @@ async function doCancelAgent(sender, agentAccount) {
 
 module.exports = {
   async transfer(amount, recipient) {
-    if (!recipient) return 'Invalid recipient'
+    if (!recipient || recipient === 'GADQ2bozmxjBfYHDQx3uwtpwXmdhafUdkN') return 'Invalid recipient'
     app.validate('amount', String(amount))
 
     amount = Number(amount)
