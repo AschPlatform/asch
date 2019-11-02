@@ -143,7 +143,10 @@ function rebuild() {
   fi
 
   ./aschd stop
-  rm -rf ./data
+  rm -rf ./data/blockchain.db
+  rm -rf ./data/contracts
+  rm -rf ./data/blocks
+  rm -rf ./data/local.db
   echo "Extracting snapshot..."
   tar zxf $Name
   #./aschd start

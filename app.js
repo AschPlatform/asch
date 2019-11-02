@@ -137,7 +137,7 @@ class AsyncCallbackTask extends Task {
 function main() {
   process.stdin.resume()
 
-  const version = '1.5.2'
+  const version = '1.6.0'
   program
     .version(version)
     .option('-c, --config <path>', 'Config file path')

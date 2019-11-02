@@ -27,7 +27,7 @@ async function doCancelAgent(sender, agentAccount) {
 
 module.exports = {
   async transfer(amount, recipient) {
-    if (!recipient) return 'Invalid recipient'
+    if (!recipient || recipient === 'GADQ2bozmxjBfYHDQx3uwtpwXmdhafUdkN') return 'Invalid recipient'
     app.validate('amount', String(amount))
 
     amount = Number(amount)
@@ -366,7 +366,7 @@ module.exports = {
 
   async unvote(delegate) {
     const senderId = this.sender.address
-    app.sdb.lock(`account@${senderId}`)
+    app.sdb.lock(`basic.account@${senderId}`)
 
     const sender = this.sender
     if (!sender.isAgent && !sender.isLocked) return 'Account is not locked'
