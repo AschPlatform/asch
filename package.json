@@ -16,7 +16,7 @@
     "asch-core": "https://github.com/AschPlatform/asch-core/tarball/v1.5.2",
     "commander": "=2.6.0",
     "daemon": "=1.1.0",
-    "ip": "=1.1.3",
+    "ip": "=1.1.9",
     "tracer": "=0.8.12"
   },
   "devDependencies": {
